@@ -24,6 +24,7 @@ export const colors = {
     secondary: blue[900],    // Dark blue
     tertiary: blue[800],     // Deep blue
     premium: blue[950],      // Deepest midnight blue
+    dark: blue[950],         // Default dark background
   },
 
   // Primary Theme Colors (Unifying everything to blue)

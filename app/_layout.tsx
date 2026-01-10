@@ -30,7 +30,7 @@ export default function RootLayout() {
           hasFinishedOnboarding &&
           (inAuthGroup || inOnboardingGroup || segments[0] === undefined)
         ) {
-          router.replace('/(tabs)');
+          router.replace('/(drawer)');
         }
       }
     }, 1);
@@ -46,7 +46,8 @@ export default function RootLayout() {
         }}>
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
         <Stack.Screen name="(onboarding)" options={{ headerShown: false }} />
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="(drawer)" options={{ headerShown: false }} />
+        <Stack.Screen name="(guided)" options={{ headerShown: false }} />
       </Stack>
       <StatusBar style="light" />
     </>

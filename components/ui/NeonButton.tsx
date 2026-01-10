@@ -32,7 +32,7 @@ interface NeonButtonProps {
   style?: ViewStyle;
   textStyle?: TextStyle;
   pulse?: boolean;
-  icon?: LucideIcon;
+  icon?: LucideIcon | React.ReactNode;
 }
 
 export function NeonButton({
@@ -45,7 +45,7 @@ export function NeonButton({
   style,
   textStyle,
   pulse = false,
-  icon: Icon,
+  icon,
 }: NeonButtonProps) {
   const scale = useSharedValue(1);
   const pulseScale = useSharedValue(1);
@@ -92,6 +92,9 @@ export function NeonButton({
     lg: 18,
   };
 
+  const IconComponent = typeof icon === 'function' ? icon : null;
+  const iconElement = React.isValidElement(icon) ? icon : null;
+
   return (
     <AnimatedTouchable
       onPress={onPress}
@@ -128,8 +131,8 @@ export function NeonButton({
               ]}>
               {title}
             </Text>
-            {Icon && (
-              <Icon
+            {IconComponent && (
+              <IconComponent
                 size={textSizes[size] + 2}
                 color={
                   variant === 'outline' || variant === 'ghost'
@@ -139,6 +142,7 @@ export function NeonButton({
                 style={styles.icon}
               />
             )}
+            {iconElement}
           </>
         )}
       </LinearGradient>

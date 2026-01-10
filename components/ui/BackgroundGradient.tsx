@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors } from './../../theme/colors';
 
@@ -10,7 +10,11 @@ interface BackgroundGradientProps {
 export function BackgroundGradient({ children }: BackgroundGradientProps) {
   return (
     <View style={styles.container}>
-      {/* Background image is now handled by the layout */}
+      <Image
+        source={require('../../assets/bg.jpg')}
+        style={StyleSheet.absoluteFill}
+        resizeMode="cover"
+      />
       <View style={[StyleSheet.absoluteFill, styles.overlay]} />
       {children}
     </View>
