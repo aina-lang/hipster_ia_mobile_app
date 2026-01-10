@@ -1,0 +1,70 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+:root {
+  --background: 0 0% 100%;
+  --foreground: 0 0% 14.5%;
+  --primary: 0 0% 20.5%;
+  --primary-foreground: 0 0% 98.5%;
+  --border: 0 0% 92.2%;
+  --radius: 0.625rem;
+
+  --gradient-primary: linear-gradient(135deg, #141414 0%, #333333 50%, #141414 100%);
+}
+
+.dark {
+  --background: 0 0% 0%;
+  --foreground: 0 0% 96%;
+  --card: 0 0% 0%;
+  --card-foreground: 0 0% 96%;
+  --primary: 0 0% 96%;
+  --primary-foreground: 0 0% 0%;
+  --border: 0 0% 15%;
+  
+  --gradient-primary: linear-gradient(135deg, #06B6D4 0%, #8B5CF6 100%);
+  --gradient-btn: linear-gradient(
+    135deg,
+    oklch(0.65 0.22 255),
+    oklch(0.65 0.22 255) 100%
+  );
+}
+
+@layer components {
+  .glass {
+    background-color: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .glass-card {
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 24px;
+  }
+
+  .gradient-btn {
+    background: var(--gradient-btn);
+  }
+
+  .gradient-text {
+    /* Note: NativeWind text gradient support varies, but we'll define it for completeness */
+  }
+
+  .shadow-glow {
+    shadow-color: #06B6D4;
+    shadow-opacity: 0.5;
+    shadow-radius: 20px;
+    elevation: 10;
+  }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-20px); }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
