@@ -64,10 +64,12 @@ api.interceptors.response.use(
           headers: { Authorization: `Bearer ${refreshToken}` }
         });
 
-        await AsyncStorage.setItem('access_token', data.access_token);
-        await AsyncStorage.setItem('refresh_token', data.refresh_token);
+        const resData = data.data;
 
-        originalRequest.headers.Authorization = `Bearer ${data.access_token}`;
+        await AsyncStorage.setItem('access_token', resData.access_token);
+        await AsyncStorage.setItem('refresh_token', resData.refresh_token);
+
+        originalRequest.headers.Authorization = `Bearer ${resData.access_token}`;
         return api(originalRequest);
       } catch (refreshError) {
         // If refresh fails, clear storage

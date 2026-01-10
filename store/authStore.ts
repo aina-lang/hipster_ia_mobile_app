@@ -68,11 +68,13 @@ export const useAuthStore = create<AuthState>()(
         try {
           const { data } = await api.post('/login', credentials);
           
-          await AsyncStorage.setItem('access_token', data.access_token);
-          await AsyncStorage.setItem('refresh_token', data.refresh_token);
+          const resData = data.data;
+          
+          await AsyncStorage.setItem('access_token', resData.access_token);
+          await AsyncStorage.setItem('refresh_token', resData.refresh_token);
           
           set({ 
-            user: data.user, 
+            user: resData.user, 
             isAuthenticated: true, 
             isLoading: false 
           });
@@ -88,11 +90,13 @@ export const useAuthStore = create<AuthState>()(
         try {
           const { data } = await api.post('/ai/auth/login', credentials);
           
-          await AsyncStorage.setItem('access_token', data.access_token);
-          await AsyncStorage.setItem('refresh_token', data.refresh_token);
+          const resData = data.data;
+          
+          await AsyncStorage.setItem('access_token', resData.access_token);
+          await AsyncStorage.setItem('refresh_token', resData.refresh_token);
           
           set({ 
-            user: data.user, 
+            user: resData.user, 
             isAuthenticated: true, 
             isLoading: false 
           });

@@ -10,29 +10,32 @@ export default function RootLayout() {
   const router = useRouter();
 
   useEffect(() => {
-    const inAuthGroup = segments[0] === '(auth)';
-    const inOnboardingGroup = segments[0] === '(onboarding)';
-    const inTabsGroup = segments[0] === '(tabs)';
+    // Wait for the next tick to ensure nested layout is mounted
+    const timeout = setTimeout(() => {
+      const inAuthGroup = segments[0] === '(auth)';
+      const inOnboardingGroup = segments[0] === '(onboarding)';
+      const inTabsGroup = segments[0] === '(tabs)';
 
-    if (
-      !isAuthenticated &&
-      !inAuthGroup &&
-      segments[0] !== '(onboarding)' &&
-      segments[0] !== undefined
-    ) {
-      // If not authenticated and not in auth group, redirect to login
-      // Exception: allow onboarding for now if that's the start
-      router.replace('/(auth)/login');
-    } else if (isAuthenticated) {
-      if (!hasFinishedOnboarding && !inOnboardingGroup) {
-        router.replace('/(onboarding)/setup');
-      } else if (
-        hasFinishedOnboarding &&
-        (inAuthGroup || inOnboardingGroup || segments[0] === undefined)
+      if (
+        !isAuthenticated &&
+        !inAuthGroup &&
+        segments[0] !== '(onboarding)' &&
+        segments[0] !== undefined
       ) {
-        router.replace('/(tabs)');
+        router.replace('/(auth)/login');
+      } else if (isAuthenticated) {
+        if (!hasFinishedOnboarding && !inOnboardingGroup) {
+          router.replace('/(onboarding)/setup');
+        } else if (
+          hasFinishedOnboarding &&
+          (inAuthGroup || inOnboardingGroup || segments[0] === undefined)
+        ) {
+          router.replace('/(tabs)');
+        }
       }
-    }
+    }, 1);
+
+    return () => clearTimeout(timeout);
   }, [isAuthenticated, hasFinishedOnboarding, segments]);
 
   return (
