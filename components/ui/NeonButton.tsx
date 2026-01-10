@@ -176,14 +176,14 @@ const styles = StyleSheet.create({
     color: colors.neon.primary,
   },
   ghost: {
-    backgroundColor: 'rgba(32, 60, 142, 0.1)', // #203c8e with opacity
+    backgroundColor: 'rgba(44, 70, 155, 0.1)', // #2c469b with opacity
   },
   ghostText: {
     color: colors.neon.primary,
   },
   premiumBorder: {
     borderWidth: 1.5,
-    borderColor: 'rgba(32, 60, 142, 0.5)',
+    borderColor: 'rgba(44, 70, 155, 0.5)',
     shadowColor: colors.neon.primary,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.4,

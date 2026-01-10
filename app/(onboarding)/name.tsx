@@ -3,6 +3,7 @@ import { View, StyleSheet, Text, TextInput, KeyboardAvoidingView, Platform } fro
 import { router } from 'expo-router';
 import Animated, { FadeInRight, FadeInDown } from 'react-native-reanimated';
 import { BackgroundGradient } from '../../components/ui/BackgroundGradient';
+import { StepIndicator } from '../../components/ui/StepIndicator';
 import { NeonButton } from '../../components/ui/NeonButton';
 import { colors } from '../../theme/colors';
 
@@ -17,6 +18,8 @@ export default function NameScreen() {
 
   return (
     <BackgroundGradient>
+      <StepIndicator currentStep={2} totalSteps={5} />
+
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.container}>

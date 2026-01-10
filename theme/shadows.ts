@@ -6,20 +6,20 @@ import { ViewStyle } from 'react-native';
 export const shadows = {
   // Neon glow effect (combination of shadow and border styling)
   neonGlow: {
-    shadowColor: '#203c8e', // Unified primary blue glow
+    shadowColor: '#2c469b', // Softer primary blue glow
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
-    shadowRadius: 20,
-    elevation: 10, // For Android
+    shadowOpacity: 0.6, // Lowered opacity
+    shadowRadius: 15,
+    elevation: 8, // Lowered elevation
   } as ViewStyle,
 
   // Soft glow
   softGlow: {
-    shadowColor: '#203c8e',
+    shadowColor: '#2c469b',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 5,
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 4,
   } as ViewStyle,
 
   // Card shadow

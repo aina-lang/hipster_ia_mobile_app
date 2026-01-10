@@ -3,6 +3,7 @@ import { View, StyleSheet, Text, TouchableOpacity, ScrollView } from 'react-nati
 import { router } from 'expo-router';
 import Animated, { FadeInRight, FadeInDown } from 'react-native-reanimated';
 import { BackgroundGradient } from '../../components/ui/BackgroundGradient';
+import { StepIndicator } from '../../components/ui/StepIndicator';
 import { NeonButton } from '../../components/ui/NeonButton';
 import { colors } from '../../theme/colors';
 
@@ -19,6 +20,8 @@ export default function AgeScreen() {
 
   return (
     <BackgroundGradient>
+      <StepIndicator currentStep={3} totalSteps={5} />
+
       <View style={styles.container}>
         <Animated.View entering={FadeInRight.duration(800)} style={styles.content}>
           <Text style={styles.title}>Quel âge avez-vous ?</Text>

@@ -9,7 +9,7 @@ const blue = {
   400: '#818cf8',
   500: '#6366f1',
   600: '#4f46e5',
-  700: '#203c8e', // Base primary
+  700: '#2c469b', // Softer primary blue
   800: '#1e1b4b',
   900: '#0f172a',
   950: '#020617',
@@ -42,10 +42,10 @@ export const colors = {
 
   // Text Colors
   text: {
-    primary: '#F9FAFB',      // Near white
-    secondary: blue[300],    // Light blue for secondary text
-    muted: blue[500],        // Muted blue
-    accent: blue[400],       // Accent blue
+    primary: '#d1d5db',      // Softer light gray instead of bright white
+    secondary: '#94a3b8',    // Muted slate gray for secondary text
+    muted: '#64748b',        // Muted slate for less important text
+    accent: '#60a5fa',       // Accent blue for highlights
   },
 
   // Gradient Colors

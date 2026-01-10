@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   StyleSheet,
@@ -10,7 +10,17 @@ import {
   NativeScrollEvent,
 } from 'react-native';
 import { router } from 'expo-router';
-import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+import Animated, {
+  FadeIn,
+  FadeInDown,
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  interpolate,
+  withRepeat,
+  withSequence,
+  SharedValue,
+} from 'react-native-reanimated';
 import { BackgroundGradient } from '../../components/ui/BackgroundGradient';
 import { NeonButton } from '../../components/ui/NeonButton';
 import { colors } from '../../theme/colors';
@@ -29,24 +39,27 @@ const SLIDES = [
     title: 'Une IA à votre image',
     subtitle:
       'Personnalisez votre assistant pour obtenir des résultats parfaitement adaptés à votre style.',
-    image: require('../../assets/mockup-vrai.png'),
+    image: require('../../assets/logo.png'),
   },
   {
     id: '3',
     title: 'Prêt pour le futur ?',
     subtitle: 'Rejoignez des milliers de créateurs qui utilisent déjà nos outils de pointe.',
-    image: require('../../assets/onboarding_welcome.png'),
+    image: require('../../assets/logo.png'),
   },
 ];
 
 export default function WelcomeScreen() {
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const scrollX = useSharedValue(0);
   const flatListRef = useRef<FlatList>(null);
+  const [currentIndex, setCurrentIndex] = useState(0);
 
   const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const scrollOffset = event.nativeEvent.contentOffset.x;
-    const index = Math.round(scrollOffset / width);
-    setCurrentIndex(index);
+    scrollX.value = event.nativeEvent.contentOffset.x;
+    const index = Math.round(event.nativeEvent.contentOffset.x / width);
+    if (index !== currentIndex) {
+      setCurrentIndex(index);
+    }
   };
 
   const handleNext = () => {
@@ -56,6 +69,32 @@ export default function WelcomeScreen() {
       router.push('/(auth)/register');
     }
   };
+
+  // Shared values for the deer animation
+  const deerScale = useSharedValue(1);
+  const deerTranslateY = useSharedValue(0);
+
+  useEffect(() => {
+    deerScale.value = withRepeat(withTiming(1.05, { duration: 3000 }), -1, true);
+
+    deerTranslateY.value = withRepeat(withTiming(-10, { duration: 3500 }), -1, true);
+  }, []);
+
+  const cerfStyle = useAnimatedStyle(() => {
+    // Show deer specifically towards the end of the swiper
+    // Cross-fade based on scrollX
+    const opacity = interpolate(
+      scrollX.value,
+      [width * (SLIDES.length - 2), width * (SLIDES.length - 1)],
+      [0, 1],
+      'clamp'
+    );
+
+    return {
+      opacity,
+      transform: [{ scale: deerScale.value }, { translateY: deerTranslateY.value }],
+    };
+  });
 
   return (
     <BackgroundGradient>
@@ -69,17 +108,9 @@ export default function WelcomeScreen() {
           onScroll={handleScroll}
           scrollEventThrottle={16}
           keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <View style={styles.slide}>
-              <View style={styles.imageContainer}>
-                <Image source={item.image} style={styles.image} resizeMode="contain" />
-              </View>
-              <View style={styles.content}>
-                <Text style={styles.title}>{item.title}</Text>
-                <Text style={styles.subtitle}>{item.subtitle}</Text>
-              </View>
-            </View>
-          )}
+          renderItem={({ item, index }) => {
+            return <Slide item={item} index={index} scrollX={scrollX} />;
+          }}
         />
 
         {/* Pagination Dots */}
@@ -107,43 +138,130 @@ export default function WelcomeScreen() {
   );
 }
 
+function Slide({
+  item,
+  index,
+  scrollX,
+}: {
+  item: any;
+  index: number;
+  scrollX: SharedValue<number>;
+}) {
+  const pulseScale = useSharedValue(1);
+
+  useEffect(() => {
+    pulseScale.value = withRepeat(withTiming(1.04, { duration: 2500 }), -1, true);
+  }, []);
+
+  const animatedImageStyle = useAnimatedStyle(() => {
+    const inputRatio = index * width;
+    const opacity = interpolate(
+      scrollX.value,
+      [inputRatio - width, inputRatio, inputRatio + width],
+      [0, 1, 0]
+    );
+    const scrollScale = interpolate(
+      scrollX.value,
+      [inputRatio - width, inputRatio, inputRatio + width],
+      [0.8, 1, 0.8]
+    );
+    const translateX = interpolate(
+      scrollX.value,
+      [inputRatio - width, inputRatio, inputRatio + width],
+      [width * 0.2, 0, -width * 0.2]
+    );
+
+    return {
+      opacity,
+      transform: [{ scale: scrollScale * pulseScale.value }, { translateX }],
+    };
+  });
+
+  const animatedTextStyle = useAnimatedStyle(() => {
+    const inputRatio = index * width;
+    const opacity = interpolate(
+      scrollX.value,
+      [inputRatio - width, inputRatio, inputRatio + width],
+      [0, 1, 0]
+    );
+    const translateY = interpolate(
+      scrollX.value,
+      [inputRatio - width, inputRatio, inputRatio + width],
+      [20, 0, 20]
+    );
+
+    return {
+      opacity,
+      transform: [{ translateY }],
+    };
+  });
+
+  return (
+    <View style={styles.slide}>
+      <Animated.View style={[styles.imageContainer, animatedImageStyle]}>
+        <Image source={item.image} style={styles.image} resizeMode="cover" />
+      </Animated.View>
+
+      <Animated.View style={[styles.content, animatedTextStyle]}>
+        <Text style={styles.title}>{item.title}</Text>
+        <Text style={styles.subtitle}>{item.subtitle}</Text>
+      </Animated.View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  cerf: {
+    position: 'absolute',
+    width: width * 0.8,
+    height: width * 0.8,
+    top: height * 0.1,
+    left: width * 0.1,
+    zIndex: 0,
+    opacity: 0,
+  },
+  fullImage: {
+    width: '100%',
+    height: '100%',
   },
   slide: {
     width,
     alignItems: 'center',
     paddingHorizontal: 32,
+    zIndex: 1,
   },
   imageContainer: {
-    width: width * 0.8,
-    height: height * 0.4,
+    width: width * 0.7,
+    height: height * 0.5,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 40,
+    marginTop: 60,
   },
   image: {
     width: '100%',
     height: '100%',
+    borderRadius: 24,
   },
   content: {
     alignItems: 'center',
-    marginTop: 40,
+    marginTop: 20,
   },
   title: {
     fontSize: 28,
     fontWeight: '700',
     color: colors.text.primary,
     textAlign: 'center',
-    marginBottom: 16,
+    marginBottom: 12,
     letterSpacing: -0.5,
   },
   subtitle: {
     fontSize: 16,
     color: colors.text.secondary,
     textAlign: 'center',
-    lineHeight: 24,
+    lineHeight: 22,
   },
   pagination: {
     flexDirection: 'row',

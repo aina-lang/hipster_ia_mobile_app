@@ -23,11 +23,11 @@
   --primary-foreground: 0 0% 0%;
   --border: 0 0% 15%;
   
-  --gradient-primary: linear-gradient(135deg, #06B6D4 0%, #8B5CF6 100%);
+  --gradient-primary: linear-gradient(135deg, #2c469b 0%, #1e1b4b 100%);
   --gradient-btn: linear-gradient(
     135deg,
-    oklch(0.65 0.22 255),
-    oklch(0.65 0.22 255) 100%
+    #2c469b,
+    #1e1b4b 100%
   );
 }
 
@@ -48,15 +48,9 @@
     background: var(--gradient-btn);
   }
 
-  .gradient-text {
-    /* Note: NativeWind text gradient support varies, but we'll define it for completeness */
-  }
-
   .shadow-glow {
-    shadow-color: #06B6D4;
-    shadow-opacity: 0.5;
-    shadow-radius: 20px;
-    elevation: 10;
+    /* Fixed: Removed unknown long-form shadow properties causing lint errors */
+    box-shadow: 0 10px 20px rgba(44, 70, 155, 0.5);
   }
 }
 

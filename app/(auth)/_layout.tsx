@@ -5,7 +5,7 @@ import '../../global.css';
 export default function AuthLayout() {
   return (
     <ImageBackground
-      source={require('../../assets/bg.jpeg')}
+      source={require('../../assets/bg.jpg')}
       style={styles.container}
       resizeMode="cover">
       <View style={[StyleSheet.absoluteFillObject, styles.overlay]} />

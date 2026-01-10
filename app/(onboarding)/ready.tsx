@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { Rocket, CheckCircle2 } from 'lucide-react-native';
 import { BackgroundGradient } from '../../components/ui/BackgroundGradient';
+import { StepIndicator } from '../../components/ui/StepIndicator';
 import { NeonButton } from '../../components/ui/NeonButton';
 import { colors } from '../../theme/colors';
 
@@ -12,6 +13,8 @@ const { width } = Dimensions.get('window');
 export default function ReadyScreen() {
   return (
     <BackgroundGradient>
+      <StepIndicator currentStep={5} totalSteps={5} />
+
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         {/* Animated Icon */}
         <Animated.View entering={FadeIn.duration(1000)} style={styles.iconContainer}>
