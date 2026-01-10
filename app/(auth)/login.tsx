@@ -7,22 +7,42 @@ import {
   KeyboardAvoidingView,
   Platform,
   TouchableOpacity,
+  Alert,
 } from 'react-native';
 import { router } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { Eye, EyeOff } from 'lucide-react-native';
+import { Eye, EyeOff, AlertCircle } from 'lucide-react-native';
 import { BackgroundGradient } from '../../components/ui/BackgroundGradient';
 import { NeonButton } from '../../components/ui/NeonButton';
 import { colors } from '../../theme/colors';
+import { useAuthStore } from '../../store/authStore';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
-  const handleLogin = () => {
-    // Navigate to personalization flow after successful login
-    router.push('/(onboarding)/setup');
+  const { aiLogin, isLoading, error, clearError } = useAuthStore();
+
+  const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert('Erreur', 'Veuillez remplir tous les champs.');
+      return;
+    }
+
+    try {
+      await aiLogin({ email, password });
+      router.push('/(onboarding)/setup');
+    } catch (e: any) {
+      // Handle the case where email needs verification
+      if (e.response?.data?.needsVerification) {
+        router.push({
+          pathname: '/(auth)/verify-email',
+          params: { email },
+        });
+      }
+      console.log('Login failed:', e.message);
+    }
   };
 
   return (
@@ -34,6 +54,13 @@ export default function LoginScreen() {
           <Text style={styles.title}>Bon retour !</Text>
           <Text style={styles.subtitle}>Connectez-vous pour continuer l'expérience IA.</Text>
 
+          {error && (
+            <View style={styles.errorContainer}>
+              <AlertCircle size={20} color={colors.status.error} />
+              <Text style={styles.errorText}>{error}</Text>
+            </View>
+          )}
+
           <View style={styles.form}>
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Email</Text>
@@ -42,7 +69,10 @@ export default function LoginScreen() {
                 placeholder="votre@email.com"
                 placeholderTextColor={colors.text.muted}
                 value={email}
-                onChangeText={setEmail}
+                onChangeText={(text) => {
+                  setEmail(text);
+                  if (error) clearError();
+                }}
                 autoCapitalize="none"
                 keyboardType="email-address"
               />
@@ -56,7 +86,10 @@ export default function LoginScreen() {
                   placeholder="••••••••"
                   placeholderTextColor={colors.text.muted}
                   value={password}
-                  onChangeText={setPassword}
+                  onChangeText={(text) => {
+                    setPassword(text);
+                    if (error) clearError();
+                  }}
                   secureTextEntry={!showPassword}
                 />
                 <TouchableOpacity
@@ -80,6 +113,7 @@ export default function LoginScreen() {
               onPress={handleLogin}
               size="lg"
               variant="premium"
+              loading={isLoading}
               style={styles.loginButton}
             />
 
@@ -115,6 +149,22 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.text.secondary,
     marginBottom: 40,
+  },
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 20,
+    gap: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.2)',
+  },
+  errorText: {
+    color: colors.status.error,
+    fontSize: 14,
+    flex: 1,
   },
   form: {
     width: '100%',

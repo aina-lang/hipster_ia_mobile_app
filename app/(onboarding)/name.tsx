@@ -1,18 +1,33 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, Text, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
+import {
+  View,
+  StyleSheet,
+  Text,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
+  Alert,
+} from 'react-native';
 import { router } from 'expo-router';
 import Animated, { FadeInRight, FadeInDown } from 'react-native-reanimated';
 import { BackgroundGradient } from '../../components/ui/BackgroundGradient';
 import { StepIndicator } from '../../components/ui/StepIndicator';
 import { NeonButton } from '../../components/ui/NeonButton';
 import { colors } from '../../theme/colors';
+import { useUserStore } from '../../store/useUserStore';
 
 export default function NameScreen() {
   const [name, setName] = useState('');
+  const { updateProfile, isUpdating } = useUserStore();
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (name.trim()) {
-      router.push('/(onboarding)/age');
+      try {
+        await updateProfile({ firstName: name.trim() });
+        router.push('/(onboarding)/age');
+      } catch (error: any) {
+        Alert.alert('Erreur', 'Échec de la mise à jour du profil. Veuillez réessayer.');
+      }
     }
   };
 
@@ -50,6 +65,7 @@ export default function NameScreen() {
             size="lg"
             variant="premium"
             disabled={!name.trim()}
+            loading={isUpdating}
             style={styles.button}
           />
         </Animated.View>
