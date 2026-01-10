@@ -7,10 +7,18 @@ import { BackgroundGradient } from '../../components/ui/BackgroundGradient';
 import { StepIndicator } from '../../components/ui/StepIndicator';
 import { NeonButton } from '../../components/ui/NeonButton';
 import { colors } from '../../theme/colors';
+import { useAuthStore } from 'store/authStore';
 
 const { width } = Dimensions.get('window');
 
 export default function ReadyScreen() {
+  const { finishOnboarding } = useAuthStore();
+
+  const handleStart = () => {
+    finishOnboarding();
+    router.replace('/(tabs)');
+  };
+
   return (
     <BackgroundGradient>
       <StepIndicator currentStep={5} totalSteps={5} />
@@ -45,7 +53,7 @@ export default function ReadyScreen() {
           style={styles.buttonContainer}>
           <NeonButton
             title="Démarrer l'aventure"
-            onPress={() => router.replace('/')}
+            onPress={handleStart}
             size="lg"
             variant="premium"
             style={styles.button}

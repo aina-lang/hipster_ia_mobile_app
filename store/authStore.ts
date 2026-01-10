@@ -30,6 +30,7 @@ interface User {
 interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
+  hasFinishedOnboarding: boolean;
   isLoading: boolean;
   error: string | null;
   login: (credentials: any) => Promise<void>;
@@ -39,6 +40,7 @@ interface AuthState {
   logout: () => Promise<void>;
   clearError: () => void;
   updateUser: (userData: Partial<User>) => void;
+  finishOnboarding: () => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -46,10 +48,13 @@ export const useAuthStore = create<AuthState>()(
     (set, get) => ({
       user: null,
       isAuthenticated: false,
+      hasFinishedOnboarding: false,
       isLoading: false,
       error: null,
 
       clearError: () => set({ error: null }),
+
+      finishOnboarding: () => set({ hasFinishedOnboarding: true }),
 
       updateUser: (userData) => {
         const currentUser = get().user;
