@@ -101,8 +101,17 @@ export default function ProfileScreen() {
       <SafeAreaView style={styles.container}>
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <View style={styles.header}>
-            <Text style={styles.title}>Mon Profil</Text>
-            <Text style={styles.subtitle}>Gérez vos informations et votre abonnement</Text>
+            <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+              <ChevronRight
+                size={24}
+                color={colors.text.primary}
+                style={{ transform: [{ rotate: '180deg' }] }}
+              />
+            </TouchableOpacity>
+            <View>
+              <Text style={styles.title}>Mon Profil</Text>
+              <Text style={styles.subtitle}>Gérez vos informations et votre abonnement</Text>
+            </View>
           </View>
 
           {/* Profile Card */}
@@ -194,14 +203,28 @@ export default function ProfileScreen() {
 
             <View style={styles.planCard}>
               <View style={styles.planInfo}>
-                <Text style={styles.planName}>Hipster Gratuit</Text>
-                <Text style={styles.planStatus}>Actif</Text>
+                <Text style={styles.planName}>
+                  {user?.aiProfile?.planType
+                    ? `Hipster ${user.aiProfile.planType.toUpperCase()}`
+                    : 'Hipster Gratuit'}
+                </Text>
+                <Text style={styles.planStatus}>
+                  {user?.aiProfile?.subscriptionStatus === 'active' ? 'Actif' : 'Gratuit'}
+                </Text>
               </View>
-              <Text style={styles.planDescription}>Accès limité aux fonctionnalités de base.</Text>
+              <Text style={styles.planDescription}>
+                {user?.aiProfile?.planType === 'premium'
+                  ? 'Profitez de toutes les fonctionnalités illimitées.'
+                  : 'Accès limité aux fonctionnalités de base.'}
+              </Text>
               <View style={{ width: '100%' }}>
                 <NeonButton
-                  title="Passer Premium"
-                  onPress={() => {}}
+                  title={
+                    user?.aiProfile?.planType === 'premium'
+                      ? "Gérer l'abonnement"
+                      : 'Passer Premium'
+                  }
+                  onPress={() => router.push('/(drawer)/subscription')}
                   icon={<Sparkles size={18} color="#000" />}
                   variant="premium"
                 />
@@ -225,6 +248,23 @@ export default function ProfileScreen() {
           <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
             <LogOut size={20} color={colors.status.error} />
             <Text style={styles.logoutText}>Se déconnecter</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.logoutButton, { marginTop: 8, opacity: 0.7 }]}
+            onPress={async () => {
+              try {
+                const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+                await AsyncStorage.clear();
+                alert('Application réinitialisée. Veuillez redémarrer si nécessaire.');
+                router.replace('/(auth)/login');
+              } catch (e) {
+                console.error(e);
+              }
+            }}>
+            <Text style={[styles.logoutText, { fontSize: 14 }]}>
+              Réinitialiser l'application (Dev)
+            </Text>
           </TouchableOpacity>
         </ScrollView>
       </SafeAreaView>
@@ -321,7 +361,14 @@ const styles = StyleSheet.create({
   },
   header: {
     marginBottom: 30,
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 16,
+  },
+  backButton: {
+    padding: 8,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 12,
   },
   title: {
     fontSize: 28,

@@ -2,7 +2,7 @@ module.exports = function(api) {
   api.cache(true);
   let plugins = [];
 
-  plugins.push('expo-router/babel');
+  // 'expo-router/babel' is deprecated in SDK 50+, already in babel-preset-expo
   plugins.push('react-native-worklets/plugin');
 
   return {

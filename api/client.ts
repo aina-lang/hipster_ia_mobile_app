@@ -1,9 +1,14 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { LogBox } from 'react-native';
+
+// Ignore specific warnings
+LogBox.ignoreLogs([
+  'SafeAreaView has been deprecated',
+]);
 
 
-const BASE_URL = 'https://hipster-api.fr/api'; 
-
+const BASE_URL = 'https://hipster-api.fr/api'; // Pointing to local backend to fix 401/connectivity issues
 export const api = axios.create({
   baseURL: BASE_URL,
   headers: {
@@ -15,8 +20,12 @@ export const api = axios.create({
 api.interceptors.request.use(
   async (config) => {
     const token = await AsyncStorage.getItem('access_token');
+    // console.log(`[API Request] ${config.method?.toUpperCase()} ${config.url}`);
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+      // console.log('[API Request] Token attached');
+    } else {
+      console.warn('[API Request] No token found in storage');
     }
     return config;
   },

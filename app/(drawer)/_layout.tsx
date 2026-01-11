@@ -155,6 +155,14 @@ export default function DrawerLayout() {
             drawerIcon: ({ color, size }) => <History size={size} color={color} />,
           }}
         />
+        <Drawer.Screen
+          name="subscription"
+          options={{
+            drawerLabel: 'Abonnement',
+            title: 'Abonnement',
+            drawerItemStyle: { display: 'none' }, // Hide from drawer menu if preferred, but keep it accessible via navigation
+          }}
+        />
       </Drawer>
     </GestureHandlerRootView>
   );

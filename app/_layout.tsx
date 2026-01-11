@@ -5,6 +5,8 @@ import { useAuthStore } from '../store/authStore';
 import '../global.css';
 import { KeyboardAvoidingView, Platform } from 'react-native';
 
+import { StripeProvider } from '@stripe/stripe-react-native';
+
 export default function RootLayout() {
   const { isAuthenticated, hasFinishedOnboarding } = useAuthStore();
   const segments = useSegments();
@@ -15,23 +17,28 @@ export default function RootLayout() {
     const timeout = setTimeout(() => {
       const inAuthGroup = segments[0] === '(auth)';
       const inOnboardingGroup = segments[0] === '(onboarding)';
-      const inTabsGroup = segments[0] === '(tabs)';
+      const inDrawerGroup = segments[0] === '(drawer)';
 
-      if (
-        !isAuthenticated &&
-        !inAuthGroup &&
-        segments[0] !== '(onboarding)' &&
-        segments[0] !== undefined
-      ) {
-        router.replace('/(auth)/login');
-      } else if (isAuthenticated) {
-        if (!hasFinishedOnboarding && !inOnboardingGroup) {
-          router.replace('/(onboarding)/setup');
-        } else if (
-          hasFinishedOnboarding &&
-          (inAuthGroup || inOnboardingGroup || segments[0] === undefined)
-        ) {
-          router.replace('/(drawer)');
+      if (!hasFinishedOnboarding) {
+        // Scenario 1: First install / Onboarding not finished
+        // Force redirect to onboarding if not already there
+        if (!inOnboardingGroup) {
+          router.replace('/(onboarding)/welcome');
+        }
+      } else {
+        // Onboarding finished
+        if (isAuthenticated) {
+          // Scenario 3: Connected -> Go to Home (Drawer)
+          // If we are in Auth or Onboarding or Root, go to Drawer
+          if (inAuthGroup || inOnboardingGroup) {
+            router.replace('/(drawer)');
+          }
+        } else {
+          // Scenario 2: Not connected -> Go to Login
+          // If we are getting redirected from onboarding or root, go to Login
+          if (!inAuthGroup) {
+            router.replace('/(auth)/login');
+          }
         }
       }
     }, 1);
@@ -40,18 +47,20 @@ export default function RootLayout() {
   }, [isAuthenticated, hasFinishedOnboarding, segments]);
 
   return (
-    <>
+    <StripeProvider
+      publishableKey="pk_test_placeholder"
+      merchantIdentifier="merchant.com.hipster" // Added to avoid 'merchantIdentifier' undefined error
+    >
       <Stack
         screenOptions={{
           headerShown: false,
         }}>
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
         <Stack.Screen name="(onboarding)" options={{ headerShown: false }} />
-          <Stack.Screen name="(drawer)" options={{ headerShown: false }} />
-          <Stack.Screen name="(guided)" options={{ headerShown: false }} />
-        </Stack>
-        <StatusBar style="light" />
-      
-    </>
+        <Stack.Screen name="(drawer)" options={{ headerShown: false }} />
+        <Stack.Screen name="(guided)" options={{ headerShown: false }} />
+      </Stack>
+      <StatusBar style="light" />
+    </StripeProvider>
   );
 }

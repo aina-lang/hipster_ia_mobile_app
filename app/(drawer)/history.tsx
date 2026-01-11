@@ -116,8 +116,17 @@ export default function HistoryScreen() {
     <BackgroundGradient>
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.title}>Historique</Text>
-          <Text style={styles.subtitle}>Retrouvez toutes vos créations</Text>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <ChevronRight
+              size={24}
+              color={colors.text.primary}
+              style={{ transform: [{ rotate: '180deg' }] }}
+            />
+          </TouchableOpacity>
+          <View>
+            <Text style={styles.title}>Historique</Text>
+            <Text style={styles.subtitle}>Retrouvez toutes vos créations</Text>
+          </View>
         </View>
 
         {/* Filters */}
@@ -171,6 +180,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 20,
     paddingBottom: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  backButton: {
+    padding: 8,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 12,
   },
   title: {
     fontSize: 28,

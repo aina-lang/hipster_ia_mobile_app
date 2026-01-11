@@ -43,6 +43,12 @@ interface User {
     employee?: any;
   };
   profile?: any; // Specifically for AI platform users
+  aiProfile?: {
+    planType: string;
+    subscriptionStatus: string;
+    credits: number;
+    nextRenewalDate?: string;
+  };
   type?: 'ai' | 'standard'; // To distinguish entre standard and ai users
 }
 

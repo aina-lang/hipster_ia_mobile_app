@@ -6,6 +6,7 @@ import {
   ScrollView,
   ActivityIndicator,
   TouchableOpacity,
+  Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { colors } from '../../theme/colors';
@@ -14,6 +15,7 @@ import { DeerAnimation } from '../../components/ui/DeerAnimation';
 import { NeonButton } from '../../components/ui/NeonButton';
 import { useCreationStore } from '../../store/creationStore';
 import { Check, Copy, Share, Home } from 'lucide-react-native';
+import { AiService } from '../../api/ai.service';
 
 export default function Step5ResultScreen() {
   const router = useRouter();
@@ -22,21 +24,44 @@ export default function Step5ResultScreen() {
   const [result, setResult] = useState<string | null>(null);
 
   useEffect(() => {
-    // Simulate API generation delay
-    const timer = setTimeout(() => {
-      setLoading(false);
-      setResult(
-        `[GÉNÉRATION SIMULÉE]\n\n` +
-          `Pour : ${selectedJob} - ${selectedType}\n` +
-          `Contexte : ${selectedContext || 'Aucun'}\n\n` +
-          `Proposition :\n` +
-          `Découvrez notre nouvelle collection exclusive ! ✨\n` +
-          `Idéale pour la saison, nous avons préparé le meilleur pour vous.\n` +
-          `Venez nous voir dès aujourd'hui !`
-      );
-    }, 3000);
+    const generateContent = async () => {
+      try {
+        setLoading(true);
+        let resultData: any;
 
-    return () => clearTimeout(timer);
+        const prompt = `Je suis un ${selectedJob}. Contexte: ${selectedContext || 'Aucun'}. Demande: ${userQuery}`;
+
+        if (selectedType === 'Texte') {
+          // Default logic: use 'social' unless it looks like an ad
+          const type =
+            selectedContext === 'Soldes' || userQuery.toLowerCase().includes('promo')
+              ? 'ad'
+              : 'social';
+          resultData = await AiService.generateText(prompt, type);
+          setResult(resultData.content);
+        } else if (selectedType === 'Image') {
+          resultData = await AiService.generateImage(prompt, 'realistic'); // Default style
+          setResult(resultData.url); // Assuming it returns { url: ... }
+        } else if (selectedType === 'Document') {
+          resultData = await AiService.generateDocument('business', {
+            job: selectedJob,
+            context: selectedContext,
+            details: userQuery,
+          });
+          setResult(resultData.content);
+        } else {
+          // Fallback or error
+          setResult('Type de création non supporté.');
+        }
+      } catch (error) {
+        console.error('Generation error:', error);
+        setResult('Une erreur est survenue lors de la génération. Veuillez réessayer.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    generateContent();
   }, []);
 
   const handleFinish = () => {
@@ -68,7 +93,11 @@ export default function Step5ResultScreen() {
           </View>
 
           <View style={styles.resultCard}>
-            <Text style={styles.resultText}>{result}</Text>
+            {selectedType === 'Image' && result ? (
+              <Image source={{ uri: result }} style={styles.generatedImage} resizeMode="cover" />
+            ) : (
+              <Text style={styles.resultText}>{result}</Text>
+            )}
 
             <View style={styles.actionsRow}>
               <TouchableOpacity style={styles.iconButton}>
@@ -158,6 +187,12 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     fontSize: 16,
     lineHeight: 24,
+    marginBottom: 24,
+  },
+  generatedImage: {
+    width: '100%',
+    height: 300,
+    borderRadius: 12,
     marginBottom: 24,
   },
   actionsRow: {
