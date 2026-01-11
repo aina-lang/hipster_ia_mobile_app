@@ -3,6 +3,7 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useAuthStore } from '../store/authStore';
 import '../global.css';
+import { KeyboardAvoidingView, Platform } from 'react-native';
 
 export default function RootLayout() {
   const { isAuthenticated, hasFinishedOnboarding } = useAuthStore();
@@ -46,10 +47,11 @@ export default function RootLayout() {
         }}>
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
         <Stack.Screen name="(onboarding)" options={{ headerShown: false }} />
-        <Stack.Screen name="(drawer)" options={{ headerShown: false }} />
-        <Stack.Screen name="(guided)" options={{ headerShown: false }} />
-      </Stack>
-      <StatusBar style="light" />
+          <Stack.Screen name="(drawer)" options={{ headerShown: false }} />
+          <Stack.Screen name="(guided)" options={{ headerShown: false }} />
+        </Stack>
+        <StatusBar style="light" />
+      
     </>
   );
 }

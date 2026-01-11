@@ -6,22 +6,16 @@ import { BackgroundGradient } from '../../components/ui/BackgroundGradient';
 import { DeerAnimation } from '../../components/ui/DeerAnimation';
 import { NeonButton } from '../../components/ui/NeonButton';
 import { useCreationStore } from '../../store/creationStore';
-import { Mic, MicOff, Keyboard, Sparkles } from 'lucide-react-native';
+import { Keyboard, Sparkles } from 'lucide-react-native';
 
 export default function Step4CreateScreen() {
   const router = useRouter();
-  const { setQuery, userQuery, isDictating, setDictating, selectedJob, selectedType } =
-    useCreationStore();
+  const { setQuery, userQuery, selectedJob, selectedType } = useCreationStore();
   const [inputText, setInputText] = useState(userQuery);
 
   const handleCreate = () => {
     setQuery(inputText);
     router.push('/(guided)/step5-result');
-  };
-
-  const toggleDictation = () => {
-    // This is a simulation since we don't have real dictation API in this environment
-    setDictating(!isDictating);
   };
 
   return (
@@ -51,22 +45,11 @@ export default function Step4CreateScreen() {
                 value={inputText}
                 onChangeText={setInputText}
               />
-              <TouchableOpacity style={styles.micButton} onPress={toggleDictation}>
-                {isDictating ? (
-                  <MicOff size={24} color={colors.status.error} />
-                ) : (
-                  <Mic size={24} color={colors.primary.main} />
-                )}
-              </TouchableOpacity>
             </View>
-
-            {isDictating && <Text style={styles.dictationHint}>Écoute en cours... (Simulé)</Text>}
 
             <View style={styles.hintContainer}>
               <Keyboard size={16} color={colors.text.muted} />
-              <Text style={styles.hintText}>
-                Astuce : appuie sur le micro de ton clavier pour dicter.
-              </Text>
+              <Text style={styles.hintText}>Astuce : soyez précis pour un meilleur résultat.</Text>
             </View>
           </View>
 
@@ -88,7 +71,7 @@ export default function Step4CreateScreen() {
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    paddingTop: 80,
+    paddingTop: 200,
     paddingBottom: 40,
   },
   content: {
@@ -128,22 +111,7 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     fontSize: 16,
     padding: 16,
-    paddingRight: 50, // Space for mic
     minHeight: 150,
-  },
-  micButton: {
-    position: 'absolute',
-    bottom: 16,
-    right: 16,
-    padding: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderRadius: 20,
-  },
-  dictationHint: {
-    color: colors.status.success,
-    fontSize: 14,
-    marginTop: 8,
-    textAlign: 'center',
   },
   hintContainer: {
     flexDirection: 'row',

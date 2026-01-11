@@ -6,14 +6,12 @@ import { BackgroundGradient } from '../../components/ui/BackgroundGradient';
 import { DeerAnimation } from '../../components/ui/DeerAnimation';
 import { SelectionCard } from '../../components/ui/SelectionCard';
 import { useCreationStore, CreationType } from '../../store/creationStore';
-import { Share2, Globe, FileText, Tag, Calendar } from 'lucide-react-native';
+import { FileText, Image, File } from 'lucide-react-native';
 
 const TYPES: { label: CreationType; icon: any }[] = [
-  { label: 'Réseaux sociaux', icon: Share2 },
-  { label: 'Site web', icon: Globe },
-  { label: 'Flyers', icon: FileText },
-  { label: 'Promotions', icon: Tag },
-  { label: 'Événements', icon: Calendar },
+  { label: 'Texte', icon: FileText },
+  { label: 'Image', icon: Image },
+  { label: 'Document', icon: File },
 ];
 
 export default function Step2TypeScreen() {
@@ -61,7 +59,7 @@ export default function Step2TypeScreen() {
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    paddingTop: 80,
+    paddingTop: 200,
     paddingBottom: 40,
   },
   content: {

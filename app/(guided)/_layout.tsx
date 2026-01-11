@@ -53,9 +53,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background.dark,
+   
   },
   headerContainer: {
     backgroundColor: 'transparent',
+    
   },
   headerContent: {
     flexDirection: 'row',
@@ -63,6 +65,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 10,
+    
   },
   backButton: {
     padding: 8,

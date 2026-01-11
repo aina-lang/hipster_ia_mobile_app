@@ -13,7 +13,7 @@ export function BackgroundGradient({ children }: BackgroundGradientProps) {
       <Image
         source={require('../../assets/bg.jpg')}
         style={StyleSheet.absoluteFill}
-        resizeMode="cover"
+        resizeMode="contain"
       />
       <View style={[StyleSheet.absoluteFill, styles.overlay]} />
       {children}
@@ -24,7 +24,7 @@ export function BackgroundGradient({ children }: BackgroundGradientProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'transparent',
+    backgroundColor:colors.background.primary,
   },
   overlay: {
     backgroundColor: 'rgba(2, 6, 23, 0.4)',

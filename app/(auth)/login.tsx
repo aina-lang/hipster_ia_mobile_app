@@ -14,6 +14,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Eye, EyeOff, AlertCircle } from 'lucide-react-native';
 import { BackgroundGradient } from '../../components/ui/BackgroundGradient';
 import { NeonButton } from '../../components/ui/NeonButton';
+import { GenericModal } from '../../components/ui/GenericModal';
 import { colors } from '../../theme/colors';
 import { useAuthStore } from '../../store/authStore';
 
@@ -22,26 +23,49 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
+  // Modal State
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalType, setModalType] = useState<any>('info');
+  const [modalTitle, setModalTitle] = useState('');
+  const [modalMessage, setModalMessage] = useState('');
+
   const { aiLogin, isLoading, error, clearError } = useAuthStore();
+
+  const showModal = (type: any, title: string, message: string = '') => {
+    setModalType(type);
+    setModalTitle(title);
+    setModalMessage(message);
+    setModalVisible(true);
+  };
 
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert('Erreur', 'Veuillez remplir tous les champs.');
+      showModal('warning', 'Champs manquants', 'Veuillez remplir tous les champs pour continuer.');
       return;
     }
 
+    // Show blocking loading modal
+    showModal('loading', 'Connexion en cours...', 'Veuillez patienter');
+
     try {
       await aiLogin({ email, password });
+      // On success, we can briefly show success or let the router handle it.
+      // Since aiLogin might resolve before navigation, we kept it simple.
+      // If we want a success transition:
+      setModalVisible(false); // Close loading
       router.push('/(onboarding)/setup');
     } catch (e: any) {
+      // Keep modal open but switch to error
+      showModal('error', 'Échec de la connexion', e.message || 'Une erreur est survenue.');
+
       // Handle the case where email needs verification
       if (e.response?.data?.needsVerification) {
+        setModalVisible(false);
         router.push({
           pathname: '/(auth)/verify-email',
           params: { email },
         });
       }
-      console.log('Login failed:', e.message);
     }
   };
 
@@ -53,13 +77,6 @@ export default function LoginScreen() {
         <Animated.View entering={FadeInDown.duration(800)} style={styles.content}>
           <Text style={styles.title}>Bon retour !</Text>
           <Text style={styles.subtitle}>Connectez-vous pour continuer l'expérience IA.</Text>
-
-          {error && (
-            <View style={styles.errorContainer}>
-              <AlertCircle size={20} color={colors.status.error} />
-              <Text style={styles.errorText}>{error}</Text>
-            </View>
-          )}
 
           <View style={styles.form}>
             <View style={styles.inputContainer}>
@@ -114,6 +131,7 @@ export default function LoginScreen() {
               size="lg"
               variant="premium"
               loading={isLoading}
+              disabled={isLoading} // Explicit disable
               style={styles.loginButton}
             />
 
@@ -125,6 +143,14 @@ export default function LoginScreen() {
             </View>
           </View>
         </Animated.View>
+
+        <GenericModal
+          visible={modalVisible}
+          type={modalType}
+          title={modalTitle}
+          message={modalMessage}
+          onClose={() => setModalVisible(false)}
+        />
       </KeyboardAvoidingView>
     </BackgroundGradient>
   );

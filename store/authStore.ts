@@ -4,11 +4,30 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api } from '../api/client';
 
 const extractErrorMessage = (error: any, defaultMessage: string) => {
-  const apiMessage = error.response?.data?.message;
-  if (typeof apiMessage === 'string') return apiMessage;
-  if (typeof apiMessage === 'object' && apiMessage.message) {
-    return Array.isArray(apiMessage.message) ? apiMessage.message[0] : apiMessage.message;
+  const responseData = error.response?.data;
+  
+  if (!responseData) return defaultMessage;
+
+  // Case 1: Direct message string
+  if (typeof responseData.message === 'string') {
+    return responseData.message;
   }
+
+  // Case 2: Array of messages (ValidationPipe)
+  if (Array.isArray(responseData.message)) {
+    return responseData.message[0];
+  }
+
+  // Case 3: Message nested in data (sometimes specific API wrappers do this)
+  if (responseData.data && typeof responseData.data.message === 'string') {
+    return responseData.data.message;
+  }
+
+  // Case 4: Top level error property
+  if (responseData.error && typeof responseData.error === 'string') {
+    return responseData.error;
+  }
+
   return defaultMessage;
 };
 
@@ -40,6 +59,8 @@ interface AuthState {
   logout: () => Promise<void>;
   clearError: () => void;
   updateUser: (userData: Partial<User>) => void;
+  updateProfile: (data: { firstName: string; lastName: string }) => Promise<void>;
+  changePassword: (data: any) => Promise<void>;
   finishOnboarding: () => void;
 }
 
@@ -60,6 +81,45 @@ export const useAuthStore = create<AuthState>()(
         const currentUser = get().user;
         if (currentUser) {
           set({ user: { ...currentUser, ...userData } });
+        }
+      },
+
+      updateProfile: async (data) => {
+        set({ isLoading: true, error: null });
+        try {
+          // Call API to update profile
+          await api.patch('/users/me', data);
+          
+          // Update local state
+          const currentUser = get().user;
+          if (currentUser) {
+            set({ user: { ...currentUser, ...data } });
+          }
+          set({ isLoading: false });
+        } catch (error: any) {
+          const message = extractErrorMessage(error, 'Erreur lors de la mise à jour du profil.');
+          set({ error: message, isLoading: false });
+          throw error;
+        }
+      },
+
+      changePassword: async (data) => {
+        set({ isLoading: true, error: null });
+        try {
+          const user = get().user;
+          if (!user) throw new Error('Utilisateur non connecté');
+
+          const endpoint = user.type === 'ai' ? '/ai/auth/change-password' : '/change-password';
+
+          await api.put(endpoint, {
+            id: user.id,
+            ...data
+          });
+          set({ isLoading: false });
+        } catch (error: any) {
+          const message = extractErrorMessage(error, 'Erreur lors du changement de mot de passe.');
+          set({ error: message, isLoading: false });
+          throw error;
         }
       },
 

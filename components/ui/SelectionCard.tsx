@@ -55,7 +55,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   selectedContainer: {
-    backgroundColor: 'rgba(57, 255, 20, 0.1)',
+    backgroundColor: colors.primary.main + '1A', // 10% opacity
     borderColor: colors.primary.main,
   },
   iconContainer: {
@@ -67,7 +67,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   selectedIconContainer: {
-    backgroundColor: 'rgba(57, 255, 20, 0.1)',
+    backgroundColor: colors.primary.main + '33', // 20% opacity
   },
   label: {
     color: colors.text.secondary,

@@ -6,7 +6,15 @@ import { BackgroundGradient } from '../../components/ui/BackgroundGradient';
 import { DeerAnimation } from '../../components/ui/DeerAnimation';
 import { SelectionCard } from '../../components/ui/SelectionCard';
 import { useCreationStore, JobType } from '../../store/creationStore';
-import { Scissors, UtensilsCrossed, Store, Palette, Hammer, MapPin } from 'lucide-react-native';
+import {
+  Scissors,
+  UtensilsCrossed,
+  Store,
+  Palette,
+  Hammer,
+  MapPin,
+  MoreHorizontal,
+} from 'lucide-react-native';
 
 const JOBS: { label: JobType; icon: any }[] = [
   { label: 'Coiffeur', icon: Scissors },
@@ -15,22 +23,44 @@ const JOBS: { label: JobType; icon: any }[] = [
   { label: 'Créateur', icon: Palette },
   { label: 'Artisan', icon: Hammer },
   { label: 'Service local', icon: MapPin },
+  { label: 'Autre', icon: MoreHorizontal },
 ];
+
+import { NeonButton } from '../../components/ui/NeonButton';
+import { TextInput, Keyboard } from 'react-native';
+
+// ... (existing imports, ensure NeonButton, TextInput are imported)
 
 export default function Step1JobScreen() {
   const router = useRouter();
   const { setJob, selectedJob } = useCreationStore();
+  const [customJob, setCustomJob] = React.useState('');
+  const [showInput, setShowInput] = React.useState(false);
 
-  const handleSelect = (job: JobType) => {
-    setJob(job);
-    setTimeout(() => {
+  const handleSelect = (job: string) => {
+    if (job === 'Autre') {
+      setShowInput(true);
+      setCustomJob('');
+      setJob('Autre'); // Temporarily set to Autre to highlight the card
+    } else {
+      setShowInput(false);
+      setJob(job as JobType);
+      setTimeout(() => {
+        router.push('/(guided)/step2-type');
+      }, 300);
+    }
+  };
+
+  const handleCustomSubmit = () => {
+    if (customJob.trim()) {
+      setJob(customJob.trim() as JobType);
       router.push('/(guided)/step2-type');
-    }, 300); // Small delay for visual feedback
+    }
   };
 
   return (
     <BackgroundGradient>
-      <ScrollView contentContainerStyle={styles.container}>
+      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
         <View style={styles.content}>
           <View style={styles.header}>
             <Text style={styles.title}>Quel est votre métier ?</Text>
@@ -47,12 +77,31 @@ export default function Step1JobScreen() {
                 <SelectionCard
                   label={job.label}
                   icon={job.icon}
-                  selected={selectedJob === job.label}
+                  selected={selectedJob === job.label || (job.label === 'Autre' && showInput)}
                   onPress={() => handleSelect(job.label)}
                 />
               </View>
             ))}
           </View>
+
+          {showInput && (
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={styles.input}
+                placeholder="Précisez votre métier..."
+                placeholderTextColor={colors.text.muted}
+                value={customJob}
+                onChangeText={setCustomJob}
+                autoFocus
+              />
+              <NeonButton
+                title="Continuer"
+                onPress={handleCustomSubmit}
+                disabled={!customJob.trim()}
+                size="md"
+              />
+            </View>
+          )}
         </View>
       </ScrollView>
     </BackgroundGradient>
@@ -62,7 +111,7 @@ export default function Step1JobScreen() {
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    paddingTop: 80, // Space for header
+    paddingTop: 200,
     paddingBottom: 40,
   },
   content: {
@@ -94,6 +143,24 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   gridItem: {
-    width: '48%', // Approx 2 columns
+    width: '48%',
+  },
+  inputContainer: {
+    marginTop: 24,
+    gap: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  input: {
+    color: colors.text.primary,
+    fontSize: 16,
+    padding: 12,
+    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
 });

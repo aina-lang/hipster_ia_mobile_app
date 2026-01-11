@@ -7,7 +7,7 @@ import { DeerAnimation } from '../../components/ui/DeerAnimation';
 import { SelectionCard } from '../../components/ui/SelectionCard';
 import { NeonButton } from '../../components/ui/NeonButton';
 import { useCreationStore, ContextType } from '../../store/creationStore';
-import { Gift, Heart, Ribbon, Percent, Sun, Snowflake } from 'lucide-react-native';
+import { Gift, Heart, Ribbon, Percent, Sun, Snowflake, MoreHorizontal } from 'lucide-react-native';
 
 const CONTEXTS: { label: ContextType; icon: any }[] = [
   { label: 'Noël', icon: Gift },
@@ -16,17 +16,36 @@ const CONTEXTS: { label: ContextType; icon: any }[] = [
   { label: 'Soldes', icon: Percent },
   { label: 'Été', icon: Sun },
   { label: 'Hiver', icon: Snowflake },
+  { label: 'Autre', icon: MoreHorizontal },
 ];
+
+import { TextInput } from 'react-native';
 
 export default function Step3ContextScreen() {
   const router = useRouter();
   const { setContext, selectedContext } = useCreationStore();
+  const [customContext, setCustomContext] = React.useState('');
+  const [showInput, setShowInput] = React.useState(false);
 
-  const handleSelect = (context: ContextType) => {
-    setContext(context);
-    setTimeout(() => {
+  const handleSelect = (context: string) => {
+    if (context === 'Autre') {
+      setShowInput(true);
+      setCustomContext('');
+      setContext('Autre' as ContextType);
+    } else {
+      setShowInput(false);
+      setContext(context as ContextType);
+      setTimeout(() => {
+        router.push('/(guided)/step4-create');
+      }, 300);
+    }
+  };
+
+  const handleCustomSubmit = () => {
+    if (customContext.trim()) {
+      setContext(customContext.trim() as ContextType);
       router.push('/(guided)/step4-create');
-    }, 300);
+    }
   };
 
   const handleSkip = () => {
@@ -36,7 +55,7 @@ export default function Step3ContextScreen() {
 
   return (
     <BackgroundGradient>
-      <ScrollView contentContainerStyle={styles.container}>
+      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
         <View style={styles.content}>
           <View style={styles.header}>
             <Text style={styles.title}>Un contexte particulier ?</Text>
@@ -53,21 +72,44 @@ export default function Step3ContextScreen() {
                 <SelectionCard
                   label={context.label!}
                   icon={context.icon}
-                  selected={selectedContext === context.label}
-                  onPress={() => handleSelect(context.label)}
+                  selected={
+                    selectedContext === context.label || (context.label === 'Autre' && showInput)
+                  }
+                  onPress={() => handleSelect(context.label!)}
                 />
               </View>
             ))}
           </View>
 
-          <View style={styles.skipContainer}>
-            <NeonButton
-              title="Passer cette étape"
-              onPress={handleSkip}
-              variant="secondary"
-              size="md"
-            />
-          </View>
+          {showInput && (
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={styles.input}
+                placeholder="Précisez le contexte..."
+                placeholderTextColor={colors.text.muted}
+                value={customContext}
+                onChangeText={setCustomContext}
+                autoFocus
+              />
+              <NeonButton
+                title="Continuer"
+                onPress={handleCustomSubmit}
+                disabled={!customContext.trim()}
+                size="md"
+              />
+            </View>
+          )}
+
+          {!showInput && (
+            <View style={styles.skipContainer}>
+              <NeonButton
+                title="Passer cette étape"
+                onPress={handleSkip}
+                variant="ghost"
+                size="md"
+              />
+            </View>
+          )}
         </View>
       </ScrollView>
     </BackgroundGradient>
@@ -77,7 +119,7 @@ export default function Step3ContextScreen() {
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    paddingTop: 80,
+    paddingTop: 200,
     paddingBottom: 40,
   },
   content: {
@@ -114,5 +156,23 @@ const styles = StyleSheet.create({
   skipContainer: {
     marginTop: 32,
     alignItems: 'center',
+  },
+  inputContainer: {
+    marginTop: 24,
+    gap: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  input: {
+    color: colors.text.primary,
+    fontSize: 16,
+    padding: 12,
+    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
 });

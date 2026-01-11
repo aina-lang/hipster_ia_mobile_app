@@ -5,8 +5,25 @@ import { colors } from '../../theme/colors';
 import { useAuthStore } from '../../store/authStore';
 import { DrawerContentScrollView, DrawerItem, DrawerItemList } from '@react-navigation/drawer';
 import { Text, View, StyleSheet } from 'react-native';
-import { Home, History, User, LogOut } from 'lucide-react-native';
+import {
+  Home,
+  History,
+  User,
+  LogOut,
+  FileText,
+  Image as ImageIcon,
+  FileSpreadsheet,
+  ChevronRight,
+} from 'lucide-react-native';
 import { GenericModal } from '../../components/ui/GenericModal';
+import { TouchableOpacity } from 'react-native-gesture-handler';
+
+// Mock recent history for drawer
+const RECENT_HISTORY = [
+  { id: '1', title: 'Post Instagram - Noël', type: 'text', date: '2h' },
+  { id: '2', title: 'Affiche Publicitaire', type: 'image', date: 'Hier' },
+  { id: '3', title: 'Rapport Mensuel', type: 'document', date: '2j' },
+];
 
 function CustomDrawerContent(props: any) {
   const { logout, user } = useAuthStore();
@@ -16,6 +33,19 @@ function CustomDrawerContent(props: any) {
   const handleLogout = () => {
     setShowLogoutModal(false);
     logout();
+  };
+
+  const getIcon = (type: string) => {
+    switch (type) {
+      case 'text':
+        return <FileText size={16} color={colors.text.secondary} />;
+      case 'image':
+        return <ImageIcon size={16} color={colors.text.secondary} />;
+      case 'document':
+        return <FileSpreadsheet size={16} color={colors.text.secondary} />;
+      default:
+        return <FileText size={16} color={colors.text.secondary} />;
+    }
   };
 
   return (
@@ -35,6 +65,32 @@ function CustomDrawerContent(props: any) {
 
         <DrawerItemList {...props} />
 
+        {/* Recent History Section */}
+        <View style={styles.recentSection}>
+          <Text style={styles.recentTitle}>Récents</Text>
+          {RECENT_HISTORY.map((item) => (
+            <TouchableOpacity
+              key={item.id}
+              style={styles.recentItem}
+              onPress={() => props.navigation.navigate('index', { chatId: item.id })}>
+              <View style={styles.recentIconRow}>
+                {getIcon(item.type)}
+                <Text style={styles.recentItemText} numberOfLines={1}>
+                  {item.title}
+                </Text>
+              </View>
+              <Text style={styles.recentItemDate}>{item.date}</Text>
+            </TouchableOpacity>
+          ))}
+
+          <TouchableOpacity
+            style={styles.seeAllButton}
+            onPress={() => props.navigation.navigate('history')}>
+            <Text style={styles.seeAllText}>Voir tout l'historique</Text>
+            <ChevronRight size={16} color={colors.primary.main} />
+          </TouchableOpacity>
+        </View>
+
         <View style={styles.footer}>
           <DrawerItem
             label="Déconnexion"
@@ -44,7 +100,6 @@ function CustomDrawerContent(props: any) {
           />
         </View>
       </DrawerContentScrollView>
-
       <GenericModal
         visible={showLogoutModal}
         type="confirmation"
@@ -83,15 +138,23 @@ export default function DrawerLayout() {
             drawerIcon: ({ color, size }) => <Home size={size} color={color} />,
           }}
         />
+        <Drawer.Screen
+          name="profile"
+          options={{
+            drawerLabel: 'Mon Profil',
+            title: 'Mon Profil',
+            drawerIcon: ({ color, size }) => <User size={size} color={color} />,
+          }}
+        />
         {/* Placeholder for future screens */}
-        {/* <Drawer.Screen
+        <Drawer.Screen
           name="history"
           options={{
             drawerLabel: 'Historique',
             title: 'Historique',
             drawerIcon: ({ color, size }) => <History size={size} color={color} />,
           }}
-        /> */}
+        />
       </Drawer>
     </GestureHandlerRootView>
   );
@@ -135,5 +198,54 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: 'rgba(255,255,255,0.1)',
     paddingVertical: 10,
+  },
+  recentSection: {
+    marginTop: 20,
+    paddingHorizontal: 16,
+    flex: 1, // Take available space before footer
+  },
+  recentTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text.muted,
+    marginBottom: 8,
+    marginLeft: 4,
+  },
+  recentItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+  },
+  recentIconRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+  recentItemText: {
+    color: colors.text.secondary,
+    fontSize: 14,
+    flex: 1,
+  },
+  recentItemDate: {
+    color: colors.text.muted,
+    fontSize: 12,
+    marginLeft: 8,
+  },
+  seeAllButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 12,
+    paddingVertical: 8,
+    gap: 4,
+  },
+  seeAllText: {
+    color: colors.primary.main,
+    fontSize: 14,
+    fontWeight: '600',
   },
 });

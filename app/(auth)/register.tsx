@@ -7,13 +7,13 @@ import {
   KeyboardAvoidingView,
   Platform,
   TouchableOpacity,
-  Alert,
 } from 'react-native';
 import { router } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Eye, EyeOff, AlertCircle } from 'lucide-react-native';
 import { BackgroundGradient } from '../../components/ui/BackgroundGradient';
 import { NeonButton } from '../../components/ui/NeonButton';
+import { GenericModal } from '../../components/ui/GenericModal';
 import { colors } from '../../theme/colors';
 import { useAuthStore } from '../../store/authStore';
 
@@ -25,28 +25,50 @@ export default function RegisterScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+  // Modal State
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalType, setModalType] = useState<any>('info');
+  const [modalTitle, setModalTitle] = useState('');
+  const [modalMessage, setModalMessage] = useState('');
+
   const { aiRegister, isLoading, error, clearError } = useAuthStore();
+
+  const showModal = (type: any, title: string, message: string = '') => {
+    setModalType(type);
+    setModalTitle(title);
+    setModalMessage(message);
+    setModalVisible(true);
+  };
 
   const handleRegister = async () => {
     if (!firstName || !email || !password || !confirmPassword) {
-      Alert.alert('Erreur', 'Veuillez remplir tous les champs.');
+      showModal('warning', 'Champs manquants', 'Veuillez remplir tous les champs.');
       return;
     }
 
     if (password !== confirmPassword) {
-      Alert.alert('Erreur', 'Les mots de passe ne correspondent pas.');
+      showModal('error', 'Erreur de mot de passe', 'Les mots de passe ne correspondent pas.');
       return;
     }
 
+    showModal('loading', 'Création du compte...', 'Veuillez patienter');
+
     try {
       await aiRegister({ firstName, email, password });
-      // Redirect to verification instead of setup
-      router.push({
-        pathname: '/(auth)/verify-email',
-        params: { email },
-      });
-    } catch (e) {
-      // Error handled by store
+
+      // Update modal to success
+      showModal('success', 'Compte créé !', 'Vous allez être redirigé vers la vérification.');
+
+      // Delay redirection slightly to show success message
+      setTimeout(() => {
+        setModalVisible(false);
+        router.push({
+          pathname: '/(auth)/verify-email',
+          params: { email },
+        });
+      }, 1500);
+    } catch (e: any) {
+      showModal('error', "Échec de l'inscription", e.message || 'Une erreur est survenue.');
     }
   };
 
@@ -58,13 +80,6 @@ export default function RegisterScreen() {
         <Animated.View entering={FadeInDown.duration(800)} style={styles.content}>
           <Text style={styles.title}>Créer un compte</Text>
           <Text style={styles.subtitle}>Rejoignez le futur de l'IA dès aujourd'hui.</Text>
-
-          {error && (
-            <View style={styles.errorContainer}>
-              <AlertCircle size={20} color={colors.status.error} />
-              <Text style={styles.errorText}>{error}</Text>
-            </View>
-          )}
 
           <View style={styles.form}>
             <View style={styles.inputContainer}>
@@ -155,6 +170,7 @@ export default function RegisterScreen() {
               size="lg"
               variant="premium"
               loading={isLoading}
+              disabled={isLoading}
               style={styles.registerButton}
             />
 
@@ -166,6 +182,14 @@ export default function RegisterScreen() {
             </View>
           </View>
         </Animated.View>
+
+        <GenericModal
+          visible={modalVisible}
+          type={modalType}
+          title={modalTitle}
+          message={modalMessage}
+          onClose={() => setModalVisible(false)}
+        />
       </KeyboardAvoidingView>
     </BackgroundGradient>
   );
