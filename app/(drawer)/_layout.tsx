@@ -16,19 +16,28 @@ import {
   ChevronRight,
 } from 'lucide-react-native';
 import { GenericModal } from '../../components/ui/GenericModal';
-import { TouchableOpacity } from 'react-native-gesture-handler';
-
-// Mock recent history for drawer
-const RECENT_HISTORY = [
-  { id: '1', title: 'Post Instagram - Noël', type: 'text', date: '2h' },
-  { id: '2', title: 'Affiche Publicitaire', type: 'image', date: 'Hier' },
-  { id: '3', title: 'Rapport Mensuel', type: 'document', date: '2j' },
-];
+import { AiService } from '../../api/ai.service';
+import { MessageSquare } from 'lucide-react-native';
+import { TouchableOpacity } from 'react-native';
 
 function CustomDrawerContent(props: any) {
   const { logout, user } = useAuthStore();
-
   const [showLogoutModal, setShowLogoutModal] = React.useState(false);
+  const [recentHistory, setRecentHistory] = React.useState<any[]>([]);
+
+  React.useEffect(() => {
+    const fetchRecent = async () => {
+      try {
+        const data = await AiService.getHistory();
+        if (data && Array.isArray(data)) {
+          setRecentHistory(data.slice(0, 3));
+        }
+      } catch (e) {
+        console.error('Drawer history error:', e);
+      }
+    };
+    fetchRecent();
+  }, [props.navigation.getState().index]); // Refresh when switching tabs or opening drawer
 
   const handleLogout = () => {
     setShowLogoutModal(false);
@@ -43,6 +52,8 @@ function CustomDrawerContent(props: any) {
         return <ImageIcon size={16} color={colors.text.secondary} />;
       case 'document':
         return <FileSpreadsheet size={16} color={colors.text.secondary} />;
+      case 'chat':
+        return <MessageSquare size={16} color={colors.text.secondary} />;
       default:
         return <FileText size={16} color={colors.text.secondary} />;
     }
@@ -68,18 +79,17 @@ function CustomDrawerContent(props: any) {
         {/* Recent History Section */}
         <View style={styles.recentSection}>
           <Text style={styles.recentTitle}>Récents</Text>
-          {RECENT_HISTORY.map((item) => (
+          {recentHistory.map((item) => (
             <TouchableOpacity
               key={item.id}
               style={styles.recentItem}
-              onPress={() => props.navigation.navigate('index', { chatId: item.id })}>
+              onPress={() => props.navigation.navigate('history')}>
               <View style={styles.recentIconRow}>
                 {getIcon(item.type)}
                 <Text style={styles.recentItemText} numberOfLines={1}>
-                  {item.title}
+                  {item.title || item.prompt?.substring(0, 20)}
                 </Text>
               </View>
-              <Text style={styles.recentItemDate}>{item.date}</Text>
             </TouchableOpacity>
           ))}
 

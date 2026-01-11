@@ -7,50 +7,59 @@ import { KeyboardAvoidingView, Platform } from 'react-native';
 
 import { StripeProvider } from '@stripe/stripe-react-native';
 
+import { LoadingTransition } from '../components/ui/LoadingTransition';
+
 export default function RootLayout() {
-  const { isAuthenticated, hasFinishedOnboarding } = useAuthStore();
+  const { isAuthenticated, hasFinishedOnboarding, isHydrated } = useAuthStore();
   const segments = useSegments();
   const router = useRouter();
+  const [isRouting, setIsRouting] = React.useState(true);
 
   useEffect(() => {
-    // Wait for the next tick to ensure nested layout is mounted
+    // Only perform routing once the store is hydrated (session restored)
+    if (!isHydrated) return;
+
+    // Use a small delay to ensure segments are updated and layout is settled
     const timeout = setTimeout(() => {
       const inAuthGroup = segments[0] === '(auth)';
       const inOnboardingGroup = segments[0] === '(onboarding)';
-      const inDrawerGroup = segments[0] === '(drawer)';
+
+      let targetRoute = null;
 
       if (!hasFinishedOnboarding) {
-        // Scenario 1: First install / Onboarding not finished
-        // Force redirect to onboarding if not already there
         if (!inOnboardingGroup) {
-          router.replace('/(onboarding)/welcome');
+          targetRoute = '/(onboarding)/welcome';
         }
       } else {
-        // Onboarding finished
         if (isAuthenticated) {
-          // Scenario 3: Connected -> Go to Home (Drawer)
-          // If we are in Auth or Onboarding or Root, go to Drawer
-          if (inAuthGroup || inOnboardingGroup) {
-            router.replace('/(drawer)');
+          if (inAuthGroup || inOnboardingGroup || !segments[0]) {
+            targetRoute = '/(drawer)';
           }
         } else {
-          // Scenario 2: Not connected -> Go to Login
-          // If we are getting redirected from onboarding or root, go to Login
           if (!inAuthGroup) {
-            router.replace('/(auth)/login');
+            targetRoute = '/(auth)/login';
           }
         }
+      }
+
+      if (targetRoute) {
+        router.replace(targetRoute as any);
+      } else {
+        // If we are already on the right route, or no redirect is needed
+        setIsRouting(false);
       }
     }, 1);
 
     return () => clearTimeout(timeout);
-  }, [isAuthenticated, hasFinishedOnboarding, segments]);
+  }, [isAuthenticated, hasFinishedOnboarding, isHydrated, segments]);
+
+  // Show premium splash while hydrating or during the initial routing phase
+  if (!isHydrated || isRouting) {
+    return <LoadingTransition />;
+  }
 
   return (
-    <StripeProvider
-      publishableKey="pk_test_placeholder"
-      merchantIdentifier="merchant.com.hipster" // Added to avoid 'merchantIdentifier' undefined error
-    >
+    <StripeProvider publishableKey="pk_test_placeholder" merchantIdentifier="merchant.com.hipster">
       <Stack
         screenOptions={{
           headerShown: false,

@@ -57,6 +57,7 @@ interface AuthState {
   isAuthenticated: boolean;
   hasFinishedOnboarding: boolean;
   isLoading: boolean;
+  isHydrated: boolean;
   error: string | null;
   login: (credentials: any) => Promise<void>;
   aiLogin: (credentials: any) => Promise<void>;
@@ -77,6 +78,7 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
       hasFinishedOnboarding: false,
       isLoading: false,
+      isHydrated: false,
       error: null,
 
       clearError: () => set({ error: null }),
@@ -222,6 +224,11 @@ export const useAuthStore = create<AuthState>()(
     {
       name: 'auth-storage',
       storage: createJSONStorage(() => AsyncStorage),
+      onRehydrateStorage: (state) => {
+        return () => {
+          useAuthStore.setState({ isHydrated: true });
+        };
+      },
       partialize: (state) => ({ 
         user: state.user, 
         isAuthenticated: state.isAuthenticated,

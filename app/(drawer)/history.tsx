@@ -1,5 +1,13 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  Image,
+  ActivityIndicator,
+} from 'react-native';
 import { BackgroundGradient } from '../../components/ui/BackgroundGradient';
 import { colors } from '../../theme/colors';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -14,8 +22,16 @@ import {
 import { Drawer } from 'expo-router/drawer';
 import { useRouter } from 'expo-router';
 
-// Temporary Mock Data
-type HistoryType = 'text' | 'image' | 'document';
+import { AiService } from '../../api/ai.service';
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
+import 'dayjs/locale/fr';
+
+dayjs.extend(relativeTime);
+dayjs.locale('fr');
+
+// AI Generation Types
+type HistoryType = 'text' | 'image' | 'document' | 'chat';
 
 interface HistoryItem {
   id: string;
@@ -70,16 +86,44 @@ const FILTERS: { label: string; value: HistoryType | 'all' }[] = [
   { label: 'Textes', value: 'text' },
   { label: 'Images', value: 'image' },
   { label: 'Documents', value: 'document' },
+  { label: 'Chats', value: 'chat' },
 ];
 
 export default function HistoryScreen() {
   const router = useRouter();
   const [activeFilter, setActiveFilter] = useState<HistoryType | 'all'>('all');
+  const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchHistory = async () => {
+    try {
+      setLoading(true);
+      const data = await AiService.getHistory();
+      if (data && Array.isArray(data)) {
+        // Map backend entity to UI interface
+        const mappedData: HistoryItem[] = data.map((item: any) => ({
+          id: item.id.toString(),
+          type: item.type,
+          title: item.title || 'Sans titre',
+          date: dayjs(item.createdAt).fromNow(),
+          preview: item.result || item.prompt,
+          imageUrl: item.imageUrl,
+        }));
+        setHistory(mappedData);
+      }
+    } catch (error) {
+      console.error('Error fetching history:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  React.useEffect(() => {
+    fetchHistory();
+  }, []);
 
   const filteredData =
-    activeFilter === 'all'
-      ? MOCK_HISTORY
-      : MOCK_HISTORY.filter((item) => item.type === activeFilter);
+    activeFilter === 'all' ? history : history.filter((item) => item.type === activeFilter);
 
   const getIcon = (type: HistoryType) => {
     switch (type) {
@@ -89,6 +133,8 @@ export default function HistoryScreen() {
         return <ImageIcon size={24} color={colors.primary.light} />;
       case 'document':
         return <FileSpreadsheet size={24} color={colors.text.accent} />;
+      case 'chat':
+        return <Search size={24} color={colors.text.primary} />; // Placeholder icon
     }
   };
 
@@ -160,11 +206,21 @@ export default function HistoryScreen() {
           renderItem={renderItem}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
+          onRefresh={fetchHistory}
+          refreshing={loading}
           ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <Search size={48} color={colors.text.muted} />
-              <Text style={styles.emptyText}>Aucun résultat trouvé</Text>
-            </View>
+            loading ? (
+              <ActivityIndicator
+                size="large"
+                color={colors.primary.main}
+                style={{ marginTop: 40 }}
+              />
+            ) : (
+              <View style={styles.emptyContainer}>
+                <Search size={48} color={colors.text.muted} />
+                <Text style={styles.emptyText}>Aucun résultat trouvé</Text>
+              </View>
+            )
           }
         />
       </SafeAreaView>
