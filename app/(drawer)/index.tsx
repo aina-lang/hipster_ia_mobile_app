@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   FlatList,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -26,10 +27,13 @@ import {
   Bot,
   User,
   ArrowLeft,
+  Copy,
+  Trash2,
 } from 'lucide-react-native';
 import { useNavigation, DrawerActions } from '@react-navigation/native';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { api } from '../../api/client';
+import { AiService } from '../../api/ai.service';
 
 // --- CHAT INTERFACES & MOCK ---
 interface Message {
@@ -136,10 +140,71 @@ export default function HomeScreen() {
   const { user } = useAuthStore();
   const router = useRouter();
   const navigation = useNavigation();
-  const [inputValue, setInputValue] = React.useState('');
+  const [inputValue, setInputValue] = useState('');
 
   // Placeholder animé
   const placeholderText = 'Décrivez votre idée, ajoutez une image ou un audio...';
+
+  // Chat State
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const scrollViewRef = useRef<ScrollView>(null);
+
+  const handleSend = async () => {
+    if (!inputValue.trim() || isGenerating) return;
+
+    const userMsg: Message = {
+      id: Date.now().toString(),
+      text: inputValue.trim(),
+      sender: 'user',
+      timestamp: new Date(),
+    };
+
+    setMessages((prev) => [...prev, userMsg]);
+    setInputValue('');
+    setIsGenerating(true);
+
+    try {
+      // Map messages to API format
+      const chatHistory = messages.map((m) => ({
+        role: m.sender === 'user' ? 'user' : 'assistant',
+        content: m.text,
+      }));
+      chatHistory.push({ role: 'user', content: userMsg.text });
+
+      const response = await AiService.chat(chatHistory);
+
+      const aiMsg: Message = {
+        id: (Date.now() + 1).toString(),
+        text: response.message || response.content || response, // Flexibility for different endpoints
+        sender: 'ai',
+        timestamp: new Date(),
+      };
+
+      setMessages((prev) => [...prev, aiMsg]);
+    } catch (error) {
+      console.error('Chat error:', error);
+      const errorMsg: Message = {
+        id: (Date.now() + 1).toString(),
+        text: 'Désolé, une erreur est survenue lors de la génération. Vérifiez votre connexion.',
+        sender: 'ai',
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, errorMsg]);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const copyToClipboard = async (text: string) => {
+    // Clipboard functionality removed to avoid missing dependency error
+    console.log('Copy to clipboard:', text);
+  };
+
+  const resetChat = () => {
+    setMessages([]);
+    setInputValue('');
+  };
 
   // Salutation dynamique selon l’heure
   const getGreetingByTime = () => {
@@ -215,7 +280,43 @@ export default function HomeScreen() {
                 </View>
               </TouchableOpacity>
 
-              {/* Mode Libre */}
+              {/* Mode Libre results / Chat history */}
+              {messages.length > 0 && (
+                <View style={styles.chatHistoryContainer}>
+                  <View style={styles.chatHeader}>
+                    <Text style={styles.chatTitle}>Conversation</Text>
+                    <TouchableOpacity onPress={resetChat} style={styles.resetButton}>
+                      <Trash2 size={16} color={colors.text.muted} />
+                    </TouchableOpacity>
+                  </View>
+                  {messages.map((msg) => (
+                    <View
+                      key={msg.id}
+                      style={[
+                        styles.msgBubble,
+                        msg.sender === 'user' ? styles.userBubble : styles.aiBubble,
+                      ]}>
+                      <Text style={msg.sender === 'user' ? styles.userMsgText : styles.aiMsgText}>
+                        {msg.text}
+                      </Text>
+                      {msg.sender === 'ai' && (
+                        <TouchableOpacity
+                          onPress={() => copyToClipboard(msg.text)}
+                          style={styles.copyButton}>
+                          <Copy size={14} color={colors.text.muted} />
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  ))}
+                  {isGenerating && (
+                    <View style={[styles.msgBubble, styles.aiBubble, styles.loadingBubble]}>
+                      <ActivityIndicator size="small" color={colors.primary.main} />
+                    </View>
+                  )}
+                </View>
+              )}
+
+              {/* Mode Libre Input */}
               <View style={styles.freeModeContainer}>
                 <View style={styles.separatorContainer}>
                   <View style={styles.separator} />
@@ -237,6 +338,7 @@ export default function HomeScreen() {
                     onChangeText={setInputValue}
                     multiline
                     style={styles.textInput}
+                    placeholderTextColor="transparent" // Placeholder handled by component
                   />
 
                   <View style={styles.actionRow}>
@@ -255,10 +357,16 @@ export default function HomeScreen() {
                     <TouchableOpacity
                       style={[
                         styles.sendButton,
-                        inputValue.trim().length === 0 && styles.sendButtonDisabled,
+                        (inputValue.trim().length === 0 || isGenerating) &&
+                          styles.sendButtonDisabled,
                       ]}
-                      disabled={inputValue.trim().length === 0}>
-                      <Send size={20} color={colors.background.tertiary} />
+                      onPress={handleSend}
+                      disabled={inputValue.trim().length === 0 || isGenerating}>
+                      {isGenerating ? (
+                        <ActivityIndicator size="small" color="#000" />
+                      ) : (
+                        <Send size={20} color={colors.background.tertiary} />
+                      )}
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -362,4 +470,65 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   sendButtonDisabled: { opacity: 0.4 },
+  chatHistoryContainer: {
+    marginTop: 8,
+    gap: 12,
+  },
+  chatHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+    paddingHorizontal: 4,
+  },
+  chatTitle: {
+    color: colors.text.secondary,
+    fontSize: 14,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  resetButton: {
+    padding: 4,
+  },
+  msgBubble: {
+    padding: 16,
+    borderRadius: 20,
+    maxWidth: '90%',
+  },
+  userBubble: {
+    alignSelf: 'flex-end',
+    backgroundColor: colors.primary.main + '22',
+    borderBottomRightRadius: 4,
+    borderWidth: 1,
+    borderColor: colors.primary.main + '44',
+  },
+  aiBubble: {
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderBottomLeftRadius: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  userMsgText: {
+    color: colors.text.primary,
+    fontSize: 15,
+    lineHeight: 22,
+  },
+  aiMsgText: {
+    color: colors.text.primary,
+    fontSize: 15,
+    lineHeight: 22,
+  },
+  loadingBubble: {
+    width: 60,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  copyButton: {
+    alignSelf: 'flex-end',
+    marginTop: 8,
+    padding: 4,
+  },
 });

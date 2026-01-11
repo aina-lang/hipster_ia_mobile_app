@@ -20,16 +20,16 @@ export const api = axios.create({
 api.interceptors.request.use(
   async (config) => {
     const token = await AsyncStorage.getItem('access_token');
-    // console.log(`[API Request] ${config.method?.toUpperCase()} ${config.url}`);
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
-      // console.log('[API Request] Token attached');
+      // console.log(`[API Request] Token attached: ${token.substring(0, 10)}... (Length: ${token.length})`);
     } else {
-      console.warn('[API Request] No token found in storage');
+      console.warn(`[API Request] No token found for ${config.url}`);
     }
     return config;
   },
   (error) => {
+    console.error('[API Request Error]', error);
     return Promise.reject(error);
   }
 );
