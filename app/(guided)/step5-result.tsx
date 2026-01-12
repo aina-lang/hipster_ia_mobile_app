@@ -4,19 +4,24 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  ActivityIndicator,
   TouchableOpacity,
+  ActivityIndicator,
   Image,
   Alert,
+  Platform,
 } from 'react-native';
-import * as FileSystem from 'expo-file-system';
+import { File, Paths } from 'expo-file-system';
+import * as FileSystemLegacy from 'expo-file-system/legacy'; // Fallback for getContentUriAsync if needed
 import * as Sharing from 'expo-sharing';
+import * as Notifications from 'expo-notifications';
+import * as IntentLauncher from 'expo-intent-launcher';
 import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import { colors } from '../../theme/colors';
 import { BackgroundGradient } from '../../components/ui/BackgroundGradient';
 import { DeerAnimation } from '../../components/ui/DeerAnimation';
 import { NeonButton } from '../../components/ui/NeonButton';
+import { GenericModal, ModalType } from '../../components/ui/GenericModal';
 import { useCreationStore } from '../../store/creationStore';
 import { Share, Home, Check, Copy, Download, FileText } from 'lucide-react-native';
 import { useAuthStore } from '../../store/authStore';
@@ -25,6 +30,17 @@ import { encodeToon, containsToon, extractToonBlocks } from '../../utils/toon';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+// Configure notifications to show when app is in foreground
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldPlaySound: false,
+    shouldSetBadge: false,
+    shouldShowBanner: true,
+    shouldShowList: true,
+    priority: Notifications.AndroidNotificationPriority.HIGH,
+  }),
+});
+
 export default function Step5ResultScreen() {
   const router = useRouter();
   const { userQuery, selectedJob, selectedFunction, selectedCategory, selectedContext, reset } =
@@ -32,6 +48,19 @@ export default function Step5ResultScreen() {
   const [loading, setLoading] = useState(true);
   const [result, setResult] = useState<string | null>(null);
   const [generationId, setGenerationId] = useState<number | null>(null);
+
+  // Generic Modal State
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalType, setModalType] = useState<ModalType>('info');
+  const [modalTitle, setModalTitle] = useState('');
+  const [modalMessage, setModalMessage] = useState('');
+
+  const showModal = (type: ModalType, title: string, message: string) => {
+    setModalType(type);
+    setModalTitle(title);
+    setModalMessage(message);
+    setModalVisible(true);
+  };
 
   useEffect(() => {
     const generateContent = async () => {
@@ -75,12 +104,17 @@ export default function Step5ResultScreen() {
           resultData = await AiService.generateImage(prompt, 'realistic');
           setResult(resultData.url);
         } else if (selectedCategory === 'Document') {
+          // Pass user profile for professional documents (Invoice/Quote)
+          const userProfile = useAuthStore.getState().user?.aiProfile;
+
           resultData = await AiService.generateDocument('business', {
             job: selectedJob,
             function: selectedFunction,
             context: selectedContext,
             details: userQuery,
+            userProfile, // Add profile data
           });
+          console.log('Backend Response (Document):', JSON.stringify(resultData, null, 2));
           setResult(resultData.content);
           setGenerationId(resultData.generationId);
         } else {
@@ -109,28 +143,83 @@ export default function Step5ResultScreen() {
     if (!generationId) return;
 
     try {
+      // 1. Show Feedback (Modal + Notification)
+      showModal(
+        'loading',
+        'Téléchargement en cours...',
+        'Veuillez patienter pendant la récupération du fichier.'
+      );
+
+      const notificationId = await Notifications.scheduleNotificationAsync({
+        content: {
+          title: 'Téléchargement en cours',
+          body: `Votre document ${format.toUpperCase()} est en cours de téléchargement...`,
+        },
+        trigger: null,
+      });
+
       const apiBaseUrl = 'https://hipster-api.fr/api';
       const downloadUrl = `${apiBaseUrl}/ai/export/${generationId}?format=${format}`;
+      const fileName = `document_${generationId}_${Date.now()}.${format === 'excel' ? 'xlsx' : format}`;
+      const destination = new File(Paths.document, fileName);
 
-      const fileName = `document_${generationId}.${format === 'excel' ? 'xlsx' : format}`;
-      const fileUri = `${(FileSystem as any).documentDirectory}${fileName}`;
-
+      // Check access token
       const token = await AsyncStorage.getItem('access_token');
 
-      const downloadRes = await FileSystem.downloadAsync(downloadUrl, fileUri, {
+      // 2. Perform Download
+      const downloadRes = await File.downloadFileAsync(downloadUrl, destination, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
 
-      if (downloadRes.status === 200) {
-        await Sharing.shareAsync(fileUri);
+      // Dismiss loading modal
+      setModalVisible(false);
+
+      if (downloadRes.exists) {
+        // Success Notification
+        await Notifications.scheduleNotificationAsync({
+          content: {
+            title: 'Téléchargement terminé',
+            body: 'Votre document est prêt.',
+          },
+          trigger: null,
+        });
+
+        // 3. Open File Directly
+        if (Platform.OS === 'android') {
+          try {
+            // Get Content URI for Android Intent
+            const contentUri = await FileSystemLegacy.getContentUriAsync(destination.uri);
+
+            // Determine MIME type based on format
+            let mimeType = 'application/octet-stream';
+            if (format === 'pdf') mimeType = 'application/pdf';
+            else if (format === 'docx')
+              mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+            else if (format === 'excel' || format === 'xlsx')
+              mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+
+            await IntentLauncher.startActivityAsync('android.intent.action.VIEW', {
+              data: contentUri,
+              flags: 1, // FLAG_GRANT_READ_URI_PERMISSION
+              type: mimeType,
+            });
+          } catch (e) {
+            console.warn('Android Intent failed, falling back to Share', e);
+            await Sharing.shareAsync(destination.uri);
+          }
+        } else {
+          // iOS: Use Sharing for preview
+          await Sharing.shareAsync(destination.uri);
+        }
       } else {
-        Alert.alert('Erreur', 'Impossible de télécharger le fichier.');
+        showModal('error', 'Erreur', 'Impossible de télécharger le fichier.');
       }
     } catch (error) {
       console.error('Download error:', error);
-      Alert.alert('Erreur', 'Une erreur est survenue lors du téléchargement.');
+      setModalVisible(false);
+      showModal('error', 'Erreur', 'Une erreur est survenue lors du téléchargement.');
     }
   };
 
@@ -279,6 +368,13 @@ export default function Step5ResultScreen() {
           </View>
         </View>
       </ScrollView>
+      <GenericModal
+        visible={modalVisible}
+        type={modalType}
+        title={modalTitle}
+        message={modalMessage}
+        onClose={() => setModalVisible(false)}
+      />
     </BackgroundGradient>
   );
 }

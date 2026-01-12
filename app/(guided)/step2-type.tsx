@@ -42,7 +42,6 @@ interface JobFunction {
 const JOB_FUNCTIONS: Record<string, JobFunction[]> = {
   Artisan: [
     { label: 'Générer un devis (PDF / DOCX)', category: 'Document', icon: FileText },
-    { label: 'Générer une facture (PDF)', category: 'Document', icon: FileCheck },
     { label: 'Créer un flyer / affiche (Image)', category: 'Image', icon: Palette },
     { label: 'Rédiger un message client (Texte)', category: 'Texte', icon: MessageSquare },
   ],

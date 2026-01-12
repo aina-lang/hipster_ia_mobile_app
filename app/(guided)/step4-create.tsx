@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { colors } from '../../theme/colors';
@@ -6,7 +6,14 @@ import { BackgroundGradient } from '../../components/ui/BackgroundGradient';
 import { DeerAnimation } from '../../components/ui/DeerAnimation';
 import { NeonButton } from '../../components/ui/NeonButton';
 import { useCreationStore } from '../../store/creationStore';
-import { Keyboard, Sparkles } from 'lucide-react-native';
+import { Keyboard, Sparkles, Plus, Trash2, FileText, User, CreditCard } from 'lucide-react-native';
+
+interface LineItem {
+  id: string;
+  description: string;
+  quantity: string;
+  price: string;
+}
 
 export default function Step4CreateScreen() {
   const router = useRouter();
@@ -29,15 +36,17 @@ export default function Step4CreateScreen() {
             </Text>
           </View>
 
-          <View style={styles.animationContainer}>
-            <DeerAnimation size={120} progress={80} />
-          </View>
+          {!isDocumentMode && (
+            <View style={styles.animationContainer}>
+              <DeerAnimation size={120} progress={80} />
+            </View>
+          )}
 
           <View style={styles.inputContainer}>
             <View style={styles.textAreaWrapper}>
               <TextInput
                 style={styles.textArea}
-                placeholder="Ex: Une promotion de -20% sur les coupes hommes pour la Saint-Valentin..."
+                placeholder="Décrivez le document que vous souhaitez générer..."
                 placeholderTextColor={colors.text.muted}
                 multiline
                 numberOfLines={6}
@@ -46,7 +55,6 @@ export default function Step4CreateScreen() {
                 onChangeText={setInputText}
               />
             </View>
-
             <View style={styles.hintContainer}>
               <Keyboard size={16} color={colors.text.muted} />
               <Text style={styles.hintText}>Astuce : soyez précis pour un meilleur résultat.</Text>
@@ -71,7 +79,7 @@ export default function Step4CreateScreen() {
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    paddingTop: 200,
+    paddingTop: 120,
     paddingBottom: 40,
   },
   content: {
@@ -111,7 +119,7 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     fontSize: 16,
     padding: 16,
-    minHeight: 150,
+    minHeight: 100,
   },
   hintContainer: {
     flexDirection: 'row',
@@ -126,5 +134,74 @@ const styles = StyleSheet.create({
   },
   actionContainer: {
     alignItems: 'center',
+  },
+  // Form Styles
+  formContainer: {
+    gap: 24,
+  },
+  section: {
+    gap: 12,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text.accent,
+  },
+  input: {
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    color: colors.text.primary,
+    padding: 12,
+    fontSize: 16,
+  },
+  itemRow: {
+    gap: 8,
+    marginBottom: 8,
+  },
+  itemMain: {
+    flex: 1,
+  },
+  itemMetas: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  itemDesc: {
+    flex: 1,
+  },
+  itemQty: {
+    width: 60,
+    textAlign: 'center',
+  },
+  itemPrice: {
+    flex: 1,
+  },
+  deleteButton: {
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  addButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: colors.primary.main,
+    borderStyle: 'dashed',
+    borderRadius: 12,
+    marginTop: 8,
+  },
+  addButtonText: {
+    color: colors.primary.main,
+    fontSize: 14,
+    fontWeight: '600',
   },
 });
