@@ -1,13 +1,39 @@
 import { create } from 'zustand';
 
-export type JobType = 'Coiffeur' | 'Restaurant' | 'Boutique' | 'Créateur' | 'Artisan' | 'Service local' | (string & {});
-export type CreationType = 'Texte' | 'Image' | 'Document';
-export type ContextType = 'Noël' | 'Saint-Valentin' | 'Octobre Rose' | 'Soldes' | 'Été' | 'Hiver' | (string & {}) | null;
+export type JobType = 
+  | 'Artisan'
+  | 'Coiffeur / Barber' 
+  | 'Restaurant / Snack' 
+  | 'Boutique' 
+  | 'Agent Immobilier' 
+  | 'Coach / Consultant'
+  | 'E-commerce'
+  | 'Créateur de contenu'
+  | 'Service local' 
+  | (string & {});
+
+export type ContextType = 
+  | 'Noël' 
+  | 'Saint-Valentin' 
+  | 'Octobre Rose' 
+  | 'Soldes' 
+  | 'Été' 
+  | 'Hiver' 
+  | 'Lancement'
+  | 'Anniversaire'
+  | 'Promotion'
+  | 'Recrutement'
+  | 'Autre' 
+  | (string & {}) 
+  | null;
+
+export type CreationCategory = 'Texte' | 'Image' | 'Document' | 'Social';
 
 interface CreationState {
   // Selection state
   selectedJob: JobType | null;
-  selectedType: CreationType | null;
+  selectedFunction: string | null;
+  selectedCategory: CreationCategory | null;
   selectedContext: ContextType | null;
   
   // Input state
@@ -15,7 +41,7 @@ interface CreationState {
   
   // Actions
   setJob: (job: JobType) => void;
-  setType: (type: CreationType) => void;
+  setFunction: (fn: string, category: CreationCategory) => void;
   setContext: (context: ContextType) => void;
   setQuery: (query: string) => void;
   reset: () => void;
@@ -23,18 +49,20 @@ interface CreationState {
 
 export const useCreationStore = create<CreationState>((set) => ({
   selectedJob: null,
-  selectedType: null,
+  selectedFunction: null,
+  selectedCategory: null,
   selectedContext: null,
   userQuery: '',
 
   setJob: (job) => set({ selectedJob: job }),
-  setType: (type) => set({ selectedType: type }),
+  setFunction: (fn, cat) => set({ selectedFunction: fn, selectedCategory: cat }),
   setContext: (context) => set({ selectedContext: context }),
   setQuery: (query) => set({ userQuery: query }),
   
   reset: () => set({
     selectedJob: null,
-    selectedType: null,
+    selectedFunction: null,
+    selectedCategory: null,
     selectedContext: null,
     userQuery: '',
   }),

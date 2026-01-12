@@ -14,12 +14,13 @@ import { BackgroundGradient } from '../../components/ui/BackgroundGradient';
 import { DeerAnimation } from '../../components/ui/DeerAnimation';
 import { NeonButton } from '../../components/ui/NeonButton';
 import { useCreationStore } from '../../store/creationStore';
-import { Check, Copy, Share, Home } from 'lucide-react-native';
-import { AiService } from '../../api/ai.service';
-
+import { Share, Home, Check, Copy, Download, FileText } from 'lucide-react-native';
+import { useAuthStore } from '../../store/authStore';
+import { AiService, TextGenerationType } from '../../api/ai.service';
 export default function Step5ResultScreen() {
   const router = useRouter();
-  const { userQuery, selectedJob, selectedType, selectedContext, reset } = useCreationStore();
+  const { userQuery, selectedJob, selectedFunction, selectedCategory, selectedContext, reset } =
+    useCreationStore();
   const [loading, setLoading] = useState(true);
   const [result, setResult] = useState<string | null>(null);
 
@@ -29,29 +30,35 @@ export default function Step5ResultScreen() {
         setLoading(true);
         let resultData: any;
 
-        const prompt = `Je suis un ${selectedJob}. Contexte: ${selectedContext || 'Aucun'}. Demande: ${userQuery}`;
+        // Get professional profile info from auth store (via direct access since it's not in creationStore)
+        const authUser = useAuthStore.getState().user;
+        const profile = authUser?.aiProfile;
 
-        if (selectedType === 'Texte') {
-          // Default logic: use 'social' unless it looks like an ad
-          const type =
-            selectedContext === 'Soldes' || userQuery.toLowerCase().includes('promo')
-              ? 'ad'
-              : 'social';
-          resultData = await AiService.generateText(prompt, type);
-          setResult(resultData.content);
-        } else if (selectedType === 'Image') {
-          resultData = await AiService.generateImage(prompt, 'realistic'); // Default style
-          setResult(resultData.url); // Assuming it returns { url: ... }
-        } else if (selectedType === 'Document') {
+        let professionalContext = '';
+        if (profile?.profileType === 'entreprise') {
+          professionalContext = `\nINFOS ENTREPRISE:\n- Nom: ${profile.companyName || 'Non spécifié'}\n- Email Pro: ${profile.professionalEmail || 'Non spécifié'}\n- Adresse: ${profile.professionalAddress || 'Non spécifiée'}\n- Tel 1: ${profile.professionalPhone || 'Non spécifié'}\n- Tel 2: ${profile.professionalPhone2 || 'Non spécifié'}\n- Banque/IBAN: ${profile.bankDetails || 'Non spécifié'}\n- Site Web: ${profile.websiteUrl || 'Non spécifié'}\n- Logo: ${profile.logoUrl || 'Non spécifié'}`;
+        } else {
+          professionalContext = `\nINFO UTILISATEUR (PARTICULIER):\n- Nom: ${authUser?.firstName} ${authUser?.lastName || ''}\n- Avatar: ${authUser?.avatarUrl || 'Non spécifié'}`;
+        }
+
+        const prompt = `Je suis un ${selectedJob}. Ma demande: ${selectedFunction}. Contexte: ${selectedContext || 'Aucun'}. ${professionalContext}\nDétails supplémentaires: ${userQuery}`;
+
+        if (selectedCategory === 'Image') {
+          resultData = await AiService.generateImage(prompt, 'realistic');
+          setResult(resultData.url);
+        } else if (selectedCategory === 'Document') {
           resultData = await AiService.generateDocument('business', {
             job: selectedJob,
+            function: selectedFunction,
             context: selectedContext,
             details: userQuery,
           });
           setResult(resultData.content);
         } else {
-          // Fallback or error
-          setResult('Type de création non supporté.');
+          // Social ou Texte
+          const subType: TextGenerationType = selectedCategory === 'Social' ? 'social' : 'blog';
+          resultData = await AiService.generateText(prompt, subType);
+          setResult(resultData.content);
         }
       } catch (error) {
         console.error('Generation error:', error);
@@ -93,17 +100,47 @@ export default function Step5ResultScreen() {
           </View>
 
           <View style={styles.resultCard}>
-            {selectedType === 'Image' && result ? (
-              <Image source={{ uri: result }} style={styles.generatedImage} resizeMode="cover" />
+            {selectedCategory === 'Image' ? (
+              <>
+                <Text style={styles.formatBadge}>VISUEL GÉNÉRÉ (IMAGE)</Text>
+                {result ? (
+                  <Image
+                    source={{ uri: result }}
+                    style={styles.generatedImage}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <ActivityIndicator color={colors.primary.main} style={{ marginVertical: 40 }} />
+                )}
+              </>
+            ) : selectedCategory === 'Document' ? (
+              <View style={styles.documentCard}>
+                <View style={styles.documentIconContainer}>
+                  <FileText size={48} color={colors.primary.main} />
+                </View>
+                <Text style={styles.documentTitle}>{selectedFunction}</Text>
+                <Text style={styles.documentSubtitle}>Document (PDF / DOCX) prêt à l'emploi</Text>
+                <TouchableOpacity style={styles.downloadButton}>
+                  <Download size={20} color="#000" />
+                  <Text style={styles.downloadButtonText}>Télécharger le PDF</Text>
+                </TouchableOpacity>
+              </View>
             ) : (
-              <Text style={styles.resultText}>{result}</Text>
+              <>
+                <Text style={styles.formatBadge}>
+                  CONTENU {selectedCategory === 'Social' ? 'SOCIAL' : 'TEXTUEL'}
+                </Text>
+                <Text style={styles.resultText}>{result}</Text>
+              </>
             )}
 
             <View style={styles.actionsRow}>
-              <TouchableOpacity style={styles.iconButton}>
-                <Copy size={20} color={colors.text.secondary} />
-                <Text style={styles.iconButtonText}>Copier</Text>
-              </TouchableOpacity>
+              {selectedCategory !== 'Document' && (
+                <TouchableOpacity style={styles.iconButton}>
+                  <Copy size={20} color={colors.text.secondary} />
+                  <Text style={styles.iconButtonText}>Copier</Text>
+                </TouchableOpacity>
+              )}
               <TouchableOpacity style={styles.iconButton}>
                 <Share size={20} color={colors.text.secondary} />
                 <Text style={styles.iconButtonText}>Partager</Text>
@@ -188,6 +225,63 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 24,
     marginBottom: 24,
+  },
+  formatBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(0, 255, 170, 0.1)',
+    color: colors.primary.main,
+    fontSize: 10,
+    fontWeight: '800',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+    marginBottom: 16,
+    letterSpacing: 1,
+  },
+  documentCard: {
+    alignItems: 'center',
+    paddingVertical: 20,
+    gap: 12,
+  },
+  documentIconContainer: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  documentTitle: {
+    color: colors.text.primary,
+    fontSize: 20,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  documentSubtitle: {
+    color: colors.text.secondary,
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  downloadButton: {
+    backgroundColor: colors.primary.main,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 24,
+    paddingVertical: 14,
+    borderRadius: 12,
+    shadowColor: colors.primary.main,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  downloadButtonText: {
+    color: '#000',
+    fontSize: 16,
+    fontWeight: '700',
   },
   generatedImage: {
     width: '100%',

@@ -1,6 +1,6 @@
 import { api } from './client';
 
-export type TextGenerationType = 'blog' | 'social' | 'ad';
+export type TextGenerationType = 'blog' | 'social' | 'ad' | 'email' | 'video';
 export type ImageStyle = 'realistic' | 'cartoon' | 'sketch';
 export type DocumentType = 'legal' | 'business';
 

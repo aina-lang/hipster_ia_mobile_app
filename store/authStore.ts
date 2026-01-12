@@ -36,6 +36,7 @@ interface User {
   email: string;
   firstName: string;
   lastName: string;
+  avatarUrl?: string;
   roles?: string[]; // Optional for AI users
   isEmailVerified: boolean;
   profiles?: {
@@ -44,10 +45,25 @@ interface User {
   };
   profile?: any; // Specifically for AI platform users
   aiProfile?: {
+    id: number;
     planType: string;
     subscriptionStatus: string;
     credits: number;
     nextRenewalDate?: string;
+    profileType: 'particulier' | 'entreprise';
+    companyName?: string;
+    professionalEmail?: string;
+    professionalAddress?: string;
+    city?: string;
+    postalCode?: string;
+    country?: string;
+    professionalPhone?: string;
+    professionalPhone2?: string;
+    siret?: string;
+    vatNumber?: string;
+    bankDetails?: string;
+    websiteUrl?: string;
+    logoUrl?: string;
   };
   type?: 'ai' | 'standard'; // To distinguish entre standard and ai users
 }
@@ -66,7 +82,8 @@ interface AuthState {
   logout: () => Promise<void>;
   clearError: () => void;
   updateUser: (userData: Partial<User>) => void;
-  updateProfile: (data: { firstName: string; lastName: string }) => Promise<void>;
+  updateProfile: (data: { firstName: string; lastName: string; avatarUrl?: string }) => Promise<void>;
+  updateAiProfile: (data: Partial<User['aiProfile']>) => Promise<void>;
   changePassword: (data: any) => Promise<void>;
   finishOnboarding: () => void;
 }
@@ -106,6 +123,41 @@ export const useAuthStore = create<AuthState>()(
           set({ isLoading: false });
         } catch (error: any) {
           const message = extractErrorMessage(error, 'Erreur lors de la mise à jour du profil.');
+          set({ error: message, isLoading: false });
+          throw error;
+        }
+      },
+
+      updateAiProfile: async (data) => {
+        set({ isLoading: true, error: null });
+        try {
+          const currentUser = get().user;
+          if (!currentUser || !currentUser.aiProfile) {
+            throw new Error('AI Profile non trouvé');
+          }
+
+          console.log('[AuthStore] Updating AI Profile:', {
+            id: currentUser.aiProfile.id,
+            payload: data
+          });
+
+          // Call API to update AI profile
+          // The backend endpoint is PATCH /profiles/ai/:id
+          const response = await api.patch(`/profiles/ai/${currentUser.aiProfile.id}`, data);
+          
+          console.log('[AuthStore] AI Profile updated successfully:', response.data);
+
+          // Update local state
+          set({ 
+            user: { 
+              ...currentUser, 
+              aiProfile: { ...currentUser.aiProfile, ...data } 
+            } 
+          });
+          set({ isLoading: false });
+        } catch (error: any) {
+          console.error('[AuthStore] Failed to update AI Profile:', error);
+          const message = extractErrorMessage(error, "Erreur lors de la mise à jour du profil professionnel.");
           set({ error: message, isLoading: false });
           throw error;
         }

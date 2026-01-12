@@ -13,49 +13,31 @@ import {
   Palette,
   Hammer,
   MapPin,
-  MoreHorizontal,
+  Heart,
+  Zap,
 } from 'lucide-react-native';
 
 const JOBS: { label: JobType; icon: any }[] = [
-  { label: 'Coiffeur', icon: Scissors },
-  { label: 'Restaurant', icon: UtensilsCrossed },
-  { label: 'Boutique', icon: Store },
-  { label: 'Créateur', icon: Palette },
   { label: 'Artisan', icon: Hammer },
+  { label: 'Coiffeur / Barber', icon: Scissors },
+  { label: 'Restaurant / Snack', icon: UtensilsCrossed },
+  { label: 'Boutique', icon: Store },
+  { label: 'Agent Immobilier', icon: MapPin },
+  { label: 'Coach / Consultant', icon: Heart },
+  { label: 'E-commerce', icon: Zap },
+  { label: 'Créateur de contenu', icon: Palette },
   { label: 'Service local', icon: MapPin },
-  { label: 'Autre', icon: MoreHorizontal },
 ];
-
-import { NeonButton } from '../../components/ui/NeonButton';
-import { TextInput, Keyboard } from 'react-native';
-
-// ... (existing imports, ensure NeonButton, TextInput are imported)
 
 export default function Step1JobScreen() {
   const router = useRouter();
   const { setJob, selectedJob } = useCreationStore();
-  const [customJob, setCustomJob] = React.useState('');
-  const [showInput, setShowInput] = React.useState(false);
 
   const handleSelect = (job: string) => {
-    if (job === 'Autre') {
-      setShowInput(true);
-      setCustomJob('');
-      setJob('Autre'); // Temporarily set to Autre to highlight the card
-    } else {
-      setShowInput(false);
-      setJob(job as JobType);
-      setTimeout(() => {
-        router.push('/(guided)/step2-type');
-      }, 300);
-    }
-  };
-
-  const handleCustomSubmit = () => {
-    if (customJob.trim()) {
-      setJob(customJob.trim() as JobType);
+    setJob(job as JobType);
+    setTimeout(() => {
       router.push('/(guided)/step2-type');
-    }
+    }, 300);
   };
 
   return (
@@ -77,31 +59,12 @@ export default function Step1JobScreen() {
                 <SelectionCard
                   label={job.label}
                   icon={job.icon}
-                  selected={selectedJob === job.label || (job.label === 'Autre' && showInput)}
+                  selected={selectedJob === job.label}
                   onPress={() => handleSelect(job.label)}
                 />
               </View>
             ))}
           </View>
-
-          {showInput && (
-            <View style={styles.inputContainer}>
-              <TextInput
-                style={styles.input}
-                placeholder="Précisez votre métier..."
-                placeholderTextColor={colors.text.muted}
-                value={customJob}
-                onChangeText={setCustomJob}
-                autoFocus
-              />
-              <NeonButton
-                title="Continuer"
-                onPress={handleCustomSubmit}
-                disabled={!customJob.trim()}
-                size="md"
-              />
-            </View>
-          )}
         </View>
       </ScrollView>
     </BackgroundGradient>
@@ -111,7 +74,7 @@ export default function Step1JobScreen() {
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    paddingTop: 200,
+    paddingTop: 100,
     paddingBottom: 40,
   },
   content: {
@@ -120,6 +83,7 @@ const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
     marginBottom: 20,
+    marginTop: 60,
   },
   title: {
     fontSize: 24,
@@ -144,23 +108,5 @@ const styles = StyleSheet.create({
   },
   gridItem: {
     width: '48%',
-  },
-  inputContainer: {
-    marginTop: 24,
-    gap: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    padding: 16,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  input: {
-    color: colors.text.primary,
-    fontSize: 16,
-    padding: 12,
-    backgroundColor: 'rgba(0, 0, 0, 0.2)',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
 });

@@ -7,13 +7,28 @@ import { DeerAnimation } from '../../components/ui/DeerAnimation';
 import { SelectionCard } from '../../components/ui/SelectionCard';
 import { NeonButton } from '../../components/ui/NeonButton';
 import { useCreationStore, ContextType } from '../../store/creationStore';
-import { Gift, Heart, Ribbon, Percent, Sun, Snowflake, MoreHorizontal } from 'lucide-react-native';
+import {
+  Gift,
+  Heart,
+  Ribbon,
+  Percent,
+  Sun,
+  Snowflake,
+  Rocket,
+  Trophy,
+  Megaphone,
+  Users,
+  MoreHorizontal,
+} from 'lucide-react-native';
 
 const CONTEXTS: { label: ContextType; icon: any }[] = [
+  { label: 'Lancement', icon: Rocket },
+  { label: 'Anniversaire', icon: Trophy },
+  { label: 'Promotion', icon: Megaphone },
+  { label: 'Recrutement', icon: Users },
+  { label: 'Soldes', icon: Percent },
   { label: 'Noël', icon: Gift },
   { label: 'Saint-Valentin', icon: Heart },
-  { label: 'Octobre Rose', icon: Ribbon },
-  { label: 'Soldes', icon: Percent },
   { label: 'Été', icon: Sun },
   { label: 'Hiver', icon: Snowflake },
   { label: 'Autre', icon: MoreHorizontal },

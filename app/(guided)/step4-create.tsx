@@ -10,7 +10,7 @@ import { Keyboard, Sparkles } from 'lucide-react-native';
 
 export default function Step4CreateScreen() {
   const router = useRouter();
-  const { setQuery, userQuery, selectedJob, selectedType } = useCreationStore();
+  const { setQuery, userQuery, selectedJob, selectedFunction } = useCreationStore();
   const [inputText, setInputText] = useState(userQuery);
 
   const handleCreate = () => {
@@ -23,9 +23,9 @@ export default function Step4CreateScreen() {
       <ScrollView contentContainerStyle={styles.container}>
         <View style={styles.content}>
           <View style={styles.header}>
-            <Text style={styles.title}>Décrivez votre idée</Text>
+            <Text style={styles.title}>Détails de la création</Text>
             <Text style={styles.subtitle}>
-              Pour votre {selectedType?.toLowerCase()} de {selectedJob?.toLowerCase()}.
+              Pour votre {selectedFunction?.toLowerCase()} en tant que {selectedJob?.toLowerCase()}.
             </Text>
           </View>
 

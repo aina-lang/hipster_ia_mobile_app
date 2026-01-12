@@ -39,7 +39,7 @@ const TypingMessage = ({ text, onComplete }: { text: string; onComplete?: () => 
       const timeout = setTimeout(() => {
         setDisplayedText(text.slice(0, currentIndex + 1));
         setCurrentIndex(currentIndex + 1);
-      }, 30);
+      }, 1);
       return () => clearTimeout(timeout);
     } else if (onComplete) {
       onComplete();
@@ -124,9 +124,17 @@ export default function HomeScreen() {
       const chatHistory = [];
 
       // Inject Hipster IA persona and user name personalization
+      const profile = user?.aiProfile;
+      let professionalContext = '';
+      if (profile?.profileType === 'entreprise') {
+        professionalContext = ` Tu aides l'entreprise "${profile.companyName || 'de ton interlocuteur'}". Infos pro: Email: ${profile.professionalEmail || '-'}, Tel: ${profile.professionalPhone || '-'}, Web: ${profile.websiteUrl || '-'}.`;
+      } else {
+        professionalContext = ` Tu aides ton interlocuteur "${user?.firstName} ${user?.lastName || ''}" à titre personnel.`;
+      }
+
       chatHistory.push({
         role: 'system',
-        content: `Tu es Hipster IA, l'assistant créatif et intelligent de ${user?.firstName || "l'utilisateur"}. Tu es expert en design, marketing et création de contenu. Sois amical, professionnel et n'hésite pas à mentionner le nom de ${user?.firstName || 'ton interlocuteur'} quand c'est pertinent.`,
+        content: `Tu es Hipster IA, l'assistant créatif et intelligent de ${user?.firstName || "l'utilisateur"}.${professionalContext} Tu es expert en design, marketing et création de contenu. Sois amical, professionnel et n'hésite pas à mentionner le nom de ${user?.firstName || 'ton interlocuteur'} quand c'est pertinent.`,
       });
 
       // Map existing messages
