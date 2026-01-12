@@ -53,10 +53,19 @@ export default function LoginScreen() {
       // Since aiLogin might resolve before navigation, we kept it simple.
       // If we want a success transition:
       setModalVisible(false); // Close loading
-      router.push('/(onboarding)/setup');
+
+      const { hasFinishedOnboarding } = useAuthStore.getState();
+      if (hasFinishedOnboarding) {
+        router.replace('/(drawer)');
+      } else {
+        router.push('/(onboarding)/setup');
+      }
     } catch (e: any) {
+      // Extract clear message from backend if available
+      const message = e.response?.data?.message || e.message || 'Une erreur est survenue.';
+
       // Keep modal open but switch to error
-      showModal('error', 'Échec de la connexion', e.message || 'Une erreur est survenue.');
+      showModal('error', 'Échec de la connexion', message);
 
       // Handle the case where email needs verification
       if (e.response?.data?.needsVerification) {

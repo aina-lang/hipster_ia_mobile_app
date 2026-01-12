@@ -64,6 +64,7 @@ interface User {
     bankDetails?: string;
     websiteUrl?: string;
     logoUrl?: string;
+    isSetupComplete: boolean;
   };
   type?: 'ai' | 'standard'; // To distinguish entre standard and ai users
 }
@@ -79,6 +80,7 @@ interface AuthState {
   aiLogin: (credentials: any) => Promise<void>;
   register: (data: any) => Promise<void>;
   aiRegister: (data: any) => Promise<void>;
+  aiVerifyEmail: (email: string, code: string) => Promise<void>;
   logout: () => Promise<void>;
   clearError: () => void;
   updateUser: (userData: Partial<User>) => void;
@@ -100,7 +102,30 @@ export const useAuthStore = create<AuthState>()(
 
       clearError: () => set({ error: null }),
 
-      finishOnboarding: () => set({ hasFinishedOnboarding: true }),
+      finishOnboarding: async () => {
+        set({ isLoading: true, error: null });
+        try {
+          const currentUser = get().user;
+          if (currentUser?.aiProfile) {
+            await api.patch(`/profiles/ai/${currentUser.aiProfile.id}`, { 
+              isSetupComplete: true 
+            });
+            set({ 
+              hasFinishedOnboarding: true,
+              user: {
+                ...currentUser,
+                aiProfile: { ...currentUser.aiProfile, isSetupComplete: true }
+              }
+            });
+          } else {
+            set({ hasFinishedOnboarding: true });
+          }
+          set({ isLoading: false });
+        } catch (error: any) {
+          console.error('[AuthStore] Failed to finish onboarding:', error);
+          set({ hasFinishedOnboarding: true, isLoading: false }); // Fallback to local state if API fails
+        }
+      },
 
       updateUser: (userData) => {
         const currentUser = get().user;
@@ -212,15 +237,19 @@ export const useAuthStore = create<AuthState>()(
           
           const resData = data.data;
           
+          console.log('[AuthStore] AI Login Success. User data:', JSON.stringify(resData.user, null, 2));
+
           await AsyncStorage.setItem('access_token', resData.access_token);
           await AsyncStorage.setItem('refresh_token', resData.refresh_token);
           
           set({ 
             user: resData.user, 
             isAuthenticated: true, 
+            hasFinishedOnboarding: !!resData.user.aiProfile?.isSetupComplete,
             isLoading: false 
           });
         } catch (error: any) {
+          console.error('[AuthStore] AI Login Error:', error);
           const message = extractErrorMessage(error, 'Une erreur est survenue lors de la connexion AI.');
           set({ error: message, isLoading: false });
           throw error;
@@ -255,6 +284,29 @@ export const useAuthStore = create<AuthState>()(
           return data;
         } catch (error: any) {
           const message = extractErrorMessage(error, "Une erreur est survenue lors de l'inscription AI.");
+          set({ error: message, isLoading: false });
+          throw error;
+        }
+      },
+
+      aiVerifyEmail: async (email: string, code: string) => {
+        set({ isLoading: true, error: null });
+        try {
+          const { data } = await api.post('/ai/auth/verify-email', { email, code });
+          
+          const resData = data; // Backend returns access_token, refresh_token, user directly
+          
+          await AsyncStorage.setItem('access_token', resData.access_token);
+          await AsyncStorage.setItem('refresh_token', resData.refresh_token);
+          
+          set({ 
+            user: resData.user, 
+            isAuthenticated: true, 
+            hasFinishedOnboarding: !!resData.user.aiProfile?.isSetupComplete,
+            isLoading: false 
+          });
+        } catch (error: any) {
+          const message = extractErrorMessage(error, "Erreur lors de la vérification de l'email.");
           set({ error: message, isLoading: false });
           throw error;
         }

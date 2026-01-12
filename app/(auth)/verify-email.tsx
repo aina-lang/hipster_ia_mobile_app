@@ -25,6 +25,8 @@ export default function VerifyEmailScreen() {
   const [isResending, setIsResending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const { aiVerifyEmail } = useAuthStore();
+
   const handleVerify = async () => {
     if (!code || code.length < 4) {
       Alert.alert('Erreur', 'Veuillez entrer le code de vérification.');
@@ -34,10 +36,9 @@ export default function VerifyEmailScreen() {
     setIsLoading(true);
     setError(null);
     try {
-      await api.post('/ai/auth/verify-email', { email, code });
-      Alert.alert('Succès', 'Votre email a été vérifié. Vous pouvez maintenant vous connecter.', [
-        { text: 'OK', onPress: () => router.push('/(auth)/login') },
-      ]);
+      await aiVerifyEmail(email as string, code);
+      // Auto redirect to setup
+      router.push('/(onboarding)/setup');
     } catch (e: any) {
       const message = e.response?.data?.message || 'Code invalide ou expiré.';
       setError(message);
@@ -53,7 +54,8 @@ export default function VerifyEmailScreen() {
       await api.post('/ai/auth/resend-otp', { email });
       Alert.alert('Envoyé', 'Un nouveau code a été envoyé à votre adresse email.');
     } catch (e: any) {
-      setError("Erreur lors de l'envoi du nouveau code.");
+      const message = e.response?.data?.message || "Erreur lors de l'envoi du nouveau code.";
+      setError(message);
     } finally {
       setIsResending(false);
     }

@@ -28,7 +28,7 @@ export default function RootLayout() {
 
       if (!hasFinishedOnboarding) {
         if (!inOnboardingGroup) {
-          targetRoute = '/(onboarding)/welcome';
+          targetRoute = isAuthenticated ? '/(onboarding)/setup' : '/(onboarding)/welcome';
         }
       } else {
         if (isAuthenticated) {

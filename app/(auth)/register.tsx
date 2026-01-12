@@ -18,7 +18,7 @@ import { colors } from '../../theme/colors';
 import { useAuthStore } from '../../store/authStore';
 
 export default function RegisterScreen() {
-  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -41,7 +41,7 @@ export default function RegisterScreen() {
   };
 
   const handleRegister = async () => {
-    if (!firstName || !email || !password || !confirmPassword) {
+    if (!lastName || !email || !password || !confirmPassword) {
       showModal('warning', 'Champs manquants', 'Veuillez remplir tous les champs.');
       return;
     }
@@ -54,7 +54,7 @@ export default function RegisterScreen() {
     showModal('loading', 'Création du compte...', 'Veuillez patienter');
 
     try {
-      await aiRegister({ firstName, email, password });
+      await aiRegister({ lastName, email, password });
 
       // Update modal to success
       showModal('success', 'Compte créé !', 'Vous allez être redirigé vers la vérification.');
@@ -68,7 +68,8 @@ export default function RegisterScreen() {
         });
       }, 1500);
     } catch (e: any) {
-      showModal('error', "Échec de l'inscription", e.message || 'Une erreur est survenue.');
+      const message = e.response?.data?.message || e.message || 'Une erreur est survenue.';
+      showModal('error', "Échec de l'inscription", message);
     }
   };
 
@@ -83,14 +84,14 @@ export default function RegisterScreen() {
 
           <View style={styles.form}>
             <View style={styles.inputContainer}>
-              <Text style={styles.label}>Prénom</Text>
+              <Text style={styles.label}>Nom</Text>
               <TextInput
                 style={styles.input}
-                placeholder="Votre prénom"
+                placeholder="Votre nom"
                 placeholderTextColor={colors.text.muted}
-                value={firstName}
+                value={lastName}
                 onChangeText={(text) => {
-                  setFirstName(text);
+                  setLastName(text);
                   if (error) clearError();
                 }}
               />

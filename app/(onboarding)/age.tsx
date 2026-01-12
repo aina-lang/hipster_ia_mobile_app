@@ -6,21 +6,29 @@ import { BackgroundGradient } from '../../components/ui/BackgroundGradient';
 import { StepIndicator } from '../../components/ui/StepIndicator';
 import { NeonButton } from '../../components/ui/NeonButton';
 import { colors } from '../../theme/colors';
+import { useAuthStore } from 'store/authStore';
 
 const AGE_RANGES = ['18-24', '25-34', '35-44', '45+'];
 
 export default function AgeScreen() {
   const [selectedAge, setSelectedAge] = useState<string | null>(null);
+  const { user } = useAuthStore();
+  const isEntreprise = user?.aiProfile?.profileType === 'entreprise';
+  const totalSteps = isEntreprise ? 4 : 3;
 
   const handleNext = () => {
     if (selectedAge) {
-      router.push('/(onboarding)/preferences');
+      if (isEntreprise) {
+        router.push('/(onboarding)/business-details');
+      } else {
+        router.push('/(onboarding)/ready');
+      }
     }
   };
 
   return (
     <BackgroundGradient>
-      <StepIndicator currentStep={3} totalSteps={5} />
+      <StepIndicator currentStep={2} totalSteps={totalSteps} />
 
       <View style={styles.container}>
         <Animated.View entering={FadeInRight.duration(800)} style={styles.content}>

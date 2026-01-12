@@ -12,16 +12,17 @@ import { useAuthStore } from 'store/authStore';
 const { width } = Dimensions.get('window');
 
 export default function ReadyScreen() {
-  const { finishOnboarding } = useAuthStore();
+  const { finishOnboarding, user } = useAuthStore();
+  const totalSteps = user?.aiProfile?.profileType === 'entreprise' ? 4 : 3;
 
   const handleStart = () => {
     finishOnboarding();
-    router.replace('/(tabs)');
+    router.replace('/(drawer)');
   };
 
   return (
     <BackgroundGradient>
-      <StepIndicator currentStep={5} totalSteps={5} />
+      <StepIndicator currentStep={totalSteps} totalSteps={totalSteps} />
 
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         {/* Animated Icon */}
