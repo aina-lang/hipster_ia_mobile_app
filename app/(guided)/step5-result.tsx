@@ -7,7 +7,11 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   Image,
+  Alert,
 } from 'react-native';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
+import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import { colors } from '../../theme/colors';
 import { BackgroundGradient } from '../../components/ui/BackgroundGradient';
@@ -18,12 +22,16 @@ import { Share, Home, Check, Copy, Download, FileText } from 'lucide-react-nativ
 import { useAuthStore } from '../../store/authStore';
 import { AiService, TextGenerationType } from '../../api/ai.service';
 import { encodeToon, containsToon, extractToonBlocks } from '../../utils/toon';
+
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 export default function Step5ResultScreen() {
   const router = useRouter();
   const { userQuery, selectedJob, selectedFunction, selectedCategory, selectedContext, reset } =
     useCreationStore();
   const [loading, setLoading] = useState(true);
   const [result, setResult] = useState<string | null>(null);
+  const [generationId, setGenerationId] = useState<number | null>(null);
 
   useEffect(() => {
     const generateContent = async () => {
@@ -74,6 +82,7 @@ export default function Step5ResultScreen() {
             details: userQuery,
           });
           setResult(resultData.content);
+          setGenerationId(resultData.generationId);
         } else {
           // Social ou Texte
           const subType: TextGenerationType = selectedCategory === 'Social' ? 'social' : 'blog';
@@ -94,6 +103,35 @@ export default function Step5ResultScreen() {
   const handleFinish = () => {
     reset();
     router.replace('/(drawer)');
+  };
+
+  const handleDownload = async (format: string) => {
+    if (!generationId) return;
+
+    try {
+      const apiBaseUrl = 'https://hipster-api.fr/api';
+      const downloadUrl = `${apiBaseUrl}/ai/export/${generationId}?format=${format}`;
+
+      const fileName = `document_${generationId}.${format === 'excel' ? 'xlsx' : format}`;
+      const fileUri = `${(FileSystem as any).documentDirectory}${fileName}`;
+
+      const token = await AsyncStorage.getItem('access_token');
+
+      const downloadRes = await FileSystem.downloadAsync(downloadUrl, fileUri, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (downloadRes.status === 200) {
+        await Sharing.shareAsync(fileUri);
+      } else {
+        Alert.alert('Erreur', 'Impossible de télécharger le fichier.');
+      }
+    } catch (error) {
+      console.error('Download error:', error);
+      Alert.alert('Erreur', 'Une erreur est survenue lors du téléchargement.');
+    }
   };
 
   if (loading) {
@@ -178,11 +216,30 @@ export default function Step5ResultScreen() {
                   <FileText size={48} color={colors.primary.main} />
                 </View>
                 <Text style={styles.documentTitle}>{selectedFunction}</Text>
-                <Text style={styles.documentSubtitle}>Document (PDF / DOCX) prêt à l'emploi</Text>
-                <TouchableOpacity style={styles.downloadButton}>
-                  <Download size={20} color="#000" />
-                  <Text style={styles.downloadButtonText}>Télécharger le PDF</Text>
-                </TouchableOpacity>
+                <Text style={styles.documentSubtitle}>Document prêt à l'emploi</Text>
+
+                <View style={styles.downloadOptions}>
+                  <TouchableOpacity
+                    style={styles.downloadButton}
+                    onPress={() => handleDownload('pdf')}>
+                    <Download size={20} color="#000" />
+                    <Text style={styles.downloadButtonText}>PDF</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.downloadButton, { backgroundColor: '#2b579a' }]}
+                    onPress={() => handleDownload('docx')}>
+                    <Download size={20} color="#fff" />
+                    <Text style={[styles.downloadButtonText, { color: '#fff' }]}>Word</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.downloadButton, { backgroundColor: '#217346' }]}
+                    onPress={() => handleDownload('excel')}>
+                    <Download size={20} color="#fff" />
+                    <Text style={[styles.downloadButtonText, { color: '#fff' }]}>Excel</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             ) : (
               <>
@@ -327,23 +384,27 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 20,
   },
+  downloadOptions: {
+    flexDirection: 'row',
+    gap: 12,
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    marginTop: 10,
+  },
   downloadButton: {
     backgroundColor: colors.primary.main,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    paddingHorizontal: 24,
-    paddingVertical: 14,
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     borderRadius: 12,
-    shadowColor: colors.primary.main,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
+    minWidth: 100,
+    justifyContent: 'center',
   },
   downloadButtonText: {
     color: '#000',
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '700',
   },
   generatedImage: {

@@ -442,7 +442,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.05)',
   },
   messagesContainer: {
-    flex: 1,
+
+    paddingBottom: 500,
   },
   messagesContent: {
     paddingHorizontal: 20,
@@ -566,10 +567,14 @@ const styles = StyleSheet.create({
   inputContainer: {
     paddingHorizontal: 20,
     paddingVertical: 12,
-    backgroundColor: 'transparent',
+    
+     position: 'absolute',
+  bottom: 0,
+  left: 0,
+  right: 0,
   },
   inputWrapper: {
-    backgroundColor: 'rgba(30, 41, 59, 0.7)',
+    backgroundColor: 'rgba(30, 41, 59, 1)',
     borderRadius: 24,
     padding: 16,
     borderWidth: 1,
