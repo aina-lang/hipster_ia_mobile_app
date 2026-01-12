@@ -68,10 +68,23 @@ function CustomDrawerContent(props: any) {
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{(user?.firstName?.[0] || 'U').toUpperCase()}</Text>
+            <Text style={styles.avatarText}>
+              {(user?.aiProfile?.profileType === 'entreprise'
+                ? user?.aiProfile?.companyName?.[0] || 'E'
+                : user?.firstName?.[0] || 'U'
+              ).toUpperCase()}
+            </Text>
           </View>
-          <Text style={styles.name}>{user?.firstName || 'Utilisateur'}</Text>
-          <Text style={styles.email}>{user?.email}</Text>
+          <Text style={styles.name}>
+            {user?.aiProfile?.profileType === 'entreprise'
+              ? user.aiProfile.companyName || 'Entreprise'
+              : `${user?.firstName || 'Utilisateur'} ${user?.lastName || ''}`}
+          </Text>
+          <Text style={styles.email}>
+            {user?.aiProfile?.profileType === 'entreprise' && user.aiProfile.professionalEmail
+              ? user.aiProfile.professionalEmail
+              : user?.email}
+          </Text>
         </View>
 
         <DrawerItemList {...props} />

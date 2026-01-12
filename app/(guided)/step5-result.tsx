@@ -17,6 +17,7 @@ import { useCreationStore } from '../../store/creationStore';
 import { Share, Home, Check, Copy, Download, FileText } from 'lucide-react-native';
 import { useAuthStore } from '../../store/authStore';
 import { AiService, TextGenerationType } from '../../api/ai.service';
+import { encodeToon, containsToon, extractToonBlocks } from '../../utils/toon';
 export default function Step5ResultScreen() {
   const router = useRouter();
   const { userQuery, selectedJob, selectedFunction, selectedCategory, selectedContext, reset } =
@@ -34,14 +35,33 @@ export default function Step5ResultScreen() {
         const authUser = useAuthStore.getState().user;
         const profile = authUser?.aiProfile;
 
-        let professionalContext = '';
-        if (profile?.profileType === 'entreprise') {
-          professionalContext = `\nINFOS ENTREPRISE:\n- Nom: ${profile.companyName || 'Non spécifié'}\n- Email Pro: ${profile.professionalEmail || 'Non spécifié'}\n- Adresse: ${profile.professionalAddress || 'Non spécifiée'}\n- Tel 1: ${profile.professionalPhone || 'Non spécifié'}\n- Tel 2: ${profile.professionalPhone2 || 'Non spécifié'}\n- Banque/IBAN: ${profile.bankDetails || 'Non spécifié'}\n- Site Web: ${profile.websiteUrl || 'Non spécifié'}\n- Logo: ${profile.logoUrl || 'Non spécifié'}`;
-        } else {
-          professionalContext = `\nINFO UTILISATEUR (PARTICULIER):\n- Nom: ${authUser?.firstName} ${authUser?.lastName || ''}\n- Avatar: ${authUser?.avatarUrl || 'Non spécifié'}`;
-        }
+        const toonPrompt = encodeToon({
+          request: {
+            job: selectedJob,
+            task: selectedFunction,
+            context: selectedContext || 'Standard',
+            query: userQuery,
+          },
+          userProfile:
+            profile?.profileType === 'entreprise'
+              ? {
+                  type: 'entreprise',
+                  name: profile.companyName,
+                  email: profile.professionalEmail,
+                  address: profile.professionalAddress,
+                  phone: profile.professionalPhone,
+                  bank: profile.bankDetails,
+                  web: profile.websiteUrl,
+                }
+              : { type: 'particulier', name: `${authUser?.firstName} ${authUser?.lastName || ''}` },
+          instructions: {
+            format: 'Réponds directement avec le contenu généré.',
+            optimization:
+              'Pour toute liste de données, utilise le format TOON pour économiser des tokens.',
+          },
+        });
 
-        const prompt = `Je suis un ${selectedJob}. Ma demande: ${selectedFunction}. Contexte: ${selectedContext || 'Aucun'}. ${professionalContext}\nDétails supplémentaires: ${userQuery}`;
+        const prompt = `Génère le contenu suivant structuré en TOON (Token-Oriented Object Notation) pour plus d'efficacité :\n${toonPrompt}`;
 
         if (selectedCategory === 'Image') {
           resultData = await AiService.generateImage(prompt, 'realistic');
@@ -88,6 +108,45 @@ export default function Step5ResultScreen() {
     );
   }
 
+  const ToonRenderer = ({ text }: { text: string }) => {
+    const blocks = extractToonBlocks(text);
+
+    if (blocks.length === 0) {
+      return <Text style={styles.resultText}>{text}</Text>;
+    }
+
+    return (
+      <View style={styles.toonContainer}>
+        {text.split('\n').map((line, i) => {
+          const isToonLine = blocks.some((block) => block.includes(line));
+          if (isToonLine && containsToon(line)) {
+            return (
+              <Text key={i} style={styles.toonHeader}>
+                {line}
+              </Text>
+            );
+          }
+          if (isToonLine && line.includes(',')) {
+            return (
+              <View key={i} style={styles.toonRow}>
+                {line.split(',').map((val, j) => (
+                  <View key={j} style={styles.toonCell}>
+                    <Text style={styles.toonCellText}>{val.trim()}</Text>
+                  </View>
+                ))}
+              </View>
+            );
+          }
+          return (
+            <Text key={i} style={styles.resultText}>
+              {line}
+            </Text>
+          );
+        })}
+      </View>
+    );
+  };
+
   return (
     <BackgroundGradient>
       <ScrollView contentContainerStyle={styles.container}>
@@ -130,7 +189,11 @@ export default function Step5ResultScreen() {
                 <Text style={styles.formatBadge}>
                   CONTENU {selectedCategory === 'Social' ? 'SOCIAL' : 'TEXTUEL'}
                 </Text>
-                <Text style={styles.resultText}>{result}</Text>
+                {containsToon(result || '') ? (
+                  <ToonRenderer text={result || ''} />
+                ) : (
+                  <Text style={styles.resultText}>{result}</Text>
+                )}
               </>
             )}
 
@@ -308,5 +371,34 @@ const styles = StyleSheet.create({
   },
   finishContainer: {
     alignItems: 'center',
+  },
+  toonContainer: {
+    marginVertical: 12,
+    gap: 6,
+  },
+  toonHeader: {
+    color: colors.primary.main,
+    fontSize: 12,
+    fontWeight: '800',
+    marginBottom: 6,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  toonRow: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    borderRadius: 8,
+    padding: 10,
+    gap: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.05)',
+  },
+  toonCell: {
+    flex: 1,
+  },
+  toonCellText: {
+    color: colors.text.secondary,
+    fontSize: 14,
+    lineHeight: 20,
   },
 });

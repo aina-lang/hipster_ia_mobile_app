@@ -20,6 +20,7 @@ import { Compass, Menu, Image, Paperclip, Send, Mic, Copy, Trash2 } from 'lucide
 import { useNavigation, DrawerActions } from '@react-navigation/native';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { AiService } from '../../api/ai.service';
+import { encodeToon, extractToonBlocks, containsToon } from '../../utils/toon';
 
 interface Message {
   id: string;
@@ -46,7 +47,52 @@ const TypingMessage = ({ text, onComplete }: { text: string; onComplete?: () => 
     }
   }, [currentIndex, text]);
 
+  if (containsToon(displayedText)) {
+    return <ToonRenderer text={displayedText} />;
+  }
+
   return <Text style={styles.aiMsgText}>{displayedText}</Text>;
+};
+
+const ToonRenderer = ({ text }: { text: string }) => {
+  const blocks = extractToonBlocks(text);
+
+  if (blocks.length === 0) {
+    return <Text style={styles.aiMsgText}>{text}</Text>;
+  }
+
+  return (
+    <View style={styles.toonContainer}>
+      {text.split('\n').map((line, i) => {
+        const isToonLine = blocks.some((block) => block.includes(line));
+        if (isToonLine && containsToon(line)) {
+          // It's a TOON header, we could style it
+          return (
+            <Text key={i} style={styles.toonHeader}>
+              {line}
+            </Text>
+          );
+        }
+        if (isToonLine && line.includes(',')) {
+          // It's a TOON data row
+          return (
+            <View key={i} style={styles.toonRow}>
+              {line.split(',').map((val, j) => (
+                <View key={j} style={styles.toonCell}>
+                  <Text style={styles.toonCellText}>{val.trim()}</Text>
+                </View>
+              ))}
+            </View>
+          );
+        }
+        return (
+          <Text key={i} style={styles.aiMsgText}>
+            {line}
+          </Text>
+        );
+      })}
+    </View>
+  );
 };
 
 // Composant pour placeholder animé
@@ -123,18 +169,35 @@ export default function HomeScreen() {
     try {
       const chatHistory = [];
 
-      // Inject Hipster IA persona and user name personalization
-      const profile = user?.aiProfile;
-      let professionalContext = '';
-      if (profile?.profileType === 'entreprise') {
-        professionalContext = ` Tu aides l'entreprise "${profile.companyName || 'de ton interlocuteur'}". Infos pro: Email: ${profile.professionalEmail || '-'}, Tel: ${profile.professionalPhone || '-'}, Web: ${profile.websiteUrl || '-'}.`;
-      } else {
-        professionalContext = ` Tu aides ton interlocuteur "${user?.firstName} ${user?.lastName || ''}" à titre personnel.`;
-      }
+      const toonPrompt = encodeToon({
+        system: {
+          identity: 'Hipster IA',
+          role: 'Assistant créatif et intelligent expert en design, marketing et création de contenu',
+          tone: 'Amical et professionnel',
+          target: user?.firstName || "l'utilisateur",
+        },
+        context: {
+          user:
+            user?.aiProfile?.profileType === 'entreprise'
+              ? {
+                  type: 'entreprise',
+                  name: user.aiProfile.companyName,
+                  email: user.aiProfile.professionalEmail,
+                  web: user.aiProfile.websiteUrl,
+                }
+              : { type: 'particulier', firstName: user?.firstName, lastName: user?.lastName },
+        },
+        instructions: [
+          "Aide l'utilisateur dans ses tâches créatives.",
+          "Mentionne son nom/entreprise quand c'est pertinent.",
+          'Pour les listes, idées, ou données tabulaires, UTILISE TOUJOURS LE FORMAT TOON (Token-Oriented Object Notation) pour économiser des tokens.',
+          'Format TOON: header[N]{fields}:\\n  val1,val2... (Exemple: posts[2]{titre,canal}:\\n  Titre1,Instagram\\n  Titre2,Facebook)',
+        ],
+      });
 
       chatHistory.push({
         role: 'system',
-        content: `Tu es Hipster IA, l'assistant créatif et intelligent de ${user?.firstName || "l'utilisateur"}.${professionalContext} Tu es expert en design, marketing et création de contenu. Sois amical, professionnel et n'hésite pas à mentionner le nom de ${user?.firstName || 'ton interlocuteur'} quand c'est pertinent.`,
+        content: `Tu es Hipster IA. Voici ta configuration et ton contexte en format TOON (Token-Oriented Object Notation) pour plus d'efficacité :\n${toonPrompt}\n\nRéponds aux demandes de l'utilisateur de manière amicale.`,
       });
 
       // Map existing messages
@@ -230,7 +293,10 @@ export default function HomeScreen() {
                 {/* Section d'accueil */}
                 <View style={styles.welcomeSection}>
                   <Text style={styles.greeting}>
-                    {getGreetingByTime()} {user?.firstName}
+                    {getGreetingByTime()}{' '}
+                    {user?.aiProfile?.profileType === 'entreprise'
+                      ? user.aiProfile.companyName || 'Entreprise'
+                      : user?.firstName || 'Utilisateur'}
                   </Text>
                   <Text style={styles.question}>Que créons-nous aujourd'hui ?</Text>
                 </View>
@@ -278,6 +344,8 @@ export default function HomeScreen() {
                         <Text style={styles.userMsgText}>{msg.text}</Text>
                       ) : msg.isTyping ? (
                         <TypingMessage text={msg.text} onComplete={() => completeTyping(msg.id)} />
+                      ) : containsToon(msg.text) ? (
+                        <ToonRenderer text={msg.text} />
                       ) : (
                         <Text style={styles.aiMsgText}>{msg.text}</Text>
                       )}
@@ -549,5 +617,33 @@ const styles = StyleSheet.create({
   },
   sendButtonDisabled: {
     opacity: 0.4,
+  },
+  toonContainer: {
+    marginVertical: 8,
+    gap: 4,
+  },
+  toonHeader: {
+    color: colors.primary.main,
+    fontSize: 12,
+    fontWeight: '800',
+    marginBottom: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  toonRow: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    borderRadius: 8,
+    padding: 8,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.05)',
+  },
+  toonCell: {
+    flex: 1,
+  },
+  toonCellText: {
+    color: colors.text.secondary,
+    fontSize: 14,
   },
 });

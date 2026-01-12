@@ -15,6 +15,7 @@
     "@react-native-masked-view/masked-view": "0.3.2",
     "@react-navigation/drawer": "^7.7.10",
     "@stripe/stripe-react-native": "0.50.3",
+    "@toon-format/toon": "^2.1.0",
     "axios": "^1.13.2",
     "dayjs": "^1.11.19",
     "expo": "^54.0.31",

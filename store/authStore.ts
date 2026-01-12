@@ -84,7 +84,7 @@ interface AuthState {
   logout: () => Promise<void>;
   clearError: () => void;
   updateUser: (userData: Partial<User>) => void;
-  updateProfile: (data: { firstName: string; lastName: string; avatarUrl?: string }) => Promise<void>;
+  updateProfile: (data: { firstName?: string; lastName?: string; avatarUrl?: string }) => Promise<void>;
   updateAiProfile: (data: Partial<User['aiProfile']>) => Promise<void>;
   changePassword: (data: any) => Promise<void>;
   finishOnboarding: () => void;
@@ -136,7 +136,7 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      updateProfile: async (data: { lastName: string; avatarUrl?: string }) => {
+      updateProfile: async (data: { firstName?: string; lastName?: string; avatarUrl?: string }) => {
         set({ isLoading: true, error: null });
         try {
           // Call API to update profile

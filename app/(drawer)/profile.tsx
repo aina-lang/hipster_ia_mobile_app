@@ -54,6 +54,7 @@ export default function ProfileScreen() {
   } = useAuthStore();
 
   // Personal Info State
+  const [firstName, setFirstName] = useState(user?.firstName || '');
   const [lastName, setLastName] = useState(user?.lastName || '');
   const [avatarUrl, setAvatarUrl] = useState(user?.avatarUrl || '');
   const [isEditing, setIsEditing] = useState(false);
@@ -151,7 +152,7 @@ export default function ProfileScreen() {
         finalAvatarUrl = await useAuthStore.getState().uploadAvatar(avatarUrl);
       }
 
-      await updateProfile({ lastName, avatarUrl: finalAvatarUrl });
+      await updateProfile({ firstName, lastName, avatarUrl: finalAvatarUrl });
       setIsEditing(false);
       showFeedback('success', 'Succès', 'Profil personnel mis à jour avec succès.');
     } catch (err) {
@@ -337,6 +338,21 @@ export default function ProfileScreen() {
 
               <View style={styles.form}>
                 <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Prénom</Text>
+                  <View style={[styles.inputContainer, isEditing && styles.activeInput]}>
+                    <User size={18} color={colors.text.secondary} />
+                    <TextInput
+                      style={styles.input}
+                      value={firstName}
+                      onChangeText={setFirstName}
+                      editable={isEditing}
+                      placeholder="Votre prénom"
+                      placeholderTextColor={colors.text.muted}
+                    />
+                  </View>
+                </View>
+
+                <View style={styles.inputGroup}>
                   <Text style={styles.label}>Nom</Text>
                   <View style={[styles.inputContainer, isEditing && styles.activeInput]}>
                     <User size={18} color={colors.text.secondary} />
@@ -357,6 +373,7 @@ export default function ProfileScreen() {
                       style={styles.cancelButton}
                       onPress={() => {
                         setIsEditing(false);
+                        setFirstName(user?.firstName || '');
                         setLastName(user?.lastName || '');
                         setAvatarUrl(user?.avatarUrl || '');
                       }}>
