@@ -89,6 +89,7 @@ interface AuthState {
   changePassword: (data: any) => Promise<void>;
   finishOnboarding: () => void;
   uploadAvatar: (imageUri: string) => Promise<string>;
+  uploadLogo: (profileId: number, imageUri: string) => Promise<string>;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -189,6 +190,48 @@ export const useAuthStore = create<AuthState>()(
           return avatarUrl;
         } catch (error: any) {
           const message = extractErrorMessage(error, "Erreur lors de l'upload de l'avatar.");
+          set({ error: message, isLoading: false });
+          throw error;
+        }
+      },
+
+      uploadLogo: async (profileId: number, imageUri: string): Promise<string> => {
+        set({ isLoading: true, error: null });
+        try {
+          const formData = new FormData();
+          const filename = imageUri.split('/').pop() || 'logo.jpg';
+          const match = /\.(\w+)$/.exec(filename);
+          const type = match ? `image/${match[1]}` : `image`;
+
+          formData.append('file', {
+            uri: imageUri,
+            name: filename,
+            type,
+          } as any);
+
+          const { data } = await api.post(`/profiles/ai/${profileId}/logo`, formData, {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+            },
+          });
+
+          const logoUrl = data.data.logoUrl;
+
+          // Update local state
+          const currentUser = get().user;
+          if (currentUser && currentUser.aiProfile && currentUser.aiProfile.id === profileId) {
+            set({
+              user: {
+                ...currentUser,
+                aiProfile: { ...currentUser.aiProfile, logoUrl },
+              },
+            });
+          }
+
+          set({ isLoading: false });
+          return logoUrl;
+        } catch (error: any) {
+          const message = extractErrorMessage(error, "Erreur lors de l'upload du logo.");
           set({ error: message, isLoading: false });
           throw error;
         }

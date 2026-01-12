@@ -167,6 +167,18 @@ export default function ProfileScreen() {
     }
 
     try {
+      let finalLogoUrl = logoUrl;
+
+      // If logoUrl is a local file (e.g., from ImagePicker), upload it first
+      if (logoUrl && logoUrl.startsWith('file://')) {
+        const currentUser = useAuthStore.getState().user;
+        if (currentUser?.aiProfile?.id) {
+          finalLogoUrl = await useAuthStore
+            .getState()
+            .uploadLogo(currentUser.aiProfile.id, logoUrl);
+        }
+      }
+
       // Concatenate prefix with local number for persistence
       const fullPhone1 =
         professionalPhone && selectedCountry
@@ -192,7 +204,7 @@ export default function ProfileScreen() {
         vatNumber,
         bankDetails,
         websiteUrl,
-        logoUrl,
+        logoUrl: finalLogoUrl,
       });
       setIsEditingPro(false);
       showFeedback('success', 'Succès', 'Profil professionnel mis à jour avec succès.');
