@@ -88,6 +88,7 @@ interface AuthState {
   updateAiProfile: (data: Partial<User['aiProfile']>) => Promise<void>;
   changePassword: (data: any) => Promise<void>;
   finishOnboarding: () => void;
+  uploadAvatar: (imageUri: string) => Promise<string>;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -134,7 +135,7 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      updateProfile: async (data) => {
+      updateProfile: async (data: { lastName: string; avatarUrl?: string }) => {
         set({ isLoading: true, error: null });
         try {
           // Call API to update profile
@@ -148,6 +149,46 @@ export const useAuthStore = create<AuthState>()(
           set({ isLoading: false });
         } catch (error: any) {
           const message = extractErrorMessage(error, 'Erreur lors de la mise à jour du profil.');
+          set({ error: message, isLoading: false });
+          throw error;
+        }
+      },
+
+      uploadAvatar: async (imageUri: string): Promise<string> => {
+        set({ isLoading: true, error: null });
+        try {
+          const formData = new FormData();
+          const filename = imageUri.split('/').pop() || 'avatar.jpg';
+          const match = /\.(\w+)$/.exec(filename);
+          const type = match ? `image/${match[1]}` : `image`;
+
+          formData.append('file', {
+            uri: imageUri,
+            name: filename,
+            type,
+          } as any);
+
+          const { data } = await api.post('/users/me/avatar', formData, {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+            },
+          });
+
+          // The typical backend response for uploadAvatar returns the user or just the path
+          // Based on my recent update to UsersController.uploadMyAvatar, it returns the user object (via update)
+          const res = data.data;
+          const avatarUrl = res.avatarUrl;
+
+          // Update local state if needed
+          const currentUser = get().user;
+          if (currentUser && avatarUrl) {
+            set({ user: { ...currentUser, avatarUrl } });
+          }
+
+          set({ isLoading: false });
+          return avatarUrl;
+        } catch (error: any) {
+          const message = extractErrorMessage(error, "Erreur lors de l'upload de l'avatar.");
           set({ error: message, isLoading: false });
           throw error;
         }

@@ -144,7 +144,14 @@ export default function ProfileScreen() {
     }
 
     try {
-      await updateProfile({ lastName, avatarUrl });
+      let finalAvatarUrl = avatarUrl;
+
+      // If avatarUrl is a local file (e.g., from ImagePicker), upload it first
+      if (avatarUrl && avatarUrl.startsWith('file://')) {
+        finalAvatarUrl = await useAuthStore.getState().uploadAvatar(avatarUrl);
+      }
+
+      await updateProfile({ lastName, avatarUrl: finalAvatarUrl });
       setIsEditing(false);
       showFeedback('success', 'Succès', 'Profil personnel mis à jour avec succès.');
     } catch (err) {
