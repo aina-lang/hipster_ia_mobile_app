@@ -1,193 +1,127 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import React, { useEffect } from 'react';
+import { View, Text, TextInput, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { colors } from '../../theme/colors';
-import { BackgroundGradient } from '../../components/ui/BackgroundGradient';
 import { DeerAnimation } from '../../components/ui/DeerAnimation';
-import { SelectionCard } from '../../components/ui/SelectionCard';
 import { NeonButton } from '../../components/ui/NeonButton';
-import { useCreationStore, ContextType } from '../../store/creationStore';
-import {
-  Gift,
-  Heart,
-  Ribbon,
-  Percent,
-  Sun,
-  Snowflake,
-  Rocket,
-  Trophy,
-  Megaphone,
-  Users,
-  MoreHorizontal,
-} from 'lucide-react-native';
-
-const CONTEXTS: { label: ContextType; icon: any }[] = [
-  { label: 'Lancement', icon: Rocket },
-  { label: 'Anniversaire', icon: Trophy },
-  { label: 'Promotion', icon: Megaphone },
-  { label: 'Recrutement', icon: Users },
-  { label: 'Soldes', icon: Percent },
-  { label: 'Noël', icon: Gift },
-  { label: 'Saint-Valentin', icon: Heart },
-  { label: 'Été', icon: Sun },
-  { label: 'Hiver', icon: Snowflake },
-  { label: 'Autre', icon: MoreHorizontal },
-];
-
-import { TextInput } from 'react-native';
+import { useCreationStore } from '../../store/creationStore';
+import { WORKFLOWS, WorkflowQuestion } from '../../constants/workflows';
+import { GuidedScreenWrapper } from '../../components/layout/GuidedScreenWrapper';
 
 export default function Step3ContextScreen() {
   const router = useRouter();
-  const { setContext, selectedContext } = useCreationStore();
-  const [customContext, setCustomContext] = React.useState('');
-  const [showInput, setShowInput] = React.useState(false);
+  const { selectedJob, selectedFunction, workflowAnswers, setWorkflowAnswer } =
+    useCreationStore();
 
-  const handleSelect = (context: string) => {
-    if (context === 'Autre') {
-      setShowInput(true);
-      setCustomContext('');
-      setContext('Autre' as ContextType);
-    } else {
-      setShowInput(false);
-      setContext(context as ContextType);
-      setTimeout(() => {
-        router.push('/(guided)/step4-create');
-      }, 300);
+  const questions: WorkflowQuestion[] =
+    (selectedJob && selectedFunction && WORKFLOWS[selectedJob]?.[selectedFunction]) || [];
+
+  useEffect(() => {
+    if (questions.length === 0 && selectedJob && selectedFunction) {
+      // Pas de skip auto ici, mais logique possible si nécessaire
     }
-  };
+  }, [questions, selectedJob, selectedFunction]);
 
-  const handleCustomSubmit = () => {
-    if (customContext.trim()) {
-      setContext(customContext.trim() as ContextType);
-      router.push('/(guided)/step4-create');
-    }
-  };
-
-  const handleSkip = () => {
-    setContext(null);
+  const handleContinue = () => {
     router.push('/(guided)/step4-create');
   };
 
-  return (
-    <BackgroundGradient>
-      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-        <View style={styles.content}>
-          <View style={styles.header}>
-            <Text style={styles.title}>Un contexte particulier ?</Text>
-            <Text style={styles.subtitle}>C'est optionnel, mais ça aide !</Text>
-          </View>
+  const isFormValid = () => true;
 
-          <View style={styles.animationContainer}>
-            <DeerAnimation size={120} progress={60} />
-          </View>
+  const renderQuestion = (q: WorkflowQuestion, index: number) => {
+    const value = workflowAnswers[q.id];
 
-          <View style={styles.grid}>
-            {CONTEXTS.map((context) => (
-              <View key={context.label!} style={styles.gridItem}>
-                <SelectionCard
-                  label={context.label!}
-                  icon={context.icon}
-                  selected={
-                    selectedContext === context.label || (context.label === 'Autre' && showInput)
+    return (
+      <View key={q.id} className="mb-6">
+        <Text className="text-lg font-semibold text-white mb-3">
+          {index + 1}. {q.label}
+        </Text>
+
+        {q.type === 'choice' && q.options && (
+          <View className="flex-row flex-wrap gap-2">
+            {q.options.map((opt) => (
+              <TouchableOpacity
+                key={opt}
+                className={`
+                  px-4 py-2 rounded-full border 
+                  ${value === opt
+                    ? 'bg-primary border-primary'
+                    : 'bg-white/5 border-white/10'
                   }
-                  onPress={() => handleSelect(context.label!)}
-                />
-              </View>
+                `}
+                onPress={() => setWorkflowAnswer(q.id, opt)}
+              >
+                <Text
+                  className={`
+                    text-sm 
+                    ${value === opt ? 'text-black font-semibold' : 'text-white/70'}
+                  `}
+                >
+                  {opt}
+                </Text>
+              </TouchableOpacity>
             ))}
           </View>
+        )}
 
-          {showInput && (
-            <View style={styles.inputContainer}>
-              <TextInput
-                style={styles.input}
-                placeholder="Précisez le contexte..."
-                placeholderTextColor={colors.text.muted}
-                value={customContext}
-                onChangeText={setCustomContext}
-                autoFocus
-              />
-              <NeonButton
-                title="Continuer"
-                onPress={handleCustomSubmit}
-                disabled={!customContext.trim()}
-                size="md"
-              />
-            </View>
-          )}
+        {q.type === 'text' && (
+          <TextInput
+            className="
+              text-white text-base
+              p-4 rounded-xl
+              bg-black/20
+              border border-white/10
+            "
+            placeholder={q.placeholder || 'Votre réponse...'}
+            placeholderTextColor={colors.text.muted}
+            value={value || ''}
+            onChangeText={(text) => setWorkflowAnswer(q.id, text)}
+          />
+        )}
+      </View>
+    );
+  };
 
-          {!showInput && (
-            <View style={styles.skipContainer}>
-              <NeonButton
-                title="Passer cette étape"
-                onPress={handleSkip}
-                variant="ghost"
-                size="md"
-              />
-            </View>
-          )}
+  return (
+    <GuidedScreenWrapper>
+      <View className="px-5">
+
+        {/* Header */}
+        <View className="items-center my-5">
+          <Text className="text-2xl font-bold text-white text-center mb-2">
+            Personnalisation
+          </Text>
+          <Text className="text-base text-white/70 text-center">
+            {selectedFunction ? selectedFunction.split('(')[0].trim() : 'Détails du projet'}
+          </Text>
         </View>
-      </ScrollView>
-    </BackgroundGradient>
+
+        {/* Animation */}
+        <View className="items-center mb-5">
+          <DeerAnimation size={100} progress={60} />
+        </View>
+
+        {/* Questions */}
+        {questions.length > 0 ? (
+          questions.map((q, index) => renderQuestion(q, index))
+        ) : (
+          <View className="p-5 items-center">
+            <Text className="text-white/50 italic">
+              Aucune question spécifique pour ce choix.
+            </Text>
+          </View>
+        )}
+
+        {/* Footer */}
+        <View className="mt-6 items-center">
+          <NeonButton
+            title="Continuer"
+            onPress={handleContinue}
+            size="lg"
+            disabled={!isFormValid()}
+          />
+        </View>
+      </View>
+    </GuidedScreenWrapper>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flexGrow: 1,
-    paddingTop: 200,
-    paddingBottom: 40,
-  },
-  content: {
-    paddingHorizontal: 20,
-  },
-  header: {
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: colors.text.primary,
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: 16,
-    color: colors.text.secondary,
-    textAlign: 'center',
-  },
-  animationContainer: {
-    alignItems: 'center',
-    marginBottom: 30,
-  },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  gridItem: {
-    width: '48%',
-  },
-  skipContainer: {
-    marginTop: 32,
-    alignItems: 'center',
-  },
-  inputContainer: {
-    marginTop: 24,
-    gap: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    padding: 16,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  input: {
-    color: colors.text.primary,
-    fontSize: 16,
-    padding: 12,
-    backgroundColor: 'rgba(0, 0, 0, 0.2)',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-  },
-});

@@ -1,16 +1,13 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text } from 'react-native';
 import { useRouter } from 'expo-router';
 import { colors } from '../../theme/colors';
-import { BackgroundGradient } from '../../components/ui/BackgroundGradient';
 import { DeerAnimation } from '../../components/ui/DeerAnimation';
 import { SelectionCard } from '../../components/ui/SelectionCard';
-import { useCreationStore, JobType, CreationCategory } from '../../store/creationStore';
+import { useCreationStore, CreationCategory } from '../../store/creationStore';
+import { GuidedScreenWrapper } from '../../components/layout/GuidedScreenWrapper';
 import {
   FileText,
-  FileCheck,
-  Palette,
-  MessageSquare,
   Instagram,
   ShoppingBag,
   User,
@@ -20,17 +17,15 @@ import {
   Package,
   Ticket,
   MessageCircle,
-  Home,
-  Camera,
-  Mail,
-  Activity,
-  Zap,
   Video,
   Youtube,
   Layers,
-  Type,
+  Lightbulb,
+  BookOpen,
+  MessageSquare,
+  Ruler,
   Clock,
-  Briefcase,
+  Camera,
 } from 'lucide-react-native';
 
 interface JobFunction {
@@ -40,58 +35,43 @@ interface JobFunction {
 }
 
 const JOB_FUNCTIONS: Record<string, JobFunction[]> = {
-  Artisan: [
-    { label: 'Générer un devis (PDF / DOCX)', category: 'Document', icon: FileText },
-    { label: 'Créer un flyer / affiche (Image)', category: 'Image', icon: Palette },
-    { label: 'Rédiger un message client (Texte)', category: 'Texte', icon: MessageSquare },
-  ],
-  'Coiffeur / Barber': [
+  Coiffeur: [
     { label: 'Post Instagram (Image + Texte)', category: 'Social', icon: Instagram },
     { label: 'Fiche tarifaire (PDF / Image)', category: 'Document', icon: FileText },
-    { label: 'Affiche promo / -20% (Image)', category: 'Image', icon: ShoppingBag },
-    { label: 'Description / Bio Insta (Texte)', category: 'Texte', icon: User },
+    { label: 'Affiche promo -20%', category: 'Image', icon: ShoppingBag },
+    { label: 'Bio Instagram', category: 'Texte', icon: User },
   ],
-  'Restaurant / Snack': [
-    { label: 'Créer un menu complet (PDF / DOCX)', category: 'Document', icon: FileText },
-    { label: 'Post “plat du jour” (Image + Texte)', category: 'Social', icon: Utensils },
-    { label: 'Flyer promotionnel (Image)', category: 'Image', icon: Megaphone },
-    { label: 'Description Maps / Uber (Texte)', category: 'Texte', icon: Globe },
+  Restaurant: [
+    { label: 'Menu complet (PDF / DOCX)', category: 'Document', icon: Utensils },
+    { label: 'Post “Plat du jour”', category: 'Social', icon: Camera },
+    { label: 'Flyer promotionnel', category: 'Image', icon: Megaphone },
+    { label: 'Description Maps / Uber', category: 'Texte', icon: Globe },
   ],
   Boutique: [
-    { label: 'Fiche produit (Texte + Image)', category: 'Texte', icon: Package },
-    { label: 'Post Instagram produit (Image)', category: 'Social', icon: Instagram },
-    { label: 'Flyer soldes / promo (Image)', category: 'Image', icon: Ticket },
-    { label: 'Message de vente / WhatsApp (Texte)', category: 'Texte', icon: MessageCircle },
+    { label: 'Fiche produit', category: 'Texte', icon: Package },
+    { label: 'Post Instagram produit', category: 'Social', icon: Instagram },
+    { label: 'Flyer soldes / promo', category: 'Image', icon: Ticket },
+    { label: 'Message WhatsApp vente', category: 'Texte', icon: MessageCircle },
   ],
-  'Agent Immobilier': [
-    { label: 'Annonce immobilière (Texte + Photo)', category: 'Texte', icon: Home },
-    { label: 'Visuel immobilier (Image IA)', category: 'Image', icon: Camera },
-    { label: 'Fiche technique du bien (PDF)', category: 'Document', icon: FileCheck },
-    { label: 'Message client / RDV (Texte)', category: 'Texte', icon: Mail },
+  Créateur: [
+    { label: 'Idée + Script vidéo', category: 'Texte', icon: Video },
+    { label: 'Miniature YouTube', category: 'Image', icon: Youtube },
+    { label: 'Post carrousel Insta', category: 'Social', icon: Layers },
+    { label: 'Description YT / TikTok', category: 'Texte', icon: FileText },
   ],
-  'Coach / Consultant': [
-    { label: 'Post éducatif + visuel (Image + Texte)', category: 'Social', icon: Instagram },
-    { label: 'Plan de séance / programme (PDF)', category: 'Document', icon: Activity },
-    { label: 'Page de vente courte (Texte)', category: 'Texte', icon: Briefcase },
-    { label: 'Message client pro (Texte)', category: 'Texte', icon: MessageSquare },
-  ],
-  'E-commerce': [
-    { label: 'Fiche produit SEO (Texte)', category: 'Texte', icon: Globe },
-    { label: 'Image produit / mockup (Image IA)', category: 'Image', icon: Camera },
-    { label: 'Publicité Meta / Google Ads (Texte)', category: 'Texte', icon: Zap },
-    { label: 'Email de vente / Copy (Texte)', category: 'Texte', icon: Mail },
-  ],
-  'Créateur de contenu': [
-    { label: 'Idée + script vidéo (Texte)', category: 'Texte', icon: Video },
-    { label: 'Miniature YouTube (Image IA)', category: 'Image', icon: Youtube },
-    { label: 'Post carrousel Insta (Image + Texte)', category: 'Social', icon: Layers },
-    { label: 'Description YT / TikTok (Texte)', category: 'Texte', icon: Type },
+  Artisan: [
+    { label: 'Idées & Inspirations', category: 'Texte', icon: Lightbulb },
+    { label: 'Tutoriels & Guides', category: 'Texte', icon: BookOpen },
+    { label: 'Marketing & Com', category: 'Social', icon: Megaphone },
+    { label: 'Conseils Pro', category: 'Texte', icon: MessageSquare },
+    { label: 'Modèles & Plans', category: 'Image', icon: Ruler },
+    { label: 'Estimation', category: 'Document', icon: Clock },
   ],
   'Service local': [
-    { label: 'Flyer local (Image)', category: 'Image', icon: Palette },
-    { label: 'Message WhatsApp pro (Texte)', category: 'Texte', icon: MessageCircle },
-    { label: 'Petite affiche / tarifs (Image)', category: 'Image', icon: Clock },
-    { label: 'Description Google Maps (Texte)', category: 'Texte', icon: Globe },
+    { label: 'Flyer local', category: 'Image', icon: Globe },
+    { label: 'Message WhatsApp pro', category: 'Texte', icon: MessageCircle },
+    { label: 'Petite affiche / tarifs', category: 'Image', icon: FileText },
+    { label: 'Description Google Maps', category: 'Texte', icon: Globe },
   ],
 };
 
@@ -99,77 +79,104 @@ export default function Step2TypeScreen() {
   const router = useRouter();
   const { selectedJob, setFunction, selectedFunction } = useCreationStore();
 
-  const currentFunctions = selectedJob ? JOB_FUNCTIONS[selectedJob as string] || [] : [];
+  const currentFunctions = selectedJob ? JOB_FUNCTIONS[selectedJob] || [] : [];
 
   const handleSelect = (fn: JobFunction) => {
     setFunction(fn.label, fn.category);
-    setTimeout(() => {
-      router.push('/(guided)/step3-context');
-    }, 300);
+    setTimeout(() => router.push('/(guided)/step3-context'), 300);
   };
 
   return (
-    <BackgroundGradient>
-      <ScrollView contentContainerStyle={styles.container}>
-        <View style={styles.content}>
-          <View style={styles.header}>
-            <Text style={styles.title}>Que souhaitez-vous faire ?</Text>
-            <Text style={styles.subtitle}>Sélectionnez une option pour votre activité.</Text>
-          </View>
-
-          <View style={styles.animationContainer}>
-            <DeerAnimation size={120} progress={40} />
-          </View>
-
-          <View style={styles.list}>
-            {currentFunctions.map((fn, index) => (
-              <SelectionCard
-                key={index}
-                label={fn.label}
-                icon={fn.icon}
-                selected={selectedFunction === fn.label}
-                onPress={() => handleSelect(fn)}
-                fullWidth
-              />
-            ))}
-          </View>
+    <GuidedScreenWrapper>
+      <View className="px-5">
+        
+        {/* HEADER */}
+        <View className="items-center mb-5">
+          <Text className="text-2xl font-bold text-white text-center mb-2">
+            Que souhaitez-vous faire ?
+          </Text>
+          <Text className="text-base text-gray-300 text-center">
+            Sélectionnez une option pour votre activité.
+          </Text>
         </View>
-      </ScrollView>
-    </BackgroundGradient>
+
+        {/* ANIMATION */}
+        <View className="items-center mb-8">
+          <DeerAnimation size={120} progress={40} />
+        </View>
+
+        {/* LISTE */}
+        <View className="gap-3">
+          {currentFunctions.map((fn, index) => (
+            <SelectionCard
+              key={index}
+              label={fn.label}
+              icon={fn.icon}
+              selected={selectedFunction === fn.label}
+              onPress={() => handleSelect(fn)}
+              fullWidth
+            >
+              {renderPreview(fn.category)}
+            </SelectionCard>
+          ))}
+        </View>
+
+      </View>
+    </GuidedScreenWrapper>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flexGrow: 1,
-    paddingTop: 100,
-    paddingBottom: 40,
-  },
-  content: {
-    paddingHorizontal: 20,
-  },
-  header: {
-    alignItems: 'center',
-    marginBottom: 20,
-    marginTop: 60,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: colors.text.primary,
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: 16,
-    color: colors.text.secondary,
-    textAlign: 'center',
-  },
-  animationContainer: {
-    alignItems: 'center',
-    marginBottom: 30,
-  },
-  list: {
-    gap: 12,
-  },
-});
+/* -------------------------------------------------------------------------- */
+/*                                PREVIEW BLOCKS                               */
+/* -------------------------------------------------------------------------- */
+
+const renderPreview = (category: CreationCategory) => {
+  switch (category) {
+    case 'Social':
+      return (
+        <View className="mt-1 opacity-80">
+          <View className="flex-row items-center gap-2 mb-2">
+            <View className="w-5 h-5 rounded-full bg-white/20" />
+            <View className="gap-1">
+              <View className="w-10 h-1 rounded bg-white/20" />
+              <View className="w-20 h-1 rounded bg-white/20" />
+            </View>
+          </View>
+          <View className="w-full h-[60px] rounded-lg bg-white/10" />
+        </View>
+      );
+
+    case 'Document':
+      return (
+        <View className="mt-1 opacity-80">
+          <View className="p-3 rounded-lg bg-white/5 border border-white/10 gap-2">
+            <View className="w-20 h-1 rounded bg-white/20" />
+            <View className="w-20 h-1 rounded bg-white/20" />
+            <View className="w-10 h-1 rounded bg-white/20" />
+            <View className="w-20 h-1 rounded bg-white/20 mt-1" />
+          </View>
+        </View>
+      );
+
+    case 'Image':
+      return (
+        <View className="mt-1 opacity-80">
+          <View className="w-full h-20 rounded-lg bg-white/15 overflow-hidden relative">
+            <View className="absolute top-2 right-2 w-4 h-4 rounded-full bg-white/30" />
+            <View className="absolute bottom-0 left-2 w-16 h-10 bg-white/20 rounded-t-xl" />
+          </View>
+        </View>
+      );
+
+    case 'Texte':
+    default:
+      return (
+        <View className="mt-1 opacity-80">
+          <View className="p-3 rounded-xl bg-white/10 self-start gap-2 border-b-2 border-b-white/20">
+            <View className="w-20 h-1 rounded bg-white/20" />
+            <View className="w-10 h-1 rounded bg-white/20" />
+          </View>
+        </View>
+      );
+  }
+};

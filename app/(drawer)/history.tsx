@@ -1,15 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   FlatList,
   TouchableOpacity,
   Image,
   ActivityIndicator,
 } from 'react-native';
 import { BackgroundGradient } from '../../components/ui/BackgroundGradient';
-import { colors } from '../../theme/colors';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   FileText,
@@ -17,20 +15,17 @@ import {
   FileSpreadsheet,
   ChevronRight,
   Search,
-  Filter,
 } from 'lucide-react-native';
-import { Drawer } from 'expo-router/drawer';
 import { useRouter } from 'expo-router';
-
 import { AiService } from '../../api/ai.service';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/fr';
+import { colors } from '../../theme/colors';
 
 dayjs.extend(relativeTime);
 dayjs.locale('fr');
 
-// AI Generation Types
 type HistoryType = 'text' | 'image' | 'document' | 'chat';
 
 interface HistoryItem {
@@ -41,45 +36,6 @@ interface HistoryItem {
   preview: string;
   imageUrl?: string;
 }
-
-const MOCK_HISTORY: HistoryItem[] = [
-  {
-    id: '1',
-    type: 'text',
-    title: 'Post Instagram - Noël',
-    date: 'Il y a 2 heures',
-    preview: 'Découvrez notre collection magique pour les fêtes ! 🎄✨ #Noël #Cadeaux',
-  },
-  {
-    id: '2',
-    type: 'image',
-    title: 'Affiche Publicitaire',
-    date: 'Hier',
-    preview: "Génération d'image pour campagne été",
-    imageUrl: 'https://via.placeholder.com/150', // Would be a real URL
-  },
-  {
-    id: '3',
-    type: 'document',
-    title: 'Rapport Mensuel.xlsx',
-    date: 'Il y a 2 jours',
-    preview: 'Analyse des ventes octobre 2025',
-  },
-  {
-    id: '4',
-    type: 'text',
-    title: 'Article de Blog - IA',
-    date: 'Il y a 3 jours',
-    preview: "L'intelligence artificielle révolutionne le marketing digital...",
-  },
-  {
-    id: '5',
-    type: 'image',
-    title: 'Logo Concept',
-    date: 'Il y a 1 semaine',
-    preview: 'Version minimaliste néon',
-  },
-];
 
 const FILTERS: { label: string; value: HistoryType | 'all' }[] = [
   { label: 'Tout', value: 'all' },
@@ -100,7 +56,6 @@ export default function HistoryScreen() {
       setLoading(true);
       const data = await AiService.getHistory();
       if (data && Array.isArray(data)) {
-        // Map backend entity to UI interface
         const mappedData: HistoryItem[] = data.map((item: any) => ({
           id: item.id.toString(),
           type: item.type,
@@ -118,7 +73,7 @@ export default function HistoryScreen() {
     }
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     fetchHistory();
   }, []);
 
@@ -134,23 +89,27 @@ export default function HistoryScreen() {
       case 'document':
         return <FileSpreadsheet size={24} color={colors.text.accent} />;
       case 'chat':
-        return <Search size={24} color={colors.text.primary} />; // Placeholder icon
+        return <Search size={24} color={colors.text.primary} />;
     }
   };
 
   const renderItem = ({ item }: { item: HistoryItem }) => (
     <TouchableOpacity
-      style={styles.card}
-      onPress={() => router.push({ pathname: '/(drawer)', params: { chatId: item.id } })}>
-      <View style={styles.cardIconContainer}>{getIcon(item.type)}</View>
-      <View style={styles.cardContent}>
-        <View style={styles.cardHeader}>
-          <Text style={styles.cardTitle} numberOfLines={1}>
+      className="flex-row items-center bg-white/5 p-4 rounded-xl border border-white/5 gap-4"
+      onPress={() =>
+        router.push({ pathname: '/(drawer)', params: { chatId: item.id } })
+      }>
+      <View className="w-12 h-12 rounded-lg bg-white/3 justify-center items-center">
+        {getIcon(item.type)}
+      </View>
+      <View className="flex-1">
+        <View className="flex-row justify-between items-center mb-1">
+          <Text className="text-white font-semibold text-base flex-1 mr-2" numberOfLines={1}>
             {item.title}
           </Text>
-          <Text style={styles.cardDate}>{item.date}</Text>
+          <Text className="text-white/60 text-xs">{item.date}</Text>
         </View>
-        <Text style={styles.cardPreview} numberOfLines={2}>
+        <Text className="text-white/60 text-sm leading-5" numberOfLines={2}>
           {item.preview}
         </Text>
       </View>
@@ -160,38 +119,44 @@ export default function HistoryScreen() {
 
   return (
     <BackgroundGradient>
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+      <SafeAreaView className="flex-1">
+        {/* Header */}
+        <View className="flex-row items-center px-5 pt-5 pb-2 gap-4">
+          <TouchableOpacity
+            className="p-2 bg-white/10 rounded-xl"
+            onPress={() => router.back()}>
             <ChevronRight
               size={24}
               color={colors.text.primary}
-              style={{ transform: [{ rotate: '180deg' }] }}
+              className="rotate-180"
             />
           </TouchableOpacity>
           <View>
-            <Text style={styles.title}>Historique</Text>
-            <Text style={styles.subtitle}>Retrouvez toutes vos créations</Text>
+            <Text className="text-2xl font-bold text-white mb-1">Historique</Text>
+            <Text className="text-white/60 text-base">Retrouvez toutes vos créations</Text>
           </View>
         </View>
 
         {/* Filters */}
-        <View style={styles.filterContainer}>
+        <View className="mb-2">
           <FlatList
             horizontal
             data={FILTERS}
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.filterList}
+            contentContainerStyle={{ paddingHorizontal: 20, gap: 12, paddingBottom: 10 }}
             keyExtractor={(item) => item.value}
             renderItem={({ item }) => (
               <TouchableOpacity
-                style={[styles.filterChip, activeFilter === item.value && styles.activeFilterChip]}
+                className={`px-4 py-2 rounded-full border ${
+                  activeFilter === item.value
+                    ? 'bg-primary-main border-primary-main'
+                    : 'bg-white/5 border-white/10'
+                }`}
                 onPress={() => setActiveFilter(item.value)}>
                 <Text
-                  style={[
-                    styles.filterText,
-                    activeFilter === item.value && styles.activeFilterText,
-                  ]}>
+                  className={`text-sm font-semibold ${
+                    activeFilter === item.value ? 'text-white' : 'text-white/60'
+                  }`}>
                   {item.label}
                 </Text>
               </TouchableOpacity>
@@ -199,12 +164,12 @@ export default function HistoryScreen() {
           />
         </View>
 
-        {/* Content List */}
+        {/* History List */}
         <FlatList
           data={filteredData}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={{ padding: 20, gap: 16, paddingBottom: 40 }}
           showsVerticalScrollIndicator={false}
           onRefresh={fetchHistory}
           refreshing={loading}
@@ -216,9 +181,9 @@ export default function HistoryScreen() {
                 style={{ marginTop: 40 }}
               />
             ) : (
-              <View style={styles.emptyContainer}>
+              <View className="items-center justify-center pt-16 gap-4">
                 <Search size={48} color={colors.text.muted} />
-                <Text style={styles.emptyText}>Aucun résultat trouvé</Text>
+                <Text className="text-white/60 text-base">Aucun résultat trouvé</Text>
               </View>
             )
           }
@@ -227,118 +192,3 @@ export default function HistoryScreen() {
     </BackgroundGradient>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  header: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-  },
-  backButton: {
-    padding: 8,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    borderRadius: 12,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: colors.text.primary,
-    marginBottom: 4,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: colors.text.secondary,
-  },
-  filterContainer: {
-    marginBottom: 10,
-  },
-  filterList: {
-    paddingHorizontal: 20,
-    gap: 12,
-    paddingBottom: 10,
-  },
-  filterChip: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  activeFilterChip: {
-    backgroundColor: colors.primary.main,
-    borderColor: colors.primary.main,
-  },
-  filterText: {
-    color: colors.text.secondary,
-    fontWeight: '600',
-    fontSize: 14,
-  },
-  activeFilterText: {
-    color: '#fefefe',
-  },
-  listContent: {
-    padding: 20,
-    gap: 16,
-    paddingBottom: 40,
-  },
-  card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    padding: 16,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.05)',
-    gap: 16,
-  },
-  cardIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.03)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  cardContent: {
-    flex: 1,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text.primary,
-    flex: 1,
-    marginRight: 8,
-  },
-  cardDate: {
-    fontSize: 12,
-    color: colors.text.muted,
-  },
-  cardPreview: {
-    fontSize: 14,
-    color: colors.text.secondary,
-    lineHeight: 20,
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingTop: 60,
-    gap: 16,
-  },
-  emptyText: {
-    color: colors.text.secondary,
-    fontSize: 16,
-  },
-});

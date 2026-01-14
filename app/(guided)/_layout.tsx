@@ -22,21 +22,7 @@ export default function GuidedLayout() {
     <View style={styles.container}>
       <Stack
         screenOptions={{
-          headerShown: true,
-          headerTransparent: true,
-          header: () => (
-            <SafeAreaView edges={['top']} style={styles.headerContainer}>
-              <View style={styles.headerContent}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                  <ArrowLeft size={24} color={colors.text.primary} />
-                </TouchableOpacity>
-                <View style={styles.indicatorContainer}>
-                  <StepIndicator currentStep={currentStep} totalSteps={5} />
-                </View>
-                <View style={{ width: 40 }} />
-              </View>
-            </SafeAreaView>
-          ),
+          headerShown: false,
           contentStyle: { backgroundColor: colors.background.dark },
         }}>
         <Stack.Screen name="step1-job" />
@@ -53,11 +39,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background.dark,
-   
   },
   headerContainer: {
     backgroundColor: 'transparent',
-    
   },
   headerContent: {
     flexDirection: 'row',
@@ -65,7 +49,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 10,
-    
   },
   backButton: {
     padding: 8,

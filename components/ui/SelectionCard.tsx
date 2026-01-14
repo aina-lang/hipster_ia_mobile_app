@@ -9,6 +9,7 @@ interface SelectionCardProps {
   selected: boolean;
   onPress: () => void;
   fullWidth?: boolean;
+  children?: React.ReactNode;
 }
 
 export const SelectionCard: React.FC<SelectionCardProps> = ({
@@ -17,6 +18,7 @@ export const SelectionCard: React.FC<SelectionCardProps> = ({
   selected,
   onPress,
   fullWidth = false,
+  children,
 }) => {
   return (
     <TouchableOpacity
@@ -27,12 +29,15 @@ export const SelectionCard: React.FC<SelectionCardProps> = ({
         selected && styles.selectedContainer,
       ]}
       activeOpacity={0.8}>
-      {Icon && (
-        <View style={[styles.iconContainer, selected && styles.selectedIconContainer]}>
-          <Icon size={24} color={selected ? colors.primary.main : colors.text.secondary} />
-        </View>
-      )}
-      <Text style={[styles.label, selected && styles.selectedLabel]}>{label}</Text>
+      <View style={styles.header}>
+        {Icon && (
+          <View style={[styles.iconContainer, selected && styles.selectedIconContainer]}>
+            <Icon size={24} color={selected ? colors.primary.main : colors.text.secondary} />
+          </View>
+        )}
+        <Text style={[styles.label, selected && styles.selectedLabel]}>{label}</Text>
+      </View>
+      {children && <View style={styles.contentContainer}>{children}</View>}
     </TouchableOpacity>
   );
 };
@@ -45,11 +50,20 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.1)',
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: 'column',
+    alignItems: 'stretch',
     gap: 12,
     flex: 1,
     minHeight: 60,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  contentContainer: {
+    marginTop: 8,
+    paddingLeft: 52, // Align with text (40px icon + 12px gap)
   },
   fullWidth: {
     width: '100%',
