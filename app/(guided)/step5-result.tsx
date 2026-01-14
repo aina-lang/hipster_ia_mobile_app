@@ -562,7 +562,7 @@ export default function Step5ResultScreen() {
                 )}
 
                 {/* Boutons d'export simplifiés */}
-                <View style={styles.exportButtons}>
+                {/* <View style={styles.exportButtons}>
                   <TouchableOpacity
                     style={[styles.exportButton, styles.exportButtonPrimary]}
                     onPress={() => handleDownload('pdf')}>
@@ -590,7 +590,7 @@ export default function Step5ResultScreen() {
                     <LucideImage size={18} color={colors.text.secondary} />
                     <Text style={styles.exportButtonText}>Image</Text>
                   </TouchableOpacity>
-                </View>
+                </View> */}
               </View>
             )}
 
@@ -603,7 +603,7 @@ export default function Step5ResultScreen() {
                       <TouchableOpacity
                         style={[styles.exportButton, styles.exportButtonPrimary]}
                         onPress={() => handleDownload('pdf')}>
-                        <Download size={18} color="#000" />
+                        <Download size={18} color="#fff" />
                         <Text style={styles.exportButtonTextPrimary}>PDF</Text>
                       </TouchableOpacity>
                       <TouchableOpacity
@@ -952,6 +952,7 @@ const styles = StyleSheet.create({
   },
   structuredContent: {
     gap: 20,
+    marginTop:10,
   },
   contentSection: {
     gap: 8,
