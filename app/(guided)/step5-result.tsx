@@ -11,6 +11,7 @@ import {
   TextInput,
   Dimensions,
   ScrollView,
+  Share as RNShare,
 } from 'react-native';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
@@ -21,7 +22,7 @@ import * as MediaLibrary from 'expo-media-library';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
-  Share,
+  Share as ShareIcon,
   Home,
   Check,
   Copy,
@@ -232,36 +233,20 @@ export default function Step5ResultScreen() {
       const queryToUse = overrideQuery || userQuery;
       const fullPrompt = `${promptContext}\n\nInstructions: Génère le contenu demandé. Sois direct, créatif et professionnel.\n\nDemande utilisateur : ${queryToUse}`;
 
-      const isCoiffeurInsta =
-        selectedJob === 'Coiffeur' && selectedFunction === 'Post Instagram (Image + Texte)';
-
-      if (isCoiffeurInsta) {
-        const styleAnswer = workflowAnswers['style'] || 'modern';
-        const imagePrompt = `${fullPrompt} (Style: ${styleAnswer}, Photorealistic, high quality)`;
-        const textOnlyPrompt = `${fullPrompt}\n\nIMPORTANT: Génère UNIQUEMENT le texte de la légende (caption) pour le post Instagram. N'inclus PAS de suggestion d'image, ni de titres comme '### Text' ou '### Caption'. Commencez directment par le contenu.`;
-
-        const [textResponse, imageResponse] = await Promise.all([
-          AiService.generateText(textOnlyPrompt, 'social'),
-          AiService.generateImage(imagePrompt, 'realistic'),
-        ]);
-
-        let cleanedText = textResponse.content
-          .replace(/###\s*(image suggestion|text|caption|description)/gi, '')
-          .replace(/\*\*Image suggestion\*\*:?.*$/gim, '')
-          .trim();
-
-        setResult(cleanedText);
-        setImageUrl(imageResponse.url);
-        setGenerationId(textResponse.generationId);
+      if (selectedCategory === 'Social') {
+        const socialResponse = await AiService.generateSocial(fullPrompt);
+        setResult(socialResponse.content);
+        setImageUrl(socialResponse.url);
+        setGenerationId(socialResponse.generationId);
       } else if (selectedCategory === 'Image') {
         const styleAnswer = workflowAnswers['style'] || 'realistic';
         const imagePrompt = `${fullPrompt} (Style: ${styleAnswer})`;
-        resultData = await AiService.generateImage(imagePrompt, 'realistic');
+        const resultData = await AiService.generateImage(imagePrompt, 'realistic');
         setResult(resultData.url);
         setGenerationId(resultData.generationId);
       } else if (selectedCategory === 'Document') {
         const userProfile = useAuthStore.getState().user?.aiProfile;
-        resultData = await AiService.generateDocument('business', {
+        const resultData = await AiService.generateDocument('business', {
           job: selectedJob,
           function: selectedFunction,
           context: selectedContext,
@@ -272,8 +257,7 @@ export default function Step5ResultScreen() {
         setResult(resultData.content);
         setGenerationId(resultData.generationId);
       } else {
-        const subType: TextGenerationType = selectedCategory === 'Social' ? 'social' : 'blog';
-        resultData = await AiService.generateText(fullPrompt, subType);
+        const resultData = await AiService.generateText(fullPrompt, 'blog');
         setResult(resultData.content);
         setGenerationId(resultData.generationId);
       }
@@ -430,22 +414,31 @@ export default function Step5ResultScreen() {
 
   const handleShare = async () => {
     try {
-      if (imageUrl) {
+      if (selectedCategory === 'Image' || imageUrl) {
         showModal('loading', 'Préparation', "Téléchargement de l'image...");
+        const remoteUrl = imageUrl || result;
+        if (!remoteUrl) return;
 
         const filename = `share-${Date.now()}.png`;
         const fileUri = `${(FileSystem as any).cacheDirectory}${filename}`;
 
-        const res = await (FileSystem as any).downloadAsync(imageUrl, fileUri);
-
+        const res = await (FileSystem as any).downloadAsync(remoteUrl, fileUri);
         setModalVisible(false);
+
         if (res.status === 200) {
           await Sharing.shareAsync(res.uri);
         } else {
           showModal('error', 'Oups', 'Echec du téléchargement pour le partage.');
         }
-      } else if (result && selectedCategory !== 'Image') {
-        handleCopyText();
+      } else if (selectedCategory === 'Document') {
+        // Pour un document, par défaut on partage le PDF
+        handleDownload('pdf');
+      } else if (result) {
+        // Partage de texte classique
+        await RNShare.share({
+          message: result,
+          title: 'Mon contenu Hipster IA',
+        });
       }
     } catch (error) {
       setModalVisible(false);
@@ -677,7 +670,7 @@ export default function Step5ResultScreen() {
 
                 <View style={styles.actionDivider} />
                 <TouchableOpacity style={styles.actionButton} onPress={handleShare}>
-                  <Share size={20} color={colors.primary.main} />
+                  <ShareIcon size={20} color={colors.primary.main} />
                   <Text style={styles.actionButtonText}>Partager</Text>
                 </TouchableOpacity>
               </View>
@@ -952,7 +945,7 @@ const styles = StyleSheet.create({
   },
   structuredContent: {
     gap: 20,
-    marginTop:10,
+    marginTop: 10,
   },
   contentSection: {
     gap: 8,

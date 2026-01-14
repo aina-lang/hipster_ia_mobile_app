@@ -24,7 +24,12 @@ export const AiService = {
     const response = await api.post('/ai/document', { type, params });
     return response.data.data;
   },
-  
+
+  generateSocial: async (prompt: string) => {
+    const response = await api.post('/ai/social', { prompt });
+    return response.data.data;
+  },
+
   getHistory: async () => {
     const response = await api.get('/ai/history');
     return response.data.data;

@@ -39,7 +39,7 @@ interface JobFunction {
 
 const JOB_FUNCTIONS: Record<string, JobFunction[]> = {
   Coiffeur: [
-    { label: 'Post Instagram (Image + Texte)', category: 'Social', icon: Instagram },
+    { label: 'Post réseaux sociaux (Image + Texte)', category: 'Social', icon: Instagram },
     { label: 'Fiche tarifaire (PDF / Image)', category: 'Document', icon: FileText },
     { label: 'Affiche promo -20%', category: 'Image', icon: ShoppingBag },
     { label: 'Bio Instagram', category: 'Texte', icon: User },
@@ -52,14 +52,14 @@ const JOB_FUNCTIONS: Record<string, JobFunction[]> = {
   ],
   Boutique: [
     { label: 'Fiche produit', category: 'Texte', icon: Package },
-    { label: 'Post Instagram produit', category: 'Social', icon: Instagram },
+    { label: 'Post réseaux sociaux produit', category: 'Social', icon: Instagram },
     { label: 'Flyer soldes / promo', category: 'Image', icon: Ticket },
     { label: 'Message WhatsApp vente', category: 'Texte', icon: MessageCircle },
   ],
   Créateur: [
     { label: 'Idée + Script vidéo', category: 'Texte', icon: Video },
     { label: 'Miniature YouTube', category: 'Image', icon: Youtube },
-    { label: 'Post carrousel Insta', category: 'Social', icon: Layers },
+    { label: 'Post réseaux sociaux (Carrousel)', category: 'Social', icon: Layers },
     { label: 'Description YT / TikTok', category: 'Texte', icon: FileText },
   ],
   Artisan: [
