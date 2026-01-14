@@ -10,18 +10,9 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import { useNavigation, DrawerActions } from '@react-navigation/native';
-import {
-  Compass,
-  Menu,
-  Image,
-  Paperclip,
-  Send,
-  Mic,
-  Copy,
-  Trash2,
-} from 'lucide-react-native';
+import { useRouter, useNavigation } from 'expo-router';
+import { DrawerActions } from '@react-navigation/native';
+import { Compass, Menu, Image, Paperclip, Send, Mic, Copy, Trash2 } from 'lucide-react-native';
 import { BackgroundGradient } from '../../components/ui/BackgroundGradient';
 import { DeerAnimation } from '../../components/ui/DeerAnimation';
 import { useAuthStore } from '../../store/authStore';
@@ -50,7 +41,7 @@ const TypingMessage = ({ text, onComplete }: { text: string; onComplete?: () => 
     } else if (onComplete) onComplete();
   }, [currentIndex, text]);
 
-  return <Text className="text-white text-base leading-6">{displayedText}</Text>;
+  return <Text className="text-base leading-6 text-white">{displayedText}</Text>;
 };
 
 const TypingPlaceholder = ({ text, inputValue }: { text: string; inputValue: string }) => {
@@ -71,7 +62,7 @@ const TypingPlaceholder = ({ text, inputValue }: { text: string; inputValue: str
   }, [text, inputValue]);
 
   if (inputValue) return null;
-  return <Text className="absolute left-4 top-4 text-white/60 text-base">{displayedText}</Text>;
+  return <Text className="absolute left-4 top-4 text-base text-white/60">{displayedText}</Text>;
 };
 
 export default function HomeScreen() {
@@ -183,14 +174,14 @@ export default function HomeScreen() {
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}>
           {/* Header */}
-          <View className="flex-row justify-between items-center px-5 py-2">
+          <View className="flex-row items-center justify-between px-5 py-2">
             <TouchableOpacity
-              className="p-2 bg-white/5 rounded-lg"
+              className="rounded-lg bg-white/5 p-2"
               onPress={() => navigation.dispatch(DrawerActions.openDrawer())}>
               <Menu size={24} color={colors.text.primary} />
             </TouchableOpacity>
             {hasMessages && (
-              <TouchableOpacity className="p-2 bg-white/5 rounded-lg" onPress={resetChat}>
+              <TouchableOpacity className="rounded-lg bg-white/5 p-2" onPress={resetChat}>
                 <Trash2 size={20} color={colors.text.muted} />
               </TouchableOpacity>
             )}
@@ -205,13 +196,13 @@ export default function HomeScreen() {
             {!hasMessages ? (
               <>
                 <View className="mt-5 items-center">
-                  <Text className="text-white/60 text-lg mb-2">
+                  <Text className="mb-2 text-lg text-white/60">
                     {getGreetingByTime()}{' '}
                     {user?.aiProfile?.profileType === 'entreprise'
                       ? user.aiProfile.companyName || 'Entreprise'
                       : user?.firstName || 'Utilisateur'}
                   </Text>
-                  <Text className="text-white text-2xl font-bold text-center leading-9">
+                  <Text className="text-center text-2xl font-bold leading-9 text-white">
                     Que créons-nous aujourd'hui ?
                   </Text>
                 </View>
@@ -221,26 +212,26 @@ export default function HomeScreen() {
                 </View>
 
                 <TouchableOpacity
-                  className="bg-white/3 border border-white/5 rounded-2xl p-5 flex-row items-center gap-4 mb-5"
+                  className="bg-white/3 mb-5 flex-row items-center gap-4 rounded-2xl border border-white/5 p-5"
                   onPress={() => router.push('/(guided)/step1-job')}
                   activeOpacity={0.8}>
-                  <View className="w-15 h-15 rounded-lg justify-center items-center">
+                  <View className="w-15 h-15 items-center justify-center rounded-lg">
                     <Compass size={32} color={colors.primary.main} />
                   </View>
                   <View className="flex-1">
-                    <Text className="text-white text-lg font-bold mb-1">Mode Guidé</Text>
-                    <Text className="text-white/60 text-sm leading-5">
+                    <Text className="mb-1 text-lg font-bold text-white">Mode Guidé</Text>
+                    <Text className="text-sm leading-5 text-white/60">
                       Laissez-vous accompagner étape par étape pour une création professionnelle.
                     </Text>
                   </View>
                 </TouchableOpacity>
 
-                <View className="flex-row items-center my-5 gap-4 opacity-40">
-                  <View className="flex-1 h-px bg-white/20" />
-                  <Text className="text-white/60 text-xs font-semibold tracking-wider">
+                <View className="my-5 flex-row items-center gap-4 opacity-40">
+                  <View className="h-px flex-1 bg-white/20" />
+                  <Text className="text-xs font-semibold tracking-wider text-white/60">
                     OU MODE LIBRE
                   </Text>
-                  <View className="flex-1 h-px bg-white/20" />
+                  <View className="h-px flex-1 bg-white/20" />
                 </View>
               </>
             ) : (
@@ -248,23 +239,23 @@ export default function HomeScreen() {
                 {messages.map((msg) => (
                   <View
                     key={msg.id}
-                    className={`p-4 rounded-2xl max-w-[85%] ${
+                    className={`max-w-[85%] rounded-2xl p-4 ${
                       msg.sender === 'user'
-                        ? 'self-end bg-primary-main/20 border border-primary-main/40 rounded-br-sm'
-                        : 'self-start bg-white/5 border border-white/10 rounded-bl-sm'
+                        ? 'bg-primary-main/20 border-primary-main/40 self-end rounded-br-sm border'
+                        : 'self-start rounded-bl-sm border border-white/10 bg-white/5'
                     }`}>
                     {msg.sender === 'user' ? (
-                      <Text className="text-white text-base leading-6">{msg.text}</Text>
+                      <Text className="text-base leading-6 text-white">{msg.text}</Text>
                     ) : msg.isTyping ? (
                       <TypingMessage text={msg.text} onComplete={() => completeTyping(msg.id)} />
                     ) : (
-                      <Text className="text-white text-base leading-6">{msg.text}</Text>
+                      <Text className="text-base leading-6 text-white">{msg.text}</Text>
                     )}
 
                     {msg.sender === 'ai' && !msg.isTyping && (
                       <TouchableOpacity
                         onPress={() => copyToClipboard(msg.text)}
-                        className="self-end mt-2 p-1">
+                        className="mt-2 self-end p-1">
                         <Copy size={14} color={colors.text.muted} />
                       </TouchableOpacity>
                     )}
@@ -272,7 +263,7 @@ export default function HomeScreen() {
                 ))}
 
                 {isGenerating && (
-                  <View className="self-start p-4 rounded-2xl bg-white/5 border border-white/10 w-15 h-11 justify-center items-center">
+                  <View className="w-15 h-11 items-center justify-center self-start rounded-2xl border border-white/10 bg-white/5 p-4">
                     <ActivityIndicator size="small" color={colors.primary.main} />
                   </View>
                 )}
@@ -281,8 +272,8 @@ export default function HomeScreen() {
           </ScrollView>
 
           {/* Input */}
-          <View className="px-5 py-3 absolute bottom-0 left-0 right-0">
-            <View className="bg-slate-900 rounded-2xl p-4 border border-white/10 relative">
+          <View className="absolute bottom-0 left-0 right-0 px-5 py-3">
+            <View className="relative rounded-2xl border border-white/10 bg-slate-900 p-4">
               <TypingPlaceholder text={placeholderText} inputValue={inputValue} />
               <TextInput
                 value={inputValue}
@@ -290,18 +281,18 @@ export default function HomeScreen() {
                 multiline
                 maxLength={500}
                 placeholderTextColor="transparent"
-                className="text-white text-base min-h-[24px] max-h-[100px] mb-3"
+                className="mb-3 max-h-[100px] min-h-[24px] text-base text-white"
               />
 
-              <View className="flex-row justify-between items-center">
+              <View className="flex-row items-center justify-between">
                 <View className="flex-row gap-3">
-                  <TouchableOpacity className="p-2 bg-white/5 rounded-lg">
+                  <TouchableOpacity className="rounded-lg bg-white/5 p-2">
                     <Image size={20} color={colors.text.secondary} />
                   </TouchableOpacity>
-                  <TouchableOpacity className="p-2 bg-white/5 rounded-lg">
+                  <TouchableOpacity className="rounded-lg bg-white/5 p-2">
                     <Paperclip size={20} color={colors.text.secondary} />
                   </TouchableOpacity>
-                  <TouchableOpacity className="p-2 bg-white/5 rounded-lg">
+                  <TouchableOpacity className="rounded-lg bg-white/5 p-2">
                     <Mic size={20} color={colors.text.secondary} />
                   </TouchableOpacity>
                 </View>
@@ -309,9 +300,9 @@ export default function HomeScreen() {
                 <TouchableOpacity
                   onPress={handleSend}
                   disabled={!inputValue.trim() || isGenerating}
-                  className={`p-3 rounded-lg ${
+                  className={`rounded-lg p-3 ${
                     !inputValue.trim() || isGenerating
-                      ? 'opacity-40 bg-primary-main'
+                      ? 'bg-primary-main opacity-40'
                       : 'bg-primary-main shadow-lg'
                   }`}>
                   {isGenerating ? (

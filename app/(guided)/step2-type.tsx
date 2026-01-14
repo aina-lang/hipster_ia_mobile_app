@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text } from 'react-native';
+import { View, Text, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { colors } from '../../theme/colors';
 import { DeerAnimation } from '../../components/ui/DeerAnimation';
@@ -27,6 +27,9 @@ import {
   Clock,
   Camera,
 } from 'lucide-react-native';
+import logo from '../../assets/logo.png';
+
+import { WORKFLOWS } from '../../constants/workflows';
 
 interface JobFunction {
   label: string;
@@ -70,11 +73,20 @@ const JOB_FUNCTIONS: Record<string, JobFunction[]> = {
   'Service local': [
     { label: 'Flyer local', category: 'Image', icon: Globe },
     { label: 'Message WhatsApp pro', category: 'Texte', icon: MessageCircle },
-    { label: 'Petite affiche / tarifs', category: 'Image', icon: FileText },
+    { label: 'Petite affiche / tarifs', category: 'Document', icon: FileText },
     { label: 'Description Google Maps', category: 'Texte', icon: Globe },
   ],
 };
 
+/* ----------------------------- Images aléatoires ---------------------------- */
+const CATEGORY_IMAGES: Record<CreationCategory, any[]> = {
+  Social: [logo, logo, logo],
+  Document: [logo, logo, logo],
+  Image: [logo],
+  Texte: [logo],
+};
+
+/* ----------------------------- Step2 Screen ----------------------------- */
 export default function Step2TypeScreen() {
   const router = useRouter();
   const { selectedJob, setFunction, selectedFunction } = useCreationStore();
@@ -83,25 +95,31 @@ export default function Step2TypeScreen() {
 
   const handleSelect = (fn: JobFunction) => {
     setFunction(fn.label, fn.category);
-    setTimeout(() => router.push('/(guided)/step3-context'), 300);
+
+    // Check if there are specific questions for this workflow
+    const hasQuestions = selectedJob && WORKFLOWS[selectedJob]?.[fn.label]?.length > 0;
+
+    // Navigate to Step 3 if questions exist, otherwise skip to Step 4
+    const nextStep = hasQuestions ? '/(guided)/step3-context' : '/(guided)/step4-create';
+
+    setTimeout(() => router.push(nextStep as any), 300);
   };
 
   return (
     <GuidedScreenWrapper>
       <View className="px-5">
-        
         {/* HEADER */}
-        <View className="items-center mb-5">
-          <Text className="text-2xl font-bold text-white text-center mb-2">
+        <View className="mb-5 items-center">
+          <Text className="mb-2 text-center text-2xl font-bold text-white">
             Que souhaitez-vous faire ?
           </Text>
-          <Text className="text-base text-gray-300 text-center">
+          <Text className="text-center text-base text-gray-300">
             Sélectionnez une option pour votre activité.
           </Text>
         </View>
 
         {/* ANIMATION */}
-        <View className="items-center mb-8">
+        <View className="mb-8 items-center">
           <DeerAnimation size={120} progress={40} />
         </View>
 
@@ -114,69 +132,32 @@ export default function Step2TypeScreen() {
               icon={fn.icon}
               selected={selectedFunction === fn.label}
               onPress={() => handleSelect(fn)}
-              fullWidth
-            >
+              fullWidth>
               {renderPreview(fn.category)}
             </SelectionCard>
           ))}
         </View>
-
       </View>
     </GuidedScreenWrapper>
   );
 }
 
-/* -------------------------------------------------------------------------- */
-/*                                PREVIEW BLOCKS                               */
-/* -------------------------------------------------------------------------- */
-
+/* ----------------------------- Render Preview ----------------------------- */
 const renderPreview = (category: CreationCategory) => {
-  switch (category) {
-    case 'Social':
-      return (
-        <View className="mt-1 opacity-80">
-          <View className="flex-row items-center gap-2 mb-2">
-            <View className="w-5 h-5 rounded-full bg-white/20" />
-            <View className="gap-1">
-              <View className="w-10 h-1 rounded bg-white/20" />
-              <View className="w-20 h-1 rounded bg-white/20" />
-            </View>
-          </View>
-          <View className="w-full h-[60px] rounded-lg bg-white/10" />
-        </View>
-      );
+  const images = CATEGORY_IMAGES[category];
+  // const randomIndex = Math.floor(Math.random() * images.length);
+  const source = images[0]; // Simplified to always show the first image for consistency, or use random if preferred
 
-    case 'Document':
-      return (
-        <View className="mt-1 opacity-80">
-          <View className="p-3 rounded-lg bg-white/5 border border-white/10 gap-2">
-            <View className="w-20 h-1 rounded bg-white/20" />
-            <View className="w-20 h-1 rounded bg-white/20" />
-            <View className="w-10 h-1 rounded bg-white/20" />
-            <View className="w-20 h-1 rounded bg-white/20 mt-1" />
-          </View>
-        </View>
-      );
+  // Handle both remote URLs (string) and local imports (number/object)
+  const imageSource = typeof source === 'string' ? { uri: source } : source;
 
-    case 'Image':
-      return (
-        <View className="mt-1 opacity-80">
-          <View className="w-full h-20 rounded-lg bg-white/15 overflow-hidden relative">
-            <View className="absolute top-2 right-2 w-4 h-4 rounded-full bg-white/30" />
-            <View className="absolute bottom-0 left-2 w-16 h-10 bg-white/20 rounded-t-xl" />
-          </View>
-        </View>
-      );
-
-    case 'Texte':
-    default:
-      return (
-        <View className="mt-1 opacity-80">
-          <View className="p-3 rounded-xl bg-white/10 self-start gap-2 border-b-2 border-b-white/20">
-            <View className="w-20 h-1 rounded bg-white/20" />
-            <View className="w-10 h-1 rounded bg-white/20" />
-          </View>
-        </View>
-      );
-  }
+  return (
+    <View className="mt-1">
+      <Image
+        source={imageSource}
+        style={{ width: '100%', height: 80, borderRadius: 12 }}
+        resizeMode="cover"
+      />
+    </View>
+  );
 };

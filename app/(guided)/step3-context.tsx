@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { View, Text, TextInput, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { colors } from '../../theme/colors';
@@ -10,17 +10,10 @@ import { GuidedScreenWrapper } from '../../components/layout/GuidedScreenWrapper
 
 export default function Step3ContextScreen() {
   const router = useRouter();
-  const { selectedJob, selectedFunction, workflowAnswers, setWorkflowAnswer } =
-    useCreationStore();
+  const { selectedJob, selectedFunction, workflowAnswers, setWorkflowAnswer } = useCreationStore();
 
   const questions: WorkflowQuestion[] =
     (selectedJob && selectedFunction && WORKFLOWS[selectedJob]?.[selectedFunction]) || [];
-
-  useEffect(() => {
-    if (questions.length === 0 && selectedJob && selectedFunction) {
-      // Pas de skip auto ici, mais logique possible si nécessaire
-    }
-  }, [questions, selectedJob, selectedFunction]);
 
   const handleContinue = () => {
     router.push('/(guided)/step4-create');
@@ -32,45 +25,44 @@ export default function Step3ContextScreen() {
     const value = workflowAnswers[q.id];
 
     return (
-      <View key={q.id} className="mb-6">
-        <Text className="text-lg font-semibold text-white mb-3">
+      <View key={q.id} className="mb-8">
+        <Text className="mb-4 text-xl font-bold text-white">
           {index + 1}. {q.label}
         </Text>
 
         {q.type === 'choice' && q.options && (
           <View className="flex-row flex-wrap gap-2">
-            {q.options.map((opt) => (
-              <TouchableOpacity
-                key={opt}
-                className={`
-                  px-4 py-2 rounded-full border 
-                  ${value === opt
-                    ? 'bg-primary border-primary'
-                    : 'bg-white/5 border-white/10'
-                  }
-                `}
-                onPress={() => setWorkflowAnswer(q.id, opt)}
-              >
-                <Text
+            {q.options.map((opt) => {
+              const isSelected = value === opt;
+
+              return (
+                <TouchableOpacity
+                  key={opt}
                   className={`
-                    text-sm 
-                    ${value === opt ? 'text-black font-semibold' : 'text-white/70'}
+                    rounded-2xl border-2 px-5 py-3
+                    ${isSelected ? 'border-primary bg-primary/20' : 'border-white/10 bg-white/5'}
                   `}
-                >
-                  {opt}
-                </Text>
-              </TouchableOpacity>
-            ))}
+                  onPress={() => setWorkflowAnswer(q.id, opt)}>
+                  <Text
+                    className={`
+                      text-sm font-medium
+                      ${isSelected ? 'text-primary' : 'text-white/70'}
+                    `}>
+                    {opt}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
         )}
 
         {q.type === 'text' && (
           <TextInput
             className="
-              text-white text-base
-              p-4 rounded-xl
-              bg-black/20
-              border border-white/10
+              rounded-2xl border-2
+              border-white/10 bg-white/5
+              p-5
+              text-base text-white
             "
             placeholder={q.placeholder || 'Votre réponse...'}
             placeholderTextColor={colors.text.muted}
@@ -85,35 +77,35 @@ export default function Step3ContextScreen() {
   return (
     <GuidedScreenWrapper>
       <View className="px-5">
-
         {/* Header */}
-        <View className="items-center my-5">
-          <Text className="text-2xl font-bold text-white text-center mb-2">
-            Personnalisation
+        <View className="mb-8 mt-2 items-center">
+          <Text className="mb-2 text-center text-3xl font-black uppercase tracking-tighter text-white">
+            Personalization
           </Text>
-          <Text className="text-base text-white/70 text-center">
+          <View className="mb-3 h-1 w-12 rounded-full bg-primary" />
+          <Text className="text-center text-base font-medium text-white/50">
             {selectedFunction ? selectedFunction.split('(')[0].trim() : 'Détails du projet'}
           </Text>
         </View>
 
         {/* Animation */}
-        <View className="items-center mb-5">
-          <DeerAnimation size={100} progress={60} />
+        <View className="mb-8 items-center">
+          <DeerAnimation size={80} progress={60} />
         </View>
 
         {/* Questions */}
         {questions.length > 0 ? (
           questions.map((q, index) => renderQuestion(q, index))
         ) : (
-          <View className="p-5 items-center">
-            <Text className="text-white/50 italic">
-              Aucune question spécifique pour ce choix.
+          <View className="items-center justify-center rounded-3xl border-2 border-dashed border-white/10 bg-white/5 p-10">
+            <Text className="text-center italic text-white/30">
+              Aucune personnalisation nécessaire pour ce choix.
             </Text>
           </View>
         )}
 
         {/* Footer */}
-        <View className="mt-6 items-center">
+        <View className="mb-10 mt-4 items-center">
           <NeonButton
             title="Continuer"
             onPress={handleContinue}

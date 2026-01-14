@@ -1,11 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  GestureResponderEvent,
-} from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, GestureResponderEvent } from 'react-native';
 import { useRouter } from 'expo-router';
 import { colors } from '../../theme/colors';
 import { DeerAnimation } from '../../components/ui/DeerAnimation';
@@ -22,6 +16,9 @@ import {
   Phone,
   Plus,
   Trash2,
+  Image as LucideImage,
+  Paperclip,
+  Mic,
 } from 'lucide-react-native';
 
 export default function Step4CreateScreen() {
@@ -80,13 +77,12 @@ export default function Step4CreateScreen() {
   return (
     <GuidedScreenWrapper>
       <View className="px-5">
-
         {/* Header */}
-        <View className="items-center my-5">
-          <Text className="text-2xl font-bold text-white text-center mb-2">
+        <View className="my-5 items-center">
+          <Text className="mb-2 text-center text-2xl font-bold text-white">
             Détails de la création
           </Text>
-          <Text className="text-base text-white/70 text-center">
+          <Text className="text-center text-base text-white/70">
             {getWorkflowSummary() ||
               (isQuoteMode
                 ? "Informations pour l'estimation"
@@ -95,7 +91,7 @@ export default function Step4CreateScreen() {
         </View>
 
         {/* Animation */}
-        <View className="items-center mb-5">
+        <View className="mb-5 items-center">
           <DeerAnimation size={120} progress={80} />
         </View>
 
@@ -103,16 +99,35 @@ export default function Step4CreateScreen() {
         <View className="mb-8">
           {isQuoteMode ? (
             <View className="gap-5">
-
               {/* Client Details */}
               <View className="gap-3">
-                <Text className="text-base font-bold text-accent mb-2">Infos du Client</Text>
+                <Text className="mb-2 text-base font-bold text-accent">Infos du Client</Text>
 
                 {[
-                  { value: clientName, setter: setClientName, placeholder: 'Nom et Prénom', Icon: User },
-                  { value: clientCompany, setter: setClientCompany, placeholder: 'Entreprise (si applicable)', Icon: Briefcase },
-                  { value: clientAddress, setter: setClientAddress, placeholder: 'Adresse complète', Icon: MapPin },
-                  { value: clientContact, setter: setClientContact, placeholder: 'Email / Téléphone', Icon: Phone },
+                  {
+                    value: clientName,
+                    setter: setClientName,
+                    placeholder: 'Nom et Prénom',
+                    Icon: User,
+                  },
+                  {
+                    value: clientCompany,
+                    setter: setClientCompany,
+                    placeholder: 'Entreprise (si applicable)',
+                    Icon: Briefcase,
+                  },
+                  {
+                    value: clientAddress,
+                    setter: setClientAddress,
+                    placeholder: 'Adresse complète',
+                    Icon: MapPin,
+                  },
+                  {
+                    value: clientContact,
+                    setter: setClientContact,
+                    placeholder: 'Email / Téléphone',
+                    Icon: Phone,
+                  },
                 ].map((field, idx) => (
                   <View key={idx} className="relative justify-center">
                     <field.Icon
@@ -125,17 +140,19 @@ export default function Step4CreateScreen() {
                       onChangeText={field.setter}
                       placeholder={field.placeholder}
                       placeholderTextColor={colors.text.muted}
-                      className="bg-white/5 border border-white/10 rounded-xl px-10 py-3 text-white text-base"
+                      className="rounded-xl border border-white/10 bg-white/5 px-10 py-3 text-base text-white"
                     />
                   </View>
                 ))}
               </View>
 
               {/* Tasks */}
-              <View className="gap-2 mt-3">
-                <View className="flex-row items-center gap-2 mb-2">
+              <View className="mt-3 gap-2">
+                <View className="mb-2 flex-row items-center gap-2">
                   <FileText size={18} color={colors.primary.main} />
-                  <Text className="text-base font-bold text-accent">Liste des travaux à chiffrer</Text>
+                  <Text className="text-base font-bold text-accent">
+                    Liste des travaux à chiffrer
+                  </Text>
                 </View>
 
                 <View className="gap-2">
@@ -146,7 +163,7 @@ export default function Step4CreateScreen() {
                         onChangeText={(t) => updateTask(t, index)}
                         placeholder={`Tâche ${index + 1} (ex: Peinture plafond)`}
                         placeholderTextColor={colors.text.muted}
-                        className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 flex-1 text-white text-base"
+                        className="flex-1 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-base text-white"
                       />
                       {tasks.length > 1 && (
                         <TouchableOpacity onPress={() => removeTask(index)} className="p-2">
@@ -159,16 +176,29 @@ export default function Step4CreateScreen() {
 
                 <TouchableOpacity
                   onPress={addTask}
-                  className="flex-row items-center justify-center gap-2 py-3 border border-dashed border-primary rounded-xl mt-2 bg-black/20"
-                >
+                  className="mt-2 flex-row items-center justify-center gap-2 rounded-xl border border-dashed border-primary bg-black/20 py-3">
                   <Plus size={18} color={colors.primary.main} />
-                  <Text className="text-primary font-semibold text-sm">Ajouter une tâche</Text>
+                  <Text className="text-sm font-semibold text-primary">Ajouter une tâche</Text>
                 </TouchableOpacity>
+
+                <View className="mt-4 flex-row items-center border-t border-white/5 pt-4">
+                  <View className="flex-row gap-4">
+                    <TouchableOpacity className="rounded-lg bg-white/5 p-2" onPress={() => {}}>
+                      <LucideImage size={20} color={colors.text.secondary} />
+                    </TouchableOpacity>
+                    <TouchableOpacity className="rounded-lg bg-white/5 p-2" onPress={() => {}}>
+                      <Paperclip size={20} color={colors.text.secondary} />
+                    </TouchableOpacity>
+                    <TouchableOpacity className="rounded-lg bg-white/5 p-2" onPress={() => {}}>
+                      <Mic size={20} color={colors.text.secondary} />
+                    </TouchableOpacity>
+                  </View>
+                </View>
               </View>
             </View>
           ) : (
             <>
-              <View className="relative bg-white/5 border border-white/10 rounded-2xl">
+              <View className="relative rounded-2xl border border-white/10 bg-white/5 p-4">
                 <TextInput
                   value={inputText}
                   onChangeText={setInputText}
@@ -177,13 +207,31 @@ export default function Step4CreateScreen() {
                   multiline
                   numberOfLines={6}
                   textAlignVertical="top"
-                  className="text-white text-base p-4 min-h-[100px]"
+                  className="mb-3 min-h-[100px] text-base text-white"
                 />
+
+                <View className="flex-row items-center border-t border-white/5 pt-3">
+                  <View className="flex-row gap-4">
+                    <TouchableOpacity className="rounded-lg bg-white/5 p-2">
+                      <LucideImage size={20} color={colors.text.secondary} />
+                    </TouchableOpacity>
+                    <TouchableOpacity className="rounded-lg bg-white/5 p-2">
+                      <Paperclip size={20} color={colors.text.secondary} />
+                    </TouchableOpacity>
+                    <TouchableOpacity className="rounded-lg bg-white/5 p-2">
+                      <Mic size={20} color={colors.text.secondary} />
+                    </TouchableOpacity>
+                  </View>
+                  <View style={{ flex: 1 }} />
+                  <Text style={{ color: 'rgba(255, 255, 255, 0.3)', fontSize: 12 }}>
+                    {(inputText || '').length}/500
+                  </Text>
+                </View>
               </View>
 
-              <View className="flex-row items-center justify-center gap-2 mt-3">
+              <View className="mt-3 flex-row items-center justify-center gap-2">
                 <Keyboard size={16} color={colors.text.muted} />
-                <Text className="text-white/50 text-sm">
+                <Text className="text-sm text-white/50">
                   Astuce : soyez précis pour un meilleur résultat.
                 </Text>
               </View>

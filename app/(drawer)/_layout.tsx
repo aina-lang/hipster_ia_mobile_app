@@ -37,7 +37,7 @@ function CustomDrawerContent(props: any) {
       }
     };
     fetchRecent();
-  }, [props.navigation.getState().index]); // Refresh when switching tabs or opening drawer
+  }, [props.navigation?.getState?.()?.index]); // Refresh when switching tabs or opening drawer
 
   const handleLogout = () => {
     setShowLogoutModal(false);

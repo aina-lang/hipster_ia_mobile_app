@@ -22,26 +22,7 @@ export const WORKFLOWS: Record<string, Record<string, WorkflowQuestion[]>> = {
         options: ['Professionnel', 'Fun', 'Luxe', 'Minimaliste'],
       },
     ],
-    'Fiche tarifaire (PDF / Image)': [
-      {
-        id: 'model',
-        label: 'Modèle',
-        type: 'choice',
-        options: ['Moderne', 'Minimaliste', 'Luxe', 'Coloré'],
-      },
-      {
-        id: 'target',
-        label: 'Cible',
-        type: 'choice',
-        options: ['Homme', 'Femme', 'Enfant', 'Mixte'],
-      },
-      {
-        id: 'services',
-        label: 'Services inclus',
-        type: 'text',
-        placeholder: 'Ex: Coupe, Couleur, Brushing...',
-      },
-    ],
+    'Fiche tarifaire (PDF / Image)': [],
     'Affiche promo -20%': [
       {
         id: 'discount',
@@ -78,20 +59,7 @@ export const WORKFLOWS: Record<string, Record<string, WorkflowQuestion[]>> = {
     ],
   },
   Restaurant: {
-    'Menu complet (PDF / DOCX)': [
-      {
-        id: 'model',
-        label: 'Modèle',
-        type: 'choice',
-        options: ['Classique', 'Chic', 'Bistro', 'Moderne'],
-      },
-      {
-        id: 'dishes',
-        label: 'Entrées / Plats / Desserts',
-        type: 'text',
-        placeholder: 'Listez vos plats principaux...',
-      },
-    ],
+    'Menu complet (PDF / DOCX)': [],
     'Post “Plat du jour”': [
       {
         id: 'style',
@@ -129,7 +97,7 @@ export const WORKFLOWS: Record<string, Record<string, WorkflowQuestion[]>> = {
     'Description Maps / Uber': [
       {
         id: 'type',
-        label: 'Type d\'établissement',
+        label: "Type d'établissement",
         type: 'choice',
         options: ['Restaurant', 'Food truck', 'Brunch', 'Café'],
       },
@@ -159,7 +127,7 @@ export const WORKFLOWS: Record<string, Record<string, WorkflowQuestion[]>> = {
         id: 'name',
         label: 'Nom du produit',
         type: 'text',
-        placeholder: 'Ex: Robe d\'été fleurie',
+        placeholder: "Ex: Robe d'été fleurie",
       },
       {
         id: 'highlights',
@@ -370,7 +338,7 @@ export const WORKFLOWS: Record<string, Record<string, WorkflowQuestion[]>> = {
         options: ['A4', 'Carré', 'Paysage'],
       },
     ],
-    'Estimation': [
+    Estimation: [
       {
         id: 'service',
         label: 'Service demandé',
@@ -430,20 +398,6 @@ export const WORKFLOWS: Record<string, Record<string, WorkflowQuestion[]>> = {
         label: 'Info clé',
         type: 'text',
         placeholder: 'Ex: Dispo semaine prochaine...',
-      },
-    ],
-    'Petite affiche / tarifs': [
-      {
-        id: 'model',
-        label: 'Modèle',
-        type: 'choice',
-        options: ['Liste simple', 'Tableau', 'Visuel'],
-      },
-      {
-        id: 'rates',
-        label: 'Tarifs',
-        type: 'text',
-        placeholder: 'Ex: 20€/h...',
       },
     ],
     'Description Google Maps': [

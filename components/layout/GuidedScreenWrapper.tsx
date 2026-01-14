@@ -6,25 +6,42 @@ import { ArrowLeft } from 'lucide-react-native';
 import { colors } from '../../theme/colors';
 import { BackgroundGradient } from '../ui/BackgroundGradient';
 import { StepIndicator } from '../ui/StepIndicator';
+import { useCreationStore } from '../../store/creationStore';
+import { WORKFLOWS } from '../../constants/workflows';
 
 interface GuidedScreenWrapperProps {
   children: React.ReactNode;
+  headerRight?: React.ReactNode;
 }
 
-export function GuidedScreenWrapper({ children }: GuidedScreenWrapperProps) {
+export function GuidedScreenWrapper({ children, headerRight }: GuidedScreenWrapperProps) {
   const router = useRouter();
   const segments = useSegments();
   const insets = useSafeAreaInsets();
   const scrollY = useRef(new Animated.Value(0)).current;
 
-  // Determine current step based on route name
+  const { selectedJob, selectedFunction } = useCreationStore();
+
+  // Determine if Step 3 (Context/Personalization) is part of the flow
+  const hasStep3 =
+    selectedJob && selectedFunction && WORKFLOWS[selectedJob]?.[selectedFunction]?.length > 0;
+
+  // Determine current step and total steps based on route and workflow
   const currentRoute = segments[segments.length - 1];
+  const totalSteps = hasStep3 ? 5 : 4;
+
   let currentStep = 1;
-  if (currentRoute === 'step1-job') currentStep = 1;
-  else if (currentRoute === 'step2-type') currentStep = 2;
-  else if (currentRoute === 'step3-context') currentStep = 3;
-  else if (currentRoute === 'step4-create') currentStep = 4;
-  else if (currentRoute === 'step5-result') currentStep = 5;
+  if (currentRoute === 'step1-job') {
+    currentStep = 1;
+  } else if (currentRoute === 'step2-type') {
+    currentStep = 2;
+  } else if (currentRoute === 'step3-context') {
+    currentStep = 3;
+  } else if (currentRoute === 'step4-create') {
+    currentStep = hasStep3 ? 4 : 3;
+  } else if (currentRoute === 'step5-result') {
+    currentStep = hasStep3 ? 5 : 4;
+  }
 
   const headerOpacity = scrollY.interpolate({
     inputRange: [0, 50],
@@ -46,7 +63,7 @@ export function GuidedScreenWrapper({ children }: GuidedScreenWrapperProps) {
           style={[
             styles.header,
             {
-              paddingTop: insets.top -15, 
+              paddingTop: insets.top - 15,
               backgroundColor: headerBackgroundColor,
               borderBottomWidth: 1,
               borderBottomColor: scrollY.interpolate({
@@ -56,17 +73,22 @@ export function GuidedScreenWrapper({ children }: GuidedScreenWrapperProps) {
               }),
             },
           ]}>
-          <View style={styles.headerContent} className='flex flex-row items-center justify-between px-5 '>
+          <View
+            style={styles.headerContent}
+            className="flex flex-row items-center justify-between px-5 ">
             <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
               <ArrowLeft size={24} color={colors.text.primary} />
             </TouchableOpacity>
 
-            <View className='h-full  pt-0 -top-2'>
-              <StepIndicator currentStep={currentStep} totalSteps={5} />
+            <View className="-top-2  h-full pt-0">
+              <StepIndicator currentStep={currentStep} totalSteps={totalSteps} />
             </View>
 
-            {/* Spacer to balance the back button */}
-            <View style={{ width: 40 }} />
+            {headerRight ? (
+              <View style={styles.headerRight}>{headerRight}</View>
+            ) : (
+              <View style={{ width: 40 }} />
+            )}
           </View>
         </Animated.View>
 
@@ -95,19 +117,18 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 100,
-    
   },
-  headerContent: {
-   
-  },
+  headerContent: {},
   backButton: {
     padding: 8,
     borderRadius: 20,
     backgroundColor: 'rgba(255, 255, 255, 0.05)',
   },
   indicatorContainer: {
-    backgroundColor:"red",
-
-    
+    backgroundColor: 'red',
+  },
+  headerRight: {
+    minWidth: 40,
+    alignItems: 'flex-end',
   },
 });
