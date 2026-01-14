@@ -252,6 +252,7 @@ export default function Step5ResultScreen() {
 
         setResult(cleanedText);
         setImageUrl(imageResponse.url);
+        setGenerationId(textResponse.generationId);
       } else if (selectedCategory === 'Image') {
         const styleAnswer = workflowAnswers['style'] || 'realistic';
         const imagePrompt = `${fullPrompt} (Style: ${styleAnswer})`;
@@ -586,7 +587,7 @@ export default function Step5ResultScreen() {
                   <TouchableOpacity
                     style={styles.exportButton}
                     onPress={() => handleDownload('image')}>
-                    <Download size={18} color={colors.text.secondary} />
+                    <LucideImage size={18} color={colors.text.secondary} />
                     <Text style={styles.exportButtonText}>Image</Text>
                   </TouchableOpacity>
                 </View>
@@ -608,7 +609,7 @@ export default function Step5ResultScreen() {
                       <TouchableOpacity
                         style={styles.exportButton}
                         onPress={() => handleDownload('image')}>
-                        <Download size={18} color={colors.text.secondary} />
+                        <LucideImage size={18} color={colors.text.secondary} />
                         <Text style={styles.exportButtonText}>Image</Text>
                       </TouchableOpacity>
                     </View>
