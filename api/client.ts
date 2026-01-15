@@ -27,6 +27,10 @@ api.interceptors.request.use(
       token = useAuthStore.getState().accessToken;
     }
 
+    // LOGS POUR DEBUGGER LA CONNEXION
+    console.log('🚀 [API REQUEST]', config.method?.toUpperCase(), config.url);
+    console.log('🔗 [FULL URL]', config.baseURL + (config.url || ''));
+
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
       console.log(

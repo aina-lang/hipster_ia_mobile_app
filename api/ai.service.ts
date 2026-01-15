@@ -18,26 +18,35 @@ export const AiService = {
   },
 
   generateText: async (params: any, type: TextGenerationType) => {
+    console.log('[AiService] generateText:', type, params.job);
     const response = await api.post('/ai/text', { params, type });
+    console.log('[AiService] generateText result size:', response.data.data?.content?.length);
     return response.data.data;
   },
 
   generateImage: async (params: any, style: ImageStyle) => {
+    console.log('[AiService] generateImage:', style, params.job);
     const response = await api.post('/ai/image', { params, style });
+    console.log('[AiService] generateImage result URL:', response.data.data?.url);
     return response.data.data;
   },
 
   generateDocument: async (type: DocumentType, params: any) => {
+    console.log('[AiService] generateDocument:', type, params.job);
     const response = await api.post('/ai/document', { type, params });
+    console.log('[AiService] generateDocument result size:', response.data.data?.content?.length);
     return response.data.data;
   },
 
   generateSocial: async (params: any) => {
+    console.log('[AiService] generateSocial:', params.job);
     const response = await api.post('/ai/social', { params });
+    console.log('[AiService] generateSocial result keys:', Object.keys(response.data.data || {}));
     return response.data.data;
   },
 
   generatePoster: async (params: any) => {
+    console.log('[AiService] generatePoster');
     const response = await api.post('/ai/poster', { params });
     return response.data.data;
   },

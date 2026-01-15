@@ -12,6 +12,7 @@ import {
   Dimensions,
   ScrollView,
   Share as RNShare,
+  Alert,
 } from 'react-native';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
@@ -44,6 +45,7 @@ import { GenericModal, ModalType } from '../../components/ui/GenericModal';
 import { useCreationStore } from '../../store/creationStore';
 import { useAuthStore } from '../../store/authStore';
 import { AiService, TextGenerationType } from '../../api/ai.service';
+import { api } from '../../api/client';
 import { WORKFLOWS } from '../../constants/workflows';
 import { GuidedScreenWrapper } from '../../components/layout/GuidedScreenWrapper';
 
@@ -97,6 +99,7 @@ export default function Step3ResultScreen() {
   const [modalType, setModalType] = useState<ModalType>('success');
   const [modalTitle, setModalTitle] = useState('');
   const [modalMessage, setModalMessage] = useState('');
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
   // Animation for skeleton text
   const [pulseAnim] = useState(new Animated.Value(0.3));
@@ -147,57 +150,160 @@ export default function Step3ResultScreen() {
   }, [userQuery]);
 
   const getParsedData = (rawResult: string | null) => {
-    if (!rawResult) return null;
+    if (!rawResult || typeof rawResult !== 'string') return null;
     try {
       let jsonStr = rawResult.trim();
-      if (jsonStr.includes('```json')) {
-        jsonStr = jsonStr.split('```json')[1].split('```')[0].trim();
-      } else if (jsonStr.includes('```')) {
-        jsonStr = jsonStr.split('```')[1].split('```')[0].trim();
-      }
+      jsonStr = jsonStr
+        .replace(/```json/g, '')
+        .replace(/```/g, '')
+        .trim();
 
-      if (jsonStr.startsWith('{')) {
+      if (jsonStr.startsWith('{') || jsonStr.startsWith('[')) {
         return JSON.parse(jsonStr);
       }
     } catch (e) {
-      console.log('Parsing failed', e);
+      // Ignored
     }
     return null;
   };
 
-  const getVisibleText = (rawResult: string | null) => {
+  const copyValueToClipboard = async (key: string, value: any) => {
+    let textToCopy = '';
+    if (typeof value === 'string') {
+      textToCopy = value;
+    } else if (Array.isArray(value)) {
+      textToCopy = value
+        .map((item) => {
+          if (typeof item === 'object') {
+            return Object.entries(item)
+              .map(([k, v]) => `${k}: ${v}`)
+              .join('\n');
+          }
+          return `• ${String(item)}`;
+        })
+        .join('\n');
+    } else {
+      textToCopy = JSON.stringify(value, null, 2);
+    }
+
+    await Clipboard.setStringAsync(textToCopy);
+    setCopiedKey(key);
+    setTimeout(() => setCopiedKey(null), 2000);
+  };
+
+  const renderJsonResult = (data: any) => {
+    if (!data || typeof data !== 'object') return null;
+
+    return (
+      <View style={styles.jsonContainer}>
+        {Object.entries(data).map(([key, value], index) => {
+          const formattedKey = key.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
+
+          return (
+            <View key={key} style={styles.jsonField}>
+              <View style={styles.jsonFieldHeader}>
+                <Text style={styles.jsonKey}>{formattedKey}</Text>
+                <TouchableOpacity
+                  onPress={() => copyValueToClipboard(key, value)}
+                  style={styles.miniCopyButton}>
+                  {copiedKey === key ? (
+                    <Check size={14} color={colors.primary.main} />
+                  ) : (
+                    <Copy size={14} color={colors.text.muted} />
+                  )}
+                </TouchableOpacity>
+              </View>
+
+              {typeof value === 'string' ? (
+                <Text style={styles.jsonValue}>{value}</Text>
+              ) : Array.isArray(value) ? (
+                <View style={styles.jsonValueList}>
+                  {value.map((item, i) => (
+                    <View key={i} style={[styles.jsonListItem, { position: 'relative' }]}>
+                      {typeof item === 'object' ? (
+                        <View style={styles.jsonSubObjectCard}>
+                          {Object.entries(item).map(([k, v]) => (
+                            <Text key={k} style={styles.jsonSubValue}>
+                              <Text style={{ fontWeight: '700', color: colors.primary.main }}>
+                                {k.charAt(0).toUpperCase() + k.slice(1).replace(/_/g, ' ')} :{' '}
+                              </Text>
+                              {String(v)}
+                            </Text>
+                          ))}
+                          <TouchableOpacity
+                            onPress={() => copyValueToClipboard(`${key}_${i}`, item)}
+                            style={styles.miniCopyButtonAbsolute}>
+                            {copiedKey === `${key}_${i}` ? (
+                              <Check size={12} color={colors.primary.main} />
+                            ) : (
+                              <Copy size={12} color={colors.text.muted} />
+                            )}
+                          </TouchableOpacity>
+                        </View>
+                      ) : (
+                        <Text style={styles.jsonValueListItem}>• {String(item)}</Text>
+                      )}
+                    </View>
+                  ))}
+                </View>
+              ) : (
+                <Text style={styles.jsonValue}>{JSON.stringify(value, null, 2)}</Text>
+              )}
+            </View>
+          );
+        })}
+      </View>
+    );
+  };
+
+  const getVisibleText = (rawResult: string | null): string => {
     if (!rawResult) return '';
     const data = getParsedData(rawResult);
     if (!data) return rawResult;
 
-    let text = '';
-    if (data.title) text += `${data.title}\n\n`;
-    if (data.presentation) text += `${data.presentation}\n\n`;
+    let textArr: string[] = [];
 
-    if (data.sections && Array.isArray(data.sections)) {
-      data.sections.forEach((s: any) => {
-        if (s.title) text += `--- ${s.title.toUpperCase()} ---\n`;
-        if (s.content) text += `${s.content}\n`;
-        if (s.table && Array.isArray(s.table)) {
-          s.table.forEach((row: any[]) => {
-            text += row.join(' | ') + '\n';
-          });
-        }
-        text += '\n';
-      });
-    }
+    const processValue = (key: string, val: any) => {
+      const label = key.replace(/_/g, ' ').toUpperCase();
 
-    if (data.conclusion) text += `${data.conclusion}`;
-    return text.trim();
+      if (typeof val === 'string') {
+        textArr.push(`${label}: ${val}`);
+      } else if (Array.isArray(val)) {
+        textArr.push(`\n[${label}]`);
+        val.forEach((item) => {
+          if (typeof item === 'object') {
+            Object.entries(item).forEach(([k, v]) => {
+              textArr.push(`• ${k.replace(/_/g, ' ')}: ${v}`);
+            });
+            textArr.push('');
+          } else {
+            textArr.push(`• ${String(item)}`);
+          }
+        });
+      } else if (typeof val === 'object' && val !== null) {
+        textArr.push(`\n[${label}]`);
+        Object.entries(val).forEach(([k, v]) => {
+          textArr.push(`${k.replace(/_/g, ' ')}: ${v}`);
+        });
+      }
+    };
+
+    // Priority keys or all keys if generic
+    const keys = Object.keys(data);
+    keys.forEach((key) => processValue(key, data[key]));
+
+    return textArr.join('\n').trim();
   };
 
   const generateContent = async (
     overrideQuery?: string,
     mode: 'text' | 'image' | 'both' = 'both'
   ) => {
-    if (loading) return;
+    console.log('generateContent');
+
+    // if (loading) return;
     setLoading(true);
-    setRegenMode(mode); // Save the mode used for this generation
+    setRegenMode(mode);
 
     try {
       // If we are regenerating only one part, don't clear the other
@@ -239,9 +345,11 @@ export default function Step3ResultScreen() {
         setResult(resultData.content);
         setGenerationId(resultData.generationId);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Generation error:', error);
-      setResult('Une erreur est survenue lors de la génération. Veuillez réessayer.');
+      const errMsg = error?.response?.data?.message || error.message || 'Erreur inconnue';
+      Alert.alert('Erreur de génération', errMsg);
+      setResult('Une erreur est survenue lors de la génération. ' + errMsg);
     } finally {
       setLoading(false);
     }
@@ -264,7 +372,7 @@ export default function Step3ResultScreen() {
         'Veuillez patienter pendant la création du fichier.'
       );
 
-      const apiBaseUrl = 'https://hipster-api.fr/api';
+      const apiBaseUrl = api.defaults.baseURL;
       const downloadUrl = `${apiBaseUrl}/ai/export/${generationId}?format=${format}&model=${selectedModel}`;
       const extension = format === 'excel' ? 'xlsx' : format === 'image' ? 'png' : format;
       const fileName = `Hipster_${generationId}_${Date.now()}.${extension}`;
@@ -630,21 +738,13 @@ export default function Step3ResultScreen() {
                   </View>
                 ) : (
                   <View>
-                    <View style={[styles.exportButtons, { marginBottom: 24 }]}>
-                      <TouchableOpacity
-                        style={[styles.exportButton, styles.exportButtonPrimary]}
-                        onPress={() => handleDownload('pdf')}>
-                        <Download size={18} color="#000" />
-                        <Text style={styles.exportButtonTextPrimary}>Exporter en PDF</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={styles.exportButton}
-                        onPress={() => handleDownload('image')}>
-                        <LucideImage size={18} color={colors.text.secondary} />
-                        <Text style={styles.exportButtonText}>Image</Text>
-                      </TouchableOpacity>
+                    <View style={{ marginTop: 12 }}>
+                      {(() => {
+                        const data = getParsedData(result);
+                        if (data) return renderJsonResult(data);
+                        return <Text style={styles.contentText}>{result}</Text>;
+                      })()}
                     </View>
-                    <Text style={styles.contentText}>{result}</Text>
                   </View>
                 )}
               </View>
@@ -1140,5 +1240,71 @@ const styles = StyleSheet.create({
   modeItemTextSelected: {
     color: colors.background.dark,
     fontWeight: '700',
+  },
+  jsonContainer: {
+    gap: 16,
+  },
+  jsonField: {
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.05)',
+  },
+  jsonKey: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.primary.main,
+    marginBottom: 8,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+  },
+  jsonValue: {
+    fontSize: 15,
+    lineHeight: 22,
+    color: colors.text.primary,
+  },
+  jsonValueList: {
+    gap: 6,
+  },
+  jsonValueListItem: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: colors.text.secondary,
+  },
+  jsonListItem: {
+    marginBottom: 8,
+  },
+  jsonSubValue: {
+    fontSize: 14,
+    color: colors.text.primary,
+    marginBottom: 4,
+  },
+  jsonFieldHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  miniCopyButton: {
+    padding: 4,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 6,
+  },
+  jsonSubObjectCard: {
+    backgroundColor: 'rgba(255,255,255,0.02)',
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)',
+    position: 'relative',
+  },
+  miniCopyButtonAbsolute: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    padding: 4,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 4,
   },
 });
