@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   Animated,
   Dimensions,
   StyleSheet,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { colors } from '../../theme/colors';
@@ -17,19 +18,19 @@ import { DeerAnimation } from '../../components/ui/DeerAnimation';
 import { useCreationStore } from '../../store/creationStore';
 import { WORKFLOWS, WorkflowQuestion } from '../../constants/workflows';
 import { GuidedScreenWrapper } from '../../components/layout/GuidedScreenWrapper';
-import { Sparkles, Image as LucideImage, Paperclip, Mic, ChevronRight } from 'lucide-react-native';
+import { Sparkles, ChevronRight, Mic, Image as LucideImage, Paperclip } from 'lucide-react-native';
 import { NeonButton } from '../../components/ui/NeonButton';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 export default function Step2PersonalizeScreen() {
   const router = useRouter();
-  const { setQuery, userQuery, selectedJob, selectedFunction, workflowAnswers, setWorkflowAnswer } =
+  const { selectedJob, selectedFunction, workflowAnswers, setWorkflowAnswer, userQuery, setQuery } =
     useCreationStore();
 
-  const [inputText, setInputText] = useState(userQuery);
   const [keyboardHeight] = useState(new Animated.Value(0));
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+  const scrollRef = useRef<ScrollView>(null);
 
   // Fallback to generic if specific not found
   const questions: WorkflowQuestion[] =
@@ -41,10 +42,15 @@ export default function Step2PersonalizeScreen() {
       (e) => {
         setIsKeyboardVisible(true);
         Animated.timing(keyboardHeight, {
-          toValue: e.endCoordinates.height - 40, // Adjust for bottom bar
+          toValue: e.endCoordinates.height - 40,
           duration: Platform.OS === 'ios' ? 250 : 200,
           useNativeDriver: false,
         }).start();
+
+        // scroll to bottom when keyboard opens
+        setTimeout(() => {
+          scrollRef.current?.scrollToEnd({ animated: true });
+        }, 100);
       }
     );
 
@@ -108,100 +114,101 @@ export default function Step2PersonalizeScreen() {
   };
 
   const handleCreate = () => {
-    setQuery(inputText);
     router.push('/(guided)/step3-result');
   };
 
-  const canProceed = inputText.trim().length > 0;
-
   return (
     <GuidedScreenWrapper>
-      <View style={{ flex: 1 }}>
-        {/* Scrollable Content */}
-        <ScrollView
-          style={{ flex: 1 }}
-          contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 250 }}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled">
-          {/* Header */}
-          <View style={styles.header}>
-            <Text style={styles.headerTitle}>Personnalisez votre création</Text>
-            <View style={styles.breadcrumb}>
-              <Text style={styles.breadcrumbJob}>{selectedJob}</Text>
-              <ChevronRight size={14} color={colors.text.muted} />
-              <Text style={styles.breadcrumbFunction}>{selectedFunction?.split('(')[0]}</Text>
-            </View>
-          </View>
-
-          {/* Animation - visible only if no keyboard */}
-          {!isKeyboardVisible && (
-            <View style={styles.animationContainer}>
-              <DeerAnimation size={80} progress={70} />
-            </View>
-          )}
-
-          {/* Section Questions */}
-          {questions.length > 0 && (
-            <View style={{ marginBottom: 32 }}>
-              {questions.map((q, index) => renderQuestion(q, index))}
-            </View>
-          )}
-        </ScrollView>
-
-        {/* Fixed Bottom Bar */}
-        <Animated.View
-          style={{
-            position: 'absolute',
-            bottom: keyboardHeight,
-            left: 0,
-            right: 0,
-            paddingHorizontal: 16,
-            paddingTop: 12,
-
-            borderTopWidth: 1,
-            borderTopColor: 'rgba(255,255,255,0.05)',
-            gap: 12,
-          }}>
-          <View className="rounded-2xl border border-white/10 bg-slate-900 p-4">
-            <TextInput
-              value={inputText}
-              onChangeText={setInputText}
-              placeholder="Décrivez votre contenu en détail..."
-              placeholderTextColor={colors.text.muted}
-              multiline
-              maxLength={500}
-              className="mb-3 max-h-[120] min-h-[60] text-base text-white"
-              textAlignVertical="top"
-            />
-
-            <View className="flex-row items-center justify-between">
-              <View className="flex-row gap-3">
-                <TouchableOpacity className="rounded-lg bg-white/5 p-2">
-                  <LucideImage size={20} color={colors.text.secondary} />
-                </TouchableOpacity>
-                <TouchableOpacity className="rounded-lg bg-white/5 p-2">
-                  <Paperclip size={20} color={colors.text.secondary} />
-                </TouchableOpacity>
-                <TouchableOpacity className="rounded-lg bg-white/5 p-2">
-                  <Mic size={20} color={colors.text.secondary} />
-                </TouchableOpacity>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <View >
+          <ScrollView
+            ref={scrollRef}
+            
+            contentContainerStyle={{ paddingHorizontal: 20, }}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            {/* Header */}
+            <View style={styles.header}>
+              <Text style={styles.headerTitle}>Personnalisez votre création</Text>
+              <View style={styles.breadcrumb}>
+                <Text style={styles.breadcrumbJob}>{selectedJob}</Text>
+                <ChevronRight size={14} color={colors.text.muted} />
+                <Text style={styles.breadcrumbFunction}>{selectedFunction?.split('(')[0]}</Text>
               </View>
-              <Text className="text-xs text-white/40">{inputText.length}/500</Text>
             </View>
-          </View>
 
-          <View className="flex-row gap-3">
-            <View style={{ flex: 1 }}>
-              <NeonButton
-                disabled={!canProceed}
-                onPress={handleCreate}
-                title="Générer avec Hipster•IA"
-                variant="primary"
-              />
+            {/* Animation - visible seulement si clavier fermé */}
+            {!isKeyboardVisible && (
+              <View style={styles.animationContainer}>
+                <DeerAnimation size={80} progress={70} />
+              </View>
+            )}
+
+            {/* Questions */}
+            {questions.length > 0 && (
+              <View style={{ marginBottom: 32 }}>
+                {questions.map((q, index) => renderQuestion(q, index))}
+              </View>
+            )}
+          </ScrollView>
+
+          {/* Input & Button fixe */}
+          <Animated.View
+            style={{
+             
+              paddingHorizontal: 16,
+              paddingTop: 12,
+             
+              gap: 12,
+            }}
+          >
+            <View style={styles.questionContainer}>
+              <Text style={styles.questionLabel}>Votre demande / Détails</Text>
+              <View style={styles.chatInputContainer}>
+                <TextInput
+                  style={[styles.chatTextInput, { height: 100, textAlignVertical: 'top' }]}
+                  placeholder="Décrivez ce que vous voulez générer..."
+                  placeholderTextColor="rgba(255, 255, 255, 0.4)"
+                  value={userQuery}
+                  onChangeText={(text) => {
+                    setQuery(text);
+                    scrollRef.current?.scrollToEnd({ animated: true });
+                  }}
+                  multiline
+                />
+                <View style={styles.chatActionsRow}>
+                  <View style={styles.chatIconsGroup}>
+                    <TouchableOpacity style={styles.chatIconButton}>
+                      <LucideImage size={20} color={colors.text.secondary} />
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.chatIconButton}>
+                      <Paperclip size={20} color={colors.text.secondary} />
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.chatIconButton}>
+                      <Mic size={20} color={colors.text.secondary} />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
             </View>
-          </View>
-        </Animated.View>
-      </View>
+
+            <View style={{ flexDirection: 'row', gap: 12 }}>
+              <View style={{ flex: 1 }}>
+                <NeonButton
+                  onPress={handleCreate}
+                  title="Générer avec Hipster•IA"
+                  variant="primary"
+                  icon={<Sparkles size={20} color="#000" />}
+                />
+              </View>
+            </View>
+          </Animated.View>
+        </View>
+      </KeyboardAvoidingView>
     </GuidedScreenWrapper>
   );
 }
@@ -209,38 +216,38 @@ export default function Step2PersonalizeScreen() {
 const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
-    marginTop: 20,
-    marginBottom: 16,
+    marginTop: 32,
+    marginBottom: 20,
+    paddingHorizontal: 10,
   },
   headerTitle: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: 'bold',
     color: '#FFFFFF',
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   breadcrumb: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
   },
   breadcrumbJob: {
     fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
-    textAlign: 'center',
   },
   breadcrumbFunction: {
     fontSize: 14,
-    fontWeight: 'bold',
+    fontWeight: '600',
     color: colors.text.muted,
   },
   animationContainer: {
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 32,
   },
   questionContainer: {
-    marginBottom: 24,
+    marginBottom: 28,
   },
   questionLabel: {
     fontSize: 16,
@@ -251,20 +258,23 @@ const styles = StyleSheet.create({
   choicesGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: 12,
   },
   choiceButton: {
+    minWidth: '30%',
+    maxWidth: '48%',
     borderRadius: 16,
     borderWidth: 2,
     borderColor: 'rgba(255, 255, 255, 0.1)',
     backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    paddingVertical: 14,
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   choiceButtonSelected: {
     borderColor: colors.blue[400],
     backgroundColor: colors.blue[600],
-    // Neon glow effect
     shadowColor: colors.blue[500],
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.5,
@@ -284,13 +294,42 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.1)',
     backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    paddingHorizontal: 16,
+    paddingHorizontal: 18,
     paddingVertical: 16,
     fontSize: 16,
     color: '#FFFFFF',
   },
   textInputActive: {
     borderColor: colors.primary.main,
-    backgroundColor: colors.primary.main + '0D', // 5% opacity
+    backgroundColor: colors.primary.main + '0D',
+  },
+  chatInputContainer: {
+    backgroundColor: '#0f172a',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    padding: 18,
+    marginTop: 10,
+  },
+  chatTextInput: {
+    fontSize: 16,
+    color: '#FFFFFF',
+    marginBottom: 12,
+    minHeight: 100,
+    textAlignVertical: 'top',
+  },
+  chatActionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  chatIconsGroup: {
+    flexDirection: 'row',
+    gap: 14,
+  },
+  chatIconButton: {
+    padding: 10,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
   },
 });

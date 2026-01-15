@@ -1,6 +1,6 @@
 import { api } from './client';
 
-export type TextGenerationType = 'blog' | 'social' | 'ad' | 'email' | 'video';
+export type TextGenerationType = 'blog' | 'social' | 'ad' | 'email' | 'video' | 'text' | 'texte';
 export type ImageStyle = 'realistic' | 'cartoon' | 'sketch';
 export type DocumentType = 'legal' | 'business';
 
@@ -54,5 +54,27 @@ export const AiService = {
   getHistory: async () => {
     const response = await api.get('/ai/history');
     return response.data.data;
+  },
+
+  deleteGeneration: async (id: string) => {
+    console.log('[AiService] Requesting deletion of item:', id);
+    try {
+      await api.post(`/ai/history/${id}/delete`);
+      console.log('[AiService] Item deleted successfully:', id);
+    } catch (error) {
+      console.error('[AiService] Delete item error:', error);
+      throw error;
+    }
+  },
+
+  clearHistory: async () => {
+    console.log('[AiService] Requesting clear all history');
+    try {
+      await api.post('/ai/history/clear');
+      console.log('[AiService] History cleared successfully');
+    } catch (error) {
+      console.error('[AiService] Clear history error:', error);
+      throw error;
+    }
   },
 };

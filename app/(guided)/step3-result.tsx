@@ -191,18 +191,122 @@ export default function Step3ResultScreen() {
     setTimeout(() => setCopiedKey(null), 2000);
   };
 
+  const renderPosterResult = (data: any) => {
+    return (
+      <View style={styles.posterCard}>
+        <View style={styles.posterHeader}>
+          <Text selectable={true} style={styles.posterLabel}>
+            Affiche Promotionnelle
+          </Text>
+          <TouchableOpacity
+            onPress={() => copyValueToClipboard('affiche_complete', data)}
+            style={styles.miniCopyButton}>
+            {copiedKey === 'affiche_complete' ? (
+              <Check size={16} color={colors.primary.main} />
+            ) : (
+              <Copy size={16} color={colors.primary.main} />
+            )}
+          </TouchableOpacity>
+        </View>
+
+        {data.titre_principal && (
+          <View style={{ position: 'relative', marginBottom: 15 }}>
+            <Text selectable={true} style={styles.posterTitle}>
+              {data.titre_principal}
+            </Text>
+            <TouchableOpacity
+              onPress={() => copyValueToClipboard('titre', data.titre_principal)}
+              style={styles.miniCopyButtonAbsolute}>
+              {copiedKey === 'titre' ? (
+                <Check size={12} color={colors.primary.main} />
+              ) : (
+                <Copy size={12} color={colors.text.muted} />
+              )}
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {data.sous_titre && (
+          <View style={{ position: 'relative', marginBottom: 15 }}>
+            <Text selectable={true} style={styles.posterSubtitle}>
+              {data.sous_titre}
+            </Text>
+            <TouchableOpacity
+              onPress={() => copyValueToClipboard('sous_titre', data.sous_titre)}
+              style={styles.miniCopyButtonAbsolute}>
+              {copiedKey === 'sous_titre' ? (
+                <Check size={12} color={colors.primary.main} />
+              ) : (
+                <Copy size={12} color={colors.text.muted} />
+              )}
+            </TouchableOpacity>
+          </View>
+        )}
+
+        <View style={styles.posterSeparator} />
+
+        {data.offres_speciales && data.offres_speciales !== '' && (
+          <View style={styles.posterOfferCard}>
+            <Text selectable={true} style={styles.posterOfferText}>
+              {data.offres_speciales}
+            </Text>
+            <TouchableOpacity
+              onPress={() => copyValueToClipboard('offre', data.offres_speciales)}
+              style={styles.miniCopyButtonAbsolute}>
+              {copiedKey === 'offre' ? (
+                <Check size={12} color={colors.primary.main} />
+              ) : (
+                <Copy size={12} color={colors.text.muted} />
+              )}
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {data.informations_pratiques && (
+          <View style={styles.posterInfo}>
+            <Text selectable={true} style={styles.posterInfoText}>
+              {data.informations_pratiques}
+            </Text>
+            <TouchableOpacity
+              onPress={() => copyValueToClipboard('infos', data.informations_pratiques)}
+              style={styles.miniCopyButtonAbsolute}>
+              {copiedKey === 'infos' ? (
+                <Check size={12} color={colors.primary.main} />
+              ) : (
+                <Copy size={12} color={colors.text.muted} />
+              )}
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {data.appel_a_l_action && (
+          <TouchableOpacity
+            style={styles.posterCta}
+            onPress={() => copyValueToClipboard('cta', data.appel_a_l_action)}>
+            <Text selectable={true} style={styles.posterCtaText}>
+              {data.appel_a_l_action}
+            </Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    );
+  };
+
   const renderJsonResult = (data: any) => {
     if (!data || typeof data !== 'object') return null;
 
     return (
       <View style={styles.jsonContainer}>
         {Object.entries(data).map(([key, value], index) => {
+          if (key === 'corps_de_texte' || key === 'message_principal') return null;
           const formattedKey = key.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
 
           return (
             <View key={key} style={styles.jsonField}>
               <View style={styles.jsonFieldHeader}>
-                <Text style={styles.jsonKey}>{formattedKey}</Text>
+                <Text selectable={true} style={styles.jsonKey}>
+                  {formattedKey}
+                </Text>
                 <TouchableOpacity
                   onPress={() => copyValueToClipboard(key, value)}
                   style={styles.miniCopyButton}>
@@ -215,7 +319,9 @@ export default function Step3ResultScreen() {
               </View>
 
               {typeof value === 'string' ? (
-                <Text style={styles.jsonValue}>{value}</Text>
+                <Text selectable={true} style={styles.jsonValue}>
+                  {value}
+                </Text>
               ) : Array.isArray(value) ? (
                 <View style={styles.jsonValueList}>
                   {value.map((item, i) => (
@@ -223,8 +329,10 @@ export default function Step3ResultScreen() {
                       {typeof item === 'object' ? (
                         <View style={styles.jsonSubObjectCard}>
                           {Object.entries(item).map(([k, v]) => (
-                            <Text key={k} style={styles.jsonSubValue}>
-                              <Text style={{ fontWeight: '700', color: colors.primary.main }}>
+                            <Text selectable={true} key={k} style={styles.jsonSubValue}>
+                              <Text
+                                selectable={true}
+                                style={{ fontWeight: '700', color: colors.primary.main }}>
                                 {k.charAt(0).toUpperCase() + k.slice(1).replace(/_/g, ' ')} :{' '}
                               </Text>
                               {String(v)}
@@ -241,13 +349,30 @@ export default function Step3ResultScreen() {
                           </TouchableOpacity>
                         </View>
                       ) : (
-                        <Text style={styles.jsonValueListItem}>• {String(item)}</Text>
+                        <Text selectable={true} style={styles.jsonValueListItem}>
+                          • {String(item)}
+                        </Text>
                       )}
                     </View>
                   ))}
                 </View>
+              ) : typeof value === 'object' && value !== null ? (
+                <View style={[styles.jsonSubObjectCard, { marginTop: 8 }]}>
+                  {Object.entries(value).map(([k, v]) => (
+                    <Text selectable={true} key={k} style={styles.jsonSubValue}>
+                      <Text
+                        selectable={true}
+                        style={{ fontWeight: '700', color: colors.primary.main }}>
+                        {k.charAt(0).toUpperCase() + k.slice(1).replace(/_/g, ' ')} :{' '}
+                      </Text>
+                      {typeof v === 'object' ? JSON.stringify(v) : String(v)}
+                    </Text>
+                  ))}
+                </View>
               ) : (
-                <Text style={styles.jsonValue}>{JSON.stringify(value, null, 2)}</Text>
+                <Text selectable={true} style={styles.jsonValue}>
+                  {String(value)}
+                </Text>
               )}
             </View>
           );
@@ -264,6 +389,7 @@ export default function Step3ResultScreen() {
     let textArr: string[] = [];
 
     const processValue = (key: string, val: any) => {
+      if (key === 'corps_de_texte' || key === 'message_principal') return; // Skip main message
       const label = key.replace(/_/g, ' ').toUpperCase();
 
       if (typeof val === 'string') {
@@ -311,18 +437,25 @@ export default function Step3ResultScreen() {
       if (mode === 'image' || mode === 'both') setImageUrl('');
       setShowRegeneratePanel(false);
 
+      if (!selectedCategory) {
+        console.error('selectedCategory is null');
+        setResult('Erreur : Catégorie non sélectionnée.');
+        setLoading(false);
+        return;
+      }
+
       const params = {
         job: selectedJob,
-        function: selectedFunction,
+        function: selectedFunction, // e.g. "Flyers / Affiches"
         context: selectedContext,
         userQuery: overrideQuery || userQuery,
         workflowAnswers,
+        // Override category for flyers to ensure generic text generation
+        category: selectedFunction === 'Flyers / Affiches (texte)' ? 'Texte' : selectedCategory,
+        instruction_speciale: 'Génère UNIQUEMENT la section demandée.',
       };
 
-      console.log(
-        '[DEBUG] Generating Social Content with params:',
-        JSON.stringify(params, null, 2)
-      );
+      console.log('[DEBUG] Generating Content with params:', JSON.stringify(params, null, 2));
 
       // Specialized prompts per category
       if (selectedCategory === 'Social') {
@@ -340,8 +473,11 @@ export default function Step3ResultScreen() {
         const resultData = await AiService.generateDocument('business', params);
         setResult(resultData.content);
         setGenerationId(resultData.generationId);
-      } else {
-        const resultData = await AiService.generateText(params, 'blog');
+      } else if (selectedCategory === 'Texte') {
+        const resultData = await AiService.generateText(
+          params,
+          selectedCategory.toLowerCase() as TextGenerationType
+        );
         setResult(resultData.content);
         setGenerationId(resultData.generationId);
       }
@@ -522,7 +658,7 @@ export default function Step3ResultScreen() {
       } else if (result) {
         // Partage de texte classique
         await RNShare.share({
-          message: result,
+          message: getVisibleText(result),
           title: 'Mon contenu Hipster IA',
         });
       }
@@ -543,7 +679,9 @@ export default function Step3ResultScreen() {
       headerRight={
         <TouchableOpacity onPress={handleFinish} style={styles.finishButton}>
           <Home size={18} color={colors.primary.main} />
-          <Text style={styles.finishButtonText}>Terminer</Text>
+          <Text selectable={true} style={styles.finishButtonText}>
+            Terminer
+          </Text>
         </TouchableOpacity>
       }>
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
@@ -553,15 +691,21 @@ export default function Step3ResultScreen() {
             {loading ? (
               <View style={styles.loadingHeader}>
                 <DeerAnimation size={60} progress={50} />
-                <Text style={styles.loadingTitle}>Création en cours...</Text>
-                <Text style={styles.loadingSubtitle}>Hipster•IA travaille pour vous</Text>
+                <Text selectable={true} style={styles.loadingTitle}>
+                  Création en cours...
+                </Text>
+                <Text selectable={true} style={styles.loadingSubtitle}>
+                  Hipster•IA travaille pour vous
+                </Text>
               </View>
             ) : (
               <>
                 <View style={styles.successIcon}>
                   <Check size={32} color={colors.background.dark} />
                 </View>
-                <Text style={styles.title}>Votre contenu est prêt !</Text>
+                <Text selectable={true} style={styles.title}>
+                  Votre contenu est prêt !
+                </Text>
               </>
             )}
           </View>
@@ -576,7 +720,9 @@ export default function Step3ResultScreen() {
                   {loading || (regenMode === 'image' && imageUrl === '') ? (
                     <View style={styles.imagePlaceholder}>
                       <LucideImage size={48} color="rgba(255,255,255,0.2)" />
-                      <Text style={styles.placeholderText}>Génération du visuel...</Text>
+                      <Text selectable={true} style={styles.placeholderText}>
+                        Génération du visuel...
+                      </Text>
                     </View>
                   ) : (
                     <Image
@@ -602,7 +748,9 @@ export default function Step3ResultScreen() {
                       ))}
                     </View>
                   ) : (
-                    <Text style={styles.contentText}>{result}</Text>
+                    <Text selectable={true} style={styles.contentText}>
+                      {result}
+                    </Text>
                   )}
                 </View>
               </View>
@@ -614,7 +762,9 @@ export default function Step3ResultScreen() {
                 {loading || (regenMode === 'image' && imageUrl === '') ? (
                   <View style={styles.imagePlaceholder}>
                     <LucideImage size={48} color="rgba(255,255,255,0.2)" />
-                    <Text style={styles.placeholderText}>Génération de l'image...</Text>
+                    <Text selectable={true} style={styles.placeholderText}>
+                      Génération de l'image...
+                    </Text>
                   </View>
                 ) : (
                   <Image
@@ -631,7 +781,9 @@ export default function Step3ResultScreen() {
               <View style={styles.documentSection}>
                 <View style={styles.documentHeader}>
                   <FileText size={32} color={colors.primary.main} />
-                  <Text style={styles.documentTitle}>Document structuré</Text>
+                  <Text selectable={true} style={styles.documentTitle}>
+                    Document structuré
+                  </Text>
                 </View>
 
                 {loading || (regenMode === 'text' && result === '') ? (
@@ -652,9 +804,13 @@ export default function Step3ResultScreen() {
                     <TouchableOpacity
                       style={styles.modelSelector}
                       onPress={() => setShowModelPicker(!showModelPicker)}>
-                      <Text style={styles.modelSelectorLabel}>Design Export :</Text>
+                      <Text selectable={true} style={styles.modelSelectorLabel}>
+                        Design Export :
+                      </Text>
                       <View style={styles.modelSelectorValue}>
-                        <Text style={styles.modelSelectorText}>{selectedModel}</Text>
+                        <Text selectable={true} style={styles.modelSelectorText}>
+                          {selectedModel}
+                        </Text>
                         <ChevronDown size={20} color={colors.text.secondary} />
                       </View>
                     </TouchableOpacity>
@@ -677,6 +833,7 @@ export default function Step3ResultScreen() {
                               style={styles.modelOptionImage}
                             />
                             <Text
+                              selectable={true}
                               style={[
                                 styles.modelOptionText,
                                 selectedModel === opt && styles.modelOptionTextSelected,
@@ -694,13 +851,17 @@ export default function Step3ResultScreen() {
                         style={[styles.exportButton, styles.exportButtonPrimary]}
                         onPress={() => handleDownload('pdf')}>
                         <Download size={18} color="#000" />
-                        <Text style={styles.exportButtonTextPrimary}>PDF</Text>
+                        <Text selectable={true} style={styles.exportButtonTextPrimary}>
+                          PDF
+                        </Text>
                       </TouchableOpacity>
                       <TouchableOpacity
                         style={styles.exportButton}
                         onPress={() => handleDownload('docx')}>
                         <FileText size={18} color={colors.text.secondary} />
-                        <Text style={styles.exportButtonText}>Word</Text>
+                        <Text selectable={true} style={styles.exportButtonText}>
+                          Word
+                        </Text>
                       </TouchableOpacity>
                     </View>
 
@@ -709,11 +870,17 @@ export default function Step3ResultScreen() {
                       const data = getParsedData(result);
                       return data ? (
                         <View style={{ marginTop: 20 }}>
-                          <Text style={styles.sectionTitle}>{data.title || 'Contenu'}</Text>
-                          <Text style={styles.contentText}>{data.presentation || result}</Text>
+                          <Text selectable={true} style={styles.sectionTitle}>
+                            {data.title || 'Contenu'}
+                          </Text>
+                          <Text selectable={true} style={styles.contentText}>
+                            {data.presentation || result}
+                          </Text>
                         </View>
                       ) : (
-                        <Text style={styles.contentText}>{result}</Text>
+                        <Text selectable={true} style={styles.contentText}>
+                          {result}
+                        </Text>
                       );
                     })()}
                   </View>
@@ -741,8 +908,21 @@ export default function Step3ResultScreen() {
                     <View style={{ marginTop: 12 }}>
                       {(() => {
                         const data = getParsedData(result);
-                        if (data) return renderJsonResult(data);
-                        return <Text style={styles.contentText}>{result}</Text>;
+                        if (data) {
+                          // Si c'est une affiche (détectée par ses clés spécifiques)
+                          if (
+                            data.titre_principal ||
+                            (selectedFunction && selectedFunction.includes('Affiche'))
+                          ) {
+                            return renderPosterResult(data);
+                          }
+                          return renderJsonResult(data);
+                        }
+                        return (
+                          <Text selectable={true} style={styles.contentText}>
+                            {result}
+                          </Text>
+                        );
                       })()}
                     </View>
                   </View>
@@ -1306,5 +1486,97 @@ const styles = StyleSheet.create({
     padding: 4,
     backgroundColor: 'rgba(255,255,255,0.05)',
     borderRadius: 4,
+  },
+  posterCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.02)',
+    borderRadius: 16,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.05)',
+    marginBottom: 20,
+  },
+  posterHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.1)',
+    paddingBottom: 10,
+  },
+  posterLabel: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: colors.primary.main,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+  },
+  posterTitle: {
+    fontSize: 28,
+    fontWeight: '900',
+    color: '#FFF',
+    textAlign: 'center',
+    marginBottom: 12,
+    lineHeight: 34,
+  },
+  posterSubtitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.primary.main,
+    textAlign: 'center',
+    marginBottom: 20,
+    fontStyle: 'italic',
+  },
+  posterBody: {
+    fontSize: 16,
+    lineHeight: 24,
+    color: '#DDD',
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  posterOfferCard: {
+    backgroundColor: 'rgba(0, 255, 170, 0.1)',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: colors.primary.main,
+    marginBottom: 24,
+  },
+  posterOfferText: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.primary.main,
+    textAlign: 'center',
+  },
+  posterInfo: {
+    padding: 16,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 12,
+    marginBottom: 20,
+  },
+  posterInfoText: {
+    fontSize: 14,
+    color: colors.text.secondary,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  posterCta: {
+    backgroundColor: colors.primary.main,
+    paddingVertical: 14,
+    borderRadius: 30,
+    alignItems: 'center',
+  },
+  posterCtaText: {
+    color: '#000',
+    fontSize: 16,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+  },
+  posterSeparator: {
+    height: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    marginVertical: 10,
+    width: '100%',
   },
 });

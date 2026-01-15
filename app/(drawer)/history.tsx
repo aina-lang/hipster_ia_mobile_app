@@ -38,11 +38,19 @@ const FILTERS: { label: string; value: HistoryType | 'all' }[] = [
   { label: 'Chats', value: 'chat' },
 ];
 
+import { GenericModal } from '../../components/ui/GenericModal';
+import { Trash2 } from 'lucide-react-native';
+
 export default function HistoryScreen() {
   const router = useRouter();
   const [activeFilter, setActiveFilter] = useState<HistoryType | 'all'>('all');
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Delete states
+  const [showClearModal, setShowClearModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<string | null>(null);
 
   const fetchHistory = async () => {
     try {
@@ -70,6 +78,29 @@ export default function HistoryScreen() {
     fetchHistory();
   }, []);
 
+  const handleClearHistory = async () => {
+    try {
+      await AiService.clearHistory();
+      setHistory([]);
+      setShowClearModal(false);
+    } catch (error) {
+      console.error('Failed to clear history', error);
+    }
+  };
+
+  const handleDeleteItem = async () => {
+    if (itemToDelete) {
+      try {
+        await AiService.deleteGeneration(itemToDelete);
+        setHistory((prev) => prev.filter((i) => i.id !== itemToDelete));
+        setItemToDelete(null);
+        setShowDeleteModal(false);
+      } catch (error) {
+        console.error('Failed to delete item', error);
+      }
+    }
+  };
+
   const filteredData =
     activeFilter === 'all' ? history : history.filter((item) => item.type === activeFilter);
 
@@ -87,43 +118,63 @@ export default function HistoryScreen() {
   };
 
   const renderItem = ({ item }: { item: HistoryItem }) => (
-    <TouchableOpacity
-      className="flex-row items-center gap-4 rounded-xl border border-white/5 bg-white/5 p-4"
-      onPress={() => router.push({ pathname: '/(drawer)', params: { chatId: item.id } })}>
-      <View className="bg-white/3 h-12 w-12 items-center justify-center rounded-lg">
-        {getIcon(item.type)}
-      </View>
-      <View className="flex-1">
-        <View className="mb-1 flex-row items-center justify-between">
-          <Text className="mr-2 flex-1 text-base font-semibold text-white" numberOfLines={1}>
-            {item.title}
-          </Text>
-          <Text className="text-xs text-white/60">{item.date}</Text>
+    <View className="flex-row items-center gap-2">
+      <TouchableOpacity
+        className="flex-1 flex-row items-center gap-4 rounded-xl border border-white/5 bg-white/5 p-4"
+        onPress={() => router.push({ pathname: '/(drawer)', params: { chatId: item.id } })}>
+        <View className="bg-white/3 h-12 w-12 items-center justify-center rounded-lg">
+          {getIcon(item.type)}
         </View>
-        <Text className="text-sm leading-5 text-white/60" numberOfLines={2}>
-          {item.preview}
-        </Text>
-      </View>
-      <ChevronRight size={20} color={colors.text.muted} />
-    </TouchableOpacity>
+        <View className="flex-1">
+          <View className="mb-1 flex-row items-center justify-between">
+            <Text className="mr-2 flex-1 text-base font-semibold text-white" numberOfLines={1}>
+              {item.title}
+            </Text>
+            <Text className="text-xs text-white/60">{item.date}</Text>
+          </View>
+          <Text className="text-sm leading-5 text-white/60" numberOfLines={2}>
+            {item.preview}
+          </Text>
+        </View>
+        <ChevronRight size={20} color={colors.text.muted} />
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        className="ml-1 h-full items-center justify-center rounded-xl bg-red-500/10 p-3"
+        onPress={() => {
+          setItemToDelete(item.id);
+          setShowDeleteModal(true);
+        }}>
+        <Trash2 size={20} color={colors.status.error} />
+      </TouchableOpacity>
+    </View>
   );
 
   return (
     <BackgroundGradient>
       <SafeAreaView className="flex-1">
         {/* Header */}
-        <View className="flex-row items-center gap-4 px-5 pb-2 pt-5">
-          <TouchableOpacity className="rounded-xl bg-white/10 p-2" onPress={() => router.back()}>
-            <ChevronRight size={24} color={colors.text.primary} className="rotate-180" />
-          </TouchableOpacity>
-          <View>
-            <Text className="mb-1 text-2xl font-bold text-white">Historique</Text>
-            <Text className="text-base text-white/60">Retrouvez toutes vos créations</Text>
+        <View className="flex-row items-center justify-between px-5 pb-2 pt-5">
+          <View className="flex-row items-center gap-4">
+            <TouchableOpacity className="rounded-xl bg-white/10 p-2" onPress={() => router.back()}>
+              <ChevronRight size={24} color={colors.text.primary} className="rotate-180" />
+            </TouchableOpacity>
+            <View>
+              <Text className="mb-1 text-2xl font-bold text-white">Historique</Text>
+              <Text className="text-base text-white/60">vos créations</Text>
+            </View>
           </View>
+          {history.length > 0 && (
+            <TouchableOpacity
+              className="rounded-lg bg-red-500/10 px-3 py-2"
+              onPress={() => setShowClearModal(true)}>
+              <Text className="text-sm font-semibold text-red-400">Tout effacer</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Filters */}
-        <View className="mb-2">
+        <View className="mb-2 mt-4">
           <FlatList
             horizontal
             data={FILTERS}
@@ -176,6 +227,29 @@ export default function HistoryScreen() {
               </View>
             )
           }
+        />
+
+        {/* Modals */}
+        <GenericModal
+          visible={showDeleteModal}
+          type="warning"
+          title="Supprimer"
+          message="Voulez-vous vraiment supprimer cet élément ?"
+          confirmText="Supprimer"
+          cancelText="Annuler"
+          onClose={() => setShowDeleteModal(false)}
+          onConfirm={handleDeleteItem}
+        />
+
+        <GenericModal
+          visible={showClearModal}
+          type="warning"
+          title="Tout effacer"
+          message="Attention, cette action est irréversible. Voulez-vous vraiment supprimer tout votre historique ?"
+          confirmText="Tout supprimer"
+          cancelText="Annuler"
+          onClose={() => setShowClearModal(false)}
+          onConfirm={handleClearHistory}
         />
       </SafeAreaView>
     </BackgroundGradient>

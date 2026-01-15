@@ -48,22 +48,10 @@ export const GENERIC_WORKFLOWS: Record<string, WorkflowQuestion[]> = {
   ],
   'Flyers / Affiches (texte)': [
     {
-      id: 'promotion',
-      label: 'Type de promotion',
+      id: 'tone',
+      label: 'Ton du texte',
       type: 'choice',
-      options: ['Soldes', 'Nouveauté', 'Offre spéciale', 'Événement', 'Réduction'],
-    },
-    {
-      id: 'style',
-      label: 'Style visuel souhaité',
-      type: 'choice',
-      options: ['Moderne', 'Vintage', 'Minimaliste', 'Coloré', 'Élégant'],
-    },
-    {
-      id: 'main_message',
-      label: 'Message principal',
-      type: 'text',
-      placeholder: 'Ex: -50% sur tout le magasin, Nouvelle collection...',
+      options: ['Accrocheur', 'Professionnel', 'Inspirant', 'Urgent', 'Informatif'],
     },
   ],
   'Email / Newsletter (texte)': [

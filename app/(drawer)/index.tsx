@@ -224,8 +224,6 @@ export default function HomeScreen() {
             </TouchableOpacity>
 
             <View className="flex-row items-center gap-2">
-              {isBackendConnected === true && <Wifi size={16} color="#4ADE80" />}
-              {isBackendConnected === false && <WifiOff size={16} color="#F87171" />}
               {hasMessages && (
                 <TouchableOpacity className="rounded-lg bg-white/5 p-2" onPress={resetChat}>
                   <Trash2 size={20} color={colors.text.muted} />
@@ -237,7 +235,7 @@ export default function HomeScreen() {
           {/* Chat / Welcome */}
           <ScrollView
             ref={scrollViewRef}
-            className="flex-1 px-5 pt-2"
+            className="flex-1 px-5 pt-12"
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}>
             {!hasMessages ? (
@@ -255,7 +253,7 @@ export default function HomeScreen() {
                 </View>
 
                 <View className="my-10 items-center">
-                  <DeerAnimation size={180} progress={0} />
+                  <DeerAnimation size={280} progress={0} />
                 </View>
 
                 <TouchableOpacity
@@ -333,7 +331,7 @@ export default function HomeScreen() {
           </ScrollView>
 
           {/* Input */}
-          <View className="absolute bottom-0 left-0 right-0 px-5 py-3">
+          <View className="px-5 py-3">
             <View className="relative rounded-2xl border border-white/10 bg-slate-900 p-4">
               <TypingPlaceholder text={placeholderText} inputValue={inputValue} />
               <TextInput
@@ -369,7 +367,7 @@ export default function HomeScreen() {
                   {isGenerating ? (
                     <ActivityIndicator size="small" color="#000" />
                   ) : (
-                    <Send size={20} color={colors.background.tertiary} />
+                    <Send size={20} color={colors.text.secondary} />
                   )}
                 </TouchableOpacity>
               </View>
