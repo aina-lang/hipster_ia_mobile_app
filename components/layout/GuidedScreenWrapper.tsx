@@ -12,9 +12,10 @@ import { WORKFLOWS } from '../../constants/workflows';
 interface GuidedScreenWrapperProps {
   children: React.ReactNode;
   headerRight?: React.ReactNode;
+  onBack?: () => void;
 }
 
-export function GuidedScreenWrapper({ children, headerRight }: GuidedScreenWrapperProps) {
+export function GuidedScreenWrapper({ children, headerRight, onBack }: GuidedScreenWrapperProps) {
   const router = useRouter();
   const segments = useSegments();
   const insets = useSafeAreaInsets();
@@ -22,25 +23,17 @@ export function GuidedScreenWrapper({ children, headerRight }: GuidedScreenWrapp
 
   const { selectedJob, selectedFunction } = useCreationStore();
 
-  // Determine if Step 3 (Context/Personalization) is part of the flow
-  const hasStep3 =
-    selectedJob && selectedFunction && WORKFLOWS[selectedJob]?.[selectedFunction]?.length > 0;
-
   // Determine current step and total steps based on route and workflow
   const currentRoute = segments[segments.length - 1];
-  const totalSteps = hasStep3 ? 5 : 4;
+  const totalSteps = 3;
 
   let currentStep = 1;
   if (currentRoute === 'step1-job') {
     currentStep = 1;
-  } else if (currentRoute === 'step2-type') {
+  } else if (currentRoute === 'step2-personalize') {
     currentStep = 2;
-  } else if (currentRoute === 'step3-context') {
+  } else if (currentRoute === 'step3-result') {
     currentStep = 3;
-  } else if (currentRoute === 'step4-create') {
-    currentStep = hasStep3 ? 4 : 3;
-  } else if (currentRoute === 'step5-result') {
-    currentStep = hasStep3 ? 5 : 4;
   }
 
   const headerOpacity = scrollY.interpolate({
@@ -76,7 +69,7 @@ export function GuidedScreenWrapper({ children, headerRight }: GuidedScreenWrapp
           <View
             style={styles.headerContent}
             className="flex flex-row items-center justify-between px-5 ">
-            <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <TouchableOpacity onPress={onBack || (() => router.back())} style={styles.backButton}>
               <ArrowLeft size={24} color={colors.text.primary} />
             </TouchableOpacity>
 

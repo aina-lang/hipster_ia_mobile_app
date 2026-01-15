@@ -6,17 +6,24 @@ export type DocumentType = 'legal' | 'business';
 
 export const AiService = {
   chat: async (messages: any[]) => {
-    const response = await api.post('/ai/chat', { messages });
+    console.log('[AiService] chat called with', messages.length, 'messages');
+    try {
+      const response = await api.post('/ai/chat', { messages });
+      console.log('[AiService] chat response data:', JSON.stringify(response.data, null, 2));
+      return response.data.data;
+    } catch (error: any) {
+      console.error('[AiService] chat error:', error?.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  generateText: async (params: any, type: TextGenerationType) => {
+    const response = await api.post('/ai/text', { params, type });
     return response.data.data;
   },
 
-  generateText: async (prompt: string, type: TextGenerationType) => {
-    const response = await api.post('/ai/text', { prompt, type });
-    return response.data.data;
-  },
-
-  generateImage: async (prompt: string, style: ImageStyle) => {
-    const response = await api.post('/ai/image', { prompt, style });
+  generateImage: async (params: any, style: ImageStyle) => {
+    const response = await api.post('/ai/image', { params, style });
     return response.data.data;
   },
 
@@ -25,8 +32,13 @@ export const AiService = {
     return response.data.data;
   },
 
-  generateSocial: async (prompt: string) => {
-    const response = await api.post('/ai/social', { prompt });
+  generateSocial: async (params: any) => {
+    const response = await api.post('/ai/social', { params });
+    return response.data.data;
+  },
+
+  generatePoster: async (params: any) => {
+    const response = await api.post('/ai/poster', { params });
     return response.data.data;
   },
 

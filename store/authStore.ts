@@ -5,7 +5,7 @@ import { api } from '../api/client';
 
 const extractErrorMessage = (error: any, defaultMessage: string) => {
   const responseData = error.response?.data;
-  
+
   if (!responseData) return defaultMessage;
 
   // Case 1: Direct message string
@@ -76,6 +76,8 @@ interface AuthState {
   isLoading: boolean;
   isHydrated: boolean;
   error: string | null;
+  accessToken: string | null;
+  refreshToken: string | null;
   login: (credentials: any) => Promise<void>;
   aiLogin: (credentials: any) => Promise<void>;
   register: (data: any) => Promise<void>;
@@ -84,7 +86,11 @@ interface AuthState {
   logout: () => Promise<void>;
   clearError: () => void;
   updateUser: (userData: Partial<User>) => void;
-  updateProfile: (data: { firstName?: string; lastName?: string; avatarUrl?: string }) => Promise<void>;
+  updateProfile: (data: {
+    firstName?: string;
+    lastName?: string;
+    avatarUrl?: string;
+  }) => Promise<void>;
   updateAiProfile: (data: Partial<User['aiProfile']>) => Promise<void>;
   changePassword: (data: any) => Promise<void>;
   finishOnboarding: () => void;
@@ -101,6 +107,8 @@ export const useAuthStore = create<AuthState>()(
       isLoading: false,
       isHydrated: false,
       error: null,
+      accessToken: null,
+      refreshToken: null,
 
       clearError: () => set({ error: null }),
 
@@ -109,15 +117,15 @@ export const useAuthStore = create<AuthState>()(
         try {
           const currentUser = get().user;
           if (currentUser?.aiProfile) {
-            await api.patch(`/profiles/ai/${currentUser.aiProfile.id}`, { 
-              isSetupComplete: true 
+            await api.patch(`/profiles/ai/${currentUser.aiProfile.id}`, {
+              isSetupComplete: true,
             });
-            set({ 
+            set({
               hasFinishedOnboarding: true,
               user: {
                 ...currentUser,
-                aiProfile: { ...currentUser.aiProfile, isSetupComplete: true }
-              }
+                aiProfile: { ...currentUser.aiProfile, isSetupComplete: true },
+              },
             });
           } else {
             set({ hasFinishedOnboarding: true });
@@ -136,12 +144,16 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      updateProfile: async (data: { firstName?: string; lastName?: string; avatarUrl?: string }) => {
+      updateProfile: async (data: {
+        firstName?: string;
+        lastName?: string;
+        avatarUrl?: string;
+      }) => {
         set({ isLoading: true, error: null });
         try {
           // Call API to update profile
           await api.patch('/users/me', data);
-          
+
           // Update local state
           const currentUser = get().user;
           if (currentUser) {
@@ -247,26 +259,29 @@ export const useAuthStore = create<AuthState>()(
 
           console.log('[AuthStore] Updating AI Profile:', {
             id: currentUser.aiProfile.id,
-            payload: data
+            payload: data,
           });
 
           // Call API to update AI profile
           // The backend endpoint is PATCH /profiles/ai/:id
           const response = await api.patch(`/profiles/ai/${currentUser.aiProfile.id}`, data);
-          
+
           console.log('[AuthStore] AI Profile updated successfully:', response.data);
 
           // Update local state
-          set({ 
-            user: { 
-              ...currentUser, 
-              aiProfile: { ...currentUser.aiProfile, ...data } 
-            } 
+          set({
+            user: {
+              ...currentUser,
+              aiProfile: { ...currentUser.aiProfile, ...data },
+            },
           });
           set({ isLoading: false });
         } catch (error: any) {
           console.error('[AuthStore] Failed to update AI Profile:', error);
-          const message = extractErrorMessage(error, "Erreur lors de la mise à jour du profil professionnel.");
+          const message = extractErrorMessage(
+            error,
+            'Erreur lors de la mise à jour du profil professionnel.'
+          );
           set({ error: message, isLoading: false });
           throw error;
         }
@@ -282,7 +297,7 @@ export const useAuthStore = create<AuthState>()(
 
           await api.put(endpoint, {
             id: user.id,
-            ...data
+            ...data,
           });
           set({ isLoading: false });
         } catch (error: any) {
@@ -296,19 +311,24 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true, error: null });
         try {
           const { data } = await api.post('/login', credentials);
-          
+
           const resData = data.data;
-          
+
           await AsyncStorage.setItem('access_token', resData.access_token);
           await AsyncStorage.setItem('refresh_token', resData.refresh_token);
-          
-          set({ 
-            user: resData.user, 
-            isAuthenticated: true, 
-            isLoading: false 
+
+          set({
+            user: resData.user,
+            isAuthenticated: true,
+            accessToken: resData.access_token,
+            refreshToken: resData.refresh_token,
+            isLoading: false,
           });
         } catch (error: any) {
-          const message = extractErrorMessage(error, 'Une erreur est survenue lors de la connexion.');
+          const message = extractErrorMessage(
+            error,
+            'Une erreur est survenue lors de la connexion.'
+          );
           set({ error: message, isLoading: false });
           throw error;
         }
@@ -318,23 +338,31 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true, error: null });
         try {
           const { data } = await api.post('/ai/auth/login', credentials);
-          
+
           const resData = data.data;
-          
-          console.log('[AuthStore] AI Login Success. User data:', JSON.stringify(resData.user, null, 2));
+
+          console.log(
+            '[AuthStore] AI Login Success. User data:',
+            JSON.stringify(resData.user, null, 2)
+          );
 
           await AsyncStorage.setItem('access_token', resData.access_token);
           await AsyncStorage.setItem('refresh_token', resData.refresh_token);
-          
-          set({ 
-            user: resData.user, 
-            isAuthenticated: true, 
+
+          set({
+            user: resData.user,
+            isAuthenticated: true,
+            accessToken: resData.access_token,
+            refreshToken: resData.refresh_token,
             hasFinishedOnboarding: !!resData.user.aiProfile?.isSetupComplete,
-            isLoading: false 
+            isLoading: false,
           });
         } catch (error: any) {
           console.error('[AuthStore] AI Login Error:', error);
-          const message = extractErrorMessage(error, 'Une erreur est survenue lors de la connexion AI.');
+          const message = extractErrorMessage(
+            error,
+            'Une erreur est survenue lors de la connexion AI.'
+          );
           set({ error: message, isLoading: false });
           throw error;
         }
@@ -349,12 +377,15 @@ export const useAuthStore = create<AuthState>()(
             lastName: registerData.lastName || '',
             selectedProfile: 'client_marketing',
           };
-          
+
           const { data } = await api.post('/register', payload);
           set({ isLoading: false });
           return data;
         } catch (error: any) {
-          const message = extractErrorMessage(error, "Une erreur est survenue lors de l'inscription.");
+          const message = extractErrorMessage(
+            error,
+            "Une erreur est survenue lors de l'inscription."
+          );
           set({ error: message, isLoading: false });
           throw error;
         }
@@ -367,7 +398,10 @@ export const useAuthStore = create<AuthState>()(
           set({ isLoading: false });
           return data;
         } catch (error: any) {
-          const message = extractErrorMessage(error, "Une erreur est survenue lors de l'inscription AI.");
+          const message = extractErrorMessage(
+            error,
+            "Une erreur est survenue lors de l'inscription AI."
+          );
           set({ error: message, isLoading: false });
           throw error;
         }
@@ -377,17 +411,19 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true, error: null });
         try {
           const { data } = await api.post('/ai/auth/verify-email', { email, code });
-          
+
           const resData = data; // Backend returns access_token, refresh_token, user directly
-          
+
           await AsyncStorage.setItem('access_token', resData.access_token);
           await AsyncStorage.setItem('refresh_token', resData.refresh_token);
-          
-          set({ 
-            user: resData.user, 
-            isAuthenticated: true, 
+
+          set({
+            user: resData.user,
+            isAuthenticated: true,
+            accessToken: resData.access_token,
+            refreshToken: resData.refresh_token,
             hasFinishedOnboarding: !!resData.user.aiProfile?.isSetupComplete,
-            isLoading: false 
+            isLoading: false,
           });
         } catch (error: any) {
           const message = extractErrorMessage(error, "Erreur lors de la vérification de l'email.");
@@ -405,7 +441,12 @@ export const useAuthStore = create<AuthState>()(
           console.error('Logout error:', e);
         } finally {
           await AsyncStorage.multiRemove(['access_token', 'refresh_token']);
-          set({ user: null, isAuthenticated: false });
+          set({
+            user: null,
+            isAuthenticated: false,
+            accessToken: null,
+            refreshToken: null,
+          });
         }
       },
     }),
@@ -417,10 +458,12 @@ export const useAuthStore = create<AuthState>()(
           useAuthStore.setState({ isHydrated: true });
         };
       },
-      partialize: (state) => ({ 
-        user: state.user, 
+      partialize: (state) => ({
+        user: state.user,
         isAuthenticated: state.isAuthenticated,
-        hasFinishedOnboarding: state.hasFinishedOnboarding 
+        hasFinishedOnboarding: state.hasFinishedOnboarding,
+        accessToken: state.accessToken,
+        refreshToken: state.refreshToken,
       }),
     }
   )

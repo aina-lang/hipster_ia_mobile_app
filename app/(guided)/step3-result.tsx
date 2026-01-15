@@ -70,7 +70,7 @@ const MODEL_IMAGES: Record<string, string> = {
     'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=400&auto=format&fit=crop',
 };
 
-export default function Step5ResultScreen() {
+export default function Step3ResultScreen() {
   const router = useRouter();
   const {
     userQuery,
@@ -87,7 +87,8 @@ export default function Step5ResultScreen() {
   const [result, setResult] = useState<string | null>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [generationId, setGenerationId] = useState<number | null>(null);
-  const [localQuery, setLocalQuery] = useState(userQuery);
+  const [localQuery, setLocalQuery] = useState('');
+  const [regenMode, setRegenMode] = useState<'text' | 'image' | 'both'>('text');
   const [selectedModel, setSelectedModel] = useState('Moderne');
   const [showRegeneratePanel, setShowRegeneratePanel] = useState(false);
   const [showModelPicker, setShowModelPicker] = useState(false);
@@ -190,74 +191,51 @@ export default function Step5ResultScreen() {
     return text.trim();
   };
 
-  const generateContent = async (overrideQuery?: string) => {
+  const generateContent = async (
+    overrideQuery?: string,
+    mode: 'text' | 'image' | 'both' = 'both'
+  ) => {
+    if (loading) return;
+    setLoading(true);
+    setRegenMode(mode); // Save the mode used for this generation
+
     try {
-      setLoading(true);
-      setResult(null);
-      setImageUrl(null);
+      // If we are regenerating only one part, don't clear the other
+      if (mode === 'text' || mode === 'both') setResult('');
+      if (mode === 'image' || mode === 'both') setImageUrl('');
       setShowRegeneratePanel(false);
-      let resultData: any;
 
-      const authUser = useAuthStore.getState().user;
-      const profile = authUser?.aiProfile;
+      const params = {
+        job: selectedJob,
+        function: selectedFunction,
+        context: selectedContext,
+        userQuery: overrideQuery || userQuery,
+        workflowAnswers,
+      };
 
-      const questionList =
-        (selectedJob && selectedFunction && WORKFLOWS[selectedJob]?.[selectedFunction]) || [];
-      const workflowDetails = questionList
-        .map((q) => {
-          const answer = workflowAnswers[q.id];
-          return answer ? `${q.label}: ${answer}` : null;
-        })
-        .filter(Boolean)
-        .join('\n');
+      console.log(
+        '[DEBUG] Generating Social Content with params:',
+        JSON.stringify(params, null, 2)
+      );
 
-      const contextPart = selectedContext ? `Contexte: ${selectedContext}` : '';
-      const tonePart = selectedTone ? `Ton: ${selectedTone}` : '';
-      const targetPart = selectedTarget ? `Cible: ${selectedTarget}` : '';
-      const jobPart = `Métier: ${selectedJob || 'Non spécifié'}`;
-      const cleanFunction = (selectedFunction || 'Création de contenu')
-        .replace(/\s*\(.*?\)\s*/g, '')
-        .trim();
-
-      const promptContext = [
-        jobPart,
-        `Tâche: ${cleanFunction}`,
-        workflowDetails,
-        contextPart,
-        tonePart,
-        targetPart,
-      ]
-        .filter(Boolean)
-        .join('\n');
-
-      const queryToUse = overrideQuery || userQuery;
-      const fullPrompt = `${promptContext}\n\nInstructions: Génère le contenu demandé. Sois direct, créatif et professionnel.\n\nDemande utilisateur : ${queryToUse}`;
-
+      // Specialized prompts per category
       if (selectedCategory === 'Social') {
-        const socialResponse = await AiService.generateSocial(fullPrompt);
-        setResult(socialResponse.content);
-        setImageUrl(socialResponse.url);
+        const socialResponse = await AiService.generateSocial(params);
+        console.log('[DEBUG] Social Response:', JSON.stringify(socialResponse, null, 2));
+        if (mode === 'text' || mode === 'both') setResult(socialResponse.content);
+        if (mode === 'image' || mode === 'both') setImageUrl(socialResponse.url);
         setGenerationId(socialResponse.generationId);
       } else if (selectedCategory === 'Image') {
-        const styleAnswer = workflowAnswers['style'] || 'realistic';
-        const imagePrompt = `${fullPrompt} (Style: ${styleAnswer})`;
-        const resultData = await AiService.generateImage(imagePrompt, 'realistic');
+        const resultData = await AiService.generateImage(params, 'realistic');
         setResult(resultData.url);
+        setImageUrl(resultData.url); // For consistency
         setGenerationId(resultData.generationId);
       } else if (selectedCategory === 'Document') {
-        const userProfile = useAuthStore.getState().user?.aiProfile;
-        const resultData = await AiService.generateDocument('business', {
-          job: selectedJob,
-          function: selectedFunction,
-          context: selectedContext,
-          details: fullPrompt,
-          userProfile,
-          workflowAnswers,
-        });
+        const resultData = await AiService.generateDocument('business', params);
         setResult(resultData.content);
         setGenerationId(resultData.generationId);
       } else {
-        const resultData = await AiService.generateText(fullPrompt, 'blog');
+        const resultData = await AiService.generateText(params, 'blog');
         setResult(resultData.content);
         setGenerationId(resultData.generationId);
       }
@@ -480,12 +458,52 @@ export default function Step5ResultScreen() {
             )}
           </View>
 
-          {/* Carte de résultat simplifiée */}
+          {/* Main Result Card */}
           <View style={styles.resultCard}>
-            {/* Image si présente */}
-            {(selectedCategory === 'Image' || imageUrl) && (
+            {/* 📱 SOCIAL CATEGORY (Image + Caption) */}
+            {selectedCategory === 'Social' && (
+              <View>
+                {/* Image Section */}
+                <View style={styles.imageSection}>
+                  {loading || (regenMode === 'image' && imageUrl === '') ? (
+                    <View style={styles.imagePlaceholder}>
+                      <LucideImage size={48} color="rgba(255,255,255,0.2)" />
+                      <Text style={styles.placeholderText}>Génération du visuel...</Text>
+                    </View>
+                  ) : (
+                    <Image
+                      source={{ uri: imageUrl || result || '' }}
+                      style={styles.generatedImage}
+                      resizeMode="cover"
+                    />
+                  )}
+                </View>
+
+                {/* Caption Section */}
+                <View style={styles.textSection}>
+                  {loading || (regenMode === 'text' && result === '') ? (
+                    <View style={styles.textPlaceholder}>
+                      {[1, 2, 3].map((i) => (
+                        <Animated.View
+                          key={i}
+                          style={[
+                            styles.skeletonLine,
+                            { width: i === 3 ? '60%' : '100%', opacity: pulseAnim },
+                          ]}
+                        />
+                      ))}
+                    </View>
+                  ) : (
+                    <Text style={styles.contentText}>{result}</Text>
+                  )}
+                </View>
+              </View>
+            )}
+
+            {/* 🖼️ IMAGE CATEGORY (Full Visual focus) */}
+            {selectedCategory === 'Image' && (
               <View style={styles.imageSection}>
-                {loading ? (
+                {loading || (regenMode === 'image' && imageUrl === '') ? (
                   <View style={styles.imagePlaceholder}>
                     <LucideImage size={48} color="rgba(255,255,255,0.2)" />
                     <Text style={styles.placeholderText}>Génération de l'image...</Text>
@@ -494,110 +512,130 @@ export default function Step5ResultScreen() {
                   <Image
                     source={{ uri: imageUrl || result || '' }}
                     style={styles.generatedImage}
-                    resizeMode="cover"
+                    resizeMode="contain"
                   />
                 )}
               </View>
             )}
 
-            {/* Document */}
-            {selectedCategory === 'Document' && !loading && (
+            {/* 📄 DOCUMENT CATEGORY (Structured View) */}
+            {selectedCategory === 'Document' && (
               <View style={styles.documentSection}>
                 <View style={styles.documentHeader}>
                   <FileText size={32} color={colors.primary.main} />
-                  <Text style={styles.documentTitle}>Document prêt</Text>
+                  <Text style={styles.documentTitle}>Document structuré</Text>
                 </View>
 
-                {/* Model Picker intégré */}
-                <TouchableOpacity
-                  style={styles.modelSelector}
-                  onPress={() => setShowModelPicker(!showModelPicker)}>
-                  <Text style={styles.modelSelectorLabel}>Design :</Text>
-                  <View style={styles.modelSelectorValue}>
-                    <Text style={styles.modelSelectorText}>{selectedModel}</Text>
-                    <ChevronDown
-                      size={20}
-                      color={colors.text.secondary}
-                      style={{
-                        transform: [{ rotate: showModelPicker ? '180deg' : '0deg' }],
-                      }}
-                    />
-                  </View>
-                </TouchableOpacity>
-
-                {showModelPicker && (
-                  <View style={styles.modelOptions}>
-                    {['Moderne', 'Minimaliste', 'Luxe', 'Coloré'].map((opt) => (
-                      <TouchableOpacity
-                        key={opt}
+                {loading || (regenMode === 'text' && result === '') ? (
+                  <View style={styles.textPlaceholder}>
+                    {[1, 2, 3, 4].map((i) => (
+                      <Animated.View
+                        key={i}
                         style={[
-                          styles.modelOption,
-                          selectedModel === opt && styles.modelOptionSelected,
+                          styles.skeletonLine,
+                          { width: i === 4 ? '40%' : '100%', opacity: pulseAnim },
                         ]}
-                        onPress={() => {
-                          setSelectedModel(opt);
-                          setShowModelPicker(false);
-                        }}>
-                        <Image
-                          source={{ uri: MODEL_IMAGES[opt] }}
-                          style={styles.modelOptionImage}
-                        />
-                        <Text
-                          style={[
-                            styles.modelOptionText,
-                            selectedModel === opt && styles.modelOptionTextSelected,
-                          ]}>
-                          {opt}
-                        </Text>
-                      </TouchableOpacity>
+                      />
                     ))}
                   </View>
-                )}
+                ) : (
+                  <View style={styles.structuredContent}>
+                    {/* Model Picker for Documents */}
+                    <TouchableOpacity
+                      style={styles.modelSelector}
+                      onPress={() => setShowModelPicker(!showModelPicker)}>
+                      <Text style={styles.modelSelectorLabel}>Design Export :</Text>
+                      <View style={styles.modelSelectorValue}>
+                        <Text style={styles.modelSelectorText}>{selectedModel}</Text>
+                        <ChevronDown size={20} color={colors.text.secondary} />
+                      </View>
+                    </TouchableOpacity>
 
-                {/* Boutons d'export simplifiés */}
-                {/* <View style={styles.exportButtons}>
-                  <TouchableOpacity
-                    style={[styles.exportButton, styles.exportButtonPrimary]}
-                    onPress={() => handleDownload('pdf')}>
-                    <Download size={18} color="#000" />
-                    <Text style={styles.exportButtonTextPrimary}>PDF</Text>
-                  </TouchableOpacity>
+                    {showModelPicker && (
+                      <View style={styles.modelOptions}>
+                        {['Moderne', 'Minimaliste', 'Luxe', 'Coloré'].map((opt) => (
+                          <TouchableOpacity
+                            key={opt}
+                            style={[
+                              styles.modelOption,
+                              selectedModel === opt && styles.modelOptionSelected,
+                            ]}
+                            onPress={() => {
+                              setSelectedModel(opt);
+                              setShowModelPicker(false);
+                            }}>
+                            <Image
+                              source={{ uri: MODEL_IMAGES[opt] }}
+                              style={styles.modelOptionImage}
+                            />
+                            <Text
+                              style={[
+                                styles.modelOptionText,
+                                selectedModel === opt && styles.modelOptionTextSelected,
+                              ]}>
+                              {opt}
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    )}
 
-                  <TouchableOpacity
-                    style={styles.exportButton}
-                    onPress={() => handleDownload('docx')}>
-                    <Download size={18} color={colors.text.secondary} />
-                    <Text style={styles.exportButtonText}>Word</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={styles.exportButton}
-                    onPress={() => handleDownload('excel')}>
-                    <Download size={18} color={colors.text.secondary} />
-                    <Text style={styles.exportButtonText}>Excel</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={styles.exportButton}
-                    onPress={() => handleDownload('image')}>
-                    <LucideImage size={18} color={colors.text.secondary} />
-                    <Text style={styles.exportButtonText}>Image</Text>
-                  </TouchableOpacity>
-                </View> */}
-              </View>
-            )}
-
-            {/* Texte (Toujours visible si présent pour permettre l'export même si pas en mode Document) */}
-            {(selectedCategory !== 'Document' || loading || result) &&
-              selectedCategory !== 'Image' && (
-                <View style={styles.textSection}>
-                  {!loading && (
+                    {/* Export Choices for Documents */}
                     <View style={styles.exportButtons}>
                       <TouchableOpacity
                         style={[styles.exportButton, styles.exportButtonPrimary]}
                         onPress={() => handleDownload('pdf')}>
-                        <Download size={18} color="#fff" />
+                        <Download size={18} color="#000" />
                         <Text style={styles.exportButtonTextPrimary}>PDF</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.exportButton}
+                        onPress={() => handleDownload('docx')}>
+                        <FileText size={18} color={colors.text.secondary} />
+                        <Text style={styles.exportButtonText}>Word</Text>
+                      </TouchableOpacity>
+                    </View>
+
+                    {/* Content Preview */}
+                    {(() => {
+                      const data = getParsedData(result);
+                      return data ? (
+                        <View style={{ marginTop: 20 }}>
+                          <Text style={styles.sectionTitle}>{data.title || 'Contenu'}</Text>
+                          <Text style={styles.contentText}>{data.presentation || result}</Text>
+                        </View>
+                      ) : (
+                        <Text style={styles.contentText}>{result}</Text>
+                      );
+                    })()}
+                  </View>
+                )}
+              </View>
+            )}
+
+            {/* ✍️ TEXT CATEGORY (Clean Reading focus) */}
+            {selectedCategory === 'Texte' && (
+              <View style={styles.textSection}>
+                {loading || (regenMode === 'text' && result === '') ? (
+                  <View style={styles.textPlaceholder}>
+                    {[1, 2, 3, 4, 5].map((i) => (
+                      <Animated.View
+                        key={i}
+                        style={[
+                          styles.skeletonLine,
+                          { width: i === 5 ? '70%' : '100%', opacity: pulseAnim },
+                        ]}
+                      />
+                    ))}
+                  </View>
+                ) : (
+                  <View>
+                    <View style={[styles.exportButtons, { marginBottom: 24 }]}>
+                      <TouchableOpacity
+                        style={[styles.exportButton, styles.exportButtonPrimary]}
+                        onPress={() => handleDownload('pdf')}>
+                        <Download size={18} color="#000" />
+                        <Text style={styles.exportButtonTextPrimary}>Exporter en PDF</Text>
                       </TouchableOpacity>
                       <TouchableOpacity
                         style={styles.exportButton}
@@ -606,51 +644,13 @@ export default function Step5ResultScreen() {
                         <Text style={styles.exportButtonText}>Image</Text>
                       </TouchableOpacity>
                     </View>
-                  )}
-                  {loading ? (
-                    <View style={styles.textPlaceholder}>
-                      {[1, 2, 3, 4, 5].map((i) => (
-                        <Animated.View
-                          key={i}
-                          style={[
-                            styles.skeletonLine,
-                            { width: i === 5 ? '70%' : '100%', opacity: pulseAnim },
-                          ]}
-                        />
-                      ))}
-                    </View>
-                  ) : (
-                    (() => {
-                      const data = getParsedData(result);
-                      if (data) {
-                        return (
-                          <View style={styles.structuredContent}>
-                            {data.presentation && (
-                              <Text style={styles.contentText}>{data.presentation}</Text>
-                            )}
-                            {data.sections?.map((section: any, idx: number) => (
-                              <View key={idx} style={styles.contentSection}>
-                                {section.title && (
-                                  <Text style={styles.sectionTitle}>{section.title}</Text>
-                                )}
-                                {section.content && (
-                                  <Text style={styles.contentText}>{section.content}</Text>
-                                )}
-                              </View>
-                            ))}
-                            {data.conclusion && (
-                              <Text style={styles.conclusionText}>{data.conclusion}</Text>
-                            )}
-                          </View>
-                        );
-                      }
-                      return <Text style={styles.contentText}>{result}</Text>;
-                    })()
-                  )}
-                </View>
-              )}
+                    <Text style={styles.contentText}>{result}</Text>
+                  </View>
+                )}
+              </View>
+            )}
 
-            {/* Actions bar simplifiée */}
+            {/* 🛠️ NAVIGATION & ACTIONS BAR (Generic but adapted) */}
             {!loading && (
               <View style={styles.actionsBar}>
                 <TouchableOpacity style={styles.actionButton} onPress={handleCopyText}>
@@ -658,12 +658,12 @@ export default function Step5ResultScreen() {
                   <Text style={styles.actionButtonText}>Copier</Text>
                 </TouchableOpacity>
 
-                {(selectedCategory === 'Image' || imageUrl) && (
+                {(selectedCategory === 'Image' || selectedCategory === 'Social' || imageUrl) && (
                   <>
                     <View style={styles.actionDivider} />
                     <TouchableOpacity style={styles.actionButton} onPress={handleSaveToGallery}>
                       <Download size={20} color={colors.primary.main} />
-                      <Text style={styles.actionButtonText}>Sauvegarder</Text>
+                      <Text style={styles.actionButtonText}>Enregistrer</Text>
                     </TouchableOpacity>
                   </>
                 )}
@@ -722,9 +722,50 @@ export default function Step5ResultScreen() {
                     </View>
                   </View>
 
+                  {/* Choice for regeneration */}
+                  <View style={styles.modeSelector}>
+                    <Text style={styles.modeLabel}>Régénérer :</Text>
+                    <View style={styles.modeOptionsRow}>
+                      {[
+                        { id: 'text', label: 'Texte', icon: <FileText size={16} /> },
+                        { id: 'image', label: 'Image', icon: <LucideImage size={16} /> },
+                        { id: 'both', label: 'Les deux', icon: <Sparkles size={16} /> },
+                      ]
+                        .filter((m) => {
+                          if (selectedCategory === 'Social') return true;
+                          if (selectedCategory === 'Texte') return m.id !== 'both';
+                          if (selectedCategory === 'Image') return m.id === 'image';
+                          return m.id === 'text';
+                        })
+                        .map((m) => (
+                          <TouchableOpacity
+                            key={m.id}
+                            style={[styles.modeItem, regenMode === m.id && styles.modeItemSelected]}
+                            onPress={() => setRegenMode(m.id as any)}>
+                            {React.cloneElement(
+                              m.icon as React.ReactElement,
+                              {
+                                color:
+                                  regenMode === m.id
+                                    ? colors.background.dark
+                                    : colors.text.secondary,
+                              } as any
+                            )}
+                            <Text
+                              style={[
+                                styles.modeItemText,
+                                regenMode === m.id && styles.modeItemTextSelected,
+                              ]}>
+                              {m.label}
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                    </View>
+                  </View>
+
                   <NeonButton
-                    title="Régénérer"
-                    onPress={() => generateContent(localQuery)}
+                    title="C'est parti"
+                    onPress={() => generateContent(localQuery, regenMode)}
                     icon={<Sparkles size={20} color="#000" />}
                     size="lg"
                     variant="premium"
@@ -1061,5 +1102,43 @@ const styles = StyleSheet.create({
     padding: 8,
     backgroundColor: 'rgba(255, 255, 255, 0.05)',
     borderRadius: 8,
+  },
+  modeSelector: {
+    marginVertical: 10,
+    gap: 12,
+  },
+  modeLabel: {
+    fontSize: 14,
+    color: colors.text.secondary,
+    fontWeight: '600',
+  },
+  modeOptionsRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  modeItem: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  modeItemSelected: {
+    backgroundColor: colors.primary.main,
+    borderColor: colors.primary.main,
+  },
+  modeItemText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.text.secondary,
+  },
+  modeItemTextSelected: {
+    color: colors.background.dark,
+    fontWeight: '700',
   },
 });

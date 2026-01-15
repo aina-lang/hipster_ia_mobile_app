@@ -32,7 +32,7 @@ export const SelectionCard: React.FC<SelectionCardProps> = ({
       <View style={styles.header}>
         {Icon && (
           <View style={[styles.iconContainer, selected && styles.selectedIconContainer]}>
-            <Icon size={24} color={selected ? colors.primary.main : colors.text.secondary} />
+            <Icon size={24} color={selected ? '#FFFFFF' : colors.text.secondary} />
           </View>
         )}
         <Text style={[styles.label, selected && styles.selectedLabel]}>{label}</Text>
@@ -69,8 +69,9 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   selectedContainer: {
-    backgroundColor: colors.primary.main + '1A', // 10% opacity
+    backgroundColor: colors.primary.main + '4D', // 30% opacity
     borderColor: colors.primary.main,
+    borderWidth: 2,
   },
   iconContainer: {
     width: 40,
@@ -81,7 +82,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   selectedIconContainer: {
-    backgroundColor: colors.primary.main + '33', // 20% opacity
+    backgroundColor: colors.primary.main, // Solid background for icon when selected
   },
   label: {
     color: colors.text.secondary,
@@ -90,7 +91,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   selectedLabel: {
-    color: colors.text.primary,
-    fontWeight: '600',
+    color: '#FFFFFF',
+    fontWeight: '700',
   },
 });

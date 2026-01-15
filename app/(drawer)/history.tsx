@@ -1,12 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  FlatList,
-  TouchableOpacity,
-  Image,
-  ActivityIndicator,
-} from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
 import { BackgroundGradient } from '../../components/ui/BackgroundGradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -95,21 +88,19 @@ export default function HistoryScreen() {
 
   const renderItem = ({ item }: { item: HistoryItem }) => (
     <TouchableOpacity
-      className="flex-row items-center bg-white/5 p-4 rounded-xl border border-white/5 gap-4"
-      onPress={() =>
-        router.push({ pathname: '/(drawer)', params: { chatId: item.id } })
-      }>
-      <View className="w-12 h-12 rounded-lg bg-white/3 justify-center items-center">
+      className="flex-row items-center gap-4 rounded-xl border border-white/5 bg-white/5 p-4"
+      onPress={() => router.push({ pathname: '/(drawer)', params: { chatId: item.id } })}>
+      <View className="bg-white/3 h-12 w-12 items-center justify-center rounded-lg">
         {getIcon(item.type)}
       </View>
       <View className="flex-1">
-        <View className="flex-row justify-between items-center mb-1">
-          <Text className="text-white font-semibold text-base flex-1 mr-2" numberOfLines={1}>
+        <View className="mb-1 flex-row items-center justify-between">
+          <Text className="mr-2 flex-1 text-base font-semibold text-white" numberOfLines={1}>
             {item.title}
           </Text>
-          <Text className="text-white/60 text-xs">{item.date}</Text>
+          <Text className="text-xs text-white/60">{item.date}</Text>
         </View>
-        <Text className="text-white/60 text-sm leading-5" numberOfLines={2}>
+        <Text className="text-sm leading-5 text-white/60" numberOfLines={2}>
           {item.preview}
         </Text>
       </View>
@@ -121,19 +112,13 @@ export default function HistoryScreen() {
     <BackgroundGradient>
       <SafeAreaView className="flex-1">
         {/* Header */}
-        <View className="flex-row items-center px-5 pt-5 pb-2 gap-4">
-          <TouchableOpacity
-            className="p-2 bg-white/10 rounded-xl"
-            onPress={() => router.back()}>
-            <ChevronRight
-              size={24}
-              color={colors.text.primary}
-              className="rotate-180"
-            />
+        <View className="flex-row items-center gap-4 px-5 pb-2 pt-5">
+          <TouchableOpacity className="rounded-xl bg-white/10 p-2" onPress={() => router.back()}>
+            <ChevronRight size={24} color={colors.text.primary} className="rotate-180" />
           </TouchableOpacity>
           <View>
-            <Text className="text-2xl font-bold text-white mb-1">Historique</Text>
-            <Text className="text-white/60 text-base">Retrouvez toutes vos créations</Text>
+            <Text className="mb-1 text-2xl font-bold text-white">Historique</Text>
+            <Text className="text-base text-white/60">Retrouvez toutes vos créations</Text>
           </View>
         </View>
 
@@ -147,11 +132,15 @@ export default function HistoryScreen() {
             keyExtractor={(item) => item.value}
             renderItem={({ item }) => (
               <TouchableOpacity
-                className={`px-4 py-2 rounded-full border ${
+                className="rounded-full border px-4 py-2"
+                style={
                   activeFilter === item.value
-                    ? 'bg-primary-main border-primary-main'
-                    : 'bg-white/5 border-white/10'
-                }`}
+                    ? { backgroundColor: colors.primary.main, borderColor: colors.primary.main }
+                    : {
+                        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                        borderColor: 'rgba(255, 255, 255, 0.1)',
+                      }
+                }
                 onPress={() => setActiveFilter(item.value)}>
                 <Text
                   className={`text-sm font-semibold ${
@@ -181,9 +170,9 @@ export default function HistoryScreen() {
                 style={{ marginTop: 40 }}
               />
             ) : (
-              <View className="items-center justify-center pt-16 gap-4">
+              <View className="items-center justify-center gap-4 pt-16">
                 <Search size={48} color={colors.text.muted} />
-                <Text className="text-white/60 text-base">Aucun résultat trouvé</Text>
+                <Text className="text-base text-white/60">Aucun résultat trouvé</Text>
               </View>
             )
           }

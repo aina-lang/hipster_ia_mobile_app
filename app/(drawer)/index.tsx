@@ -8,15 +8,29 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter, useNavigation } from 'expo-router';
-import { DrawerActions } from '@react-navigation/native';
-import { Compass, Menu, Image, Paperclip, Send, Mic, Copy, Trash2 } from 'lucide-react-native';
+import { useRouter, useNavigation, useGlobalSearchParams } from 'expo-router';
+import { DrawerNavigationProp } from '@react-navigation/drawer';
+import {
+  Compass,
+  Menu,
+  Image,
+  Paperclip,
+  Send,
+  Mic,
+  Copy,
+  Trash2,
+  Wifi,
+  WifiOff,
+} from 'lucide-react-native';
 import { BackgroundGradient } from '../../components/ui/BackgroundGradient';
 import { DeerAnimation } from '../../components/ui/DeerAnimation';
 import { useAuthStore } from '../../store/authStore';
+import { useCreationStore } from '../../store/creationStore';
 import { AiService } from '../../api/ai.service';
+import { api } from '../../api/client';
 import { colors } from '../../theme/colors';
 
 interface Message {
@@ -68,12 +82,35 @@ const TypingPlaceholder = ({ text, inputValue }: { text: string; inputValue: str
 export default function HomeScreen() {
   const { user } = useAuthStore();
   const router = useRouter();
-  const navigation = useNavigation();
+  const { chatId } = useGlobalSearchParams();
+  const navigation = useNavigation<DrawerNavigationProp<any>>();
   const scrollViewRef = useRef<ScrollView>(null);
 
   const [inputValue, setInputValue] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isBackendConnected, setIsBackendConnected] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const checkConnection = async () => {
+      try {
+        const response = await api.get('/ai/ping').catch(() => null);
+        setIsBackendConnected(!!response);
+        if (!response) console.warn('[DEBUG] Backend unreachable at', api.defaults.baseURL);
+      } catch (e) {
+        setIsBackendConnected(false);
+      }
+    };
+    checkConnection();
+  }, []);
+
+  useEffect(() => {
+    if (chatId) {
+      // Basic implementation: if we have a chatId, we're coming from history
+      // Ideally we'd fetch the specific generation details here.
+      console.log('[DEBUG] HomeScreen detected chatId:', chatId);
+    }
+  }, [chatId]);
 
   const placeholderText = 'Décrivez votre idée, ajoutez une image ou un audio...';
   const hasMessages = messages.length > 0;
@@ -116,7 +153,10 @@ export default function HomeScreen() {
 
       chatHistory.push({ role: 'user', content: userMsg.text });
 
+      console.log('[DEBUG] Free Mode Chat History:', JSON.stringify(chatHistory, null, 2));
+
       const response = await AiService.chat(chatHistory);
+      console.log('[DEBUG] Free Mode Response:', JSON.stringify(response, null, 2));
 
       const aiMsg: Message = {
         id: (Date.now() + 1).toString(),
@@ -127,8 +167,11 @@ export default function HomeScreen() {
       };
 
       setMessages((prev) => [...prev, aiMsg]);
-    } catch (error) {
-      console.error(error);
+    } catch (error: any) {
+      console.error('[DEBUG] Free Mode Error:', error);
+      const errMsg = error?.response?.data?.message || error.message || 'Erreur inconnue';
+      Alert.alert('Erreur de génération', errMsg);
+
       setMessages((prev) => [
         ...prev,
         {
@@ -173,18 +216,22 @@ export default function HomeScreen() {
           className="flex-1"
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}>
-          {/* Header */}
           <View className="flex-row items-center justify-between px-5 py-2">
             <TouchableOpacity
               className="rounded-lg bg-white/5 p-2"
-              onPress={() => navigation.dispatch(DrawerActions.openDrawer())}>
+              onPress={() => navigation.openDrawer()}>
               <Menu size={24} color={colors.text.primary} />
             </TouchableOpacity>
-            {hasMessages && (
-              <TouchableOpacity className="rounded-lg bg-white/5 p-2" onPress={resetChat}>
-                <Trash2 size={20} color={colors.text.muted} />
-              </TouchableOpacity>
-            )}
+
+            <View className="flex-row items-center gap-2">
+              {isBackendConnected === true && <Wifi size={16} color="#4ADE80" />}
+              {isBackendConnected === false && <WifiOff size={16} color="#F87171" />}
+              {hasMessages && (
+                <TouchableOpacity className="rounded-lg bg-white/5 p-2" onPress={resetChat}>
+                  <Trash2 size={20} color={colors.text.muted} />
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
 
           {/* Chat / Welcome */}
@@ -213,7 +260,10 @@ export default function HomeScreen() {
 
                 <TouchableOpacity
                   className="bg-white/3 mb-5 flex-row items-center gap-4 rounded-2xl border border-white/5 p-5"
-                  onPress={() => router.push('/(guided)/step1-job')}
+                  onPress={() => {
+                    useCreationStore.getState().reset();
+                    router.push('/(guided)/step1-job');
+                  }}
                   activeOpacity={0.8}>
                   <View className="w-15 h-15 items-center justify-center rounded-lg">
                     <Compass size={32} color={colors.primary.main} />
@@ -239,11 +289,22 @@ export default function HomeScreen() {
                 {messages.map((msg) => (
                   <View
                     key={msg.id}
-                    className={`max-w-[85%] rounded-2xl p-4 ${
+                    className="max-w-[85%] rounded-2xl border p-4"
+                    style={
                       msg.sender === 'user'
-                        ? 'bg-primary-main/20 border-primary-main/40 self-end rounded-br-sm border'
-                        : 'self-start rounded-bl-sm border border-white/10 bg-white/5'
-                    }`}>
+                        ? {
+                            backgroundColor: 'rgba(44, 70, 155, 0.2)',
+                            borderColor: 'rgba(44, 70, 155, 0.4)',
+                            alignSelf: 'flex-end',
+                            borderBottomRightRadius: 4,
+                          }
+                        : {
+                            alignSelf: 'flex-start',
+                            borderBottomLeftRadius: 4,
+                            borderColor: 'rgba(255, 255, 255, 0.1)',
+                            backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                          }
+                    }>
                     {msg.sender === 'user' ? (
                       <Text className="text-base leading-6 text-white">{msg.text}</Text>
                     ) : msg.isTyping ? (
@@ -300,11 +361,11 @@ export default function HomeScreen() {
                 <TouchableOpacity
                   onPress={handleSend}
                   disabled={!inputValue.trim() || isGenerating}
-                  className={`rounded-lg p-3 ${
-                    !inputValue.trim() || isGenerating
-                      ? 'bg-primary-main opacity-40'
-                      : 'bg-primary-main shadow-lg'
-                  }`}>
+                  className="rounded-lg p-3 shadow-lg"
+                  style={{
+                    backgroundColor: colors.primary.main,
+                    opacity: !inputValue.trim() || isGenerating ? 0.4 : 1,
+                  }}>
                   {isGenerating ? (
                     <ActivityIndicator size="small" color="#000" />
                   ) : (
