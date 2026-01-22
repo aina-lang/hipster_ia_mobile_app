@@ -186,8 +186,7 @@ function CustomDrawerContent(props: any) {
                   IconComponent = Megaphone;
                 else if (funcLower.includes('vidéo') || catLower.includes('video'))
                   IconComponent = Video;
-                else if (funcLower.includes('flyer') || funcLower.includes('affiche'))
-                  IconComponent = LayoutTemplate;
+                else if (funcLower.includes('flyer')) IconComponent = LayoutTemplate;
 
                 return (
                   <View key={item.id || index} style={styles.historyRowContainer}>

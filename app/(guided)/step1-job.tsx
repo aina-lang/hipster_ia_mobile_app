@@ -53,7 +53,7 @@ interface JobFunction {
 const UNIVERSAL_FUNCTIONS: JobFunction[] = [
   { label: 'Réseaux sociaux (image/texte)', category: 'Social', icon: Instagram },
   { label: 'Site internet / SEO (texte)', category: 'Texte', icon: MousePointer2 },
-  { label: 'Flyers / Affiches (texte)', category: 'Texte', icon: Ticket },
+  { label: 'Flyers (image)', category: 'Image', icon: Ticket },
   { label: 'Email / Newsletter (texte)', category: 'Texte', icon: Mail },
 ];
 

@@ -104,6 +104,7 @@ export default function Step3ResultScreen() {
   const [modalTitle, setModalTitle] = useState('');
   const [modalMessage, setModalMessage] = useState('');
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [negativePrompt, setNegativePrompt] = useState('');
 
   // Animation for skeleton text
   const [pulseAnim] = useState(new Animated.Value(0.3));
@@ -220,11 +221,7 @@ export default function Step3ResultScreen() {
           </TouchableOpacity>
         </View>
         <View style={styles.imageWrapper}>
-          <Image
-            source={{ uri: imageUrl }}
-            style={styles.flyerImage}
-            resizeMode="contain"
-          />
+          <Image source={{ uri: imageUrl }} style={styles.flyerImage} resizeMode="contain" />
         </View>
         <View style={styles.imageSeparator} />
       </View>
@@ -463,7 +460,8 @@ export default function Step3ResultScreen() {
 
   const generateContent = async (
     overrideQuery?: string,
-    mode: 'text' | 'image' | 'both' = 'both'
+    mode: 'text' | 'image' | 'both' = 'both',
+    manualNegativePrompt?: string
   ) => {
     console.log('generateContent');
 
@@ -484,14 +482,16 @@ export default function Step3ResultScreen() {
         return;
       }
 
+      const currentNegativePrompt =
+        manualNegativePrompt !== undefined ? manualNegativePrompt : negativePrompt;
+
       const params = {
         job: selectedJob,
         function: selectedFunction, // e.g. "Flyers / Affiches"
         context: selectedContext,
         userQuery: overrideQuery || userQuery,
         workflowAnswers,
-        // Override category for flyers to ensure generic text generation
-        category: selectedFunction === 'Flyers / Affiches (image)' ? 'Texte' : selectedCategory,
+        category: selectedCategory,
         instruction_speciale: 'Génère UNIQUEMENT la section demandée.',
       };
 
@@ -505,10 +505,21 @@ export default function Step3ResultScreen() {
         if (mode === 'image' || mode === 'both') setImageUrl(socialResponse.url);
         setGenerationId(socialResponse.generationId);
       } else if (selectedCategory === 'Image') {
-        const resultData = await AiService.generateImage(params, 'realistic');
-        setResult(resultData.url);
-        setImageUrl(resultData.url); // For consistency
-        setGenerationId(resultData.generationId);
+        if (selectedFunction && selectedFunction.includes('Flyers')) {
+          const flyerResult = await AiService.generateFlyer(params, currentNegativePrompt);
+          setImageUrl(flyerResult.url);
+          setResult(flyerResult.url);
+          setGenerationId(flyerResult.generationId);
+        } else {
+          const resultData = await AiService.generateImage(
+            params,
+            'realistic',
+            currentNegativePrompt
+          );
+          setResult(resultData.url);
+          setImageUrl(resultData.url); // For consistency
+          setGenerationId(resultData.generationId);
+        }
       } else if (selectedCategory === 'Document') {
         const resultData = await AiService.generateDocument('business', params);
         setResult(resultData.content);
@@ -517,7 +528,7 @@ export default function Step3ResultScreen() {
         // Check if this is a flyer request
         if (selectedFunction && selectedFunction.includes('Flyers')) {
           // Generate flyer as image
-          const flyerResult = await AiService.generateFlyer(params);
+          const flyerResult = await AiService.generateFlyer(params, currentNegativePrompt);
           setImageUrl(flyerResult.url);
           setResult(flyerResult.url); // Also set as result for display
           setGenerationId(flyerResult.generationId);
@@ -978,7 +989,7 @@ export default function Step3ResultScreen() {
                   <View>
                     {/* Display flyer image if it's a flyer */}
                     {imageUrl && selectedFunction?.includes('Flyers') && renderFlyerImage()}
-                    
+
                     <View style={{ marginTop: 12 }}>
                       {(() => {
                         const data = getParsedData(result);
@@ -1059,6 +1070,19 @@ export default function Step3ResultScreen() {
                     multiline
                     maxLength={500}
                   />
+
+                  <View style={{ marginTop: 12 }}>
+                    <Text style={styles.modeLabel}>Inversion (ce que vous NE voulez PAS) :</Text>
+                    <TextInput
+                      style={[styles.regenerateInput, { minHeight: 60, marginTop: 8 }]}
+                      value={negativePrompt}
+                      onChangeText={setNegativePrompt}
+                      placeholder="Ex: Pas de texte flou, pas d'objets cassés..."
+                      placeholderTextColor={colors.text.muted}
+                      multiline
+                      maxLength={200}
+                    />
+                  </View>
 
                   <View style={styles.regenerateTools}>
                     <TouchableOpacity style={styles.toolIcon}>
@@ -1656,10 +1680,10 @@ const styles = StyleSheet.create({
   imageContainer: {
     marginBottom: 24,
     borderRadius: 12,
-    overflow: 'hidden',
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: `${colors.primary.main}30`,
+    overflow: 'hidden' as const,
   },
   imageHeader: {
     flexDirection: 'row',

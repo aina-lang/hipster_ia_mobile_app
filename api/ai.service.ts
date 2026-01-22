@@ -24,9 +24,9 @@ export const AiService = {
     return response.data.data;
   },
 
-  generateImage: async (params: any, style: ImageStyle) => {
+  generateImage: async (params: any, style: ImageStyle, negativePrompt?: string) => {
     console.log('[AiService] generateImage:', style, params.job);
-    const response = await api.post('/ai/image', { params, style });
+    const response = await api.post('/ai/image', { params, style, negativePrompt });
     console.log('[AiService] generateImage result URL:', response.data.data?.url);
     return response.data.data;
   },
@@ -45,15 +45,9 @@ export const AiService = {
     return response.data.data;
   },
 
-  generatePoster: async (params: any) => {
-    console.log('[AiService] generatePoster');
-    const response = await api.post('/ai/poster', { params });
-    return response.data.data;
-  },
-
-  generateFlyer: async (params: any) => {
+  generateFlyer: async (params: any, negativePrompt?: string) => {
     console.log('[AiService] generateFlyer');
-    const response = await api.post('/ai/flyer', { params });
+    const response = await api.post('/ai/flyer', { params, negativePrompt });
     console.log('[AiService] generateFlyer result URL:', response.data.data?.url);
     return response.data.data;
   },

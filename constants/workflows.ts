@@ -46,7 +46,32 @@ export const GENERIC_WORKFLOWS: Record<string, WorkflowQuestion[]> = {
       options: ['Expert', 'Accueillant', 'Persuasif', 'Informatif'],
     },
   ],
-  'Flyers / Affiches (image)': [
+  'Flyers (image)': [
+    {
+      id: 'type',
+      label: 'Type de support',
+      type: 'choice',
+      options: ['Flyer', 'Affiche', 'Carte de visite', 'Coupon de réduction', 'Menu'],
+    },
+    {
+      id: 'style',
+      label: 'Style visuel',
+      type: 'choice',
+      options: ['Moderne', 'Minimaliste', 'Luxe', 'Flashy', 'Vintage', 'Élégant'],
+    },
+    {
+      id: 'promotion',
+      label: 'Offre / Promotion',
+      type: 'choice',
+      options: [
+        'Aucune',
+        'Réduction (%)',
+        'Offre Spéciale',
+        'Événement',
+        'Nouveau Produit',
+        'Ouverture',
+      ],
+    },
     {
       id: 'tone',
       label: 'Ton du texte',
