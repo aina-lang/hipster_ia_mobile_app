@@ -7,17 +7,15 @@ import {
   TextInput,
   TouchableOpacity,
   Modal,
-  Switch,
   Image,
+  Animated,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { colors } from '../../theme/colors';
 import { BackgroundGradient } from '../../components/ui/BackgroundGradient';
-import { NeonButton } from '../../components/ui/NeonButton';
 import { useAuthStore } from '../../store/authStore';
 import {
   User,
-  Mail,
   Lock,
   Sparkles,
   LogOut,
@@ -33,6 +31,8 @@ import {
   Camera,
   X,
   Globe,
+  Check,
+  AlertCircle,
 } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { GenericModal, ModalType } from '../../components/ui/GenericModal';
@@ -56,7 +56,7 @@ export default function ProfileScreen() {
   // Personal Info State
   const [firstName, setFirstName] = useState(user?.firstName || '');
   const [lastName, setLastName] = useState(user?.lastName || '');
-  const [avatarUrl, setAvatarUrl] = useState(user?.avatarUrl || '');
+  const [avatarUrl, setAvatarUrl] = useState('https://hipster-api.fr' + user?.avatarUrl || '');
   const [isEditing, setIsEditing] = useState(false);
 
   // Professional Profile State
@@ -83,7 +83,7 @@ export default function ProfileScreen() {
   const [vatNumber, setVatNumber] = useState(user?.aiProfile?.vatNumber || '');
   const [bankDetails, setBankDetails] = useState(user?.aiProfile?.bankDetails || '');
   const [websiteUrl, setWebsiteUrl] = useState(user?.aiProfile?.websiteUrl || '');
-  const [logoUrl, setLogoUrl] = useState(user?.aiProfile?.logoUrl || '');
+  const [logoUrl, setLogoUrl] = useState('https://hipster-api.fr' + user?.aiProfile?.logoUrl || '');
   const [isEditingPro, setIsEditingPro] = useState(false);
   const [showCountryPicker, setShowCountryPicker] = useState(false);
   const [selectedCountry, setSelectedCountry] = useState<any>(null);
@@ -106,10 +106,12 @@ export default function ProfileScreen() {
     message: '',
   });
 
+  // Animation
+  const [saveButtonScale] = useState(new Animated.Value(1));
+
   const getLocalNumber = (phone: string, phoneCode?: string) => {
     if (!phone) return '';
     if (!phoneCode) return phone;
-    // Remove prefix and any leading/trailing spaces
     if (phone.startsWith(phoneCode)) {
       return phone.replace(phoneCode, '').trim();
     }
@@ -117,14 +119,12 @@ export default function ProfileScreen() {
   };
 
   useEffect(() => {
-    // Si utilisateur n'a pas de pays défini
     const userCountry = user?.aiProfile?.country;
     const initialCountry = userCountry ? getCountryByName(userCountry) : getCountryByName('France');
 
     setSelectedCountry(initialCountry);
     setCountry(initialCountry?.name || 'France');
 
-    // Strip le préfixe si déjà dans le numéro
     setProfessionalPhone(
       getLocalNumber(user?.aiProfile?.professionalPhone || '', initialCountry?.phoneCode)
     );
@@ -138,23 +138,39 @@ export default function ProfileScreen() {
     setModalVisible(true);
   };
 
+  const animateSaveButton = () => {
+    Animated.sequence([
+      Animated.timing(saveButtonScale, {
+        toValue: 0.95,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(saveButtonScale, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
   const handleSavePersonal = async () => {
     if (!lastName.trim()) {
       showFeedback('warning', 'Champs requis', 'Veuillez remplir votre nom.');
       return;
     }
 
+    animateSaveButton();
+
     try {
       let finalAvatarUrl = avatarUrl;
 
-      // If avatarUrl is a local file (e.g., from ImagePicker), upload it first
       if (avatarUrl && avatarUrl.startsWith('file://')) {
         finalAvatarUrl = await useAuthStore.getState().uploadAvatar(avatarUrl);
       }
 
       await updateProfile({ firstName, lastName, avatarUrl: finalAvatarUrl });
       setIsEditing(false);
-      showFeedback('success', 'Succès', 'Profil personnel mis à jour avec succès.');
+      showFeedback('success', 'Parfait !', 'Votre profil a été mis à jour avec succès.');
     } catch (err) {
       const errorMessage = useAuthStore.getState().error;
       showFeedback('error', 'Erreur', errorMessage || 'Une erreur est survenue.');
@@ -167,10 +183,11 @@ export default function ProfileScreen() {
       return;
     }
 
+    animateSaveButton();
+
     try {
       let finalLogoUrl = logoUrl;
 
-      // If logoUrl is a local file (e.g., from ImagePicker), upload it first
       if (logoUrl && logoUrl.startsWith('file://')) {
         const currentUser = useAuthStore.getState().user;
         if (currentUser?.aiProfile?.id) {
@@ -180,7 +197,6 @@ export default function ProfileScreen() {
         }
       }
 
-      // Concatenate prefix with local number for persistence
       const fullPhone1 =
         professionalPhone && selectedCountry
           ? `${selectedCountry.phoneCode} ${professionalPhone.trim()}`.replace(/\s+/g, ' ')
@@ -208,7 +224,7 @@ export default function ProfileScreen() {
         logoUrl: finalLogoUrl,
       });
       setIsEditingPro(false);
-      showFeedback('success', 'Succès', 'Profil professionnel mis à jour avec succès.');
+      showFeedback('success', 'Parfait !', 'Votre profil professionnel a été mis à jour.');
     } catch (err) {
       const errorMessage = useAuthStore.getState().error;
       showFeedback('error', 'Erreur', errorMessage || 'Une erreur est survenue.');
@@ -226,13 +242,18 @@ export default function ProfileScreen() {
       return;
     }
 
+    if (newPassword.length < 8) {
+      showFeedback('warning', 'Mot de passe trop court', 'Minimum 8 caractères requis.');
+      return;
+    }
+
     try {
       await changePassword({ oldPassword, newPassword });
       setShowPasswordModal(false);
       setOldPassword('');
       setNewPassword('');
       setConfirmPassword('');
-      showFeedback('success', 'Succès', 'Mot de passe modifié avec succès.');
+      showFeedback('success', 'Sécurisé !', 'Votre mot de passe a été modifié avec succès.');
     } catch (err) {
       const errorMessage = useAuthStore.getState().error;
       showFeedback('error', 'Erreur', errorMessage || 'Impossible de modifier le mot de passe.');
@@ -279,22 +300,60 @@ export default function ProfileScreen() {
     router.replace('/(auth)/login');
   };
 
+  const resetPersonalForm = () => {
+    setIsEditing(false);
+    setFirstName(user?.firstName || '');
+    setLastName(user?.lastName || '');
+    setAvatarUrl(user?.avatarUrl || '');
+  };
+
+  const resetProfessionalForm = () => {
+    setIsEditingPro(false);
+    const profile = user?.aiProfile;
+    const savedCountry = profile?.country ? getCountryByName(profile.country) : null;
+
+    setProfileType(profile?.profileType || 'particulier');
+    setCompanyName(profile?.companyName || '');
+    setProfessionalEmail(profile?.professionalEmail || '');
+    setProfessionalAddress(profile?.professionalAddress || '');
+    setCity(profile?.city || '');
+    setPostalCode(profile?.postalCode || '');
+    setCountry(profile?.country || 'France');
+    setSelectedCountry(savedCountry);
+    setProfessionalPhone(
+      getLocalNumber(profile?.professionalPhone || '', savedCountry?.phoneCode)
+    );
+    setProfessionalPhone2(
+      getLocalNumber(profile?.professionalPhone2 || '', savedCountry?.phoneCode)
+    );
+    setSiret(profile?.siret || '');
+    setVatNumber(profile?.vatNumber || '');
+    setBankDetails(profile?.bankDetails || '');
+    setWebsiteUrl(profile?.websiteUrl || '');
+    setLogoUrl(profile?.logoUrl || '');
+  };
+
   return (
     <BackgroundGradient>
       <SafeAreaView style={styles.container}>
-        <ScrollView contentContainerStyle={styles.scrollContent}>
-          {/* Header */}
+        <ScrollView 
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}>
+          
+          {/* Header Compact */}
           <View style={styles.header}>
             <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
               <ChevronRight
-                size={24}
+                size={20}
                 color={colors.text.primary}
                 style={{ transform: [{ rotate: '180deg' }] }}
               />
             </TouchableOpacity>
-            <View style={styles.headerTextContainer}>
+            <View style={styles.headerContent}>
               <Text style={styles.title}>Mon Profil</Text>
-              <Text style={styles.subtitle}>Gérez vos informations</Text>
+              <Text style={styles.subtitle}>
+                {user?.email || 'Gérez vos informations'}
+              </Text>
             </View>
           </View>
 
@@ -302,27 +361,35 @@ export default function ProfileScreen() {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <View style={styles.iconBadge}>
-                <User size={20} color={colors.primary.main} />
+                <User size={18} color={colors.primary.main} />
               </View>
               <Text style={styles.sectionTitle}>Profil Personnel</Text>
+              {!isEditing && (
+                <TouchableOpacity
+                  style={styles.quickEditButton}
+                  onPress={() => setIsEditing(true)}>
+                  <Text style={styles.quickEditText}>Modifier</Text>
+                </TouchableOpacity>
+              )}
             </View>
 
             <View style={styles.card}>
-              {/* Avatar Preview */}
+              {/* Avatar avec amélioration visuelle */}
               <View style={styles.avatarSection}>
-                <View style={styles.avatarContainer}>
+                <View style={styles.avatarWrapper}>
                   {avatarUrl ? (
                     <Image source={{ uri: avatarUrl }} style={styles.avatarImage} />
                   ) : (
                     <View style={styles.avatarPlaceholder}>
-                      <User size={40} color={colors.text.muted} />
+                      <User size={36} color={colors.text.muted} />
                     </View>
                   )}
                   {isEditing && (
                     <TouchableOpacity
                       style={styles.cameraButton}
-                      onPress={() => pickImage('avatar')}>
-                      <Camera size={16} color="#fff" />
+                      onPress={() => pickImage('avatar')}
+                      activeOpacity={0.8}>
+                      <Camera size={14} color="#000" />
                     </TouchableOpacity>
                   )}
                 </View>
@@ -330,7 +397,7 @@ export default function ProfileScreen() {
                   <TouchableOpacity
                     style={styles.removeImageButton}
                     onPress={() => setAvatarUrl('')}>
-                    <X size={14} color={colors.status.error} />
+                    <X size={12} color={colors.status.error} />
                     <Text style={styles.removeImageText}>Retirer</Text>
                   </TouchableOpacity>
                 )}
@@ -340,7 +407,7 @@ export default function ProfileScreen() {
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>Prénom</Text>
                   <View style={[styles.inputContainer, isEditing && styles.activeInput]}>
-                    <User size={18} color={colors.text.secondary} />
+                    <User size={16} color={colors.text.secondary} />
                     <TextInput
                       style={styles.input}
                       value={firstName}
@@ -349,13 +416,16 @@ export default function ProfileScreen() {
                       placeholder="Votre prénom"
                       placeholderTextColor={colors.text.muted}
                     />
+                    {isEditing && firstName && (
+                      <Check size={16} color={colors.primary.main} />
+                    )}
                   </View>
                 </View>
 
                 <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Nom</Text>
+                  <Text style={styles.label}>Nom *</Text>
                   <View style={[styles.inputContainer, isEditing && styles.activeInput]}>
-                    <User size={18} color={colors.text.secondary} />
+                    <User size={16} color={colors.text.secondary} />
                     <TextInput
                       style={styles.input}
                       value={lastName}
@@ -364,35 +434,30 @@ export default function ProfileScreen() {
                       placeholder="Votre nom"
                       placeholderTextColor={colors.text.muted}
                     />
+                    {isEditing && lastName && (
+                      <Check size={16} color={colors.primary.main} />
+                    )}
                   </View>
                 </View>
 
-                {isEditing ? (
+                {isEditing && (
                   <View style={styles.editActions}>
-                    <TouchableOpacity
-                      style={styles.cancelButton}
-                      onPress={() => {
-                        setIsEditing(false);
-                        setFirstName(user?.firstName || '');
-                        setLastName(user?.lastName || '');
-                        setAvatarUrl(user?.avatarUrl || '');
-                      }}>
+                    <TouchableOpacity style={styles.cancelButton} onPress={resetPersonalForm}>
                       <Text style={styles.cancelButtonText}>Annuler</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[styles.saveButton, isLoading && styles.disabledButton]}
-                      onPress={handleSavePersonal}
-                      disabled={isLoading}>
-                      <Text style={styles.saveButtonText}>
-                        {isLoading ? 'Enregistrement...' : 'Enregistrer'}
-                      </Text>
-                    </TouchableOpacity>
+                    <Animated.View style={{ flex: 1, transform: [{ scale: saveButtonScale }] }}>
+                      <TouchableOpacity
+                        style={[styles.saveButton, isLoading && styles.disabledButton]}
+                        onPress={handleSavePersonal}
+                        disabled={isLoading}
+                        activeOpacity={0.8}>
+                        <Check size={18} color="#000" />
+                        <Text style={styles.saveButtonText}>
+                          {isLoading ? 'Sauvegarde...' : 'Enregistrer'}
+                        </Text>
+                      </TouchableOpacity>
+                    </Animated.View>
                   </View>
-                ) : (
-                  <TouchableOpacity style={styles.editButton} onPress={() => setIsEditing(true)}>
-                    <Text style={styles.editButtonText}>Modifier</Text>
-                    <ChevronRight size={16} color={colors.primary.main} />
-                  </TouchableOpacity>
                 )}
               </View>
             </View>
@@ -402,13 +467,20 @@ export default function ProfileScreen() {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <View style={styles.iconBadge}>
-                <Briefcase size={20} color={colors.primary.main} />
+                <Briefcase size={18} color={colors.primary.main} />
               </View>
               <Text style={styles.sectionTitle}>Profil Professionnel</Text>
+              {!isEditingPro && (
+                <TouchableOpacity
+                  style={styles.quickEditButton}
+                  onPress={() => setIsEditingPro(true)}>
+                  <Text style={styles.quickEditText}>Modifier</Text>
+                </TouchableOpacity>
+              )}
             </View>
 
             <View style={styles.card}>
-              {/* Type Toggle */}
+              {/* Type Toggle Amélioré */}
               <View style={styles.typeToggleContainer}>
                 <TouchableOpacity
                   style={[
@@ -416,9 +488,10 @@ export default function ProfileScreen() {
                     profileType === 'particulier' && styles.typeOptionActive,
                   ]}
                   onPress={() => isEditingPro && setProfileType('particulier')}
-                  disabled={!isEditingPro}>
+                  disabled={!isEditingPro}
+                  activeOpacity={0.7}>
                   <User
-                    size={18}
+                    size={16}
                     color={profileType === 'particulier' ? '#000' : colors.text.muted}
                   />
                   <Text
@@ -436,9 +509,10 @@ export default function ProfileScreen() {
                     profileType === 'entreprise' && styles.typeOptionActive,
                   ]}
                   onPress={() => isEditingPro && setProfileType('entreprise')}
-                  disabled={!isEditingPro}>
+                  disabled={!isEditingPro}
+                  activeOpacity={0.7}>
                   <Building2
-                    size={18}
+                    size={16}
                     color={profileType === 'entreprise' ? '#000' : colors.text.muted}
                   />
                   <Text
@@ -453,34 +527,35 @@ export default function ProfileScreen() {
 
               {profileType === 'entreprise' ? (
                 <View style={styles.form}>
-                  {/* Logo Preview */}
-                  {logoUrl && (
+                  {/* Logo Section Améliorée */}
+                  {logoUrl ? (
                     <View style={styles.logoPreviewContainer}>
                       <Image source={{ uri: logoUrl }} style={styles.logoPreview} />
                       {isEditingPro && (
                         <TouchableOpacity
                           style={styles.changeLogoButton}
                           onPress={() => pickImage('logo')}>
-                          <Camera size={14} color={colors.primary.main} />
+                          <Camera size={12} color={colors.primary.main} />
                           <Text style={styles.changeLogoText}>Changer</Text>
                         </TouchableOpacity>
                       )}
                     </View>
+                  ) : (
+                    isEditingPro && (
+                      <TouchableOpacity
+                        style={styles.addLogoButton}
+                        onPress={() => pickImage('logo')}>
+                        <LucideImage size={20} color={colors.primary.main} />
+                        <Text style={styles.addLogoText}>Ajouter un logo</Text>
+                      </TouchableOpacity>
+                    )
                   )}
 
-                  {!logoUrl && isEditingPro && (
-                    <TouchableOpacity
-                      style={styles.addLogoButton}
-                      onPress={() => pickImage('logo')}>
-                      <LucideImage size={24} color={colors.primary.main} />
-                      <Text style={styles.addLogoText}>Ajouter un logo</Text>
-                    </TouchableOpacity>
-                  )}
-
+                  {/* Form Fields Compacts */}
                   <View style={styles.inputGroup}>
                     <Text style={styles.label}>Nom de l'entreprise *</Text>
                     <View style={[styles.inputContainer, isEditingPro && styles.activeInput]}>
-                      <Building2 size={18} color={colors.text.secondary} />
+                      <Building2 size={16} color={colors.text.secondary} />
                       <TextInput
                         style={styles.input}
                         value={companyName}
@@ -495,7 +570,7 @@ export default function ProfileScreen() {
                   <View style={styles.inputGroup}>
                     <Text style={styles.label}>Email professionnel</Text>
                     <View style={[styles.inputContainer, isEditingPro && styles.activeInput]}>
-                      <AtSign size={18} color={colors.text.secondary} />
+                      <AtSign size={16} color={colors.text.secondary} />
                       <TextInput
                         style={styles.input}
                         value={professionalEmail}
@@ -504,20 +579,22 @@ export default function ProfileScreen() {
                         placeholder="contact@entreprise.com"
                         placeholderTextColor={colors.text.muted}
                         keyboardType="email-address"
+                        autoCapitalize="none"
                       />
                     </View>
                   </View>
 
+                  {/* Address Row */}
                   <View style={styles.inputGroup}>
                     <Text style={styles.label}>Adresse</Text>
                     <View style={[styles.inputContainer, isEditingPro && styles.activeInput]}>
-                      <MapPin size={18} color={colors.text.secondary} />
+                      <MapPin size={16} color={colors.text.secondary} />
                       <TextInput
                         style={styles.input}
                         value={professionalAddress}
                         onChangeText={setProfessionalAddress}
                         editable={isEditingPro}
-                        placeholder="Adresse complète"
+                        placeholder="Rue, numéro"
                         placeholderTextColor={colors.text.muted}
                       />
                     </View>
@@ -527,9 +604,8 @@ export default function ProfileScreen() {
                     <View style={[styles.inputGroup, { flex: 2 }]}>
                       <Text style={styles.label}>Ville</Text>
                       <View style={[styles.inputContainer, isEditingPro && styles.activeInput]}>
-                        <MapPin size={18} color={colors.text.secondary} />
                         <TextInput
-                          style={styles.input}
+                          style={[styles.input, { marginLeft: 12 }]}
                           value={city}
                           onChangeText={setCity}
                           editable={isEditingPro}
@@ -540,97 +616,102 @@ export default function ProfileScreen() {
                     </View>
 
                     <View style={[styles.inputGroup, { flex: 1 }]}>
-                      <Text style={styles.label}>Code postal</Text>
+                      <Text style={styles.label}>CP</Text>
                       <View style={[styles.inputContainer, isEditingPro && styles.activeInput]}>
                         <TextInput
-                          style={[styles.input, { marginLeft: 0 }]}
+                          style={[styles.input, { marginLeft: 12 }]}
                           value={postalCode}
                           onChangeText={setPostalCode}
                           editable={isEditingPro}
                           placeholder="75001"
                           placeholderTextColor={colors.text.muted}
                           keyboardType="numeric"
+                          maxLength={5}
                         />
                       </View>
+                    </View>
+                  </View>
+
+                  {/* Country Picker */}
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.label}>Pays</Text>
+                    <TouchableOpacity
+                      style={[
+                        styles.countryPickerButton,
+                        !isEditingPro && styles.disabledButton,
+                      ]}
+                      onPress={() => isEditingPro && setShowCountryPicker(true)}
+                      disabled={!isEditingPro}>
+                      <Globe size={16} color={colors.text.secondary} />
+                      <Text style={styles.countryPickerText}>
+                        {selectedCountry
+                          ? `${selectedCountry.flag} ${selectedCountry.name}`
+                          : country || 'Sélectionner'}
+                      </Text>
+                      <ChevronRight size={14} color={colors.text.muted} />
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* Phone Numbers */}
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.label}>Téléphone principal</Text>
+                    <View style={[styles.inputContainer, isEditingPro && styles.activeInput]}>
+                      <Phone size={16} color={colors.text.secondary} />
+                      {selectedCountry && (
+                        <View style={styles.inlinePrefix}>
+                          <Text style={styles.prefixFlag}>{selectedCountry.flag}</Text>
+                          <Text style={styles.prefixCode}>{selectedCountry.phoneCode}</Text>
+                        </View>
+                      )}
+                      <TextInput
+                        style={styles.input}
+                        value={professionalPhone}
+                        onChangeText={setProfessionalPhone}
+                        editable={isEditingPro}
+                        placeholder="6 12 34 56 78"
+                        placeholderTextColor={colors.text.muted}
+                        keyboardType="phone-pad"
+                      />
                     </View>
                   </View>
 
                   <View style={styles.inputGroup}>
-                    <Text style={styles.label}>Pays</Text>
-                    <TouchableOpacity
-                      style={[styles.countryPickerButton, !isEditingPro && styles.disabledButton]}
-                      onPress={() => isEditingPro && setShowCountryPicker(true)}
-                      disabled={!isEditingPro}>
-                      <Globe size={18} color={colors.text.secondary} />
-                      <Text style={styles.countryPickerText}>
-                        {selectedCountry
-                          ? `${selectedCountry.flag} ${selectedCountry.name}`
-                          : country || 'Sélectionner un pays'}
-                      </Text>
-                      <ChevronRight size={16} color={colors.text.muted} />
-                    </TouchableOpacity>
-                  </View>
-
-                  <View style={{}}>
-                    <View style={[styles.inputGroup, { flex: 1 }]}>
-                      <Text style={styles.label}>Téléphone 1</Text>
-                      <View style={[styles.inputContainer, isEditingPro && styles.activeInput]}>
-                        <Phone size={18} color={colors.text.secondary} />
-                        {selectedCountry && (
-                          <View style={styles.inlinePrefix}>
-                            <Text style={styles.prefixFlag}>{selectedCountry.flag}</Text>
-                            <Text style={styles.prefixCode}>{selectedCountry.phoneCode}</Text>
-                          </View>
-                        )}
-                        <TextInput
-                          style={styles.input}
-                          value={professionalPhone}
-                          onChangeText={setProfessionalPhone}
-                          editable={isEditingPro}
-                          placeholder="Principal"
-                          placeholderTextColor={colors.text.muted}
-                          keyboardType="phone-pad"
-                        />
-                      </View>
-                    </View>
-
-                    <View style={[styles.inputGroup, { flex: 1 }]}>
-                      <Text style={styles.label}>Téléphone 2</Text>
-                      <View style={[styles.inputContainer, isEditingPro && styles.activeInput]}>
-                        <Phone size={18} color={colors.text.secondary} />
-                        {selectedCountry && (
-                          <View style={styles.inlinePrefix}>
-                            <Text style={styles.prefixFlag}>{selectedCountry.flag}</Text>
-                            <Text style={styles.prefixCode}>{selectedCountry.phoneCode}</Text>
-                          </View>
-                        )}
-                        <TextInput
-                          style={styles.input}
-                          value={professionalPhone2}
-                          onChangeText={setProfessionalPhone2}
-                          editable={isEditingPro}
-                          placeholder="Optionnel"
-                          placeholderTextColor={colors.text.muted}
-                          keyboardType="phone-pad"
-                        />
-                      </View>
+                    <Text style={styles.label}>Téléphone secondaire</Text>
+                    <View style={[styles.inputContainer, isEditingPro && styles.activeInput]}>
+                      <Phone size={16} color={colors.text.secondary} />
+                      {selectedCountry && (
+                        <View style={styles.inlinePrefix}>
+                          <Text style={styles.prefixFlag}>{selectedCountry.flag}</Text>
+                          <Text style={styles.prefixCode}>{selectedCountry.phoneCode}</Text>
+                        </View>
+                      )}
+                      <TextInput
+                        style={styles.input}
+                        value={professionalPhone2}
+                        onChangeText={setProfessionalPhone2}
+                        editable={isEditingPro}
+                        placeholder="Optionnel"
+                        placeholderTextColor={colors.text.muted}
+                        keyboardType="phone-pad"
+                      />
                     </View>
                   </View>
 
+                  {/* SIRET & TVA (France uniquement) */}
                   {selectedCountry?.name === 'France' && (
                     <View style={styles.inputRow}>
                       <View style={[styles.inputGroup, { flex: 1 }]}>
                         <Text style={styles.label}>SIRET</Text>
                         <View style={[styles.inputContainer, isEditingPro && styles.activeInput]}>
-                          <Building2 size={18} color={colors.text.secondary} />
                           <TextInput
-                            style={styles.input}
+                            style={[styles.input, { marginLeft: 12, fontSize: 13 }]}
                             value={siret}
                             onChangeText={setSiret}
                             editable={isEditingPro}
                             placeholder="14 chiffres"
                             placeholderTextColor={colors.text.muted}
                             keyboardType="numeric"
+                            maxLength={14}
                           />
                         </View>
                       </View>
@@ -638,13 +719,12 @@ export default function ProfileScreen() {
                       <View style={[styles.inputGroup, { flex: 1 }]}>
                         <Text style={styles.label}>N° TVA</Text>
                         <View style={[styles.inputContainer, isEditingPro && styles.activeInput]}>
-                          <CreditCard size={18} color={colors.text.secondary} />
                           <TextInput
-                            style={styles.input}
+                            style={[styles.input, { marginLeft: 12, fontSize: 13 }]}
                             value={vatNumber}
                             onChangeText={setVatNumber}
                             editable={isEditingPro}
-                            placeholder="FR12345678901"
+                            placeholder="FR..."
                             placeholderTextColor={colors.text.muted}
                           />
                         </View>
@@ -652,16 +732,17 @@ export default function ProfileScreen() {
                     </View>
                   )}
 
+                  {/* Bank & Website */}
                   <View style={styles.inputGroup}>
-                    <Text style={styles.label}>Coordonnées Bancaires</Text>
+                    <Text style={styles.label}>IBAN / BIC</Text>
                     <View style={[styles.inputContainer, isEditingPro && styles.activeInput]}>
-                      <CreditCard size={18} color={colors.text.secondary} />
+                      <CreditCard size={16} color={colors.text.secondary} />
                       <TextInput
                         style={styles.input}
                         value={bankDetails}
                         onChangeText={setBankDetails}
                         editable={isEditingPro}
-                        placeholder="IBAN / BIC"
+                        placeholder="Coordonnées bancaires"
                         placeholderTextColor={colors.text.muted}
                       />
                     </View>
@@ -670,7 +751,7 @@ export default function ProfileScreen() {
                   <View style={styles.inputGroup}>
                     <Text style={styles.label}>Site Web</Text>
                     <View style={[styles.inputContainer, isEditingPro && styles.activeInput]}>
-                      <Link size={18} color={colors.text.secondary} />
+                      <Link size={16} color={colors.text.secondary} />
                       <TextInput
                         style={styles.input}
                         value={websiteUrl}
@@ -678,87 +759,63 @@ export default function ProfileScreen() {
                         editable={isEditingPro}
                         placeholder="www.votre-site.com"
                         placeholderTextColor={colors.text.muted}
+                        autoCapitalize="none"
+                        keyboardType="url"
                       />
                     </View>
                   </View>
                 </View>
               ) : (
                 <View style={styles.infoBox}>
-                  <Text style={styles.infoText}>
-                    En mode Particulier, l'IA utilisera votre nom pour les créations.
-                  </Text>
-                  <Text style={styles.infoTextSecondary}>
-                    Passez en mode Entreprise pour ajouter vos coordonnées professionnelles.
-                  </Text>
+                  <AlertCircle size={18} color={colors.primary.main} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.infoText}>
+                      En mode Particulier, l'IA utilisera votre nom pour les créations.
+                    </Text>
+                    <Text style={styles.infoTextSecondary}>
+                      Passez en mode Entreprise pour ajouter vos coordonnées pros.
+                    </Text>
+                  </View>
                 </View>
               )}
 
-              {isEditingPro ? (
+              {isEditingPro && (
                 <View style={styles.editActions}>
-                  <TouchableOpacity
-                    style={styles.cancelButton}
-                    onPress={() => {
-                      setIsEditingPro(false);
-                      const profile = user?.aiProfile;
-                      const savedCountry = profile?.country
-                        ? getCountryByName(profile.country)
-                        : null;
-
-                      setProfileType(profile?.profileType || 'particulier');
-                      setCompanyName(profile?.companyName || '');
-                      setProfessionalEmail(profile?.professionalEmail || '');
-                      setProfessionalAddress(profile?.professionalAddress || '');
-                      setCity(profile?.city || '');
-                      setPostalCode(profile?.postalCode || '');
-                      setCountry(profile?.country || 'France');
-                      setSelectedCountry(savedCountry);
-
-                      // Strip prefixes for display on reset
-                      setProfessionalPhone(
-                        getLocalNumber(profile?.professionalPhone || '', savedCountry?.phoneCode)
-                      );
-                      setProfessionalPhone2(
-                        getLocalNumber(profile?.professionalPhone2 || '', savedCountry?.phoneCode)
-                      );
-
-                      setSiret(profile?.siret || '');
-                      setVatNumber(profile?.vatNumber || '');
-                      setBankDetails(profile?.bankDetails || '');
-                      setWebsiteUrl(profile?.websiteUrl || '');
-                      setLogoUrl(profile?.logoUrl || '');
-                    }}>
+                  <TouchableOpacity style={styles.cancelButton} onPress={resetProfessionalForm}>
                     <Text style={styles.cancelButtonText}>Annuler</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.saveButton, isLoading && styles.disabledButton]}
-                    onPress={handleSaveProfessional}
-                    disabled={isLoading}>
-                    <Text style={styles.saveButtonText}>
-                      {isLoading ? 'Enregistrement...' : 'Enregistrer'}
-                    </Text>
-                  </TouchableOpacity>
+                  <Animated.View style={{ flex: 1, transform: [{ scale: saveButtonScale }] }}>
+                    <TouchableOpacity
+                      style={[styles.saveButton, isLoading && styles.disabledButton]}
+                      onPress={handleSaveProfessional}
+                      disabled={isLoading}
+                      activeOpacity={0.8}>
+                      <Check size={18} color="#000" />
+                      <Text style={styles.saveButtonText}>
+                        {isLoading ? 'Sauvegarde...' : 'Enregistrer'}
+                      </Text>
+                    </TouchableOpacity>
+                  </Animated.View>
                 </View>
-              ) : (
-                <TouchableOpacity style={styles.editButton} onPress={() => setIsEditingPro(true)}>
-                  <Text style={styles.editButtonText}>Modifier</Text>
-                  <ChevronRight size={16} color={colors.primary.main} />
-                </TouchableOpacity>
               )}
             </View>
           </View>
 
-          {/* Subscription Section */}
+          {/* Subscription Section Compacte */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <View style={styles.iconBadge}>
-                <Sparkles size={20} color={colors.primary.main} />
+                <Sparkles size={18} color={colors.primary.main} />
               </View>
               <Text style={styles.sectionTitle}>Abonnement</Text>
             </View>
 
-            <View style={styles.planCard}>
-              <View style={styles.planHeader}>
-                <View>
+            <TouchableOpacity
+              style={styles.planCard}
+              onPress={() => router.push('/(drawer)/subscription')}
+              activeOpacity={0.9}>
+              <View style={styles.planContent}>
+                <View style={styles.planInfo}>
                   <Text style={styles.planName}>
                     {user?.aiProfile?.planType
                       ? `Hipster ${user.aiProfile.planType.charAt(0).toUpperCase() + user.aiProfile.planType.slice(1)}`
@@ -766,7 +823,7 @@ export default function ProfileScreen() {
                   </Text>
                   <Text style={styles.planDescription}>
                     {user?.aiProfile?.planType === 'premium'
-                      ? 'Accès illimité à toutes les fonctionnalités'
+                      ? 'Accès illimité à tout'
                       : 'Fonctionnalités de base'}
                   </Text>
                 </View>
@@ -780,54 +837,63 @@ export default function ProfileScreen() {
                   </Text>
                 </View>
               </View>
-              <TouchableOpacity
-                style={styles.upgradeButton}
-                onPress={() => router.push('/(drawer)/subscription')}>
-                <Sparkles size={18} color="#000" />
-                <Text style={styles.upgradeButtonText}>
-                  {user?.aiProfile?.planType === 'premium'
-                    ? "Gérer l'abonnement"
-                    : 'Passer Premium'}
+              <View style={styles.planAction}>
+                <Text style={styles.planActionText}>
+                  {user?.aiProfile?.planType === 'premium' ? 'Gérer' : 'Passer Premium'}
                 </Text>
-              </TouchableOpacity>
-            </View>
+                <ChevronRight size={18} color={colors.primary.main} />
+              </View>
+            </TouchableOpacity>
           </View>
 
           {/* Security Section */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <View style={styles.iconBadge}>
-                <Lock size={20} color={colors.primary.main} />
+                <Lock size={18} color={colors.primary.main} />
               </View>
               <Text style={styles.sectionTitle}>Sécurité</Text>
             </View>
 
-            <TouchableOpacity style={styles.menuItem} onPress={() => setShowPasswordModal(true)}>
-              <Lock size={20} color={colors.text.secondary} />
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => setShowPasswordModal(true)}
+              activeOpacity={0.7}>
+              <Lock size={18} color={colors.text.secondary} />
               <Text style={styles.menuItemText}>Modifier le mot de passe</Text>
-              <ChevronRight size={20} color={colors.text.muted} />
+              <ChevronRight size={18} color={colors.text.muted} />
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-              <LogOut size={20} color={colors.status.error} />
+            <TouchableOpacity
+              style={styles.logoutButton}
+              onPress={handleLogout}
+              activeOpacity={0.8}>
+              <LogOut size={18} color={colors.status.error} />
               <Text style={styles.logoutText}>Se déconnecter</Text>
             </TouchableOpacity>
           </View>
+
+          <View style={{ height: 40 }} />
         </ScrollView>
       </SafeAreaView>
 
-      {/* Password Modal */}
+      {/* Password Modal Amélioré */}
       <Modal
         visible={showPasswordModal}
         transparent
-        animationType="fade"
+        animationType="slide"
         onRequestClose={() => setShowPasswordModal(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Modifier le mot de passe</Text>
-              <TouchableOpacity onPress={() => setShowPasswordModal(false)}>
-                <X size={24} color={colors.text.muted} />
+              <View>
+                <Text style={styles.modalTitle}>Modifier le mot de passe</Text>
+                <Text style={styles.modalSubtitle}>Minimum 8 caractères requis</Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => setShowPasswordModal(false)}
+                style={styles.closeButton}>
+                <X size={22} color={colors.text.muted} />
               </TouchableOpacity>
             </View>
 
@@ -835,7 +901,7 @@ export default function ProfileScreen() {
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Mot de passe actuel</Text>
                 <View style={styles.inputContainer}>
-                  <Lock size={18} color={colors.text.secondary} />
+                  <Lock size={16} color={colors.text.secondary} />
                   <TextInput
                     style={styles.input}
                     value={oldPassword}
@@ -850,7 +916,7 @@ export default function ProfileScreen() {
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Nouveau mot de passe</Text>
                 <View style={styles.inputContainer}>
-                  <Lock size={18} color={colors.text.secondary} />
+                  <Lock size={16} color={colors.text.secondary} />
                   <TextInput
                     style={styles.input}
                     value={newPassword}
@@ -865,7 +931,7 @@ export default function ProfileScreen() {
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Confirmer le mot de passe</Text>
                 <View style={styles.inputContainer}>
-                  <Lock size={18} color={colors.text.secondary} />
+                  <Lock size={16} color={colors.text.secondary} />
                   <TextInput
                     style={styles.input}
                     value={confirmPassword}
@@ -888,6 +954,7 @@ export default function ProfileScreen() {
                 style={[styles.modalSaveButton, isLoading && styles.disabledButton]}
                 onPress={handleChangePassword}
                 disabled={isLoading}>
+                <Check size={16} color="#000" />
                 <Text style={styles.modalSaveText}>
                   {isLoading ? 'Modification...' : 'Modifier'}
                 </Text>
@@ -919,79 +986,100 @@ export default function ProfileScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  scrollContent: { padding: 20, paddingBottom: 80 },
+  scrollContent: { 
+    padding: 20, 
+    paddingBottom: 60,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 32,
-    gap: 16,
+    marginBottom: 24,
+    gap: 12,
   },
   backButton: {
-    width: 44,
-    height: 44,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderRadius: 12,
+    width: 40,
+    height: 40,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: 'rgba(255,255,255,0.08)',
   },
-  headerTextContainer: { flex: 1 },
+  headerContent: { 
+    flex: 1,
+  },
   title: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '800',
     color: colors.text.primary,
-    marginBottom: 4,
+    marginBottom: 2,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: 13,
     color: colors.text.secondary,
   },
-  section: { marginBottom: 28 },
+  section: { 
+    marginBottom: 24,
+  },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
-    gap: 12,
+    marginBottom: 12,
+    gap: 10,
   },
   iconBadge: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
+    width: 32,
+    height: 32,
+    borderRadius: 8,
     backgroundColor: colors.primary.main + '20',
     justifyContent: 'center',
     alignItems: 'center',
   },
   sectionTitle: {
-    fontSize: 18,
+    flex: 1,
+    fontSize: 16,
     fontWeight: '700',
     color: colors.text.primary,
   },
+  quickEditButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.primary.main + '30',
+  },
+  quickEditText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.primary.main,
+  },
   card: {
     backgroundColor: 'rgba(255, 255, 255, 0.04)',
-    borderRadius: 20,
-    padding: 20,
+    borderRadius: 16,
+    padding: 16,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.08)',
   },
   avatarSection: {
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 20,
   },
-  avatarContainer: {
+  avatarWrapper: {
     position: 'relative',
   },
   avatarImage: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: 90,
+    height: 90,
+    borderRadius: 45,
     borderWidth: 3,
     borderColor: colors.primary.main,
   },
   avatarPlaceholder: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: 90,
+    height: 90,
+    borderRadius: 45,
     backgroundColor: 'rgba(255,255,255,0.05)',
     justifyContent: 'center',
     alignItems: 'center',
@@ -1000,11 +1088,11 @@ const styles = StyleSheet.create({
   },
   cameraButton: {
     position: 'absolute',
-    bottom: 0,
-    right: 0,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    bottom: -2,
+    right: -2,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     backgroundColor: colors.primary.main,
     justifyContent: 'center',
     alignItems: 'center',
@@ -1015,38 +1103,42 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    marginTop: 12,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
+    marginTop: 10,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
     backgroundColor: 'rgba(255,59,48,0.1)',
     borderRadius: 8,
   },
   removeImageText: {
-    fontSize: 12,
+    fontSize: 11,
     color: colors.status.error,
     fontWeight: '600',
   },
-  form: { gap: 16 },
-  inputGroup: { gap: 8 },
+  form: { 
+    gap: 14,
+  },
+  inputGroup: { 
+    gap: 6,
+  },
   inputRow: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 10,
   },
   label: {
-    fontSize: 13,
+    fontSize: 12,
     color: colors.text.secondary,
     fontWeight: '600',
-    marginLeft: 4,
+    marginLeft: 2,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.04)',
-    borderRadius: 12,
-    paddingHorizontal: 14,
+    borderRadius: 10,
+    paddingHorizontal: 12,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.08)',
-    height: 48,
+    height: 44,
   },
   activeInput: {
     borderColor: colors.primary.main + '60',
@@ -1055,54 +1147,42 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     color: colors.text.primary,
-    fontSize: 15,
-    marginLeft: 12,
+    fontSize: 14,
+    marginLeft: 10,
   },
   editActions: {
     flexDirection: 'row',
-    gap: 12,
-    marginTop: 8,
+    gap: 10,
+    marginTop: 6,
   },
   cancelButton: {
     flex: 1,
-    paddingVertical: 14,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    paddingVertical: 12,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.04)',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: 'rgba(255,255,255,0.08)',
   },
   cancelButtonText: {
     color: colors.text.secondary,
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600',
   },
   saveButton: {
     flex: 1,
-    paddingVertical: 14,
-    borderRadius: 12,
-    backgroundColor: colors.primary.main,
-    alignItems: 'center',
-  },
-  saveButtonText: {
-    color: '#000',
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  editButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
     paddingVertical: 12,
-    marginTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 10,
+    backgroundColor: colors.primary.main,
   },
-  editButtonText: {
-    color: colors.primary.main,
-    fontSize: 15,
-    fontWeight: '600',
+  saveButtonText: {
+    color: '#000',
+    fontSize: 14,
+    fontWeight: '700',
   },
   disabledButton: {
     opacity: 0.5,
@@ -1110,26 +1190,26 @@ const styles = StyleSheet.create({
   typeToggleContainer: {
     flexDirection: 'row',
     gap: 8,
-    marginBottom: 20,
-    padding: 4,
+    marginBottom: 16,
+    padding: 3,
     backgroundColor: 'rgba(255,255,255,0.04)',
-    borderRadius: 12,
+    borderRadius: 10,
   },
   typeOption: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 12,
-    borderRadius: 10,
+    gap: 6,
+    paddingVertical: 10,
+    borderRadius: 8,
     backgroundColor: 'transparent',
   },
   typeOptionActive: {
     backgroundColor: colors.primary.main,
   },
   typeOptionText: {
-    fontSize: 14,
+    fontSize: 13,
     color: colors.text.muted,
     fontWeight: '600',
   },
@@ -1139,29 +1219,29 @@ const styles = StyleSheet.create({
   },
   logoPreviewContainer: {
     alignItems: 'center',
-    marginBottom: 16,
-    gap: 12,
+    marginBottom: 12,
+    gap: 10,
   },
   logoPreview: {
-    width: 80,
-    height: 80,
-    borderRadius: 16,
+    width: 70,
+    height: 70,
+    borderRadius: 12,
     borderWidth: 2,
     borderColor: colors.primary.main,
   },
   changeLogoButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    gap: 5,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    backgroundColor: 'rgba(255,255,255,0.04)',
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: colors.primary.main + '40',
+    borderColor: colors.primary.main + '30',
   },
   changeLogoText: {
-    fontSize: 12,
+    fontSize: 11,
     color: colors.primary.main,
     fontWeight: '600',
   },
@@ -1169,105 +1249,111 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 10,
-    paddingVertical: 16,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.03)',
     borderWidth: 2,
     borderStyle: 'dashed',
-    borderColor: colors.primary.main + '40',
-    marginBottom: 16,
+    borderColor: colors.primary.main + '30',
+    marginBottom: 12,
   },
   addLogoText: {
-    fontSize: 14,
+    fontSize: 13,
     color: colors.primary.main,
     fontWeight: '600',
   },
   infoBox: {
-    padding: 16,
+    flexDirection: 'row',
+    padding: 14,
     backgroundColor: 'rgba(255,255,255,0.03)',
-    borderRadius: 12,
+    borderRadius: 10,
     borderLeftWidth: 3,
     borderLeftColor: colors.primary.main,
-    gap: 8,
-    marginBottom: 8,
+    gap: 10,
+    marginBottom: 6,
   },
   infoText: {
     color: colors.text.primary,
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: 13,
+    lineHeight: 19,
+    fontWeight: '500',
   },
   infoTextSecondary: {
     color: colors.text.secondary,
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: 12,
+    lineHeight: 17,
+    marginTop: 4,
   },
   planCard: {
     backgroundColor: 'rgba(255, 255, 255, 0.04)',
-    borderRadius: 20,
-    padding: 20,
+    borderRadius: 16,
+    padding: 16,
     borderWidth: 2,
-    borderColor: colors.primary.main + '40',
+    borderColor: colors.primary.main + '30',
+    gap: 12,
   },
-  planHeader: {
+  planContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 16,
+    alignItems: 'center',
+  },
+  planInfo: {
+    flex: 1,
   },
   planName: {
-    fontSize: 20,
+    fontSize: 17,
     fontWeight: '800',
     color: colors.text.primary,
-    marginBottom: 4,
+    marginBottom: 2,
   },
   planDescription: {
-    fontSize: 13,
+    fontSize: 12,
     color: colors.text.secondary,
   },
   planBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     borderRadius: 8,
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: 'rgba(255,255,255,0.08)',
   },
   planBadgeActive: {
     backgroundColor: colors.primary.main + '30',
   },
   planBadgeText: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '800',
     color: colors.text.primary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
-  upgradeButton: {
+  planAction: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 14,
-    borderRadius: 12,
-    backgroundColor: colors.primary.main,
+    justifyContent: 'space-between',
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.05)',
   },
-  upgradeButtonText: {
-    color: '#000',
-    fontSize: 15,
-    fontWeight: '700',
+  planActionText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.primary.main,
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.04)',
-    padding: 16,
-    borderRadius: 16,
-    gap: 12,
+    padding: 14,
+    borderRadius: 12,
+    gap: 10,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.08)',
+    marginBottom: 10,
   },
   menuItemText: {
     flex: 1,
-    fontSize: 15,
+    fontSize: 14,
     color: colors.text.primary,
     fontWeight: '500',
   },
@@ -1275,53 +1361,60 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 10,
-    marginTop: 16,
-    padding: 16,
-    borderRadius: 16,
+    gap: 8,
+    padding: 14,
+    borderRadius: 12,
     backgroundColor: 'rgba(255,59,48,0.1)',
     borderWidth: 1,
     borderColor: 'rgba(255,59,48,0.3)',
   },
   logoutText: {
     color: colors.status.error,
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '700',
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.9)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
+    backgroundColor: 'rgba(0,0,0,0.92)',
+    justifyContent: 'flex-end',
   },
   modalContent: {
-    width: '100%',
-    maxWidth: 400,
     backgroundColor: colors.background.secondary,
-    borderRadius: 24,
-    padding: 24,
-    borderWidth: 1,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 20,
+    borderTopWidth: 1,
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
     borderColor: 'rgba(255,255,255,0.1)',
+    paddingBottom: 40,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 24,
+    alignItems: 'flex-start',
+    marginBottom: 20,
   },
   modalTitle: {
     fontSize: 20,
     fontWeight: '700',
     color: colors.text.primary,
+    marginBottom: 4,
+  },
+  modalSubtitle: {
+    fontSize: 12,
+    color: colors.text.secondary,
+  },
+  closeButton: {
+    padding: 4,
   },
   modalBody: {
-    gap: 16,
-    marginBottom: 24,
+    gap: 14,
+    marginBottom: 20,
   },
   modalActions: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 10,
   },
   modalCancelButton: {
     flex: 1,
@@ -1334,51 +1427,57 @@ const styles = StyleSheet.create({
   },
   modalCancelText: {
     color: colors.text.secondary,
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600',
   },
   modalSaveButton: {
     flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
     paddingVertical: 14,
     borderRadius: 12,
     backgroundColor: colors.primary.main,
-    alignItems: 'center',
   },
   modalSaveText: {
     color: '#000',
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '700',
   },
   countryPickerButton: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.04)',
-    borderRadius: 12,
-    paddingHorizontal: 14,
+    borderRadius: 10,
+    paddingHorizontal: 12,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.08)',
-    height: 48,
-    gap: 12,
+    height: 44,
+    gap: 10,
   },
   countryPickerText: {
     flex: 1,
     color: colors.text.primary,
-    fontSize: 15,
+    fontSize: 14,
   },
   inlinePrefix: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 8,
+    paddingVertical: 4,
     borderRightWidth: 1,
     borderRightColor: 'rgba(255, 255, 255, 0.1)',
-    marginRight: 8,
+    marginRight: 4,
     gap: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    borderRadius: 6,
   },
   prefixFlag: {
-    fontSize: 16,
+    fontSize: 14,
   },
   prefixCode: {
-    fontSize: 14,
+    fontSize: 12,
     color: colors.text.secondary,
     fontWeight: '600',
   },

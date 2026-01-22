@@ -9,34 +9,36 @@ import Animated, {
   withTiming,
   Easing,
 } from 'react-native-reanimated';
-import { colors } from '../../theme/colors';
 
 interface DeerAnimationProps {
   progress?: number; // 0 to 100
   size?: number;
 }
 
-export const DeerAnimation: React.FC<DeerAnimationProps> = ({ progress = 0, size = 150 }) => {
-  const glowOpacity = useSharedValue(0.3);
+export const DeerAnimation: React.FC<DeerAnimationProps> = ({
+  progress = 0,
+  size = 150,
+}) => {
+  // Animation states
+  const glowOpacity = useSharedValue(0); // optionnel : glow transparent
   const scale = useSharedValue(1);
   const rotation = useSharedValue(0);
 
   useEffect(() => {
-    // Breathing/Pulse animation
+    // Pulse/Glow animation
     glowOpacity.value = withRepeat(
       withSequence(
-        withTiming(0.6, { duration: 1500, easing: Easing.inOut(Easing.ease) }),
-        withTiming(0.3, { duration: 1500, easing: Easing.inOut(Easing.ease) })
+        withTiming(0.3, { duration: 1500, easing: Easing.inOut(Easing.ease) }),
+        withTiming(0, { duration: 1500, easing: Easing.inOut(Easing.ease) })
       ),
       -1,
       true
     );
 
-    // Progress reaction
+    // Progress-based animation
     if (progress > 0) {
       scale.value = withSpring(1 + (progress / 100) * 0.1);
 
-      // Subtle rotation based on progress steps
       if (progress % 20 === 0) {
         rotation.value = withSequence(
           withTiming(0.05, { duration: 100 }),
@@ -47,34 +49,39 @@ export const DeerAnimation: React.FC<DeerAnimationProps> = ({ progress = 0, size
     }
   }, [progress]);
 
+  // Animated style for logo
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }, { rotate: `${rotation.value}rad` }],
-    shadowOpacity: glowOpacity.value,
   }));
 
+  // Glow style (optionnel)
   const glowStyle = useAnimatedStyle(() => ({
     opacity: glowOpacity.value,
   }));
 
   return (
-    <View style={[styles.container, { width: size, height: size }]}>
-      {/* Animated Glow Background */}
+    <View style={styles.container}>
+      {/* Glow (optionnel, transparent pour aucun halo) */}
       <Animated.View
         style={[
           styles.glow,
           {
             width: size * 1.2,
             height: size * 1.2,
-            borderRadius: size * 0.6,
+            borderRadius: (size * 1.2) / 2,
           },
           glowStyle,
         ]}
       />
 
-      {/* Main Deer Logo */}
+      {/* Logo principal */}
       <Animated.Image
         source={require('../../assets/logo.png')}
-        style={[styles.logo, { width: size, height: size }, animatedStyle]}
+        style={[
+          styles.logo,
+          { width: size, height: size, marginTop:size *0.4},
+          animatedStyle,
+        ]}
         resizeMode="contain"
       />
     </View>
@@ -83,17 +90,21 @@ export const DeerAnimation: React.FC<DeerAnimationProps> = ({ progress = 0, size
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
   },
   logo: {
+    position: 'absolute', // centre absolu
+
     zIndex: 2,
   },
   glow: {
     position: 'absolute',
-    backgroundColor: colors.primary.main,
-    filter: 'blur(20px)', // Note: blur might not work on all native versions without specific config
+    top: '50%',
+    left: '50%',
     zIndex: 1,
+    backgroundColor: 'transparent', // pas de couleur bleu
   },
 });

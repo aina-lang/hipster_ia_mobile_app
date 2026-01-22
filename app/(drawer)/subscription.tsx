@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../../theme/colors';
-import { ChevronLeft, Check, Crown, Zap, Shield, LucideIcon } from 'lucide-react-native';
+import { ChevronLeft, Check, Crown, Zap, Shield, LucideIcon, Edit3 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useStripe } from '@stripe/stripe-react-native';
 import axios from 'axios';
@@ -47,31 +47,40 @@ export default function SubscriptionScreen() {
       // Mocking for now:
       const mockPlans: Plan[] = [
         {
-          id: 'basic',
-          name: 'Gratuit',
-          price: '0€',
-          description: 'Pour découvrir Hipster',
-          features: ['10 crédits/mois', 'Support standard', 'Qualité standard'],
+          id: 'curieux',
+          name: 'Pack Curieux',
+          price: 'Gratuit',
+          description: 'Découvrez Hipster sans engagement (7 jours)',
+          features: ['2 images/jour', '3 textes/jour', "Pas d'export", 'Consultation uniquement'],
           stripePriceId: null,
           icon: Shield,
         },
         {
-          id: 'pro',
-          name: 'Premium Pro',
-          price: '19.99€',
-          description: 'Pour les créateurs passionnés',
-          features: ['500 crédits/mois', 'Support prioritaire', 'Qualité HD', 'Sans filigrane'],
-          stripePriceId: 'price_HpsPro123',
+          id: 'atelier',
+          name: 'Atelier',
+          price: '17.90€',
+          description: "L'essentiel pour les créateurs",
+          features: ['100 images/mois', 'Texte illimité', 'Pas de vidéo', 'Choix du canal'],
+          stripePriceId: 'price_Atelier1790',
+          icon: Edit3,
+        },
+        {
+          id: 'studio',
+          name: 'Studio',
+          price: '29.90€',
+          description: 'Pour les productions régulières',
+          features: ['100 images/mois', 'Texte illimité', '3 vidéos', 'Support prioritaire'],
+          stripePriceId: 'price_Studio2990',
           icon: Zap,
           popular: true,
         },
         {
-          id: 'enterprise',
-          name: 'Entreprise',
-          price: '49.99€',
-          description: 'La puissance illimitée',
-          features: ['Illimité', 'Accès API', 'Support 24/7', "Compte d'équipe"],
-          stripePriceId: 'price_HpsEnt456',
+          id: 'agence',
+          name: 'Agence',
+          price: '69.90€',
+          description: 'La puissance totale',
+          features: ['300 images/mois', 'Texte illimité', '10 vidéos', '60 sons'],
+          stripePriceId: 'price_Agence6990',
           icon: Crown,
         },
       ];

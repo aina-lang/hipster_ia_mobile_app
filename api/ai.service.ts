@@ -51,6 +51,13 @@ export const AiService = {
     return response.data.data;
   },
 
+  generateFlyer: async (params: any) => {
+    console.log('[AiService] generateFlyer');
+    const response = await api.post('/ai/flyer', { params });
+    console.log('[AiService] generateFlyer result URL:', response.data.data?.url);
+    return response.data.data;
+  },
+
   getHistory: async () => {
     const response = await api.get('/ai/history');
     return response.data.data;

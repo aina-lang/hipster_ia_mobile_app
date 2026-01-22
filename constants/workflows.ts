@@ -46,7 +46,7 @@ export const GENERIC_WORKFLOWS: Record<string, WorkflowQuestion[]> = {
       options: ['Expert', 'Accueillant', 'Persuasif', 'Informatif'],
     },
   ],
-  'Flyers / Affiches (texte)': [
+  'Flyers / Affiches (image)': [
     {
       id: 'tone',
       label: 'Ton du texte',

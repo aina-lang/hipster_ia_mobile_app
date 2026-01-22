@@ -202,7 +202,7 @@ export default function Step2PersonalizeScreen() {
                   onPress={handleCreate}
                   title="Générer avec Hipster•IA"
                   variant="primary"
-                  icon={<Sparkles size={20} color="#000" />}
+                 
                 />
               </View>
             </View>

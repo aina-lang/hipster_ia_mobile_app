@@ -83,8 +83,12 @@ export default function Step3ResultScreen() {
     selectedTone,
     selectedTarget,
     workflowAnswers,
+
     reset,
   } = useCreationStore();
+  const { user } = useAuthStore();
+
+  const isRestricted = user?.aiProfile?.planType === 'curieux';
   const [loading, setLoading] = useState(true);
   const [result, setResult] = useState<string | null>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
@@ -168,6 +172,11 @@ export default function Step3ResultScreen() {
   };
 
   const copyValueToClipboard = async (key: string, value: any) => {
+    if (isRestricted) {
+      showModal('error', 'Pack Curieux', 'Le copier-coller est indisponible.');
+      return;
+    }
+
     let textToCopy = '';
     if (typeof value === 'string') {
       textToCopy = value;
@@ -189,6 +198,37 @@ export default function Step3ResultScreen() {
     await Clipboard.setStringAsync(textToCopy);
     setCopiedKey(key);
     setTimeout(() => setCopiedKey(null), 2000);
+  };
+
+  const renderFlyerImage = () => {
+    if (!imageUrl) return null;
+
+    return (
+      <View style={styles.imageContainer}>
+        <View style={styles.imageHeader}>
+          <Text selectable={true} style={styles.imageLabel}>
+            🎨 Flyer Généré
+          </Text>
+          <TouchableOpacity
+            onPress={() => copyValueToClipboard('flyer_image', imageUrl)}
+            style={styles.miniCopyButton}>
+            {copiedKey === 'flyer_image' ? (
+              <Check size={16} color={colors.primary.main} />
+            ) : (
+              <Copy size={16} color={colors.primary.main} />
+            )}
+          </TouchableOpacity>
+        </View>
+        <View style={styles.imageWrapper}>
+          <Image
+            source={{ uri: imageUrl }}
+            style={styles.flyerImage}
+            resizeMode="contain"
+          />
+        </View>
+        <View style={styles.imageSeparator} />
+      </View>
+    );
   };
 
   const renderPosterResult = (data: any) => {
@@ -451,7 +491,7 @@ export default function Step3ResultScreen() {
         userQuery: overrideQuery || userQuery,
         workflowAnswers,
         // Override category for flyers to ensure generic text generation
-        category: selectedFunction === 'Flyers / Affiches (texte)' ? 'Texte' : selectedCategory,
+        category: selectedFunction === 'Flyers / Affiches (image)' ? 'Texte' : selectedCategory,
         instruction_speciale: 'Génère UNIQUEMENT la section demandée.',
       };
 
@@ -474,12 +514,22 @@ export default function Step3ResultScreen() {
         setResult(resultData.content);
         setGenerationId(resultData.generationId);
       } else if (selectedCategory === 'Texte') {
-        const resultData = await AiService.generateText(
-          params,
-          selectedCategory.toLowerCase() as TextGenerationType
-        );
-        setResult(resultData.content);
-        setGenerationId(resultData.generationId);
+        // Check if this is a flyer request
+        if (selectedFunction && selectedFunction.includes('Flyers')) {
+          // Generate flyer as image
+          const flyerResult = await AiService.generateFlyer(params);
+          setImageUrl(flyerResult.url);
+          setResult(flyerResult.url); // Also set as result for display
+          setGenerationId(flyerResult.generationId);
+        } else {
+          // Regular text generation
+          const resultData = await AiService.generateText(
+            params,
+            selectedCategory.toLowerCase() as TextGenerationType
+          );
+          setResult(resultData.content);
+          setGenerationId(resultData.generationId);
+        }
       }
     } catch (error: any) {
       console.error('Generation error:', error);
@@ -496,6 +546,15 @@ export default function Step3ResultScreen() {
   }, []);
 
   const handleDownload = async (format: string) => {
+    if (isRestricted) {
+      showModal(
+        'error',
+        'Pack Curieux',
+        'Le téléchargement est indisponible avec le Pack Curieux. Passez au plan Atelier ou Studio pour débloquer !'
+      );
+      return;
+    }
+
     if (!generationId) {
       showModal('error', 'Erreur', "Impossible d'exporter : ID manquant");
       return;
@@ -583,6 +642,10 @@ export default function Step3ResultScreen() {
   };
 
   const handleCopyText = async () => {
+    if (isRestricted) {
+      showModal('error', 'Pack Curieux', 'Le copier-coller est indisponible avec le Pack Curieux.');
+      return;
+    }
     if (!result) return;
     const cleanText = getVisibleText(result);
     await Clipboard.setStringAsync(cleanText);
@@ -590,6 +653,10 @@ export default function Step3ResultScreen() {
   };
 
   const handleSaveToGallery = async () => {
+    if (isRestricted) {
+      showModal('error', 'Pack Curieux', 'La sauvegarde est indisponible avec le Pack Curieux.');
+      return;
+    }
     if (!imageUrl) return;
 
     try {
@@ -635,6 +702,10 @@ export default function Step3ResultScreen() {
   };
 
   const handleShare = async () => {
+    if (isRestricted) {
+      showModal('error', 'Pack Curieux', 'Le partage est indisponible avec le Pack Curieux.');
+      return;
+    }
     try {
       if (selectedCategory === 'Image' || imageUrl) {
         showModal('loading', 'Préparation', "Téléchargement de l'image...");
@@ -905,17 +976,20 @@ export default function Step3ResultScreen() {
                   </View>
                 ) : (
                   <View>
+                    {/* Display flyer image if it's a flyer */}
+                    {imageUrl && selectedFunction?.includes('Flyers') && renderFlyerImage()}
+                    
                     <View style={{ marginTop: 12 }}>
                       {(() => {
                         const data = getParsedData(result);
                         if (data) {
                           // Si c'est une affiche (détectée par ses clés spécifiques)
-                          if (
-                            data.titre_principal ||
-                            (selectedFunction && selectedFunction.includes('Affiche'))
-                          ) {
-                            return renderPosterResult(data);
-                          }
+                          // if (
+                          //   data.titre_principal ||
+                          //   (selectedFunction && selectedFunction.includes('Affiche'))
+                          // ) {
+                          //   return renderPosterResult(data);
+                          // }
                           return renderJsonResult(data);
                         }
                         return (
@@ -1578,5 +1652,44 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
     marginVertical: 10,
     width: '100%',
+  },
+  imageContainer: {
+    marginBottom: 24,
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: `${colors.primary.main}30`,
+  },
+  imageHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: `${colors.primary.main}10`,
+    borderBottomWidth: 1,
+    borderBottomColor: `${colors.primary.main}20`,
+  },
+  imageLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.primary.main,
+  },
+  imageWrapper: {
+    width: '100%',
+    aspectRatio: 0.8,
+    backgroundColor: colors.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  flyerImage: {
+    width: '100%',
+    height: '100%',
+  },
+  imageSeparator: {
+    height: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    marginVertical: 0,
   },
 });

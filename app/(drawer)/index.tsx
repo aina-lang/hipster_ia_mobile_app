@@ -252,12 +252,12 @@ export default function HomeScreen() {
                   </Text>
                 </View>
 
-                <View className="my-10 items-center">
-                  <DeerAnimation size={280} progress={0} />
+                <View className="items-center">
+                  <DeerAnimation size={800} progress={0} />
                 </View>
 
                 <TouchableOpacity
-                  className="bg-white/3 mb-5 flex-row items-center gap-4 rounded-2xl border border-white/5 p-5"
+                  className="bg-white/3 z-50 mt-80 mb-5 flex-row items-center gap-4 rounded-2xl border border-white/5 p-5"
                   onPress={() => {
                     useCreationStore.getState().reset();
                     router.push('/(guided)/step1-job');
