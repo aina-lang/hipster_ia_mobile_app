@@ -1,0 +1,6 @@
+Title,Description,AcceptanceCriteria,Priority,Component
+"Epic: Onboarding entreprise et chat IA","Onboarding + chat contextualisé au métier pour TPE","Tokens créés; métier persistant; chat sauvegardé; règles safety appliquées","P0","Platform"
+"Inscription + Abonnement","Flux d'inscription AI avec choix de plan et persistance du plan","aiRegister renvoie tokens; redirection verify-email/subscription; user.aiProfile.planType mis à jour","P0","app/(auth)/register.tsx; app/(drawer)/subscription.tsx; backend subscriptions"
+"Login","Connexion standard / AI, stockage tokens et hydration du store","useAuthStore.login / aiLogin stocke tokens en AsyncStorage; user hydrate; redirection correcte","P0","app/(auth)/login.tsx; store/authStore.ts"
+"Choix métier (8 segments)","Grid métier 8 options + Autre; persister professionId localement et côté backend si connecté","step1-job affiche 8 options; selectedJob + selectedJobId mis à jour; PATCH /profiles/ai/:id appelé pour users connectés","P0","app/(guided)/step1-job.tsx; store/creationStore.ts; store/authStore.ts"
+"Chat IA","Écran chat minimal appelant AiService.chat; sauvegarde des générations avec attributs métier","chat envoie messages; backend sauvegarde AiGeneration avec professionId,label,workflowAnswers; UI montre loading/error","P0","app/(tabs)/ai-chat.tsx; store/chatStore.ts; backend AiController"

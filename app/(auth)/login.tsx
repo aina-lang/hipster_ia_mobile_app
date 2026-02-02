@@ -58,7 +58,7 @@ export default function LoginScreen() {
       if (hasFinishedOnboarding) {
         router.replace('/(drawer)');
       } else {
-        router.push('/(onboarding)/setup');
+        router.push('/(onboarding)/age');
       }
     } catch (e: any) {
       // Extract clear message from backend if available

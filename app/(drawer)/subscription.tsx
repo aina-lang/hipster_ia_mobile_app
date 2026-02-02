@@ -36,7 +36,7 @@ export default function SubscriptionScreen() {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const { initPaymentSheet, presentPaymentSheet } = useStripe();
-  const { user } = useAuthStore();
+  const { user, updateAiProfile } = useAuthStore();
 
   useEffect(() => {
     fetchPlans();
@@ -97,7 +97,7 @@ export default function SubscriptionScreen() {
       Alert.alert(
         'Mode Demo',
         "L'intégration Stripe est prête. Le backend doit être accessible pour initier le paiement réel.",
-        [{ text: 'OK' }]
+        [{ text: 'OK', onPress: () => handlePlanConfirmation(selectedPlan!) }]
       );
 
       setLoading(false);
@@ -107,10 +107,32 @@ export default function SubscriptionScreen() {
     }
   };
 
+  const handlePlanConfirmation = async (planId: string) => {
+    try {
+      // Save plan to user's AI profile
+      await updateAiProfile({ planType: planId });
+      
+      // Show success and redirect to onboarding/dashboard
+      Alert.alert('Succès', 'Abonnement activé ! Vous allez être redirigé.', [
+        { text: 'OK', onPress: () => router.push('/(onboarding)/welcome') }
+      ]);
+    } catch (error) {
+      console.error('Error saving plan:', error);
+      Alert.alert('Erreur', 'Impossible de sauvegarder votre plan.');
+    }
+  };
+
   const handleUpgrade = async () => {
     const plan = plans.find((p) => p.id === selectedPlan);
-    if (!plan || !plan.stripePriceId) return;
+    if (!plan) return;
 
+    // For free plan, skip Stripe and just save
+    if (plan.stripePriceId === null) {
+      await handlePlanConfirmation(plan.id);
+      return;
+    }
+
+    // For paid plans, initialize payment sheet
     await initializePaymentSheet(plan.stripePriceId);
   };
 
@@ -187,12 +209,12 @@ export default function SubscriptionScreen() {
         <TouchableOpacity
           style={[styles.upgradeButton, loading && styles.disabledButton]}
           onPress={handleUpgrade}
-          disabled={loading || selectedPlan === 'basic'}>
+          disabled={loading || !selectedPlan}>
           {loading ? (
             <ActivityIndicator color="#000" />
           ) : (
             <Text style={styles.upgradeButtonText}>
-              {selectedPlan === 'basic' ? 'Plan actuel' : 'Commencer maintenant'}
+              {selectedPlan ? 'Confirmer mon choix' : 'Sélectionnez un plan'}
             </Text>
           )}
         </TouchableOpacity>

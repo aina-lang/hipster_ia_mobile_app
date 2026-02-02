@@ -412,7 +412,9 @@ export const useAuthStore = create<AuthState>()(
         try {
           const { data } = await api.post('/ai/auth/verify-email', { email, code });
 
-          const resData = data; // Backend returns access_token, refresh_token, user directly
+          // Backend is wrapped by TransformInterceptor:
+          // { status, statusCode, message, data: { access_token, refresh_token, user, ... } }
+          const resData = data?.data ?? data;
 
           await AsyncStorage.setItem('access_token', resData.access_token);
           await AsyncStorage.setItem('refresh_token', resData.refresh_token);

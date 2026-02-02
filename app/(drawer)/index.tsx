@@ -260,7 +260,8 @@ export default function HomeScreen() {
                   className="bg-white/3 z-50 mt-80 mb-5 flex-row items-center gap-4 rounded-2xl border border-white/5 p-5"
                   onPress={() => {
                     useCreationStore.getState().reset();
-                    router.push('/(guided)/step1-job');
+                    // First go to subscription to choose a plan before guided flow
+                    router.push('/(drawer)/subscription');
                   }}
                   activeOpacity={0.8}>
                   <View className="w-15 h-15 items-center justify-center rounded-lg">

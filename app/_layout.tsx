@@ -25,7 +25,8 @@ export default function RootLayout() {
 
       if (!hasFinishedOnboarding) {
         if (!inOnboardingGroup) {
-          targetRoute = isAuthenticated ? '/(onboarding)/setup' : '/(onboarding)/welcome';
+          // On commence l'onboarding directement par l'étape d'âge
+          targetRoute = isAuthenticated ? '/(onboarding)/age' : '/(onboarding)/welcome';
         }
       } else {
         if (isAuthenticated) {

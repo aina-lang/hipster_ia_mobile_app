@@ -37,7 +37,7 @@ export default function BusinessDetailsScreen() {
 
   return (
     <BackgroundGradient>
-      <StepIndicator currentStep={3} totalSteps={4} />
+      <StepIndicator currentStep={2} totalSteps={3} />
 
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
