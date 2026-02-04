@@ -14,10 +14,10 @@ import { colors } from '../../theme/colors';
 import { ChevronLeft, Check, Crown, Zap, Shield, LucideIcon, Edit3 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useStripe } from '@stripe/stripe-react-native';
-import axios from 'axios';
+import { api } from '../../api/client';
 import { useAuthStore } from '../../store/authStore';
 
-const API_URL = 'http://192.168.1.100:3000'; // Replace with your actual API URL
+const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://hipster-api.fr';
 
 interface Plan {
   id: string;
@@ -94,15 +94,48 @@ export default function SubscriptionScreen() {
   const initializePaymentSheet = async (priceId: string) => {
     setLoading(true);
     try {
-      Alert.alert(
-        'Mode Demo',
-        "L'intégration Stripe est prête. Le backend doit être accessible pour initier le paiement réel.",
-        [{ text: 'OK', onPress: () => handlePlanConfirmation(selectedPlan!) }]
-      );
+      // Request backend to create PaymentSheet params for the selected priceId
+      // Include userId so webhook can find user after payment
+      const resp = await api.post(`/ai/payment/create-payment-sheet`, {
+        priceId,
+        userId: user?.id, // ← Pass userId for webhook lookup
+      });
 
-      setLoading(false);
-    } catch (e) {
-      console.error(e);
+      // backend may return data in different shapes; try common fields
+      const data = resp.data?.data ?? resp.data ?? resp;
+      const paymentIntentClientSecret = data.paymentIntentClientSecret || data.clientSecret || data.paymentIntent?.client_secret;
+      const customerEphemeralKey = data.ephemeralKey || data.customer_ephemeral_key;
+      const customerId = data.customerId || data.customer || data.customer_id;
+
+      if (!paymentIntentClientSecret) {
+        throw new Error('Impossible de récupérer le client secret du PaymentIntent depuis le backend.');
+      }
+
+      const initResult: any = await initPaymentSheet({
+        paymentIntentClientSecret,
+        merchantDisplayName: 'Hipster IA',
+        customerEphemeralKeySecret: customerEphemeralKey,
+        customerId,
+        // applePay and googlePay config can be added here if enabled on backend
+      });
+
+      if (initResult.error) {
+        throw initResult.error;
+      }
+
+      const presentResult: any = await presentPaymentSheet();
+      if (presentResult.error) {
+        Alert.alert('Paiement échoué', presentResult.error.message || 'Erreur lors du paiement');
+        setLoading(false);
+        return;
+      }
+
+      // Payment successful — confirm plan
+      await handlePlanConfirmation(selectedPlan!);
+    } catch (e: any) {
+      console.error('Stripe init error:', e);
+      Alert.alert('Erreur paiement', e?.message || 'Impossible d\'initialiser le paiement.');
+    } finally {
       setLoading(false);
     }
   };
