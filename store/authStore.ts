@@ -362,7 +362,22 @@ export const useAuthStore = create<AuthState>()(
           await AsyncStorage.setItem('refresh_token', resData.refresh_token);
 
           set({
-            user: resData.user,
+            user: {
+              ...resData.user,
+              aiProfile: resData.user.aiProfile
+                ? {
+                    ...resData.user.aiProfile,
+                    aiCreditLimits: resData.user.aiProfile.aiCredit
+                      ? {
+                          promptsLimit: resData.user.aiProfile.aiCredit.promptsLimit,
+                          imagesLimit: resData.user.aiProfile.aiCredit.imagesLimit,
+                          videosLimit: resData.user.aiProfile.aiCredit.videosLimit,
+                          audioLimit: resData.user.aiProfile.aiCredit.audioLimit,
+                        }
+                      : undefined,
+                  }
+                : undefined,
+            },
             isAuthenticated: true,
             accessToken: resData.access_token,
             refreshToken: resData.refresh_token,
@@ -375,28 +390,36 @@ export const useAuthStore = create<AuthState>()(
             if (resData.user?.type === 'ai') {
               const creditsResp = await api.get('/ai/payment/credits');
               const creditsData = creditsResp.data;
-              set((state) => ({
-                user: state.user
-                  ? {
-                      ...state.user,
-                      aiProfile: {
-                        ...state.user.aiProfile,
-                        aiCreditUsage: {
-                          promptsUsed: creditsData.promptsUsed || 0,
-                          imagesUsed: creditsData.imagesUsed || 0,
-                          videosUsed: creditsData.videosUsed || 0,
-                          audioUsed: creditsData.audioUsed || 0,
-                        },
-                        aiCreditLimits: {
-                          promptsLimit: creditsData.promptsLimit,
-                          imagesLimit: creditsData.imagesLimit,
-                          videosLimit: creditsData.videosLimit,
-                          audioLimit: creditsData.audioLimit,
-                        },
+              set((state) => {
+                const user = state.user;
+                if (!user || !user.aiProfile) return state;
+
+                return {
+                  user: {
+                    ...user,
+                    aiProfile: {
+                      ...user.aiProfile,
+                      id: user.aiProfile.id,
+                      planType: user.aiProfile.planType,
+                      subscriptionStatus: user.aiProfile.subscriptionStatus,
+                      credits: user.aiProfile.credits,
+                      isSetupComplete: user.aiProfile.isSetupComplete,
+                      aiCreditUsage: {
+                        promptsUsed: creditsData.promptsUsed || 0,
+                        imagesUsed: creditsData.imagesUsed || 0,
+                        videosUsed: creditsData.videosUsed || 0,
+                        audioUsed: creditsData.audioUsed || 0,
                       },
-                    }
-                  : state.user,
-              }));
+                      aiCreditLimits: {
+                        promptsLimit: creditsData.promptsLimit,
+                        imagesLimit: creditsData.imagesLimit,
+                        videosLimit: creditsData.videosLimit,
+                        audioLimit: creditsData.audioLimit,
+                      },
+                    },
+                  } as User,
+                };
+              });
             }
           } catch (e) {
             console.warn('[AuthStore] Failed to fetch AI credits after login', e);
@@ -463,7 +486,22 @@ export const useAuthStore = create<AuthState>()(
           await AsyncStorage.setItem('refresh_token', resData.refresh_token);
 
           set({
-            user: resData.user,
+            user: {
+              ...resData.user,
+              aiProfile: resData.user.aiProfile
+                ? {
+                    ...resData.user.aiProfile,
+                    aiCreditLimits: resData.user.aiProfile.aiCredit
+                      ? {
+                          promptsLimit: resData.user.aiProfile.aiCredit.promptsLimit,
+                          imagesLimit: resData.user.aiProfile.aiCredit.imagesLimit,
+                          videosLimit: resData.user.aiProfile.aiCredit.videosLimit,
+                          audioLimit: resData.user.aiProfile.aiCredit.audioLimit,
+                        }
+                      : undefined,
+                  }
+                : undefined,
+            },
             isAuthenticated: true,
             accessToken: resData.access_token,
             refreshToken: resData.refresh_token,
@@ -476,28 +514,36 @@ export const useAuthStore = create<AuthState>()(
             if (resData.user?.type === 'ai') {
               const creditsResp = await api.get('/ai/payment/credits');
               const creditsData = creditsResp.data;
-              set((state) => ({
-                user: state.user
-                  ? {
-                      ...state.user,
-                      aiProfile: {
-                        ...state.user.aiProfile,
-                        aiCreditUsage: {
-                          promptsUsed: creditsData.promptsUsed || 0,
-                          imagesUsed: creditsData.imagesUsed || 0,
-                          videosUsed: creditsData.videosUsed || 0,
-                          audioUsed: creditsData.audioUsed || 0,
-                        },
-                        aiCreditLimits: {
-                          promptsLimit: creditsData.promptsLimit,
-                          imagesLimit: creditsData.imagesLimit,
-                          videosLimit: creditsData.videosLimit,
-                          audioLimit: creditsData.audioLimit,
-                        },
+              set((state) => {
+                const user = state.user;
+                if (!user || !user.aiProfile) return state;
+
+                return {
+                  user: {
+                    ...user,
+                    aiProfile: {
+                      ...user.aiProfile,
+                      id: user.aiProfile.id,
+                      planType: user.aiProfile.planType,
+                      subscriptionStatus: user.aiProfile.subscriptionStatus,
+                      credits: user.aiProfile.credits,
+                      isSetupComplete: user.aiProfile.isSetupComplete,
+                      aiCreditUsage: {
+                        promptsUsed: creditsData.promptsUsed || 0,
+                        imagesUsed: creditsData.imagesUsed || 0,
+                        videosUsed: creditsData.videosUsed || 0,
+                        audioUsed: creditsData.audioUsed || 0,
                       },
-                    }
-                  : state.user,
-              }));
+                      aiCreditLimits: {
+                        promptsLimit: creditsData.promptsLimit,
+                        imagesLimit: creditsData.imagesLimit,
+                        videosLimit: creditsData.videosLimit,
+                        audioLimit: creditsData.audioLimit,
+                      },
+                    },
+                  } as User,
+                };
+              });
             }
           } catch (e) {
             console.warn('[AuthStore] Failed to fetch AI credits after verify', e);

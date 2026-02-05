@@ -161,8 +161,11 @@ export default function SubscriptionScreen() {
 
       console.log('[Plan Confirmation] Limits applied:', confirmResp.data?.limits);
 
-      // Update local user store with new limits
-      await updateAiProfile({ planType: planId });
+      // Update local user store with new limits and active status
+      await updateAiProfile({
+        planType: planId,
+        subscriptionStatus: 'active'
+      });
 
       // Show success with limits info
       const limits = confirmResp.data?.limits;

@@ -26,7 +26,7 @@ import { StripeProvider } from '@stripe/stripe-react-native';
 import { LoadingTransition } from '../components/ui/LoadingTransition';
 
 export default function RootLayout() {
-  const { isAuthenticated, hasFinishedOnboarding, isHydrated } = useAuthStore();
+  const { user, isAuthenticated, hasFinishedOnboarding, isHydrated } = useAuthStore();
   const segments = useSegments();
   const router = useRouter();
   const [isRouting, setIsRouting] = React.useState(true);
@@ -40,20 +40,25 @@ export default function RootLayout() {
       let targetRoute: string | null = null;
 
       if (isAuthenticated) {
+        // Redirection based on onboarding and subscription status
+        const planType = user?.aiProfile?.planType;
+        const subStatus = user?.aiProfile?.subscriptionStatus;
+        const isPaidPlan = planType && planType !== 'curieux';
+        const isSubscriptionActive = subStatus === 'active';
+        const isPaidPlanButInactive = isPaidPlan && !isSubscriptionActive;
+
         if (!hasFinishedOnboarding) {
-          // Si connecté mais onboarding non fini, on force l'onboarding
           if (!inOnboardingGroup) {
             targetRoute = '/(onboarding)/setup';
           }
         } else {
-          // Si connecté et onboarding fini, on force le drawer (accueil)
+          // If onboarding finished (regardless of plan/subscription status)
           if (inAuthGroup || inOnboardingGroup || !segments[0]) {
             targetRoute = '/(drawer)';
           }
         }
       } else {
-        // Si non connecté, on autorise (auth) et (onboarding)
-        // Mais on redirige le root vers welcome
+        // If not authenticated
         if (!inAuthGroup && !inOnboardingGroup) {
           targetRoute = '/(onboarding)/welcome';
         }

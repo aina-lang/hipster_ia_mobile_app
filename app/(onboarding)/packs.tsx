@@ -231,7 +231,7 @@ export default function PacksScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: 0,
+    paddingTop: 80,
   },
   header: {
     alignItems: 'center',

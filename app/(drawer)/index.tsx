@@ -24,7 +24,11 @@ import {
   Wifi,
   WifiOff,
   Plus,
+  CreditCard,
+  Lock,
+  ChevronRight,
 } from 'lucide-react-native';
+import { useStripe } from '@stripe/stripe-react-native';
 import { BackgroundGradient } from '../../components/ui/BackgroundGradient';
 import { DeerAnimation } from '../../components/ui/DeerAnimation';
 import { UsageBar } from '../../components/UsageBar';
@@ -82,6 +86,78 @@ const TypingPlaceholder = ({ text, inputValue }: { text: string; inputValue: str
   return <Text className="absolute left-4 top-4 text-base text-white/60">{displayedText}</Text>;
 };
 
+const PLANS_METADATA = [
+  {
+    id: 'curieux',
+    name: 'Pack Curieux',
+    price: '7 jours gratuits',
+    stripePriceId: null,
+  },
+  {
+    id: 'atelier',
+    name: 'Atelier',
+    price: '9,90€ / mois',
+    stripePriceId: 'price_Atelier1790',
+  },
+  {
+    id: 'studio',
+    name: 'Studio',
+    price: '29,90€ / mois',
+    stripePriceId: 'price_Studio2990',
+  },
+  {
+    id: 'agence',
+    name: 'Agence',
+    price: '69,99€ / mois',
+    stripePriceId: 'price_Agence6990',
+  },
+];
+
+const PaymentBlocker = ({ planId, onPay, loading }: { planId: string; onPay: () => void; loading: boolean }) => {
+  const plan = PLANS_METADATA.find(p => p.id === planId) || PLANS_METADATA[1];
+
+  return (
+    <View className=" mb-5 overflow-hidden rounded-3xl border border-white/10 bg-slate-900/90 shadow-2xl">
+      <View className="bg-primary/10 p-6 items-center">
+        <View className="mb-4 h-16 w-16 items-center justify-center rounded-2xl bg-primary/20">
+          <Lock size={32} color={colors.primary.main} />
+        </View>
+        <Text className="text-center text-xl font-bold text-white">Action requise</Text>
+        <Text className="mt-2 text-center text-sm text-white/60">
+          Veuillez finaliser votre abonnement pour débloquer toutes les fonctionnalités de votre plan.
+        </Text>
+      </View>
+
+      <View className="border-t border-white/5 p-6">
+        <View className="mb-6 flex-row items-center justify-between rounded-2xl bg-white/5 p-4 border border-white/10">
+          <View>
+            <Text className="text-xs font-medium text-white/40 uppercase tracking-wider">Plan sélectionné</Text>
+            <Text className="mt-1 text-lg font-bold text-white">{plan.name}</Text>
+          </View>
+          <Text className="text-lg font-black text-primary" style={{ color: colors.primary.main }}>{plan.price}</Text>
+        </View>
+
+        <TouchableOpacity
+          onPress={onPay}
+          disabled={loading}
+          activeOpacity={0.8}
+          className="flex-row items-center justify-center rounded-2xl bg-primary py-4 px-6 shadow-lg shadow-primary/30"
+          style={{ backgroundColor: colors.primary.main }}>
+          {loading ? (
+            <ActivityIndicator size="small" color="#000" />
+          ) : (
+            <>
+              <CreditCard size={20} color="#000" className="mr-2" />
+              <Text className="text-base font-bold text-black ml-2">Procéder au paiement</Text>
+              <ChevronRight size={20} color="#000" className="ml-1" />
+            </>
+          )}
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+};
+
 export default function HomeScreen() {
   const { user } = useAuthStore();
   const router = useRouter();
@@ -98,15 +174,76 @@ export default function HomeScreen() {
 
   // Modal State
   const [modalVisible, setModalVisible] = useState(false);
-  const [modalType, setModalType] = useState<any>('info');
+  const [modalType, setModalType] = useState<'success' | 'error' | 'info'>('info');
   const [modalTitle, setModalTitle] = useState('');
   const [modalMessage, setModalMessage] = useState('');
 
-  const showModal = (type: any, title: string, message: string = '') => {
+  const [isPaymentLoading, setIsPaymentLoading] = useState(false);
+  const { initPaymentSheet, presentPaymentSheet } = useStripe();
+
+  const planType = user?.aiProfile?.planType || 'curieux';
+  const subStatus = user?.aiProfile?.subscriptionStatus;
+  const isPaidPlan = planType !== 'curieux';
+  const isSubscriptionActive = subStatus === 'active';
+  const isPaidPlanButInactive = isPaidPlan && !isSubscriptionActive;
+
+  const showModal = (type: 'success' | 'error' | 'info', title: string, message: string) => {
     setModalType(type);
     setModalTitle(title);
     setModalMessage(message);
     setModalVisible(true);
+  };
+
+  const handleStripePayment = async () => {
+    const planConfig = PLANS_METADATA.find(p => p.id === planType);
+    if (!planConfig || !planConfig.stripePriceId) return;
+
+    setIsPaymentLoading(true);
+    try {
+      const resp = await api.post(`/ai/payment/create-payment-sheet`, {
+        priceId: planConfig.stripePriceId,
+        userId: user?.id,
+      });
+
+      const data = resp.data?.data ?? resp.data ?? resp;
+      const paymentIntentClientSecret = data.paymentIntentClientSecret || data.clientSecret || data.paymentIntent?.client_secret;
+      const customerEphemeralKey = data.ephemeralKey || data.customer_ephemeral_key;
+      const customerId = data.customerId || data.customer || data.customer_id;
+
+      if (!paymentIntentClientSecret) {
+        throw new Error('Impossible de récupérer le client secret.');
+      }
+
+      const initResult = await initPaymentSheet({
+        paymentIntentClientSecret,
+        merchantDisplayName: 'Hipster IA',
+        customerEphemeralKeySecret: customerEphemeralKey,
+        customerId,
+      });
+
+      if (initResult.error) throw initResult.error;
+
+      const presentResult = await presentPaymentSheet();
+      if (presentResult.error) {
+        showModal('error', 'Paiement échoué', presentResult.error.message || 'Erreur lors du paiement');
+        return;
+      }
+
+      // Success
+      await api.post('/ai/payment/confirm-plan', { planId: planType });
+
+      // Update local store
+      await useAuthStore.getState().updateAiProfile({
+        subscriptionStatus: 'active' as any
+      });
+
+      showModal('success', 'Félicitations !', 'Votre abonnement est maintenant actif.');
+    } catch (e: any) {
+      console.error('Stripe error:', e);
+      showModal('error', 'Erreur', e?.message || 'Une erreur est survenue lors du paiement.');
+    } finally {
+      setIsPaymentLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -238,7 +375,6 @@ export default function HomeScreen() {
   // Credit and message limit checks
   const promptLimit = user?.aiProfile?.aiCreditLimits?.promptsLimit || 0;
   const promptUsed = user?.aiProfile?.aiCreditUsage?.promptsUsed || 0;
-  const planType = user?.aiProfile?.planType?.toLowerCase();
   const isPackCurieux = planType === 'curieux';
 
   const userMessageCount = messages.filter(m => m.sender === 'user').length;
@@ -246,7 +382,8 @@ export default function HomeScreen() {
   const messagesRemaining = messageLimit - userMessageCount;
 
   const isMessageLimitReached = isPackCurieux && userMessageCount >= 10;
-  const isCreditsExhausted = promptUsed >= promptLimit && promptLimit !== 999999; // 999999 is unlimited in getPlans()
+  // Trigger credit exhaustion ONLY if we have a valid limit > 0 and usage >= limit
+  const isCreditsExhausted = promptLimit > 0 && promptUsed >= promptLimit && promptLimit !== 999999;
   const isInputDisabled = isCreditsExhausted || isMessageLimitReached;
 
   useEffect(() => {
@@ -266,7 +403,7 @@ export default function HomeScreen() {
 
     // Check Pack Curieux message limit
     if (isMessageLimitReached) {
-      showModal('warning', 'Limite atteinte', 'Limite de 10 messages atteinte pour cette conversation.\nDémarrez une nouvelle conversation pour continuer.');
+      showModal('info', 'Limite atteinte', 'Limite de 10 messages atteinte pour cette conversation.\nDémarrez une nouvelle conversation pour continuer.');
       return;
     }
 
@@ -528,13 +665,13 @@ export default function HomeScreen() {
               </View>
             )}
 
-            {isCreditsExhausted && (
+            {/* {isCreditsExhausted && (
               <View className="mb-3 rounded-xl bg-red-500/20 border border-red-500/40 p-4">
                 <Text className="text-sm text-red-200 font-medium">
                   Vous avez fini vos crédits. Veuillez recharger pour continuer.
                 </Text>
               </View>
-            )}
+            )} */}
 
             {/* Message counter for Pack Curieux */}
             {isPackCurieux && !isMessageLimitReached && hasMessages && (
@@ -543,47 +680,55 @@ export default function HomeScreen() {
               </Text>
             )}
 
-            <View className="relative rounded-2xl border border-white/10 bg-slate-900 p-4">
-              <TypingPlaceholder text={placeholderText} inputValue={inputValue} />
-              <TextInput
-                value={inputValue}
-                onChangeText={setInputValue}
-                multiline
-                maxLength={500}
-                placeholderTextColor="transparent"
-                className="mb-3 max-h-[100px] min-h-[24px] text-base text-white"
-                editable={!isInputDisabled}
+            {isPaidPlanButInactive ? (
+              <PaymentBlocker
+                planId={planType}
+                onPay={handleStripePayment}
+                loading={isPaymentLoading}
               />
+            ) : (
+              <View className="relative rounded-2xl border border-white/10 bg-slate-900 p-4">
+                <TypingPlaceholder text={placeholderText} inputValue={inputValue} />
+                <TextInput
+                  value={inputValue}
+                  onChangeText={setInputValue}
+                  multiline
+                  maxLength={500}
+                  placeholderTextColor="transparent"
+                  className="mb-3 max-h-[100px] min-h-[24px] text-base text-white"
+                  editable={!isInputDisabled}
+                />
 
-              <View className="flex-row items-center justify-between">
-                <View className="flex-row gap-3">
-                  <TouchableOpacity className="rounded-lg bg-white/5 p-2">
-                    <Image size={20} color={colors.text.secondary} />
-                  </TouchableOpacity>
-                  <TouchableOpacity className="rounded-lg bg-white/5 p-2">
-                    <Paperclip size={20} color={colors.text.secondary} />
-                  </TouchableOpacity>
-                  <TouchableOpacity className="rounded-lg bg-white/5 p-2">
-                    <Mic size={20} color={colors.text.secondary} />
+                <View className="flex-row items-center justify-between">
+                  <View className="flex-row gap-3">
+                    <TouchableOpacity className="rounded-lg bg-white/5 p-2">
+                      <Image size={20} color={colors.text.secondary} />
+                    </TouchableOpacity>
+                    <TouchableOpacity className="rounded-lg bg-white/5 p-2">
+                      <Paperclip size={20} color={colors.text.secondary} />
+                    </TouchableOpacity>
+                    <TouchableOpacity className="rounded-lg bg-white/5 p-2">
+                      <Mic size={20} color={colors.text.secondary} />
+                    </TouchableOpacity>
+                  </View>
+
+                  <TouchableOpacity
+                    onPress={handleSend}
+                    disabled={!inputValue.trim() || isGenerating || isInputDisabled}
+                    className="rounded-lg p-3 shadow-lg"
+                    style={{
+                      backgroundColor: colors.primary.main,
+                      opacity: (!inputValue.trim() || isGenerating || isInputDisabled) ? 0.4 : 1,
+                    }}>
+                    {isGenerating ? (
+                      <ActivityIndicator size="small" color="#000" />
+                    ) : (
+                      <Send size={20} color={colors.text.secondary} />
+                    )}
                   </TouchableOpacity>
                 </View>
-
-                <TouchableOpacity
-                  onPress={handleSend}
-                  disabled={!inputValue.trim() || isGenerating || isInputDisabled}
-                  className="rounded-lg p-3 shadow-lg"
-                  style={{
-                    backgroundColor: colors.primary.main,
-                    opacity: (!inputValue.trim() || isGenerating || isInputDisabled) ? 0.4 : 1,
-                  }}>
-                  {isGenerating ? (
-                    <ActivityIndicator size="small" color="#000" />
-                  ) : (
-                    <Send size={20} color={colors.text.secondary} />
-                  )}
-                </TouchableOpacity>
               </View>
-            </View>
+            )}
           </View>
         </KeyboardAvoidingView>
       </SafeAreaView>
