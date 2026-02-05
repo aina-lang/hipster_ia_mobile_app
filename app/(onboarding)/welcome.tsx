@@ -1,291 +1,160 @@
-import React, { useState, useRef, useEffect } from 'react';
-import {
-  View,
-  StyleSheet,
-  Dimensions,
-  Image,
-  Text,
-  FlatList,
-  NativeSyntheticEvent,
-  NativeScrollEvent,
-} from 'react-native';
-import { router } from 'expo-router';
+import React, { useEffect } from 'react';
+import { View, StyleSheet, Dimensions, Image, Text, TouchableOpacity, Linking } from 'react-native';
+import { useRouter } from 'expo-router';
 import Animated, {
   FadeIn,
   FadeInDown,
   useSharedValue,
   useAnimatedStyle,
   withTiming,
-  interpolate,
   withRepeat,
-  withSequence,
-  SharedValue,
 } from 'react-native-reanimated';
 import { BackgroundGradient } from '../../components/ui/BackgroundGradient';
 import { NeonButton } from '../../components/ui/NeonButton';
 import { colors } from '../../theme/colors';
+import { useAuthStore } from '../../store/authStore';
+import { BackgroundGradientOnboarding } from 'components/ui/BackgroundGradientOnboarding';
 
 const { width, height } = Dimensions.get('window');
 
-const SLIDES = [
-  {
-    id: '1',
-    title: 'Propulsez votre créativité',
-    subtitle: 'Hipster IA transforme vos idées en contenus spectaculaires en quelques secondes.',
-    image: require('../../assets/logo.png'),
-  },
-  {
-    id: '2',
-    title: 'Une IA à votre image',
-    subtitle:
-      'Personnalisez votre assistant pour obtenir des résultats parfaitement adaptés à votre style.',
-    image: require('../../assets/logo.png'),
-  },
-  {
-    id: '3',
-    title: 'Prêt pour le futur ?',
-    subtitle: 'Rejoignez des milliers de créateurs qui utilisent déjà nos outils de pointe.',
-    image: require('../../assets/logo.png'),
-  },
-];
-
 export default function WelcomeScreen() {
-  const scrollX = useSharedValue(0);
-  const flatListRef = useRef<FlatList>(null);
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const router = useRouter();
+  const { isAuthenticated, finishOnboarding } = useAuthStore();
 
-  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    scrollX.value = event.nativeEvent.contentOffset.x;
-    const index = Math.round(event.nativeEvent.contentOffset.x / width);
-    if (index !== currentIndex) {
-      setCurrentIndex(index);
-    }
+  const handleStart = async () => {
+    router.push('/(onboarding)/packs');
   };
 
-  const handleNext = () => {
-    if (currentIndex < SLIDES.length - 1) {
-      flatListRef.current?.scrollToIndex({ index: currentIndex + 1 });
-    } else {
-      router.push('/(auth)/register');
-    }
+  const handleContact = () => {
+    Linking.openURL('mailto:contact@hipster-ia.fr').catch((err) =>
+      console.error("Couldn't open mail client", err)
+    );
   };
 
-  // Shared values for the deer animation
-  const deerScale = useSharedValue(1);
-  const deerTranslateY = useSharedValue(0);
+  // Shared values for the logo animation
+  const logoScale = useSharedValue(1);
+  const logoTranslateY = useSharedValue(0);
 
   useEffect(() => {
-    deerScale.value = withRepeat(withTiming(1.05, { duration: 3000 }), -1, true);
-
-    deerTranslateY.value = withRepeat(withTiming(-10, { duration: 3500 }), -1, true);
+    logoScale.value = withRepeat(withTiming(1.05, { duration: 3000 }), -1, true);
+    logoTranslateY.value = withRepeat(withTiming(-10, { duration: 3500 }), -1, true);
   }, []);
 
-  const cerfStyle = useAnimatedStyle(() => {
-    // Show deer specifically towards the end of the swiper
-    // Cross-fade based on scrollX
-    const opacity = interpolate(
-      scrollX.value,
-      [width * (SLIDES.length - 2), width * (SLIDES.length - 1)],
-      [0, 1],
-      'clamp'
-    );
-
+  const animatedLogoStyle = useAnimatedStyle(() => {
     return {
-      opacity,
-      transform: [{ scale: deerScale.value }, { translateY: deerTranslateY.value }],
+      transform: [{ scale: logoScale.value }, { translateY: logoTranslateY.value }],
     };
   });
 
   return (
-    <BackgroundGradient>
+    <BackgroundGradientOnboarding>
       <View style={styles.container}>
-        <FlatList
-          ref={flatListRef}
-          data={SLIDES}
-          horizontal
-          pagingEnabled
-          showsHorizontalScrollIndicator={false}
-          onScroll={handleScroll}
-          scrollEventThrottle={16}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item, index }) => {
-            return <Slide item={item} index={index} scrollX={scrollX} />;
-          }}
-        />
-
-        {/* Pagination Dots */}
-        <View style={styles.pagination}>
-          {SLIDES.map((_, index) => (
-            <View
-              key={index}
-              style={[styles.dot, currentIndex === index ? styles.activeDot : styles.inactiveDot]}
-            />
-          ))}
+        <View style={styles.content}>
+          <Animated.View
+            className={'top-[480]'}
+            entering={FadeInDown.delay(300).duration(800)}
+            style={styles.textContainer}>
+            <Text style={styles.title}>Bienvenue sur Hipster IA</Text>
+            <Text style={styles.subtitle}>
+              Profitez de notre intelligence artificielle pour votre communication
+            </Text>
+          </Animated.View>
         </View>
 
-        {/* CTA Button */}
-        <View style={styles.buttonContainer}>
-          <NeonButton
-            title={currentIndex === SLIDES.length - 1 ? 'Commencer' : 'Continuer'}
-            onPress={handleNext}
-            size="lg"
-            variant="premium"
-            style={styles.button}
-          />
+        <View style={styles.footerContainer}>
+          <Animated.View entering={FadeInDown.delay(600).duration(800)}>
+            <NeonButton
+              title="Commencer maintenant"
+              onPress={handleStart}
+              size="lg"
+              variant="premium"
+              style={styles.button}
+            />
+          </Animated.View>
+
+          <Animated.View entering={FadeInDown.delay(900).duration(800)}>
+            <View style={styles.secondaryLinks}>
+              <TouchableOpacity onPress={() => router.push('/(auth)/login')} style={styles.loginLink}>
+                <Text style={styles.loginText}>Déjà un compte ? <Text style={styles.loginHighlight}>Se connecter</Text></Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity onPress={handleContact} style={styles.contactLink}>
+                <Text style={styles.contactText}>Besoin d'aide ?</Text>
+              </TouchableOpacity>
+            </View>
+          </Animated.View>
         </View>
       </View>
-    </BackgroundGradient>
-  );
-}
-
-function Slide({
-  item,
-  index,
-  scrollX,
-}: {
-  item: any;
-  index: number;
-  scrollX: SharedValue<number>;
-}) {
-  const pulseScale = useSharedValue(1);
-
-  useEffect(() => {
-    pulseScale.value = withRepeat(withTiming(1.04, { duration: 2500 }), -1, true);
-  }, []);
-
-  const animatedImageStyle = useAnimatedStyle(() => {
-    const inputRatio = index * width;
-    const opacity = interpolate(
-      scrollX.value,
-      [inputRatio - width, inputRatio, inputRatio + width],
-      [0, 1, 0]
-    );
-    const scrollScale = interpolate(
-      scrollX.value,
-      [inputRatio - width, inputRatio, inputRatio + width],
-      [0.8, 1, 0.8]
-    );
-    const translateX = interpolate(
-      scrollX.value,
-      [inputRatio - width, inputRatio, inputRatio + width],
-      [width * 0.2, 0, -width * 0.2]
-    );
-
-    return {
-      opacity,
-      transform: [{ scale: scrollScale * pulseScale.value }, { translateX }],
-    };
-  });
-
-  const animatedTextStyle = useAnimatedStyle(() => {
-    const inputRatio = index * width;
-    const opacity = interpolate(
-      scrollX.value,
-      [inputRatio - width, inputRatio, inputRatio + width],
-      [0, 1, 0]
-    );
-    const translateY = interpolate(
-      scrollX.value,
-      [inputRatio - width, inputRatio, inputRatio + width],
-      [20, 0, 20]
-    );
-
-    return {
-      opacity,
-      transform: [{ translateY }],
-    };
-  });
-
-  return (
-    <View style={styles.slide}>
-      <Animated.View style={[styles.imageContainer, animatedImageStyle]}>
-        <Image source={item.image} style={styles.image} resizeMode="cover" />
-      </Animated.View>
-
-      <Animated.View style={[styles.content, animatedTextStyle]}>
-        <Text style={styles.title}>{item.title}</Text>
-        <Text style={styles.subtitle}>{item.subtitle}</Text>
-      </Animated.View>
-    </View>
+    </BackgroundGradientOnboarding>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  cerf: {
-    position: 'absolute',
-    width: width * 0.8,
-    height: width * 0.8,
-    top: height * 0.1,
-    left: width * 0.1,
-    zIndex: 0,
-    opacity: 0,
-  },
-  fullImage: {
-    width: '100%',
-    height: '100%',
-  },
-  slide: {
-    width,
-    alignItems: 'center',
     paddingHorizontal: 32,
-    zIndex: 1,
+    justifyContent: 'space-between',
+    paddingTop: height * 0.1,
+    paddingBottom: 50,
+  },
+  content: {
+    alignItems: 'center',
   },
   imageContainer: {
-    width: width * 0.7,
-    height: height * 0.5,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 60,
+    width: width * 0.6,
+    height: width * 0.6,
+    marginBottom: 40,
   },
   image: {
     width: '100%',
     height: '100%',
-    borderRadius: 24,
   },
-  content: {
+  textContainer: {
     alignItems: 'center',
-    marginTop: 20,
   },
   title: {
     fontSize: 28,
-    fontWeight: '700',
+    fontWeight: '800',
     color: colors.text.primary,
     textAlign: 'center',
-    marginBottom: 12,
-    letterSpacing: -0.5,
+    marginBottom: 16,
+    letterSpacing: -1,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 18,
     color: colors.text.secondary,
     textAlign: 'center',
-    lineHeight: 22,
+    lineHeight: 26,
+    paddingHorizontal: 10,
   },
-  pagination: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginBottom: 40,
-  },
-  dot: {
-    height: 8,
-    borderRadius: 4,
-    marginHorizontal: 4,
-  },
-  activeDot: {
-    width: 24,
-    backgroundColor: colors.primary.main,
-  },
-  inactiveDot: {
-    width: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-  },
-  buttonContainer: {
-    paddingHorizontal: 32,
-    marginBottom: 60,
+  footerContainer: {
+    width: '100%',
+    gap: 24,
   },
   button: {
     width: '100%',
   },
+  contactLink: {
+    alignItems: 'center',
+    paddingVertical: 5,
+  },
+  contactText: {
+    color: 'rgba(255, 255, 255, 0.4)',
+    fontSize: 12,
+  },
+  secondaryLinks: {
+    alignItems: 'center',
+    gap: 12
+  },
+  loginLink: {
+    paddingVertical: 5
+  },
+  loginText: {
+    color: colors.text.secondary,
+    fontSize: 14
+  },
+  loginHighlight: {
+ 
+    fontWeight: "700"
+  }
 });

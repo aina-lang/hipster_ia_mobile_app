@@ -1,30 +1,28 @@
 import { create } from 'zustand';
 
-export type JobType = 
+export type JobType =
+  | 'Coiffeur'
+  | 'Restaurant'
+  | 'Boutique'
+  | 'Créateur'
   | 'Artisan'
-  | 'Coiffeur / Barber' 
-  | 'Restaurant / Snack' 
-  | 'Boutique' 
-  | 'Agent Immobilier' 
-  | 'Coach / Consultant'
-  | 'E-commerce'
-  | 'Créateur de contenu'
-  | 'Service local' 
+  | 'Service local'
+  | 'Autre'
   | (string & {});
 
-export type ContextType = 
-  | 'Noël' 
-  | 'Saint-Valentin' 
-  | 'Octobre Rose' 
-  | 'Soldes' 
-  | 'Été' 
-  | 'Hiver' 
+export type ContextType =
+  | 'Noël'
+  | 'Saint-Valentin'
+  | 'Octobre Rose'
+  | 'Soldes'
+  | 'Été'
+  | 'Hiver'
   | 'Lancement'
   | 'Anniversaire'
   | 'Promotion'
   | 'Recrutement'
-  | 'Autre' 
-  | (string & {}) 
+  | 'Autre'
+  | (string & {})
   | null;
 
 export type CreationCategory = 'Texte' | 'Image' | 'Document' | 'Social';
@@ -38,10 +36,10 @@ interface CreationState {
   selectedTone: string | null;
   selectedTarget: string | null;
   workflowAnswers: Record<string, string>;
-  
+
   // Input state
   userQuery: string;
-  
+
   // Actions
   setJob: (job: JobType) => void;
   setFunction: (fn: string, category: CreationCategory) => void;
@@ -68,18 +66,19 @@ export const useCreationStore = create<CreationState>((set) => ({
   setContext: (context) => set({ selectedContext: context }),
   setTone: (tone) => set({ selectedTone: tone }),
   setTarget: (target) => set({ selectedTarget: target }),
-  setWorkflowAnswer: (key, value) => 
+  setWorkflowAnswer: (key, value) =>
     set((state) => ({ workflowAnswers: { ...state.workflowAnswers, [key]: value } })),
   setQuery: (query) => set({ userQuery: query }),
-  
-  reset: () => set({
-    selectedJob: null,
-    selectedFunction: null,
-    selectedCategory: null,
-    selectedContext: null,
-    selectedTone: null,
-    selectedTarget: null,
-    workflowAnswers: {},
-    userQuery: '',
-  }),
+
+  reset: () =>
+    set({
+      selectedJob: null,
+      selectedFunction: null,
+      selectedCategory: null,
+      selectedContext: null,
+      selectedTone: null,
+      selectedTarget: null,
+      workflowAnswers: {},
+      userQuery: '',
+    }),
 }));

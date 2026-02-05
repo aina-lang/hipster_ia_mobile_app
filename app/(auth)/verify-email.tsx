@@ -17,6 +17,7 @@ import { NeonButton } from '../../components/ui/NeonButton';
 import { colors } from '../../theme/colors';
 import { api } from '../../api/client';
 import { useAuthStore } from '../../store/authStore';
+import { useOnboardingStore } from '../../store/onboardingStore';
 
 export default function VerifyEmailScreen() {
   const { email } = useLocalSearchParams<{ email: string }>();
@@ -25,7 +26,13 @@ export default function VerifyEmailScreen() {
   const [isResending, setIsResending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { aiVerifyEmail } = useAuthStore();
+  const { aiVerifyEmail, updateAiProfile, uploadAvatar, uploadLogo } = useAuthStore();
+
+  // Onboarding data
+  const {
+    profileType, companyName, job, selectedPlan,
+    brandingColor, logoUri, avatarUri, reset: resetOnboarding
+  } = useOnboardingStore();
 
   const handleVerify = async () => {
     if (!code || code.length < 4) {
@@ -36,6 +43,7 @@ export default function VerifyEmailScreen() {
     setIsLoading(true);
     setError(null);
     try {
+      // 1. Verify Email (Logs user in)
       await aiVerifyEmail(email as string, code);
       // Auto redirect to onboarding (profil entreprise direct)
       router.push('/(onboarding)/age');

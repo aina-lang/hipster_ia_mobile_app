@@ -6,6 +6,7 @@ import {
   ViewStyle,
   TextStyle,
   ActivityIndicator,
+  View,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { LucideIcon } from 'lucide-react-native';
@@ -50,13 +51,12 @@ export function NeonButton({
   const scale = useSharedValue(1);
   const pulseScale = useSharedValue(1);
 
-  // Pulse animation (if enabled)
   React.useEffect(() => {
     if (pulse) {
       pulseScale.value = withRepeat(
         withSequence(withTiming(1.05, { duration: 1000 }), withTiming(1, { duration: 1000 })),
         -1,
-        false
+        true
       );
     }
   }, [pulse]);
@@ -74,16 +74,12 @@ export function NeonButton({
   };
 
   const gradientColors =
-    variant === 'primary'
-      ? colors.gradient.primary
-      : variant === 'premium'
-        ? colors.gradient.premiumButton
-        : ['transparent', 'transparent'];
+    variant === 'primary' ? colors.gradient.primary : ['transparent', 'transparent'];
 
   const sizeStyles = {
-    sm: { height: 40, paddingHorizontal: 16 },
-    md: { height: 56, paddingHorizontal: 24 },
-    lg: { height: 64, paddingHorizontal: 32 },
+    sm: { height: 40, paddingHorizontal: 12 },
+    md: { height: 56, paddingHorizontal: 16 },
+    lg: { height: 64, paddingHorizontal: 20 },
   };
 
   const textSizes = {
@@ -95,6 +91,50 @@ export function NeonButton({
   const IconComponent = typeof icon === 'function' ? icon : null;
   const iconElement = React.isValidElement(icon) ? icon : null;
 
+  const buttonStyles = [
+    styles.button,
+    sizeStyles[size],
+    variant === 'primary' && styles.primaryBorder,
+    variant === 'outline' && styles.outline,
+    variant === 'ghost' && styles.ghost,
+    variant === 'primary' && shadows.neonGlow,
+    variant === 'premium' && styles.premiumBorder,
+    disabled && styles.disabled,
+  ];
+
+  const renderContent = () => (
+    <>
+      {loading ? (
+        <ActivityIndicator color={colors.text.primary} />
+      ) : (
+        <>
+          <Text
+            style={[
+              styles.text,
+              { fontSize: textSizes[size] },
+              variant === 'outline' && styles.outlineText,
+              variant === 'ghost' && styles.ghostText,
+              textStyle,
+            ]}>
+            {title}
+          </Text>
+          {IconComponent && (
+            <IconComponent
+              size={textSizes[size] + 2}
+              color={
+                variant === 'outline' || variant === 'ghost'
+                  ? colors.neon.primary
+                  : colors.text.primary
+              }
+              style={styles.icon}
+            />
+          )}
+          {iconElement}
+        </>
+      )}
+    </>
+  );
+
   return (
     <AnimatedTouchable
       onPress={onPress}
@@ -103,61 +143,63 @@ export function NeonButton({
       disabled={disabled || loading}
       style={[animatedStyle, style]}
       activeOpacity={0.8}>
-      <LinearGradient
-        colors={gradientColors as any}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={[
-          styles.button,
-          sizeStyles[size],
-          variant === 'primary' && styles.primaryBorder,
-          variant === 'outline' && styles.outline,
-          variant === 'ghost' && styles.ghost,
-          variant === 'primary' && shadows.neonGlow,
-          variant === 'premium' && styles.premiumBorder,
-          disabled && styles.disabled,
-        ]}>
-        {loading ? (
-          <ActivityIndicator color={colors.text.primary} />
-        ) : (
-          <>
-            <Text
-              style={[
-                styles.text,
-                { fontSize: textSizes[size] },
-                variant === 'outline' && styles.outlineText,
-                variant === 'ghost' && styles.ghostText,
-                textStyle,
-              ]}>
-              {title}
-            </Text>
-            {IconComponent && (
-              <IconComponent
-                size={textSizes[size] + 2}
-                color={
-                  variant === 'outline' || variant === 'ghost'
-                    ? colors.neon.primary
-                    : colors.text.primary
-                }
-                style={styles.icon}
-              />
-            )}
-            {iconElement}
-          </>
-        )}
-      </LinearGradient>
+      {variant === 'premium' ? (
+        <View style={[buttonStyles, { overflow: 'hidden', position: 'relative' }]}>
+          {/* Cercle radial blanc au bas centre */}
+          <View
+            style={{
+              position: 'absolute',
+              bottom: -110,
+
+              width: 180,
+              height: 120,
+              borderRadius: 100,
+              backgroundColor: 'rgba(255,255,255,0.005)',
+              shadowColor: '#ffffff',
+
+              shadowOffset: {
+                width: 0,
+                height: 18,
+              },
+              shadowOpacity: 1,
+              shadowRadius: 0,
+
+              elevation: 20,
+            }}
+          />
+          <LinearGradient
+            colors={['rgba(255,255,255,0.1)', colors.background.premium,]}
+            start={{ x: 1, y: 0 }} // droite
+            end={{ x: 0, y: 0 }}   // gauche
+            style={{ ...StyleSheet.absoluteFillObject }}
+          />
+
+
+          {/* Contenu par-dessus */}
+          <View style={{ zIndex: 10, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            {renderContent()}
+          </View>
+        </View>
+      ) : (
+        <LinearGradient
+          colors={gradientColors as any}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={buttonStyles}>
+          {renderContent()}
+        </LinearGradient>
+      )}
     </AnimatedTouchable>
   );
 }
 
 const styles = StyleSheet.create({
   button: {
-    borderRadius: 15, // Pill shape
+    borderRadius: 15,
     justifyContent: 'center',
     alignItems: 'center',
     flexDirection: 'row',
     gap: 10,
-    backgroundColor: '#000000', // Default black background for all neon buttons
   },
   text: {
     color: colors.text.primary,
@@ -180,19 +222,15 @@ const styles = StyleSheet.create({
     color: colors.neon.primary,
   },
   ghost: {
-    backgroundColor: 'rgba(44, 70, 155, 0.1)', // #2c469b with opacity
+    backgroundColor: 'rgba(44, 70, 155, 0.1)',
   },
   ghostText: {
     color: colors.neon.primary,
   },
   premiumBorder: {
     borderWidth: 1.5,
-    borderColor: 'rgba(44, 70, 155, 0.5)',
-    shadowColor: colors.neon.primary,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.4,
-    shadowRadius: 10,
-    elevation: 8,
+    borderColor: colors.background.secondary,
+    backgroundColor: colors.background.secondary,
   },
   disabled: {
     opacity: 0.5,

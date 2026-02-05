@@ -25,7 +25,8 @@ export function BackgroundGradient({ children }: BackgroundGradientProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background.primary,
+    
+    // backgroundColor: colors.background.primary,
   },
   image: {
     position: 'absolute',

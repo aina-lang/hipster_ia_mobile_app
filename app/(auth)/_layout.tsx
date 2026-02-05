@@ -3,11 +3,11 @@ import { View, StyleSheet, ImageBackground } from 'react-native';
 import '../../global.css';
 
 export default function AuthLayout() {
-  return (
-    <ImageBackground
-      source={require('../../assets/bg.jpg')}
+
+ return (
+    <View
       style={styles.container}
-      resizeMode="cover">
+   >
       <View style={[StyleSheet.absoluteFillObject, styles.overlay]} />
       <Stack
         screenOptions={{
@@ -16,15 +16,17 @@ export default function AuthLayout() {
           contentStyle: { backgroundColor: 'transparent' },
         }}
       />
-    </ImageBackground>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor:"#11111a"
   },
   overlay: {
-    backgroundColor: 'rgba(0, 0, 0, 0.5)', // Slightly darker overlay for forms
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
   },
 });
+

@@ -50,7 +50,7 @@ export const SelectionCard: React.FC<SelectionCardProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    backgroundColor: 'rgba(15,23,42,0.9)',
     borderRadius: 16,
     padding: 16,
     marginBottom: 12,
@@ -87,7 +87,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   selectedContainer: {
-    backgroundColor: colors.primary.main + '4D', // 30% opacity
+    backgroundColor: 'rgba(15,23,42,1)', // Fully opaque or same as card
     borderColor: colors.primary.main,
     borderWidth: 2,
     // stronger elevation when selected

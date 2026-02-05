@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, Dimensions } from 'react-native';
+import { BlurView } from 'expo-blur';
 import Animated, {
   FadeIn,
   FadeOut,
@@ -145,6 +146,7 @@ export const GenericModal: React.FC<GenericModalProps> = ({
           entering={FadeIn.duration(200)}
           exiting={FadeOut.duration(200)}
           style={styles.backdrop}>
+          <BlurView intensity={90} tint="dark" style={StyleSheet.absoluteFill} />
           <TouchableOpacity
             style={StyleSheet.absoluteFill}
             onPress={type !== 'loading' ? onClose : undefined}
@@ -215,7 +217,6 @@ const styles = StyleSheet.create({
   },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
   },
   container: {
     width: width * 0.85,

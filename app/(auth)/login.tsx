@@ -12,7 +12,7 @@ import {
 import { router } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Eye, EyeOff, AlertCircle } from 'lucide-react-native';
-import { BackgroundGradient } from '../../components/ui/BackgroundGradient';
+import { BackgroundGradientOnboarding } from '../../components/ui/BackgroundGradientOnboarding';
 import { NeonButton } from '../../components/ui/NeonButton';
 import { GenericModal } from '../../components/ui/GenericModal';
 import { colors } from '../../theme/colors';
@@ -79,7 +79,7 @@ export default function LoginScreen() {
   };
 
   return (
-    <BackgroundGradient>
+    <BackgroundGradientOnboarding blurIntensity={90}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.container}>
@@ -146,7 +146,7 @@ export default function LoginScreen() {
 
             <View style={styles.footer}>
               <Text style={styles.footerText}>Pas encore de compte ? </Text>
-              <TouchableOpacity onPress={() => router.push('/(auth)/register')}>
+              <TouchableOpacity onPress={() => router.push('/(onboarding)/packs')}>
                 <Text style={styles.footerLink}>S'inscrire</Text>
               </TouchableOpacity>
             </View>
@@ -161,7 +161,7 @@ export default function LoginScreen() {
           onClose={() => setModalVisible(false)}
         />
       </KeyboardAvoidingView>
-    </BackgroundGradient>
+    </BackgroundGradientOnboarding>
   );
 }
 
@@ -172,7 +172,7 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    justifyContent: 'center',
+    paddingTop: 80,
   },
   title: {
     fontSize: 32,
@@ -214,7 +214,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   input: {
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    backgroundColor: 'rgba(15,23,42,0.9)',
     borderRadius: 12,
     padding: 16,
     color: colors.text.primary,
