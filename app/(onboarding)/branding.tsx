@@ -10,13 +10,14 @@ import { StepIndicator } from '../../components/ui/StepIndicator';
 import { NeonButton } from '../../components/ui/NeonButton';
 import { colors } from '../../theme/colors';
 import { useOnboardingStore } from '../../store/onboardingStore';
-// import { runOnJS, scheduleOnRN } from 'react-native-worklets'; // Removed as runOnJS from Reanimated is preferred for this use case
+import { useAuthStore } from '../../store/authStore';
 
 export default function BrandingScreen() {
     const router = useRouter();
+    const { finishOnboarding } = useAuthStore();
     const {
         brandingColor, setBrandingData,
-        logoUri, avatarUri, profileType
+        logoUri, avatarUri
     } = useOnboardingStore();
 
     const [selectedColor, setSelectedColor] = useState(brandingColor || '#FF0000');
@@ -43,13 +44,14 @@ export default function BrandingScreen() {
         }
     };
 
-    const handleNext = () => {
+    const handleNext = async () => {
         setBrandingData({
             brandingColor: selectedColor,
             logoUri: localLogo,
             avatarUri: localAvatar
         });
-        router.push('/(auth)/register');
+        await finishOnboarding();
+        router.replace('/(drawer)');
     };
 
     const onColorChange = ({ hex }: { hex: string }) => {
@@ -59,7 +61,7 @@ export default function BrandingScreen() {
 
     return (
         <BackgroundGradientOnboarding blurIntensity={90}>
-            <StepIndicator currentStep={2} totalSteps={3} />
+            <StepIndicator currentStep={4} totalSteps={4} />
 
             <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
                 <View style={styles.container}>
@@ -99,11 +101,11 @@ export default function BrandingScreen() {
                             </View>
                         </View>
 
-                        {/* Avatar */}
+                        {/* Avatar / Logo */}
                         <View style={styles.section}>
                             <View style={styles.sectionHeader}>
                                 <User size={16} color={colors.text.secondary} />
-                                <Text style={styles.sectionTitleText}>Votre Avatar</Text>
+                                <Text style={styles.sectionTitleText}>Avatar / Logo</Text>
                             </View>
                             <TouchableOpacity style={styles.uploadBox} onPress={() => pickImage('avatar')}>
                                 {localAvatar ? (
@@ -111,31 +113,11 @@ export default function BrandingScreen() {
                                 ) : (
                                     <View style={styles.uploadPlaceholder}>
                                         <Upload size={24} color={colors.text.muted} />
-                                        <Text style={styles.uploadText}>Choisir une photo</Text>
+                                        <Text style={styles.uploadText}>Choisir une image</Text>
                                     </View>
                                 )}
                             </TouchableOpacity>
                         </View>
-
-                        {/* Logo */}
-                        {profileType === 'entreprise' && (
-                            <View style={styles.section}>
-                                <View style={styles.sectionHeader}>
-                                    <Upload size={16} color={colors.text.secondary} />
-                                    <Text style={styles.sectionTitleText}>Logo de l'entreprise</Text>
-                                </View>
-                                <TouchableOpacity style={styles.uploadBox} onPress={() => pickImage('logo')}>
-                                    {localLogo ? (
-                                        <Image source={{ uri: localLogo }} style={styles.uploadedImage} />
-                                    ) : (
-                                        <View style={styles.uploadPlaceholder}>
-                                            <Upload size={24} color={colors.text.muted} />
-                                            <Text style={styles.uploadText}>Choisir un logo</Text>
-                                        </View>
-                                    )}
-                                </TouchableOpacity>
-                            </View>
-                        )}
 
                     </Animated.View>
                 </View>

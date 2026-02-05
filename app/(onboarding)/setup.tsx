@@ -47,7 +47,7 @@ export default function SetupScreen() {
 
   return (
     <BackgroundGradientOnboarding blurIntensity={90}>
-      <StepIndicator currentStep={1} totalSteps={3} />
+      <StepIndicator currentStep={3} totalSteps={4} />
 
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>

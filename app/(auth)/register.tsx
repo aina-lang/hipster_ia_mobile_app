@@ -19,14 +19,15 @@ import { GenericModal } from '../../components/ui/GenericModal';
 import { colors } from '../../theme/colors';
 import { useAuthStore } from '../../store/authStore';
 import { useOnboardingStore } from '../../store/onboardingStore';
+import { api } from '../../api/client';
 
 export default function RegisterScreen() {
   // Pull data from onboarding store
-  const {
-    lastName: storeLast,
-    job, selectedPlan,
-    brandingColor, logoUri, avatarUri
-  } = useOnboardingStore();
+  // Pull data from onboarding store
+  // We collect credentials here, but plan comes from previous step
+  const { selectedPlan } = useOnboardingStore();
+
+  const [fullName, setFullName] = useState('');
 
   // const [lastName, setLastName] = useState(storeLast || '');
   // const [firstName, setFirstName] = useState(storeFirst || '');
@@ -53,7 +54,7 @@ export default function RegisterScreen() {
   };
 
   const handleRegister = async () => {
-    if (!email || !password || !confirmPassword) {
+    if (!email || !password || !confirmPassword || !fullName) {
       showModal('warning', 'Champs manquants', 'Veuillez remplir tous les champs.');
       return;
     }
@@ -67,61 +68,37 @@ export default function RegisterScreen() {
     showModal('loading', 'Création du compte...', 'Veuillez patienter');
 
     try {
-      // 1. Register User
-      const registerRes = await aiRegister({
-        lastName: storeLast || 'User', // Use collected name from store
+      // 1. Register User with Plan
+      const response = await aiRegister({
+        firstName: '',
+        lastName: fullName,
         email,
-        password
+        password,
+        planId: selectedPlan || 'curieux'
       });
 
-      // 2. We need the user to be logged in/token set, which aiRegister usually does or returns token.
-      // Store logic: aiRegister sets isLoading=false but does NOT automatically log them in usually?
-      // Based on authStore, aiRegister returns data but doesn't set global user state with token unless we verify email first?
-      // Wait, aiRegister is just POST /ai/auth/register. It typically returns { message: '...' } or prompts verification.
+      // Handle both wrapped and unwrapped response formats
+      const registerRes = response?.data ?? response;
 
-      // IF backend requires verification first, we cannot update profile yet because we don't have a token/user ID context 
-      // UNLESS the registration response returns a temp token or we do it after email verification.
-
-      // Assumption: User needs to verify email.
-      // We will clear the onboarding Store OR keep it until verification matches.
-      // HOWEVER, the user asked for this flow.
-
-      // Strategy: 
-      // A. If `aiRegister` keeps us logged out: We redirect to VerifyEmail. 
-      //    We should save the profile attributes to be updated AFTER verification (part of onboardingStore persistence).
-      //    This means `verify-email` screen needs to handle "Post-Verification Setup".
-
-      // B. If `aiRegister` logs us in (some devs do this for UX):
-      //    We can update immediately.
-
-      // Checking authStore: aiRegister just returns data. It does NOT set user/token.
-
-      // OK. We must redirect to Verify Email.
-      // BUT, we have `firstName`, `companyName`, `job`, `brandingColor`, etc. pending.
-      // Ideally these should have been sent in `aiRegister` payload effectively creating the profile with them.
-      // But `aiRegister` payload in store is limited.
-
-      // Workaround: We proceed to Verify Email. After "Verify", we are logged in. 
-      // Then we check `onboardingStore`. If data exists, we run the `finalizeSetup` logic.
-      // The user is redirected to `(onboarding)/ready` or similar?
-      // Or we assume `aiRegister` is updated to accept these fields? 
-      // I will stick to the plan: Register -> Verify -> Then Update?
-      // The "Ready" screen is typically after setup.
-
-      // Let's modify the flow:
-      // Register success -> Redirect to Verify Email.
-      // Verify Email success -> Redirect to a new "Finalizing..." screen or handle it in `verify-email.tsx`.
+      // 2. CHECK FOR PAYMENT
+      // 2. FORWARD TO VERIFY EMAIL (Pass Stripe Data if any)
+      // We do NOT show payment sheet here anymore. We wait for OTP verification first.
 
       showModal('success', 'Compte créé !', 'Vérifiez votre email pour activer votre compte.');
 
       setTimeout(() => {
         setModalVisible(false);
-        // First verify email, then choose subscription plan
         router.push({
           pathname: '/(auth)/verify-email',
-          params: { email, redirectTo: 'subscription' },
+          params: {
+            email,
+            // No Stripe data yet, handled after setup
+            userId: registerRes.userId,
+            planId: selectedPlan
+          },
         });
       }, 1500);
+
 
     } catch (e: any) {
       setLocalLoading(false);
@@ -132,7 +109,7 @@ export default function RegisterScreen() {
 
   return (
     <BackgroundGradientOnboarding blurIntensity={90}>
-      <StepIndicator currentStep={3} totalSteps={3} />
+      <StepIndicator currentStep={1} totalSteps={4} />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.container}>
@@ -142,7 +119,19 @@ export default function RegisterScreen() {
             <Text style={styles.subtitle}>Finalisez votre inscription pour accéder à Hipster IA.</Text>
 
             <View style={styles.form}>
-              {/* Name fields are collected in Step 1 */}
+              <View style={styles.inputContainer}>
+                <Text style={styles.label}>Nom / Nom d'entreprise</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Jean Dupont ou Ma Société SARL"
+                  placeholderTextColor={colors.text.muted}
+                  value={fullName}
+                  onChangeText={(text) => {
+                    setFullName(text);
+                    if (error) clearError();
+                  }}
+                />
+              </View>
 
               <View style={styles.inputContainer}>
                 <Text style={styles.label}>Email</Text>

@@ -25,6 +25,7 @@ import {
 } from 'lucide-react-native';
 import { BackgroundGradientOnboarding } from '../../components/ui/BackgroundGradientOnboarding';
 import { NeonButton } from '../../components/ui/NeonButton';
+import { StepIndicator } from '../../components/ui/StepIndicator';
 
 const { height } = Dimensions.get('window');
 
@@ -127,8 +128,8 @@ export default function PacksScreen() {
   const { selectedPlan, setPlan } = useOnboardingStore();
 
   const handleContinue = () => {
-    // Navigate to step 1 of personalization wizard
-    router.push('/(onboarding)/setup');
+    // Navigate to registration
+    router.push('/(auth)/register');
   };
 
   return (
@@ -230,7 +231,7 @@ export default function PacksScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: height * 0.08,
+    paddingTop: 0,
   },
   header: {
     alignItems: 'center',

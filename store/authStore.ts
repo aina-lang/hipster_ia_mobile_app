@@ -91,7 +91,7 @@ interface AuthState {
   login: (credentials: any) => Promise<void>;
   aiLogin: (credentials: any) => Promise<void>;
   register: (data: any) => Promise<void>;
-  aiRegister: (data: any) => Promise<void>;
+  aiRegister: (data: any) => Promise<any>;
   aiVerifyEmail: (email: string, code: string) => Promise<void>;
   logout: () => Promise<void>;
   clearError: () => void;
@@ -131,19 +131,17 @@ export const useAuthStore = create<AuthState>()(
               isSetupComplete: true,
             });
             set({
-              hasFinishedOnboarding: true,
               user: {
                 ...currentUser,
                 aiProfile: { ...currentUser.aiProfile, isSetupComplete: true },
               },
             });
-          } else {
-            set({ hasFinishedOnboarding: true });
           }
-          set({ isLoading: false });
         } catch (error: any) {
-          console.error('[AuthStore] Failed to finish onboarding:', error);
-          set({ hasFinishedOnboarding: true, isLoading: false }); // Fallback to local state if API fails
+          console.error('[AuthStore] Failed to update backend onboarding status:', error);
+          // We continue to set hasFinishedOnboarding true locally
+        } finally {
+          set({ hasFinishedOnboarding: true, isLoading: false });
         }
       },
 

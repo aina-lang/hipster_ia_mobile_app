@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   StyleSheet,
@@ -8,25 +8,69 @@ import {
   Platform,
   Alert,
   TouchableOpacity,
+  BackHandler,
 } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams, useNavigation } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { ShieldCheck, AlertCircle } from 'lucide-react-native';
+// Stripe logic delayed to subscription step
 import { BackgroundGradient } from '../../components/ui/BackgroundGradient';
 import { NeonButton } from '../../components/ui/NeonButton';
+import { StepIndicator } from '../../components/ui/StepIndicator';
 import { colors } from '../../theme/colors';
 import { api } from '../../api/client';
 import { useAuthStore } from '../../store/authStore';
 import { useOnboardingStore } from '../../store/onboardingStore';
 
 export default function VerifyEmailScreen() {
-  const { email, redirectTo } = useLocalSearchParams<{ email: string; redirectTo?: string }>();
+  const { email, redirectTo, stripeData, planId, userId } = useLocalSearchParams<{
+    email: string;
+    redirectTo?: string;
+    stripeData?: string;
+    planId?: string;
+    userId?: string;
+  }>();
   const [code, setCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const { aiVerifyEmail } = useAuthStore();
+  const navigation = useNavigation();
+  const allowNavRef = useRef(false);
+
+  // 1. Block back navigation on Android hardware button
+  useEffect(() => {
+    const onBackPress = () => {
+      if (!allowNavRef.current) {
+        Alert.alert(
+          'Action interdite',
+          'Veuillez vérifier votre email pour continuer.',
+          [{ text: 'OK', style: 'cancel' }]
+        );
+        return true; // Block event
+      }
+      return false; // Allow event
+    };
+
+    BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => BackHandler.removeEventListener('hardwareBackPress', onBackPress);
+  }, []);
+
+  // 2. Block back navigation from UI (swipe, button, etc.)
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('beforeRemove', (e) => {
+      if (allowNavRef.current) return;
+
+      e.preventDefault();
+      Alert.alert(
+        'Action interdite',
+        'Veuillez vérifier votre email pour continuer.',
+        [{ text: 'OK', style: 'cancel' }]
+      );
+    });
+    return unsubscribe;
+  }, [navigation]);
 
   const handleVerify = async () => {
     if (!code || code.length < 4) {
@@ -40,12 +84,17 @@ export default function VerifyEmailScreen() {
       // 1. Verify Email (Logs user in)
       await aiVerifyEmail(email as string, code);
 
+      // Allow navigation after success
+      allowNavRef.current = true;
+
+      // 2. Proceed to SETUP (Job, Branding, etc.)
+      // Payment will happen at the end of setup.
+      router.push({
+        pathname: '/(onboarding)/setup',
+        params: { userId, planId }
+      });
+
       // Navigate based on redirectTo or default onboarding flow
-      if (redirectTo === 'subscription') {
-        router.push('/(onboarding)/packs');
-      } else {
-        router.push('/(onboarding)/age');
-      }
     } catch (e: any) {
       const message = e.response?.data?.message || 'Code invalide ou expiré.';
       setError(message);
@@ -70,6 +119,7 @@ export default function VerifyEmailScreen() {
 
   return (
     <BackgroundGradient>
+      <StepIndicator currentStep={2} totalSteps={4} />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.container}>
@@ -126,7 +176,16 @@ export default function VerifyEmailScreen() {
               </TouchableOpacity>
             </View>
 
-            <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => {
+                allowNavRef.current = true;
+                router.replace({
+                  pathname: '/(auth)/register',
+                  params: { email }
+                });
+              }}
+            >
               <Text style={styles.backButtonText}>Modifier l'adresse email</Text>
             </TouchableOpacity>
           </View>

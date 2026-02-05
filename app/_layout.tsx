@@ -37,27 +37,29 @@ export default function RootLayout() {
     const timeout = setTimeout(() => {
       const inAuthGroup = segments[0] === '(auth)';
       const inOnboardingGroup = segments[0] === '(onboarding)';
+      let targetRoute: string | null = null;
 
-      let targetRoute = null;
-
-      if (!hasFinishedOnboarding) {
-        if (!inOnboardingGroup) {
-          // On commence l'onboarding directement par l'étape d'âge
-          targetRoute = isAuthenticated ? '/(onboarding)/age' : '/(onboarding)/welcome';
-        }
-      } else {
-        if (isAuthenticated) {
+      if (isAuthenticated) {
+        if (!hasFinishedOnboarding) {
+          // Si connecté mais onboarding non fini, on force l'onboarding
+          if (!inOnboardingGroup) {
+            targetRoute = '/(onboarding)/age';
+          }
+        } else {
+          // Si connecté et onboarding fini, on force le drawer (accueil)
           if (inAuthGroup || inOnboardingGroup || !segments[0]) {
             targetRoute = '/(drawer)';
           }
-        } else {
-          if (!inAuthGroup) {
-            targetRoute = '/(auth)/login';
-          }
+        }
+      } else {
+        // Si non connecté, on autorise (auth) et (onboarding)
+        // Mais on redirige le root vers welcome
+        if (!inAuthGroup && !inOnboardingGroup) {
+          targetRoute = '/(onboarding)/welcome';
         }
       }
 
-      if (targetRoute) {
+      if (targetRoute && targetRoute !== '/' + segments.join('/')) {
         router.replace(targetRoute as any);
       } else {
         setIsRouting(false);

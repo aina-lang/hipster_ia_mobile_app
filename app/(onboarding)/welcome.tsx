@@ -154,7 +154,7 @@ const styles = StyleSheet.create({
     fontSize: 14
   },
   loginHighlight: {
- 
+
     fontWeight: "700"
   }
 });
