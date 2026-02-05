@@ -31,13 +31,25 @@ api.interceptors.request.use(
     console.log('🚀 [API REQUEST]', config.method?.toUpperCase(), config.url);
     console.log('🔗 [FULL URL]', config.baseURL + (config.url || ''));
 
+    const url = config.url || '';
+    const isPublicAuthEndpoint =
+      url.includes('/login') ||
+      url.includes('/register') ||
+      url.includes('/ai/auth'); // includes verify-email, resend-otp, refresh, etc.
+
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
       console.log(
         `[API Request] ${config.method?.toUpperCase()} ${config.baseURL}${config.url} (Token present)`
       );
     } else {
-      console.warn(`[API Request] No token found for ${config.url}`);
+      // On accepte désormais silencieusement les requêtes sans token,
+      // en les loggant simplement en debug pour éviter les faux "bugs".
+      if (!isPublicAuthEndpoint) {
+        console.log(`[API Request] No token found for ${config.url}`);
+      } else {
+        console.log(`[API Request] No token (expected) for ${config.url}`);
+      }
     }
     return config;
   },

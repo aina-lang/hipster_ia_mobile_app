@@ -25,7 +25,8 @@ export default function RootLayout() {
 
       if (!hasFinishedOnboarding) {
         if (!inOnboardingGroup) {
-          targetRoute = isAuthenticated ? '/(onboarding)/setup' : '/(onboarding)/welcome';
+          // On commence l'onboarding directement par l'étape d'âge
+          targetRoute = isAuthenticated ? '/(onboarding)/age' : '/(onboarding)/welcome';
         }
       } else {
         if (isAuthenticated) {
@@ -57,7 +58,7 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <StripeProvider
-          publishableKey="pk_test_placeholder"
+          publishableKey="pk_test_51SwUCtIBocWEq1MHOai63QOvSnEtYMU7kdDQUyo81zNt1XBYINS07FGgboCZnhTawtSu9nAu9F4uGgUo538aKnCN007HrfkxE0"
           merchantIdentifier="merchant.com.hipster">
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="(auth)" />

@@ -37,8 +37,8 @@ export default function VerifyEmailScreen() {
     setError(null);
     try {
       await aiVerifyEmail(email as string, code);
-      // Auto redirect to setup
-      router.push('/(onboarding)/setup');
+      // Auto redirect to onboarding (profil entreprise direct)
+      router.push('/(onboarding)/age');
     } catch (e: any) {
       const message = e.response?.data?.message || 'Code invalide ou expiré.';
       setError(message);

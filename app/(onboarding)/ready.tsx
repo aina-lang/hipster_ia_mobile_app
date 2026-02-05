@@ -13,7 +13,7 @@ const { width } = Dimensions.get('window');
 
 export default function ReadyScreen() {
   const { finishOnboarding, user } = useAuthStore();
-  const totalSteps = user?.aiProfile?.profileType === 'entreprise' ? 4 : 3;
+  const totalSteps = 3;
 
   const handleStart = () => {
     finishOnboarding();

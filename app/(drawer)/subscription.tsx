@@ -14,10 +14,11 @@ import { colors } from '../../theme/colors';
 import { ChevronLeft, Check, Crown, Zap, Shield, LucideIcon, Edit3 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useStripe } from '@stripe/stripe-react-native';
-import axios from 'axios';
+import { api } from '../../api/client';
 import { useAuthStore } from '../../store/authStore';
+import { UsageBar } from '../../components/UsageBar';
 
-const API_URL = 'http://192.168.1.100:3000'; // Replace with your actual API URL
+const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://hipster-api.fr';
 
 interface Plan {
   id: string;
@@ -36,7 +37,7 @@ export default function SubscriptionScreen() {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const { initPaymentSheet, presentPaymentSheet } = useStripe();
-  const { user } = useAuthStore();
+  const { user, updateAiProfile } = useAuthStore();
 
   useEffect(() => {
     fetchPlans();
@@ -94,23 +95,88 @@ export default function SubscriptionScreen() {
   const initializePaymentSheet = async (priceId: string) => {
     setLoading(true);
     try {
-      Alert.alert(
-        'Mode Demo',
-        "L'intégration Stripe est prête. Le backend doit être accessible pour initier le paiement réel.",
-        [{ text: 'OK' }]
-      );
+      // Request backend to create PaymentSheet params for the selected priceId
+      // Include userId so webhook can find user after payment
+      const resp = await api.post(`/ai/payment/create-payment-sheet`, {
+        priceId,
+        userId: user?.id, // ← Pass userId for webhook lookup
+      });
 
+      // backend may return data in different shapes; try common fields
+      const data = resp.data?.data ?? resp.data ?? resp;
+      const paymentIntentClientSecret = data.paymentIntentClientSecret || data.clientSecret || data.paymentIntent?.client_secret;
+      const customerEphemeralKey = data.ephemeralKey || data.customer_ephemeral_key;
+      const customerId = data.customerId || data.customer || data.customer_id;
+
+      if (!paymentIntentClientSecret) {
+        throw new Error('Impossible de récupérer le client secret du PaymentIntent depuis le backend.');
+      }
+
+      const initResult: any = await initPaymentSheet({
+        paymentIntentClientSecret,
+        merchantDisplayName: 'Hipster IA',
+        customerEphemeralKeySecret: customerEphemeralKey,
+        customerId,
+        // applePay and googlePay config can be added here if enabled on backend
+      });
+
+      if (initResult.error) {
+        throw initResult.error;
+      }
+
+      const presentResult: any = await presentPaymentSheet();
+      if (presentResult.error) {
+        Alert.alert('Paiement échoué', presentResult.error.message || 'Erreur lors du paiement');
+        setLoading(false);
+        return;
+      }
+
+      // Payment successful — confirm plan
+      await handlePlanConfirmation(selectedPlan!);
+    } catch (e: any) {
+      console.error('Stripe init error:', e);
+      Alert.alert('Erreur paiement', e?.message || 'Impossible d\'initialiser le paiement.');
+    } finally {
       setLoading(false);
-    } catch (e) {
-      console.error(e);
-      setLoading(false);
+    }
+  };
+
+  const handlePlanConfirmation = async (planId: string) => {
+    try {
+      // Confirm plan on backend (applies limits to AiCredit)
+      const confirmResp = await api.post('/ai/payment/confirm-plan', { planId });
+      
+      console.log('[Plan Confirmation] Limits applied:', confirmResp.data?.limits);
+      
+      // Update local user store with new limits
+      await updateAiProfile({ planType: planId });
+      
+      // Show success with limits info
+      const limits = confirmResp.data?.limits;
+      const limitsText = limits 
+        ? `\n\nVos limites:\n• ${limits.promptsLimit} textes\n• ${limits.imagesLimit} images\n• ${limits.videosLimit} vidéos\n• ${limits.audioLimit} audios`
+        : '';
+      
+      Alert.alert('Succès ! 🎉', `Abonnement activé avec succès.${limitsText}`, [
+        { text: 'OK', onPress: () => router.push('/(onboarding)/welcome') }
+      ]);
+    } catch (error) {
+      console.error('Error saving plan:', error);
+      Alert.alert('Erreur', 'Impossible de sauvegarder votre plan.');
     }
   };
 
   const handleUpgrade = async () => {
     const plan = plans.find((p) => p.id === selectedPlan);
-    if (!plan || !plan.stripePriceId) return;
+    if (!plan) return;
 
+    // For free plan, skip Stripe and just save
+    if (plan.stripePriceId === null) {
+      await handlePlanConfirmation(plan.id);
+      return;
+    }
+
+    // For paid plans, initialize payment sheet
     await initializePaymentSheet(plan.stripePriceId);
   };
 
@@ -128,6 +194,14 @@ export default function SubscriptionScreen() {
         <View style={styles.topSection}>
           <Text style={styles.title}>Passez au niveau supérieur</Text>
           <Text style={styles.subtitle}>Libérez votre créativité avec nos outils premium</Text>
+        </View>
+
+        {/* Votre usage */}
+        <View style={{ paddingHorizontal: 24, marginBottom: 16 }}>
+          <Text style={{ color: colors.text.secondary, fontSize: 14, marginBottom: 8, fontWeight: '600' }}>
+            Votre usage
+          </Text>
+          <UsageBar />
         </View>
 
         <View style={styles.plansContainer}>
@@ -187,12 +261,12 @@ export default function SubscriptionScreen() {
         <TouchableOpacity
           style={[styles.upgradeButton, loading && styles.disabledButton]}
           onPress={handleUpgrade}
-          disabled={loading || selectedPlan === 'basic'}>
+          disabled={loading || !selectedPlan}>
           {loading ? (
             <ActivityIndicator color="#000" />
           ) : (
             <Text style={styles.upgradeButtonText}>
-              {selectedPlan === 'basic' ? 'Plan actuel' : 'Commencer maintenant'}
+              {selectedPlan ? 'Confirmer mon choix' : 'Sélectionnez un plan'}
             </Text>
           )}
         </TouchableOpacity>

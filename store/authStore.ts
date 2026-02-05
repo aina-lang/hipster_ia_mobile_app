@@ -357,6 +357,38 @@ export const useAuthStore = create<AuthState>()(
             hasFinishedOnboarding: !!resData.user.aiProfile?.isSetupComplete,
             isLoading: false,
           });
+
+          // Fetch AI credits/usage after login
+          try {
+            if (resData.user?.type === 'ai') {
+              const creditsResp = await api.get('/ai/payment/credits');
+              const creditsData = creditsResp.data;
+              set((state) => ({
+                user: state.user
+                  ? {
+                      ...state.user,
+                      aiProfile: {
+                        ...state.user.aiProfile,
+                        aiCreditUsage: {
+                          promptsUsed: creditsData.promptsUsed || 0,
+                          imagesUsed: creditsData.imagesUsed || 0,
+                          videosUsed: creditsData.videosUsed || 0,
+                          audioUsed: creditsData.audioUsed || 0,
+                        },
+                        aiCreditLimits: {
+                          promptsLimit: creditsData.promptsLimit,
+                          imagesLimit: creditsData.imagesLimit,
+                          videosLimit: creditsData.videosLimit,
+                          audioLimit: creditsData.audioLimit,
+                        },
+                      },
+                    }
+                  : state.user,
+              }));
+            }
+          } catch (e) {
+            console.warn('[AuthStore] Failed to fetch AI credits after login', e);
+          }
         } catch (error: any) {
           console.error('[AuthStore] AI Login Error:', error);
           const message = extractErrorMessage(
@@ -412,7 +444,9 @@ export const useAuthStore = create<AuthState>()(
         try {
           const { data } = await api.post('/ai/auth/verify-email', { email, code });
 
-          const resData = data; // Backend returns access_token, refresh_token, user directly
+          // Backend is wrapped by TransformInterceptor:
+          // { status, statusCode, message, data: { access_token, refresh_token, user, ... } }
+          const resData = data?.data ?? data;
 
           await AsyncStorage.setItem('access_token', resData.access_token);
           await AsyncStorage.setItem('refresh_token', resData.refresh_token);
@@ -425,6 +459,38 @@ export const useAuthStore = create<AuthState>()(
             hasFinishedOnboarding: !!resData.user.aiProfile?.isSetupComplete,
             isLoading: false,
           });
+
+          // Fetch AI credits/usage after verifying email (AI register flow)
+          try {
+            if (resData.user?.type === 'ai') {
+              const creditsResp = await api.get('/ai/payment/credits');
+              const creditsData = creditsResp.data;
+              set((state) => ({
+                user: state.user
+                  ? {
+                      ...state.user,
+                      aiProfile: {
+                        ...state.user.aiProfile,
+                        aiCreditUsage: {
+                          promptsUsed: creditsData.promptsUsed || 0,
+                          imagesUsed: creditsData.imagesUsed || 0,
+                          videosUsed: creditsData.videosUsed || 0,
+                          audioUsed: creditsData.audioUsed || 0,
+                        },
+                        aiCreditLimits: {
+                          promptsLimit: creditsData.promptsLimit,
+                          imagesLimit: creditsData.imagesLimit,
+                          videosLimit: creditsData.videosLimit,
+                          audioLimit: creditsData.audioLimit,
+                        },
+                      },
+                    }
+                  : state.user,
+              }));
+            }
+          } catch (e) {
+            console.warn('[AuthStore] Failed to fetch AI credits after verify', e);
+          }
         } catch (error: any) {
           const message = extractErrorMessage(error, "Erreur lors de la vérification de l'email.");
           set({ error: message, isLoading: false });

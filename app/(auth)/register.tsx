@@ -62,9 +62,10 @@ export default function RegisterScreen() {
       // Delay redirection slightly to show success message
       setTimeout(() => {
         setModalVisible(false);
+        // First verify email, then choose subscription plan
         router.push({
           pathname: '/(auth)/verify-email',
-          params: { email },
+          params: { email, redirectTo: 'subscription' },
         });
       }, 1500);
     } catch (e: any) {

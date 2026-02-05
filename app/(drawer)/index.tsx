@@ -27,6 +27,7 @@ import {
 } from 'lucide-react-native';
 import { BackgroundGradient } from '../../components/ui/BackgroundGradient';
 import { DeerAnimation } from '../../components/ui/DeerAnimation';
+import { UsageBar } from '../../components/UsageBar';
 import { useAuthStore } from '../../store/authStore';
 import { useCreationStore } from '../../store/creationStore';
 import { AiService } from '../../api/ai.service';
@@ -260,7 +261,15 @@ export default function HomeScreen() {
                   className="bg-white/3 z-50 mt-80 mb-5 flex-row items-center gap-4 rounded-2xl border border-white/5 p-5"
                   onPress={() => {
                     useCreationStore.getState().reset();
-                    router.push('/(guided)/step1-job');
+                    // If user already has a non-free plan, go straight to guided flow
+                    const userPlan = user?.aiProfile?.planType;
+                    if (userPlan && userPlan !== 'curieux') {
+                      router.push('/(guided)/step1-job');
+                      return;
+                    }
+
+                    // Otherwise, ask to choose a plan first
+                    router.push('/(drawer)/subscription');
                   }}
                   activeOpacity={0.8}>
                   <View className="w-15 h-15 items-center justify-center rounded-lg">
@@ -329,6 +338,9 @@ export default function HomeScreen() {
               </View>
             )}
           </ScrollView>
+
+          {/* Usage Bar */}
+          {hasMessages && <UsageBar />}
 
           {/* Input */}
           <View className="px-5 py-3">
