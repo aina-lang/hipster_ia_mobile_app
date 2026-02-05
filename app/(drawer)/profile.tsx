@@ -39,6 +39,7 @@ import { GenericModal, ModalType } from '../../components/ui/GenericModal';
 import * as ImagePicker from 'expo-image-picker';
 import { CountryPicker } from '../../components/ui/CountryPicker';
 import { getCountryByName, Country } from '../../api/countries';
+import { BackgroundGradientOnboarding } from 'components/ui/BackgroundGradientOnboarding';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -321,7 +322,7 @@ export default function ProfileScreen() {
   };
 
   return (
-    <BackgroundGradient>
+    <BackgroundGradientOnboarding blurIntensity={90}>
       <SafeAreaView style={styles.container}>
         <ScrollView
           contentContainerStyle={styles.scrollContent}
@@ -875,7 +876,7 @@ export default function ProfileScreen() {
         message={modalConfig.message}
         onClose={() => setModalVisible(false)}
       />
-    </BackgroundGradient>
+    </BackgroundGradientOnboarding>
   );
 }
 

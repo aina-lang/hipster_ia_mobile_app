@@ -30,7 +30,7 @@ export function BackgroundGradientOnboarding({ children, blurIntensity = 0 }: Ba
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-
+    backgroundColor: '#0a0a11',
     // backgroundColor: colors.background.primary,
   },
   image: {

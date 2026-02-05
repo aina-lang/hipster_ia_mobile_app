@@ -92,6 +92,7 @@ export default function HomeScreen() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isBackendConnected, setIsBackendConnected] = useState<boolean | null>(null);
+  const [conversationId, setConversationId] = useState<string | null>(null);
 
   // Modal State
   const [modalVisible, setModalVisible] = useState(false);
@@ -120,11 +121,56 @@ export default function HomeScreen() {
   }, []);
 
   useEffect(() => {
-    if (chatId) {
-      // Basic implementation: if we have a chatId, we're coming from history
-      // Ideally we'd fetch the specific generation details here.
-      console.log('[DEBUG] HomeScreen detected chatId:', chatId);
-    }
+    const loadConversation = async () => {
+      if (chatId) {
+        try {
+          console.log('[DEBUG] Loading conversation:', chatId);
+          const conversation = await AiService.getConversation(chatId as string);
+
+          if (conversation) {
+            // Set the conversation ID
+            setConversationId(chatId as string);
+
+            // Parse the stored conversation history
+            let storedMessages: any[] = [];
+            try {
+              storedMessages = JSON.parse(conversation.prompt);
+            } catch (e) {
+              console.error('[DEBUG] Failed to parse conversation history:', e);
+            }
+
+            // Convert stored messages to UI format
+            const uiMessages: Message[] = [];
+            storedMessages.forEach((msg, index) => {
+              if (msg.role === 'user' || msg.role === 'assistant') {
+                uiMessages.push({
+                  id: `${chatId}-${index}`,
+                  text: msg.content,
+                  sender: msg.role === 'user' ? 'user' : 'ai',
+                  timestamp: new Date(),
+                  isTyping: false,
+                });
+              }
+            });
+
+            // Add the final AI response if available
+            if (conversation.result && uiMessages.length > 0) {
+              const lastMsg = uiMessages[uiMessages.length - 1];
+              if (lastMsg.sender === 'ai') {
+                lastMsg.text = conversation.result;
+              }
+            }
+
+            setMessages(uiMessages);
+            console.log('[DEBUG] Loaded', uiMessages.length, 'messages from conversation');
+          }
+        } catch (error) {
+          console.error('[DEBUG] Failed to load conversation:', error);
+        }
+      }
+    };
+
+    loadConversation();
   }, [chatId]);
 
   const placeholderText = 'Décrivez votre idée, ajoutez une image ou un audio...';
@@ -168,9 +214,16 @@ export default function HomeScreen() {
       chatHistory.push({ role: 'user', content: userMsg.text });
 
       console.log('[DEBUG] Free Mode Chat History:', JSON.stringify(chatHistory, null, 2));
+      console.log('[DEBUG] Conversation ID:', conversationId);
 
-      const response = await AiService.chat(chatHistory);
+      const response = await AiService.chat(chatHistory, conversationId);
       console.log('[DEBUG] Free Mode Response:', JSON.stringify(response, null, 2));
+
+      // Store conversation ID for subsequent messages
+      if (response.conversationId && !conversationId) {
+        setConversationId(response.conversationId);
+        console.log('[DEBUG] New conversation started:', response.conversationId);
+      }
 
       const aiMsg: Message = {
         id: (Date.now() + 1).toString(),
@@ -208,6 +261,8 @@ export default function HomeScreen() {
   const resetChat = () => {
     setMessages([]);
     setInputValue('');
+    setConversationId(null); // Start a new conversation
+    console.log('[DEBUG] Starting new conversation');
   };
 
   const completeTyping = (msgId: string) => {
@@ -224,7 +279,7 @@ export default function HomeScreen() {
   };
 
   return (
-    <BackgroundGradientOnboarding>
+    <BackgroundGradientOnboarding blurIntensity={90}>
       <SafeAreaView className="flex-1" >
         <KeyboardAvoidingView
           className="flex-1"
@@ -264,9 +319,6 @@ export default function HomeScreen() {
                   </Text>
                 </View>
 
-                <View className="items-center">
-                  <DeerAnimation size={800} progress={0} />
-                </View>
 
                 <TouchableOpacity
                   className="bg-white/3 z-50 mt-80 mb-5 flex-row items-center gap-4 rounded-2xl border border-white/5 p-5"
@@ -294,7 +346,7 @@ export default function HomeScreen() {
                   </View>
                 </TouchableOpacity>
 
-                <View className="my-5 flex-row items-center gap-4 opacity-40">
+                <View className="my-5 mb-0 flex-row items-center gap-4 opacity-40">
                   <View className="h-px flex-1 bg-white/20" />
                   <Text className="text-xs font-semibold tracking-wider text-white/60">
                     OU MODE LIBRE
@@ -351,10 +403,10 @@ export default function HomeScreen() {
           </ScrollView>
 
           {/* Usage Bar */}
-          {hasMessages && <UsageBar />}
+          {/* {hasMessages && <UsageBar />} */}
 
           {/* Input */}
-          <View className="px-5 py-3">
+          <View className="px-5 py-3 pt-0">
             <View className="relative rounded-2xl border border-white/10 bg-slate-900 p-4">
               <TypingPlaceholder text={placeholderText} inputValue={inputValue} />
               <TextInput

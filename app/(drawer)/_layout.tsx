@@ -255,8 +255,9 @@ export default function DrawerLayout() {
       drawerContent={(props) => <CustomDrawerContent {...props} />}
       screenOptions={{
         headerShown: false,
+        drawerContentContainerStyle: { backgroundColor: '#11111a' },
         drawerStyle: {
-          backgroundColor: colors.background.dark,
+          backgroundColor: '#11111a',
           borderRightWidth: 1,
           borderRightColor: 'rgba(255,255,255,0.08)',
           width: '80%',
@@ -275,6 +276,7 @@ export default function DrawerLayout() {
         options={{
           drawerLabel: 'Accueil',
           drawerIcon: ({ color }) => <Home size={22} color={color} />,
+
         }}
       />
 
@@ -312,7 +314,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 35,
     marginTop: 60,
-    backgroundColor: 'rgba(255,255,255,0.02)',
   },
   userRow: {
     flexDirection: 'row',

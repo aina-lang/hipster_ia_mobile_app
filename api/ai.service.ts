@@ -6,10 +6,15 @@ export type DocumentType = 'legal' | 'business';
 export type GenerationType = 'text' | 'image' | 'video' | 'audio' | 'document' | 'chat';
 
 export const AiService = {
-  chat: async (messages: any[]) => {
-    console.log('[AiService] chat called with', messages.length, 'messages');
+  chat: async (messages: any[], conversationId?: string | null) => {
+    console.log(
+      '[AiService] chat called with',
+      messages.length,
+      'messages',
+      conversationId ? `(conversation: ${conversationId})` : '(new conversation)'
+    );
     try {
-      const response = await api.post('/ai/chat', { messages });
+      const response = await api.post('/ai/chat', { messages, conversationId });
       console.log('[AiService] chat response data:', JSON.stringify(response.data, null, 2));
       return response.data.data;
     } catch (error: any) {
@@ -73,6 +78,18 @@ export const AiService = {
       return response.data.data;
     } catch (e: any) {
       console.error('[AiService] Fetch history error:', e.message, e.response?.status);
+      throw e;
+    }
+  },
+
+  getConversation: async (conversationId: string) => {
+    console.log('[AiService] Fetching conversation:', conversationId);
+    try {
+      const response = await api.get(`/ai/history/${conversationId}`);
+      console.log('[AiService] Conversation fetched:', response.data);
+      return response.data;
+    } catch (e: any) {
+      console.error('[AiService] Fetch conversation error:', e.message, e.response?.status);
       throw e;
     }
   },
