@@ -66,8 +66,15 @@ export const AiService = {
   },
 
   getHistory: async () => {
-    const response = await api.get('/ai/history');
-    return response.data.data;
+    console.log('[AiService] Fetching history...');
+    try {
+      const response = await api.get('/ai/history');
+      console.log('[AiService] History fetched, count:', response.data.data?.length);
+      return response.data.data;
+    } catch (e: any) {
+      console.error('[AiService] Fetch history error:', e.message, e.response?.status);
+      throw e;
+    }
   },
 
   deleteGeneration: async (id: string) => {

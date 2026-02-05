@@ -61,8 +61,10 @@ function CustomDrawerContent(props: any) {
    *   FETCH HISTORY
    * ============================ */
   useEffect(() => {
-    loadHistory();
-  }, []);
+    if (user?.type === 'ai') {
+      loadHistory();
+    }
+  }, [user]);
 
   const loadHistory = async () => {
     try {
@@ -103,9 +105,9 @@ function CustomDrawerContent(props: any) {
             <Image source={{ uri: userAvatar }} style={styles.avatar} />
             <View>
               <Text style={styles.userName}>{userName}</Text>
-              <Text style={styles.userRole}>
+              {/* <Text style={styles.userRole}>
                 {user?.type === 'ai' ? 'Compte AI' : (user?.aiProfile?.profileType === 'entreprise' ? 'Entreprise' : 'Particulier')}
-              </Text>
+              </Text> */}
             </View>
           </View>
 
@@ -125,88 +127,93 @@ function CustomDrawerContent(props: any) {
         {/* ============================
             RECENT HISTORY
         ============================ */}
-        <View style={styles.historySection}>
-          <View style={styles.historyHeader}>
-            <Text style={styles.historyTitle}>Récemment</Text>
-            <TouchableOpacity onPress={() => router.push('/(drawer)/history')}>
-              <Text style={styles.historySeeAll}>Voir tout</Text>
-            </TouchableOpacity>
-          </View>
-
-          {loading ? (
-            <ActivityIndicator size="small" color={colors.text.muted} style={{ marginTop: 20 }} />
-          ) : (
-            <View style={{ marginTop: 10 }}>
-              {history.map((item, index) => {
-                const attr = item.attributes || {};
-
-                // Smart Label: "Immobilier • Post Insta"
-                let label = item.title || 'Sans titre';
-                if (attr.job && attr.function) {
-                  const cleanFunc = attr.function.split('(')[0].trim();
-                  label = `${attr.job} • ${cleanFunc}`;
-                } else if (attr.function) {
-                  label = attr.function.split('(')[0].trim();
-                }
-
-                // Smart Icon
-                let IconComponent = FileText;
-                if (item.type === 'image') IconComponent = ImageIcon;
-
-                const funcLower = (attr.function || '').toLowerCase();
-                const catLower = (attr.category || '').toLowerCase();
-
-                if (funcLower.includes('social') || catLower.includes('social'))
-                  IconComponent = MessageCircle;
-                else if (funcLower.includes('email') || catLower.includes('email'))
-                  IconComponent = Mail;
-                else if (funcLower.includes('publicité') || catLower.includes('ad'))
-                  IconComponent = Megaphone;
-                else if (funcLower.includes('vidéo') || catLower.includes('video'))
-                  IconComponent = Video;
-                else if (funcLower.includes('flyer')) IconComponent = LayoutTemplate;
-
-                return (
-                  <View key={item.id || index} style={styles.historyRowContainer}>
-                    <TouchableOpacity
-                      style={styles.historyItem}
-                      onPress={() =>
-                        router.push({
-                          pathname: '/(drawer)',
-                          params: { chatId: item.id },
-                        })
-                      }>
-                      <View style={{ width: 24, alignItems: 'center' }}>
-                        <IconComponent size={16} color={colors.text.muted} />
-                      </View>
-                      <View style={{ flex: 1 }}>
-                        <Text numberOfLines={1} style={styles.historyItemText}>
-                          {label}
-                        </Text>
-                        <Text numberOfLines={1} style={styles.historyItemSubtext}>
-                          {item.type === 'chat' || item.type === 'text'
-                            ? (item.result || item.prompt || '').replace(/\s+/g, ' ')
-                            : (item.prompt || '').replace(/\s+/g, ' ')}
-                        </Text>
-                      </View>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      style={styles.deleteMiniButton}
-                      onPress={() => {
-                        setItemToDelete(item.id);
-                        setShowDeleteModal(true);
-                      }}>
-                      <Trash2 size={16} color={colors.text.muted} />
-                    </TouchableOpacity>
-                  </View>
-                );
-              })}
-
-              {!history.length && <Text style={styles.emptyHistory}>Aucun historique récent</Text>}
+        {/* ============================
+            RECENT HISTORY (AI ONLY)
+        ============================ */}
+        {user?.type === 'ai' && (
+          <View style={styles.historySection}>
+            <View style={styles.historyHeader}>
+              <Text style={styles.historyTitle}>Récemment</Text>
+              <TouchableOpacity onPress={() => router.push('/(drawer)/history')}>
+                <Text style={styles.historySeeAll}>Voir tout</Text>
+              </TouchableOpacity>
             </View>
-          )}
-        </View>
+
+            {loading ? (
+              <ActivityIndicator size="small" color={colors.text.muted} style={{ marginTop: 20 }} />
+            ) : (
+              <View style={{ marginTop: 10 }}>
+                {history.map((item, index) => {
+                  const attr = item.attributes || {};
+
+                  // Smart Label: "Immobilier • Post Insta"
+                  let label = item.title || 'Sans titre';
+                  if (attr.job && attr.function) {
+                    const cleanFunc = attr.function.split('(')[0].trim();
+                    label = `${attr.job} • ${cleanFunc}`;
+                  } else if (attr.function) {
+                    label = attr.function.split('(')[0].trim();
+                  }
+
+                  // Smart Icon
+                  let IconComponent = FileText;
+                  if (item.type === 'image') IconComponent = ImageIcon;
+
+                  const funcLower = (attr.function || '').toLowerCase();
+                  const catLower = (attr.category || '').toLowerCase();
+
+                  if (funcLower.includes('social') || catLower.includes('social'))
+                    IconComponent = MessageCircle;
+                  else if (funcLower.includes('email') || catLower.includes('email'))
+                    IconComponent = Mail;
+                  else if (funcLower.includes('publicité') || catLower.includes('ad'))
+                    IconComponent = Megaphone;
+                  else if (funcLower.includes('vidéo') || catLower.includes('video'))
+                    IconComponent = Video;
+                  else if (funcLower.includes('flyer')) IconComponent = LayoutTemplate;
+
+                  return (
+                    <View key={item.id || index} style={styles.historyRowContainer}>
+                      <TouchableOpacity
+                        style={styles.historyItem}
+                        onPress={() =>
+                          router.push({
+                            pathname: '/(drawer)',
+                            params: { chatId: item.id },
+                          })
+                        }>
+                        <View style={{ width: 24, alignItems: 'center' }}>
+                          <IconComponent size={16} color={colors.text.muted} />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text numberOfLines={1} style={styles.historyItemText}>
+                            {label}
+                          </Text>
+                          <Text numberOfLines={1} style={styles.historyItemSubtext}>
+                            {item.type === 'chat' || item.type === 'text'
+                              ? (item.result || item.prompt || '').replace(/\s+/g, ' ')
+                              : (item.prompt || '').replace(/\s+/g, ' ')}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={styles.deleteMiniButton}
+                        onPress={() => {
+                          setItemToDelete(item.id);
+                          setShowDeleteModal(true);
+                        }}>
+                        <Trash2 size={16} color={colors.text.muted} />
+                      </TouchableOpacity>
+                    </View>
+                  );
+                })}
+
+                {!history.length && <Text style={styles.emptyHistory}>Aucun historique récent</Text>}
+              </View>
+            )}
+          </View>
+        )}
 
         {/* Footer Logout */}
         <View style={{ padding: 20, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)' }}>

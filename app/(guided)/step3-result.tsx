@@ -1758,7 +1758,7 @@ const styles = StyleSheet.create({
   imageContainer: {
     marginBottom: 24,
     borderRadius: 12,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.background.premium,
     borderWidth: 1,
     borderColor: `${colors.primary.main}30`,
     overflow: 'hidden' as const,
@@ -1781,7 +1781,7 @@ const styles = StyleSheet.create({
   imageWrapper: {
     width: '100%',
     aspectRatio: 0.8,
-    backgroundColor: colors.background,
+    backgroundColor: colors.background.primary,
     justifyContent: 'center',
     alignItems: 'center',
   },
