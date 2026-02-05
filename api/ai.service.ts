@@ -87,7 +87,7 @@ export const AiService = {
     try {
       const response = await api.get(`/ai/history/${conversationId}`);
       console.log('[AiService] Conversation fetched:', response.data);
-      return response.data;
+      return response.data.data || response.data; // Handle both wrapped and unwrapped responses
     } catch (e: any) {
       console.error('[AiService] Fetch conversation error:', e.message, e.response?.status);
       throw e;

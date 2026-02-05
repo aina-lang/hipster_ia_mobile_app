@@ -22,7 +22,7 @@ import {
 import { useAuthStore } from '../../store/authStore';
 import { AiService } from '../../api/ai.service';
 import { GenericModal } from '../../components/ui/GenericModal';
-import { LogOut, Trash2 } from 'lucide-react-native';
+import { LogOut, Trash2, Plus } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 
 function CustomDrawerContent(props: any) {
@@ -120,6 +120,19 @@ function CustomDrawerContent(props: any) {
         ============================ */}
         <View style={styles.menuContainer}>
           <DrawerItemList {...props} />
+
+          <TouchableOpacity
+            style={styles.newChatButton}
+            onPress={() => {
+              props.navigation.closeDrawer();
+              router.push({
+                pathname: '/(drawer)',
+                params: { reset: 'true' }
+              });
+            }}>
+            <Plus size={20} color={colors.primary.main} />
+            <Text style={styles.newChatText}>Nouvelle discussion</Text>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.separator} />
@@ -367,6 +380,23 @@ const styles = StyleSheet.create({
   /* ----- MENU ----- */
   menuContainer: {
     paddingVertical: 10,
+  },
+  newChatButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginHorizontal: 10,
+    marginTop: 10,
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.03)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+  },
+  newChatText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '600',
   },
 
   separator: {
