@@ -30,18 +30,20 @@ export default function SetupScreen() {
 
   const [localLastName, setLocalLastName] = useState(lastName);
   const [localJob, setLocalJob] = useState(job);
+  const [localOtherJob, setLocalOtherJob] = useState('');
 
   const handleNext = () => {
     if (localLastName && localJob) {
       setProfileData({
         lastName: localLastName,
       });
-      setJob(localJob);
+      setJob(localJob === 'Autre' ? localOtherJob : localJob);
       router.push('/(onboarding)/branding');
     }
   };
 
-  const isValid = localLastName?.length > 0 && localJob;
+  const isValid = localLastName?.length > 0 &&
+    (localJob === 'Autre' ? localOtherJob.length > 0 : !!localJob);
 
   return (
     <BackgroundGradientOnboarding blurIntensity={90}>
@@ -82,6 +84,20 @@ export default function SetupScreen() {
                     </View>
                   ))}
                 </View>
+
+                {localJob === 'Autre' && (
+                  <Animated.View entering={FadeInDown.duration(400)} style={styles.fullInputWrapper}>
+                    <Text style={styles.label}>Précisez votre métier</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Ex: Photographe, Coach..."
+                      placeholderTextColor={colors.text.muted}
+                      value={localOtherJob}
+                      onChangeText={setLocalOtherJob}
+                      autoFocus
+                    />
+                  </Animated.View>
+                )}
               </View>
             </View>
 
