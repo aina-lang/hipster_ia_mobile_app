@@ -518,12 +518,12 @@ export default function HomeScreen() {
             </TouchableOpacity>
 
             <View className="flex-row items-center gap-2">
-              <TouchableOpacity
+              {/* <TouchableOpacity
                 className="flex-row items-center gap-2 rounded-xl bg-white/5 py-2 px-3 border border-white/10"
                 onPress={resetChat}>
                 <Plus size={18} color={colors.primary.main} />
                 <Text className="text-white font-medium text-sm">Nouveau</Text>
-              </TouchableOpacity>
+              </TouchableOpacity> */}
 
               {hasMessages && (
                 <TouchableOpacity className="rounded-lg bg-white/5 p-2" onPress={resetChat}>
