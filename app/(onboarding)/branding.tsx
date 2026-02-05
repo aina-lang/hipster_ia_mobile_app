@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, Text, TouchableOpacity, ScrollView, Image } from 'react-native';
+import { View, StyleSheet, Text, TouchableOpacity, ScrollView, Image, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import Animated, { FadeInRight, FadeInDown, runOnJS } from 'react-native-reanimated';
@@ -36,13 +36,14 @@ export default function BrandingScreen() {
         }
 
         const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
-            allowsEditing: true,
+            mediaTypes: ['images'],
+            allowsEditing: Platform.OS === 'ios', // Editing often crashes on Android with relative URIs
             aspect: [1, 1],
             quality: 0.8,
         });
 
         if (!result.canceled) {
+            console.log(`[Branding] Picked ${type}:`, result.assets[0].uri);
             if (type === 'logo') setLocalLogo(result.assets[0].uri);
             else setLocalAvatar(result.assets[0].uri);
         }
@@ -60,15 +61,18 @@ export default function BrandingScreen() {
 
         try {
             // 1. Sync color
+            console.log('[Branding] Syncing color:', selectedColor);
             await authStore.updateAiProfile({
                 brandingColor: selectedColor,
             });
 
             // 2. Upload images if changed
             if (localAvatar && localAvatar !== initialAvatar) {
+                console.log('[Branding] Uploading avatar:', localAvatar);
                 await authStore.uploadAvatar(localAvatar);
             }
             if (localLogo && localLogo !== initialLogo && profileId) {
+                console.log('[Branding] Uploading logo:', localLogo);
                 await authStore.uploadLogo(profileId, localLogo);
             }
         } catch (e) {

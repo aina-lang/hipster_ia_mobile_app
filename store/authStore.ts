@@ -283,10 +283,12 @@ export const useAuthStore = create<AuthState>()(
 
           // Map relative paths if necessary
           if (updatedProfile.logoUrl && !updatedProfile.logoUrl.startsWith('http')) {
+            const oldLogo = updatedProfile.logoUrl;
             updatedProfile.logoUrl = `${BASE_URL.replace('/api', '')}${updatedProfile.logoUrl}`;
+            console.log(`[AuthStore] Transformed logoUrl: ${oldLogo} -> ${updatedProfile.logoUrl}`);
           }
 
-          // Update local state with total synced data
+          console.log('[AuthStore] Syncing local state with:', updatedProfile);
           set({
             user: {
               ...currentUser,
