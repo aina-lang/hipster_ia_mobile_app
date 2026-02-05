@@ -16,6 +16,7 @@ import { useRouter } from 'expo-router';
 import { useStripe } from '@stripe/stripe-react-native';
 import { api } from '../../api/client';
 import { useAuthStore } from '../../store/authStore';
+import { UsageBar } from '../../components/UsageBar';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://hipster-api.fr';
 
@@ -142,11 +143,21 @@ export default function SubscriptionScreen() {
 
   const handlePlanConfirmation = async (planId: string) => {
     try {
-      // Save plan to user's AI profile
+      // Confirm plan on backend (applies limits to AiCredit)
+      const confirmResp = await api.post('/ai/payment/confirm-plan', { planId });
+      
+      console.log('[Plan Confirmation] Limits applied:', confirmResp.data?.limits);
+      
+      // Update local user store with new limits
       await updateAiProfile({ planType: planId });
       
-      // Show success and redirect to onboarding/dashboard
-      Alert.alert('Succès', 'Abonnement activé ! Vous allez être redirigé.', [
+      // Show success with limits info
+      const limits = confirmResp.data?.limits;
+      const limitsText = limits 
+        ? `\n\nVos limites:\n• ${limits.promptsLimit} textes\n• ${limits.imagesLimit} images\n• ${limits.videosLimit} vidéos\n• ${limits.audioLimit} audios`
+        : '';
+      
+      Alert.alert('Succès ! 🎉', `Abonnement activé avec succès.${limitsText}`, [
         { text: 'OK', onPress: () => router.push('/(onboarding)/welcome') }
       ]);
     } catch (error) {
@@ -183,6 +194,14 @@ export default function SubscriptionScreen() {
         <View style={styles.topSection}>
           <Text style={styles.title}>Passez au niveau supérieur</Text>
           <Text style={styles.subtitle}>Libérez votre créativité avec nos outils premium</Text>
+        </View>
+
+        {/* Votre usage */}
+        <View style={{ paddingHorizontal: 24, marginBottom: 16 }}>
+          <Text style={{ color: colors.text.secondary, fontSize: 14, marginBottom: 8, fontWeight: '600' }}>
+            Votre usage
+          </Text>
+          <UsageBar />
         </View>
 
         <View style={styles.plansContainer}>

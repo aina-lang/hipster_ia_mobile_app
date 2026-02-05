@@ -3,6 +3,7 @@ import { api } from './client';
 export type TextGenerationType = 'blog' | 'social' | 'ad' | 'email' | 'video' | 'text' | 'texte';
 export type ImageStyle = 'realistic' | 'cartoon' | 'sketch';
 export type DocumentType = 'legal' | 'business';
+export type GenerationType = 'text' | 'image' | 'video' | 'audio' | 'document' | 'chat';
 
 export const AiService = {
   chat: async (messages: any[]) => {
@@ -50,6 +51,18 @@ export const AiService = {
     const response = await api.post('/ai/flyer', { params, negativePrompt });
     console.log('[AiService] generateFlyer result URL:', response.data.data?.url);
     return response.data.data;
+  },
+
+  decrementCredits: async (type: GenerationType) => {
+    console.log('[AiService] decrementCredits:', type);
+    try {
+      const response = await api.post('/ai/payment/decrement', { type });
+      console.log('[AiService] decrementCredits response:', response.data.data);
+      return response.data.data;
+    } catch (error: any) {
+      console.error('[AiService] decrementCredits error:', error?.response?.data || error.message);
+      throw error;
+    }
   },
 
   getHistory: async () => {

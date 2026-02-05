@@ -501,8 +501,26 @@ export default function Step3ResultScreen() {
       if (selectedCategory === 'Social') {
         const socialResponse = await AiService.generateSocial(params);
         console.log('[DEBUG] Social Response:', JSON.stringify(socialResponse, null, 2));
-        if (mode === 'text' || mode === 'both') setResult(socialResponse.content);
-        if (mode === 'image' || mode === 'both') setImageUrl(socialResponse.url);
+        if (mode === 'text' || mode === 'both') {
+          setResult(socialResponse.content);
+          // Decrement text credits
+          try {
+            await AiService.decrementCredits('text');
+            console.log('[DEBUG] Decremented text credits');
+          } catch (err) {
+            console.log('[DEBUG] Credit decrement not critical:', err);
+          }
+        }
+        if (mode === 'image' || mode === 'both') {
+          setImageUrl(socialResponse.url);
+          // Decrement image credits
+          try {
+            await AiService.decrementCredits('image');
+            console.log('[DEBUG] Decremented image credits');
+          } catch (err) {
+            console.log('[DEBUG] Credit decrement not critical:', err);
+          }
+        }
         setGenerationId(socialResponse.generationId);
       } else if (selectedCategory === 'Image') {
         if (selectedFunction && selectedFunction.includes('Flyers')) {
@@ -510,6 +528,13 @@ export default function Step3ResultScreen() {
           setImageUrl(flyerResult.url);
           setResult(flyerResult.url);
           setGenerationId(flyerResult.generationId);
+          // Decrement image credits
+          try {
+            await AiService.decrementCredits('image');
+            console.log('[DEBUG] Decremented image credits for flyer');
+          } catch (err) {
+            console.log('[DEBUG] Credit decrement not critical:', err);
+          }
         } else {
           const resultData = await AiService.generateImage(
             params,
@@ -519,11 +544,25 @@ export default function Step3ResultScreen() {
           setResult(resultData.url);
           setImageUrl(resultData.url); // For consistency
           setGenerationId(resultData.generationId);
+          // Decrement image credits
+          try {
+            await AiService.decrementCredits('image');
+            console.log('[DEBUG] Decremented image credits');
+          } catch (err) {
+            console.log('[DEBUG] Credit decrement not critical:', err);
+          }
         }
       } else if (selectedCategory === 'Document') {
         const resultData = await AiService.generateDocument('business', params);
         setResult(resultData.content);
         setGenerationId(resultData.generationId);
+        // Decrement text credits (document is text-based)
+        try {
+          await AiService.decrementCredits('text');
+          console.log('[DEBUG] Decremented text credits for document');
+        } catch (err) {
+          console.log('[DEBUG] Credit decrement not critical:', err);
+        }
       } else if (selectedCategory === 'Texte') {
         // Check if this is a flyer request
         if (selectedFunction && selectedFunction.includes('Flyers')) {
@@ -532,6 +571,13 @@ export default function Step3ResultScreen() {
           setImageUrl(flyerResult.url);
           setResult(flyerResult.url); // Also set as result for display
           setGenerationId(flyerResult.generationId);
+          // Decrement image credits
+          try {
+            await AiService.decrementCredits('image');
+            console.log('[DEBUG] Decremented image credits for text flyer');
+          } catch (err) {
+            console.log('[DEBUG] Credit decrement not critical:', err);
+          }
         } else {
           // Regular text generation
           const resultData = await AiService.generateText(
@@ -540,6 +586,13 @@ export default function Step3ResultScreen() {
           );
           setResult(resultData.content);
           setGenerationId(resultData.generationId);
+          // Decrement text/prompt credits
+          try {
+            await AiService.decrementCredits('text');
+            console.log('[DEBUG] Decremented text credits');
+          } catch (err) {
+            console.log('[DEBUG] Credit decrement not critical:', err);
+          }
         }
       }
     } catch (error: any) {
@@ -648,7 +701,8 @@ export default function Step3ResultScreen() {
     } catch (error) {
       console.error('Download error:', error);
       setModalVisible(false);
-      showModal('error', 'Erreur', 'Une erreur est survenue.');
+      const msg = error?.message || String(error);
+      showModal('error', 'Erreur', `Une erreur est survenue lors du téléchargement. ${msg}`);
     }
   };
 
@@ -672,13 +726,37 @@ export default function Step3ResultScreen() {
 
     try {
       if (permissionResponse?.status !== 'granted') {
-        const permission = await requestPermission();
-        if (!permission.granted) {
-          showModal(
-            'error',
-            'Permission refusée',
-            "Nous avons besoin de votre permission pour enregistrer l'image."
-          );
+        try {
+          const permission = await requestPermission();
+          if (!permission.granted) {
+            showModal(
+              'error',
+              'Permission refusée',
+              "Nous avons besoin de votre permission pour enregistrer l'image."
+            );
+            return;
+          }
+        } catch (permError: any) {
+          console.warn('MediaLibrary.requestPermissionsAsync failed:', permError);
+          // Expo Go on Android may reject this call due to scoped storage changes.
+          // Fallback: download file and open share dialog so user can save it manually.
+          try {
+            showModal('loading', 'Préparation', "Téléchargement de l'image pour partage...");
+            const filename = `Hipster-${Date.now()}.png`;
+            const fileUri = `${(FileSystem as any).cacheDirectory}${filename}`;
+            const downloadRes = await (FileSystem as any).downloadAsync(imageUrl, fileUri);
+            setModalVisible(false);
+            if (downloadRes.status === 200) {
+              await Sharing.shareAsync(downloadRes.uri, { dialogTitle: 'Enregistrer l\'image' });
+              showModal('info', 'Astuce', "Sur Expo Go Android, l'enregistrement direct nécessite une build de développement. Utilisez le partage pour sauvegarder l'image ou créez une build via EAS.");
+            } else {
+              showModal('error', 'Oups', 'Echec du téléchargement pour le partage.');
+            }
+          } catch (e) {
+            console.error('Fallback share/download error:', e);
+            setModalVisible(false);
+            showModal('error', 'Erreur', "Impossible d'enregistrer l'image.");
+          }
           return;
         }
       }
@@ -708,7 +786,8 @@ export default function Step3ResultScreen() {
     } catch (error) {
       console.error('Save to gallery error:', error);
       setModalVisible(false);
-      showModal('error', 'Erreur', "Impossible d'enregistrer l'image.");
+      const msg = error?.message || String(error);
+      showModal('error', 'Erreur', `Impossible d'enregistrer l'image. ${msg}`);
     }
   };
 

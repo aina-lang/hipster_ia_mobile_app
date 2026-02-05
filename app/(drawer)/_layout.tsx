@@ -313,7 +313,8 @@ export default function DrawerLayout() {
       <Drawer.Screen
         name="subscription"
         options={{
-          drawerItemStyle: { display: 'none' },
+          drawerLabel: 'Abonnement',
+          drawerIcon: ({ color }) => <Sparkles size={22} color={color} />,
         }}
       />
     </Drawer>
