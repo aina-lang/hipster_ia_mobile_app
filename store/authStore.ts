@@ -34,7 +34,7 @@ const extractErrorMessage = (error: any, defaultMessage: string) => {
 interface User {
   id: number;
   email: string;
-  firstName: string;
+  firstName?: string;
   lastName: string;
   avatarUrl?: string;
   roles?: string[]; // Optional for AI users
@@ -50,8 +50,6 @@ interface User {
     subscriptionStatus: string;
     credits: number;
     nextRenewalDate?: string;
-    profileType: 'particulier' | 'entreprise';
-    companyName?: string;
     professionalEmail?: string;
     professionalAddress?: string;
     city?: string;
@@ -65,6 +63,18 @@ interface User {
     websiteUrl?: string;
     logoUrl?: string;
     isSetupComplete: boolean;
+    aiCreditUsage?: {
+      promptsUsed: number;
+      imagesUsed: number;
+      videosUsed: number;
+      audioUsed: number;
+    };
+    aiCreditLimits?: {
+      promptsLimit: number;
+      imagesLimit: number;
+      videosLimit: number;
+      audioLimit: number;
+    };
   };
   type?: 'ai' | 'standard'; // To distinguish entre standard and ai users
 }

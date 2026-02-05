@@ -53,17 +53,10 @@ export default function ProfileScreen() {
     clearError,
   } = useAuthStore();
 
-  // Personal Info State
-  const [firstName, setFirstName] = useState(user?.firstName || '');
+  // Profile Info State
   const [lastName, setLastName] = useState(user?.lastName || '');
   const [avatarUrl, setAvatarUrl] = useState('https://hipster-api.fr' + user?.avatarUrl || '');
   const [isEditing, setIsEditing] = useState(false);
-
-  // Professional Profile State
-  const [profileType, setProfileType] = useState<'particulier' | 'entreprise'>(
-    user?.aiProfile?.profileType || 'particulier'
-  );
-  const [companyName, setCompanyName] = useState(user?.aiProfile?.companyName || '');
   const [professionalEmail, setProfessionalEmail] = useState(
     user?.aiProfile?.professionalEmail || ''
   );
@@ -168,7 +161,7 @@ export default function ProfileScreen() {
         finalAvatarUrl = await useAuthStore.getState().uploadAvatar(avatarUrl);
       }
 
-      await updateProfile({ firstName, lastName, avatarUrl: finalAvatarUrl });
+      await updateProfile({ lastName, avatarUrl: finalAvatarUrl });
       setIsEditing(false);
       showFeedback('success', 'Parfait !', 'Votre profil a été mis à jour avec succès.');
     } catch (err) {
@@ -178,10 +171,7 @@ export default function ProfileScreen() {
   };
 
   const handleSaveProfessional = async () => {
-    if (profileType === 'entreprise' && !companyName.trim()) {
-      showFeedback('warning', 'Champs requis', 'Veuillez entrer le nom de votre entreprise.');
-      return;
-    }
+    // Simplified: No companyName check needed
 
     animateSaveButton();
 
@@ -208,8 +198,6 @@ export default function ProfileScreen() {
           : professionalPhone2;
 
       await updateAiProfile({
-        profileType,
-        companyName: profileType === 'entreprise' ? companyName : '',
         professionalEmail,
         professionalAddress,
         city,
@@ -302,7 +290,6 @@ export default function ProfileScreen() {
 
   const resetPersonalForm = () => {
     setIsEditing(false);
-    setFirstName(user?.firstName || '');
     setLastName(user?.lastName || '');
     setAvatarUrl(user?.avatarUrl || '');
   };
@@ -312,8 +299,6 @@ export default function ProfileScreen() {
     const profile = user?.aiProfile;
     const savedCountry = profile?.country ? getCountryByName(profile.country) : null;
 
-    setProfileType(profile?.profileType || 'particulier');
-    setCompanyName(profile?.companyName || '');
     setProfessionalEmail(profile?.professionalEmail || '');
     setProfessionalAddress(profile?.professionalAddress || '');
     setCity(profile?.city || '');
@@ -336,10 +321,10 @@ export default function ProfileScreen() {
   return (
     <BackgroundGradient>
       <SafeAreaView style={styles.container}>
-        <ScrollView 
+        <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}>
-          
+
           {/* Header Compact */}
           <View style={styles.header}>
             <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
@@ -405,25 +390,7 @@ export default function ProfileScreen() {
 
               <View style={styles.form}>
                 <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Prénom</Text>
-                  <View style={[styles.inputContainer, isEditing && styles.activeInput]}>
-                    <User size={16} color={colors.text.secondary} />
-                    <TextInput
-                      style={styles.input}
-                      value={firstName}
-                      onChangeText={setFirstName}
-                      editable={isEditing}
-                      placeholder="Votre prénom"
-                      placeholderTextColor={colors.text.muted}
-                    />
-                    {isEditing && firstName && (
-                      <Check size={16} color={colors.primary.main} />
-                    )}
-                  </View>
-                </View>
-
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Nom *</Text>
+                  <Text style={styles.label}>Nom Complet / Entreprise *</Text>
                   <View style={[styles.inputContainer, isEditing && styles.activeInput]}>
                     <User size={16} color={colors.text.secondary} />
                     <TextInput
@@ -431,7 +398,7 @@ export default function ProfileScreen() {
                       value={lastName}
                       onChangeText={setLastName}
                       editable={isEditing}
-                      placeholder="Votre nom"
+                      placeholder="Votre nom ou entreprise"
                       placeholderTextColor={colors.text.muted}
                     />
                     {isEditing && lastName && (
@@ -480,324 +447,250 @@ export default function ProfileScreen() {
             </View>
 
             <View style={styles.card}>
-              {/* Type Toggle Amélioré */}
-              <View style={styles.typeToggleContainer}>
-                <TouchableOpacity
-                  style={[
-                    styles.typeOption,
-                    profileType === 'particulier' && styles.typeOptionActive,
-                  ]}
-                  onPress={() => isEditingPro && setProfileType('particulier')}
-                  disabled={!isEditingPro}
-                  activeOpacity={0.7}>
-                  <User
-                    size={16}
-                    color={profileType === 'particulier' ? '#000' : colors.text.muted}
-                  />
-                  <Text
-                    style={[
-                      styles.typeOptionText,
-                      profileType === 'particulier' && styles.typeOptionTextActive,
-                    ]}>
-                    Particulier
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[
-                    styles.typeOption,
-                    profileType === 'entreprise' && styles.typeOptionActive,
-                  ]}
-                  onPress={() => isEditingPro && setProfileType('entreprise')}
-                  disabled={!isEditingPro}
-                  activeOpacity={0.7}>
-                  <Building2
-                    size={16}
-                    color={profileType === 'entreprise' ? '#000' : colors.text.muted}
-                  />
-                  <Text
-                    style={[
-                      styles.typeOptionText,
-                      profileType === 'entreprise' && styles.typeOptionTextActive,
-                    ]}>
-                    Entreprise
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
-              {profileType === 'entreprise' ? (
-                <View style={styles.form}>
-                  {/* Logo Section Améliorée */}
-                  {logoUrl ? (
-                    <View style={styles.logoPreviewContainer}>
-                      <Image source={{ uri: logoUrl }} style={styles.logoPreview} />
-                      {isEditingPro && (
-                        <TouchableOpacity
-                          style={styles.changeLogoButton}
-                          onPress={() => pickImage('logo')}>
-                          <Camera size={12} color={colors.primary.main} />
-                          <Text style={styles.changeLogoText}>Changer</Text>
-                        </TouchableOpacity>
-                      )}
-                    </View>
-                  ) : (
-                    isEditingPro && (
+              <View style={styles.form}>
+                {/* Logo Section */}
+                {logoUrl ? (
+                  <View style={styles.logoPreviewContainer}>
+                    <Image source={{ uri: logoUrl }} style={styles.logoPreview} />
+                    {isEditingPro && (
                       <TouchableOpacity
-                        style={styles.addLogoButton}
+                        style={styles.changeLogoButton}
                         onPress={() => pickImage('logo')}>
-                        <LucideImage size={20} color={colors.primary.main} />
-                        <Text style={styles.addLogoText}>Ajouter un logo</Text>
+                        <Camera size={12} color={colors.primary.main} />
+                        <Text style={styles.changeLogoText}>Changer</Text>
                       </TouchableOpacity>
-                    )
-                  )}
+                    )}
+                  </View>
+                ) : (
+                  isEditingPro && (
+                    <TouchableOpacity
+                      style={styles.addLogoButton}
+                      onPress={() => pickImage('logo')}>
+                      <LucideImage size={20} color={colors.primary.main} />
+                      <Text style={styles.addLogoText}>Ajouter un logo</Text>
+                    </TouchableOpacity>
+                  )
+                )}
 
-                  {/* Form Fields Compacts */}
-                  <View style={styles.inputGroup}>
-                    <Text style={styles.label}>Nom de l'entreprise *</Text>
+                {/* Form Fields */}
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Email professionnel</Text>
+                  <View style={[styles.inputContainer, isEditingPro && styles.activeInput]}>
+                    <AtSign size={16} color={colors.text.secondary} />
+                    <TextInput
+                      style={styles.input}
+                      value={professionalEmail}
+                      onChangeText={setProfessionalEmail}
+                      editable={isEditingPro}
+                      placeholder="contact@entreprise.com"
+                      placeholderTextColor={colors.text.muted}
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                    />
+                  </View>
+                </View>
+
+                {/* Address Row */}
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Adresse</Text>
+                  <View style={[styles.inputContainer, isEditingPro && styles.activeInput]}>
+                    <MapPin size={16} color={colors.text.secondary} />
+                    <TextInput
+                      style={styles.input}
+                      value={professionalAddress}
+                      onChangeText={setProfessionalAddress}
+                      editable={isEditingPro}
+                      placeholder="Rue, numéro"
+                      placeholderTextColor={colors.text.muted}
+                    />
+                  </View>
+                </View>
+
+                <View style={styles.inputRow}>
+                  <View style={[styles.inputGroup, { flex: 2 }]}>
+                    <Text style={styles.label}>Ville</Text>
                     <View style={[styles.inputContainer, isEditingPro && styles.activeInput]}>
-                      <Building2 size={16} color={colors.text.secondary} />
                       <TextInput
-                        style={styles.input}
-                        value={companyName}
-                        onChangeText={setCompanyName}
+                        style={[styles.input, { marginLeft: 12 }]}
+                        value={city}
+                        onChangeText={setCity}
                         editable={isEditingPro}
-                        placeholder="Ex: Hypster Studio"
+                        placeholder="Paris"
                         placeholderTextColor={colors.text.muted}
                       />
                     </View>
                   </View>
 
-                  <View style={styles.inputGroup}>
-                    <Text style={styles.label}>Email professionnel</Text>
+                  <View style={[styles.inputGroup, { flex: 1 }]}>
+                    <Text style={styles.label}>CP</Text>
                     <View style={[styles.inputContainer, isEditingPro && styles.activeInput]}>
-                      <AtSign size={16} color={colors.text.secondary} />
                       <TextInput
-                        style={styles.input}
-                        value={professionalEmail}
-                        onChangeText={setProfessionalEmail}
+                        style={[styles.input, { marginLeft: 12 }]}
+                        value={postalCode}
+                        onChangeText={setPostalCode}
                         editable={isEditingPro}
-                        placeholder="contact@entreprise.com"
+                        placeholder="75001"
                         placeholderTextColor={colors.text.muted}
-                        keyboardType="email-address"
-                        autoCapitalize="none"
+                        keyboardType="numeric"
+                        maxLength={5}
                       />
                     </View>
                   </View>
+                </View>
 
-                  {/* Address Row */}
-                  <View style={styles.inputGroup}>
-                    <Text style={styles.label}>Adresse</Text>
-                    <View style={[styles.inputContainer, isEditingPro && styles.activeInput]}>
-                      <MapPin size={16} color={colors.text.secondary} />
-                      <TextInput
-                        style={styles.input}
-                        value={professionalAddress}
-                        onChangeText={setProfessionalAddress}
-                        editable={isEditingPro}
-                        placeholder="Rue, numéro"
-                        placeholderTextColor={colors.text.muted}
-                      />
-                    </View>
+                {/* Country Picker */}
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Pays</Text>
+                  <TouchableOpacity
+                    style={[
+                      styles.countryPickerButton,
+                      !isEditingPro && styles.disabledButton,
+                    ]}
+                    onPress={() => isEditingPro && setShowCountryPicker(true)}
+                    disabled={!isEditingPro}>
+                    <Globe size={16} color={colors.text.secondary} />
+                    <Text style={styles.countryPickerText}>
+                      {selectedCountry
+                        ? `${selectedCountry.flag} ${selectedCountry.name}`
+                        : country || 'Sélectionner'}
+                    </Text>
+                    <ChevronRight size={14} color={colors.text.muted} />
+                  </TouchableOpacity>
+                </View>
+
+                {/* Phone Numbers */}
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Téléphone principal</Text>
+                  <View style={[styles.inputContainer, isEditingPro && styles.activeInput]}>
+                    <Phone size={16} color={colors.text.secondary} />
+                    {selectedCountry && (
+                      <View style={styles.inlinePrefix}>
+                        <Text style={styles.prefixFlag}>{selectedCountry.flag}</Text>
+                        <Text style={styles.prefixCode}>{selectedCountry.phoneCode}</Text>
+                      </View>
+                    )}
+                    <TextInput
+                      style={styles.input}
+                      value={professionalPhone}
+                      onChangeText={setProfessionalPhone}
+                      editable={isEditingPro}
+                      placeholder="6 12 34 56 78"
+                      placeholderTextColor={colors.text.muted}
+                      keyboardType="phone-pad"
+                    />
                   </View>
+                </View>
 
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Téléphone secondaire</Text>
+                  <View style={[styles.inputContainer, isEditingPro && styles.activeInput]}>
+                    <Phone size={16} color={colors.text.secondary} />
+                    {selectedCountry && (
+                      <View style={styles.inlinePrefix}>
+                        <Text style={styles.prefixFlag}>{selectedCountry.flag}</Text>
+                        <Text style={styles.prefixCode}>{selectedCountry.phoneCode}</Text>
+                      </View>
+                    )}
+                    <TextInput
+                      style={styles.input}
+                      value={professionalPhone2}
+                      onChangeText={setProfessionalPhone2}
+                      editable={isEditingPro}
+                      placeholder="Optionnel"
+                      placeholderTextColor={colors.text.muted}
+                      keyboardType="phone-pad"
+                    />
+                  </View>
+                </View>
+
+                {/* SIRET & TVA (France uniquement) */}
+                {selectedCountry?.name === 'France' && (
                   <View style={styles.inputRow}>
-                    <View style={[styles.inputGroup, { flex: 2 }]}>
-                      <Text style={styles.label}>Ville</Text>
+                    <View style={[styles.inputGroup, { flex: 1 }]}>
+                      <Text style={styles.label}>SIRET</Text>
                       <View style={[styles.inputContainer, isEditingPro && styles.activeInput]}>
                         <TextInput
-                          style={[styles.input, { marginLeft: 12 }]}
-                          value={city}
-                          onChangeText={setCity}
+                          style={[styles.input, { marginLeft: 12, fontSize: 13 }]}
+                          value={siret}
+                          onChangeText={setSiret}
                           editable={isEditingPro}
-                          placeholder="Paris"
+                          placeholder="14 chiffres"
                           placeholderTextColor={colors.text.muted}
+                          keyboardType="numeric"
+                          maxLength={14}
                         />
                       </View>
                     </View>
 
                     <View style={[styles.inputGroup, { flex: 1 }]}>
-                      <Text style={styles.label}>CP</Text>
+                      <Text style={styles.label}>N° TVA</Text>
                       <View style={[styles.inputContainer, isEditingPro && styles.activeInput]}>
                         <TextInput
-                          style={[styles.input, { marginLeft: 12 }]}
-                          value={postalCode}
-                          onChangeText={setPostalCode}
+                          style={[styles.input, { marginLeft: 12, fontSize: 13 }]}
+                          value={vatNumber}
+                          onChangeText={setVatNumber}
                           editable={isEditingPro}
-                          placeholder="75001"
+                          placeholder="FR..."
                           placeholderTextColor={colors.text.muted}
-                          keyboardType="numeric"
-                          maxLength={5}
                         />
                       </View>
                     </View>
                   </View>
+                )}
 
-                  {/* Country Picker */}
-                  <View style={styles.inputGroup}>
-                    <Text style={styles.label}>Pays</Text>
-                    <TouchableOpacity
-                      style={[
-                        styles.countryPickerButton,
-                        !isEditingPro && styles.disabledButton,
-                      ]}
-                      onPress={() => isEditingPro && setShowCountryPicker(true)}
-                      disabled={!isEditingPro}>
-                      <Globe size={16} color={colors.text.secondary} />
-                      <Text style={styles.countryPickerText}>
-                        {selectedCountry
-                          ? `${selectedCountry.flag} ${selectedCountry.name}`
-                          : country || 'Sélectionner'}
-                      </Text>
-                      <ChevronRight size={14} color={colors.text.muted} />
+                {/* Bank & Website */}
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>IBAN / BIC</Text>
+                  <View style={[styles.inputContainer, isEditingPro && styles.activeInput]}>
+                    <CreditCard size={16} color={colors.text.secondary} />
+                    <TextInput
+                      style={styles.input}
+                      value={bankDetails}
+                      onChangeText={setBankDetails}
+                      editable={isEditingPro}
+                      placeholder="Coordonnées bancaires"
+                      placeholderTextColor={colors.text.muted}
+                    />
+                  </View>
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Site Web</Text>
+                  <View style={[styles.inputContainer, isEditingPro && styles.activeInput]}>
+                    <Link size={16} color={colors.text.secondary} />
+                    <TextInput
+                      style={styles.input}
+                      value={websiteUrl}
+                      onChangeText={setWebsiteUrl}
+                      editable={isEditingPro}
+                      placeholder="www.votre-site.com"
+                      placeholderTextColor={colors.text.muted}
+                      autoCapitalize="none"
+                      keyboardType="url"
+                    />
+                  </View>
+                </View>
+
+                {isEditingPro && (
+                  <View style={styles.editActions}>
+                    <TouchableOpacity style={styles.cancelButton} onPress={resetProfessionalForm}>
+                      <Text style={styles.cancelButtonText}>Annuler</Text>
                     </TouchableOpacity>
+                    <Animated.View style={{ flex: 1, transform: [{ scale: saveButtonScale }] }}>
+                      <TouchableOpacity
+                        style={[styles.saveButton, isLoading && styles.disabledButton]}
+                        onPress={handleSaveProfessional}
+                        disabled={isLoading}
+                        activeOpacity={0.8}>
+                        <Check size={18} color="#000" />
+                        <Text style={styles.saveButtonText}>
+                          {isLoading ? 'Sauvegarde...' : 'Enregistrer'}
+                        </Text>
+                      </TouchableOpacity>
+                    </Animated.View>
                   </View>
-
-                  {/* Phone Numbers */}
-                  <View style={styles.inputGroup}>
-                    <Text style={styles.label}>Téléphone principal</Text>
-                    <View style={[styles.inputContainer, isEditingPro && styles.activeInput]}>
-                      <Phone size={16} color={colors.text.secondary} />
-                      {selectedCountry && (
-                        <View style={styles.inlinePrefix}>
-                          <Text style={styles.prefixFlag}>{selectedCountry.flag}</Text>
-                          <Text style={styles.prefixCode}>{selectedCountry.phoneCode}</Text>
-                        </View>
-                      )}
-                      <TextInput
-                        style={styles.input}
-                        value={professionalPhone}
-                        onChangeText={setProfessionalPhone}
-                        editable={isEditingPro}
-                        placeholder="6 12 34 56 78"
-                        placeholderTextColor={colors.text.muted}
-                        keyboardType="phone-pad"
-                      />
-                    </View>
-                  </View>
-
-                  <View style={styles.inputGroup}>
-                    <Text style={styles.label}>Téléphone secondaire</Text>
-                    <View style={[styles.inputContainer, isEditingPro && styles.activeInput]}>
-                      <Phone size={16} color={colors.text.secondary} />
-                      {selectedCountry && (
-                        <View style={styles.inlinePrefix}>
-                          <Text style={styles.prefixFlag}>{selectedCountry.flag}</Text>
-                          <Text style={styles.prefixCode}>{selectedCountry.phoneCode}</Text>
-                        </View>
-                      )}
-                      <TextInput
-                        style={styles.input}
-                        value={professionalPhone2}
-                        onChangeText={setProfessionalPhone2}
-                        editable={isEditingPro}
-                        placeholder="Optionnel"
-                        placeholderTextColor={colors.text.muted}
-                        keyboardType="phone-pad"
-                      />
-                    </View>
-                  </View>
-
-                  {/* SIRET & TVA (France uniquement) */}
-                  {selectedCountry?.name === 'France' && (
-                    <View style={styles.inputRow}>
-                      <View style={[styles.inputGroup, { flex: 1 }]}>
-                        <Text style={styles.label}>SIRET</Text>
-                        <View style={[styles.inputContainer, isEditingPro && styles.activeInput]}>
-                          <TextInput
-                            style={[styles.input, { marginLeft: 12, fontSize: 13 }]}
-                            value={siret}
-                            onChangeText={setSiret}
-                            editable={isEditingPro}
-                            placeholder="14 chiffres"
-                            placeholderTextColor={colors.text.muted}
-                            keyboardType="numeric"
-                            maxLength={14}
-                          />
-                        </View>
-                      </View>
-
-                      <View style={[styles.inputGroup, { flex: 1 }]}>
-                        <Text style={styles.label}>N° TVA</Text>
-                        <View style={[styles.inputContainer, isEditingPro && styles.activeInput]}>
-                          <TextInput
-                            style={[styles.input, { marginLeft: 12, fontSize: 13 }]}
-                            value={vatNumber}
-                            onChangeText={setVatNumber}
-                            editable={isEditingPro}
-                            placeholder="FR..."
-                            placeholderTextColor={colors.text.muted}
-                          />
-                        </View>
-                      </View>
-                    </View>
-                  )}
-
-                  {/* Bank & Website */}
-                  <View style={styles.inputGroup}>
-                    <Text style={styles.label}>IBAN / BIC</Text>
-                    <View style={[styles.inputContainer, isEditingPro && styles.activeInput]}>
-                      <CreditCard size={16} color={colors.text.secondary} />
-                      <TextInput
-                        style={styles.input}
-                        value={bankDetails}
-                        onChangeText={setBankDetails}
-                        editable={isEditingPro}
-                        placeholder="Coordonnées bancaires"
-                        placeholderTextColor={colors.text.muted}
-                      />
-                    </View>
-                  </View>
-
-                  <View style={styles.inputGroup}>
-                    <Text style={styles.label}>Site Web</Text>
-                    <View style={[styles.inputContainer, isEditingPro && styles.activeInput]}>
-                      <Link size={16} color={colors.text.secondary} />
-                      <TextInput
-                        style={styles.input}
-                        value={websiteUrl}
-                        onChangeText={setWebsiteUrl}
-                        editable={isEditingPro}
-                        placeholder="www.votre-site.com"
-                        placeholderTextColor={colors.text.muted}
-                        autoCapitalize="none"
-                        keyboardType="url"
-                      />
-                    </View>
-                  </View>
-                </View>
-              ) : (
-                <View style={styles.infoBox}>
-                  <AlertCircle size={18} color={colors.primary.main} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.infoText}>
-                      En mode Particulier, l'IA utilisera votre nom pour les créations.
-                    </Text>
-                    <Text style={styles.infoTextSecondary}>
-                      Passez en mode Entreprise pour ajouter vos coordonnées pros.
-                    </Text>
-                  </View>
-                </View>
-              )}
-
-              {isEditingPro && (
-                <View style={styles.editActions}>
-                  <TouchableOpacity style={styles.cancelButton} onPress={resetProfessionalForm}>
-                    <Text style={styles.cancelButtonText}>Annuler</Text>
-                  </TouchableOpacity>
-                  <Animated.View style={{ flex: 1, transform: [{ scale: saveButtonScale }] }}>
-                    <TouchableOpacity
-                      style={[styles.saveButton, isLoading && styles.disabledButton]}
-                      onPress={handleSaveProfessional}
-                      disabled={isLoading}
-                      activeOpacity={0.8}>
-                      <Check size={18} color="#000" />
-                      <Text style={styles.saveButtonText}>
-                        {isLoading ? 'Sauvegarde...' : 'Enregistrer'}
-                      </Text>
-                    </TouchableOpacity>
-                  </Animated.View>
-                </View>
-              )}
+                )}
+              </View>
             </View>
           </View>
 
@@ -986,8 +879,8 @@ export default function ProfileScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  scrollContent: { 
-    padding: 20, 
+  scrollContent: {
+    padding: 20,
     paddingBottom: 60,
   },
   header: {
@@ -1006,7 +899,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.08)',
   },
-  headerContent: { 
+  headerContent: {
     flex: 1,
   },
   title: {
@@ -1019,7 +912,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.text.secondary,
   },
-  section: { 
+  section: {
     marginBottom: 24,
   },
   sectionHeader: {
@@ -1114,10 +1007,10 @@ const styles = StyleSheet.create({
     color: colors.status.error,
     fontWeight: '600',
   },
-  form: { 
+  form: {
     gap: 14,
   },
-  inputGroup: { 
+  inputGroup: {
     gap: 6,
   },
   inputRow: {

@@ -6,16 +6,8 @@ interface OnboardingState {
   setPlan: (plan: string) => void;
 
   // Step 1: Profile & Identity
-  profileType: 'particulier' | 'entreprise' | null;
-  firstName: string;
   lastName: string;
-  companyName: string;
-  setProfileData: (data: {
-    profileType: 'particulier' | 'entreprise';
-    firstName: string;
-    lastName: string;
-    companyName?: string;
-  }) => void;
+  setProfileData: (data: { lastName: string }) => void;
 
   // Step 2: Branding
   brandingColor: string;
@@ -39,10 +31,7 @@ export const useOnboardingStore = create<OnboardingState>((set) => ({
   selectedPlan: 'curieux',
   setPlan: (plan) => set({ selectedPlan: plan }),
 
-  profileType: null,
-  firstName: '',
   lastName: '',
-  companyName: '',
   setProfileData: (data) => set((state) => ({ ...state, ...data })),
 
   brandingColor: '#000000',
@@ -56,10 +45,7 @@ export const useOnboardingStore = create<OnboardingState>((set) => ({
   reset: () =>
     set({
       selectedPlan: 'curieux',
-      profileType: null,
-      firstName: '',
       lastName: '',
-      companyName: '',
       brandingColor: '#000000',
       logoUri: null,
       avatarUri: null,

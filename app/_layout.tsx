@@ -1,3 +1,20 @@
+// Polyfill for Reflect.construct to fix "Unable to activate keep awake" crash in some environments
+// if (typeof Reflect === 'undefined' || !Reflect.construct) {
+//   // @ts-ignore
+//   require('harmony-reflect'); // Or a simple shim if harmony-reflect isn't available
+//   if (typeof Reflect === 'undefined' || !Reflect.construct) {
+//     (global as any).Reflect = (global as any).Reflect || {};
+//     (global as any).Reflect.construct = function (Target: any, args: any, newTarget: any) {
+//       const a = [null];
+//       a.push.apply(a, args);
+//       const Constructor = Target.bind.apply(Target, a);
+//       const instance = new Constructor();
+//       if (newTarget) Object.setPrototypeOf(instance, newTarget.prototype);
+//       return instance;
+//     };
+//   }
+// }
+
 import React, { useEffect } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';

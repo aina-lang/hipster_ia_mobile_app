@@ -20,19 +20,13 @@ import { useAuthStore } from '../../store/authStore';
 import { useOnboardingStore } from '../../store/onboardingStore';
 
 export default function VerifyEmailScreen() {
-  const { email } = useLocalSearchParams<{ email: string }>();
+  const { email, redirectTo } = useLocalSearchParams<{ email: string; redirectTo?: string }>();
   const [code, setCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { aiVerifyEmail, updateAiProfile, uploadAvatar, uploadLogo } = useAuthStore();
-
-  // Onboarding data
-  const {
-    profileType, companyName, job, selectedPlan,
-    brandingColor, logoUri, avatarUri, reset: resetOnboarding
-  } = useOnboardingStore();
+  const { aiVerifyEmail } = useAuthStore();
 
   const handleVerify = async () => {
     if (!code || code.length < 4) {
@@ -45,8 +39,13 @@ export default function VerifyEmailScreen() {
     try {
       // 1. Verify Email (Logs user in)
       await aiVerifyEmail(email as string, code);
-      // Auto redirect to onboarding (profil entreprise direct)
-      router.push('/(onboarding)/age');
+
+      // Navigate based on redirectTo or default onboarding flow
+      if (redirectTo === 'subscription') {
+        router.push('/(onboarding)/packs');
+      } else {
+        router.push('/(onboarding)/age');
+      }
     } catch (e: any) {
       const message = e.response?.data?.message || 'Code invalide ou expiré.';
       setError(message);

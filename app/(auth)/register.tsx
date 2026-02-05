@@ -23,9 +23,7 @@ import { useOnboardingStore } from '../../store/onboardingStore';
 export default function RegisterScreen() {
   // Pull data from onboarding store
   const {
-    firstName: storeFirst,
     lastName: storeLast,
-    profileType, companyName,
     job, selectedPlan,
     brandingColor, logoUri, avatarUri
   } = useOnboardingStore();
@@ -71,8 +69,7 @@ export default function RegisterScreen() {
     try {
       // 1. Register User
       const registerRes = await aiRegister({
-        firstName: storeFirst || 'User', // Use collected first name from store
-        lastName: storeLast || '',       // Use collected last name from store
+        lastName: storeLast || 'User', // Use collected name from store
         email,
         password
       });
@@ -203,17 +200,6 @@ export default function RegisterScreen() {
                     }}
                     secureTextEntry={!showConfirmPassword}
                   />
-                  {/* 
-                <TouchableOpacity
-                  style={styles.eyeIcon}
-                  onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
-                  {showConfirmPassword ? (
-                    <EyeOff size={20} color={colors.text.muted} />
-                  ) : (
-                    <Eye size={20} color={colors.text.muted} />
-                  )}
-                </TouchableOpacity> 
-                */}
                 </View>
               </View>
 
