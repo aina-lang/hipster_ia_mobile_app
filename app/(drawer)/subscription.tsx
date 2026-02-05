@@ -148,8 +148,18 @@ export default function SubscriptionScreen() {
       
       console.log('[Plan Confirmation] Limits applied:', confirmResp.data?.limits);
       
-      // Update local user store with new limits
-      await updateAiProfile({ planType: planId });
+      // Refresh user data to get the updated planType from server
+      try {
+        const userResp = await api.get('/users/me');
+        if (userResp.data?.data?.aiProfile) {
+          // Update store with fresh user data including planType
+          const { updateUser } = useAuthStore.getState();
+          updateUser(userResp.data.data);
+          console.log('[Plan Confirmation] User data refreshed with new plan:', userResp.data.data.aiProfile.planType);
+        }
+      } catch (e) {
+        console.error('[Plan Confirmation] Could not refresh user:', e);
+      }
       
       // Show success with limits info
       const limits = confirmResp.data?.limits;
@@ -162,7 +172,7 @@ export default function SubscriptionScreen() {
       ]);
     } catch (error) {
       console.error('Error saving plan:', error);
-      Alert.alert('Erreur', 'Impossible de sauvegarder votre plan.');
+      Alert.alert('Erreur', 'Impossible de sauvegarder votre plan. Veuillez réessayer.');
     }
   };
 

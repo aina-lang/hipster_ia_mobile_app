@@ -253,28 +253,54 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true, error: null });
         try {
           const currentUser = get().user;
-          if (!currentUser || !currentUser.aiProfile) {
-            throw new Error('AI Profile non trouvé');
+          if (!currentUser) {
+            throw new Error('Utilisateur non trouvé');
           }
 
-          console.log('[AuthStore] Updating AI Profile:', {
-            id: currentUser.aiProfile.id,
-            payload: data,
-          });
+          // If profile doesn't exist, create it first by fetching fresh user data
+          if (!currentUser.aiProfile) {
+            console.log('[AuthStore] AI Profile does not exist, fetching fresh user data');
+            const userResp = await api.get('/users/me');
+            const freshUser = userResp.data?.data || userResp.data;
+            
+            if (freshUser?.aiProfile) {
+              set({
+                user: {
+                  ...currentUser,
+                  aiProfile: freshUser.aiProfile,
+                }
+              });
+              // Now update with new data
+              const response = await api.patch(`/profiles/ai/${freshUser.aiProfile.id}`, data);
+              console.log('[AuthStore] AI Profile updated successfully:', response.data);
+              set({
+                user: {
+                  ...currentUser,
+                  aiProfile: { ...freshUser.aiProfile, ...data },
+                },
+              });
+            } else {
+              throw new Error('Impossible de créer le profil AI');
+            }
+          } else {
+            console.log('[AuthStore] Updating AI Profile:', {
+              id: currentUser.aiProfile.id,
+              payload: data,
+            });
 
-          // Call API to update AI profile
-          // The backend endpoint is PATCH /profiles/ai/:id
-          const response = await api.patch(`/profiles/ai/${currentUser.aiProfile.id}`, data);
+            // Call API to update AI profile
+            const response = await api.patch(`/profiles/ai/${currentUser.aiProfile.id}`, data);
 
-          console.log('[AuthStore] AI Profile updated successfully:', response.data);
+            console.log('[AuthStore] AI Profile updated successfully:', response.data);
 
-          // Update local state
-          set({
-            user: {
-              ...currentUser,
-              aiProfile: { ...currentUser.aiProfile, ...data },
-            },
-          });
+            // Update local state
+            set({
+              user: {
+                ...currentUser,
+                aiProfile: { ...currentUser.aiProfile, ...data },
+              },
+            });
+          }
           set({ isLoading: false });
         } catch (error: any) {
           console.error('[AuthStore] Failed to update AI Profile:', error);
