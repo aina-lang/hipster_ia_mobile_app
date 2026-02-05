@@ -12,7 +12,6 @@ import {
   Dimensions,
   ScrollView,
   Share as RNShare,
-  Alert,
 } from 'react-native';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
@@ -598,7 +597,7 @@ export default function Step3ResultScreen() {
     } catch (error: any) {
       console.error('Generation error:', error);
       const errMsg = error?.response?.data?.message || error.message || 'Erreur inconnue';
-      Alert.alert('Erreur de génération', errMsg);
+      showModal('error', 'Erreur de génération', errMsg);
       setResult('Une erreur est survenue lors de la génération. ' + errMsg);
     } finally {
       setLoading(false);

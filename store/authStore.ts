@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { api } from '../api/client';
+import { api, BASE_URL } from '../api/client';
 
 const extractErrorMessage = (error: any, defaultMessage: string) => {
   const responseData = error.response?.data;
@@ -34,10 +34,8 @@ const extractErrorMessage = (error: any, defaultMessage: string) => {
 interface User {
   id: number;
   email: string;
-  firstName?: string;
   lastName: string;
   avatarUrl?: string;
-  roles?: string[]; // Optional for AI users
   isEmailVerified: boolean;
   profiles?: {
     client?: any;
@@ -63,6 +61,10 @@ interface User {
     websiteUrl?: string;
     logoUrl?: string;
     isSetupComplete: boolean;
+    profileType?: 'particulier' | 'entreprise';
+    companyName?: string;
+    job?: string;
+    brandingColor?: string;
     aiCreditUsage?: {
       promptsUsed: number;
       imagesUsed: number;
@@ -236,6 +238,9 @@ export const useAuthStore = create<AuthState>()(
           });
 
           const logoUrl = data.data.logoUrl;
+          const fullLogoUrl = logoUrl.startsWith('http')
+            ? logoUrl
+            : `${BASE_URL.replace('/api', '')}${logoUrl}`;
 
           // Update local state
           const currentUser = get().user;
@@ -243,13 +248,13 @@ export const useAuthStore = create<AuthState>()(
             set({
               user: {
                 ...currentUser,
-                aiProfile: { ...currentUser.aiProfile, logoUrl },
+                aiProfile: { ...currentUser.aiProfile, logoUrl: fullLogoUrl },
               },
             });
           }
 
           set({ isLoading: false });
-          return logoUrl;
+          return fullLogoUrl;
         } catch (error: any) {
           const message = extractErrorMessage(error, "Erreur lors de l'upload du logo.");
           set({ error: message, isLoading: false });
@@ -273,14 +278,19 @@ export const useAuthStore = create<AuthState>()(
           // Call API to update AI profile
           // The backend endpoint is PATCH /profiles/ai/:id
           const response = await api.patch(`/profiles/ai/${currentUser.aiProfile.id}`, data);
+          const updatedProfile = response.data.data;
+          console.log('[AuthStore] AI Profile updated successfully:', updatedProfile);
 
-          console.log('[AuthStore] AI Profile updated successfully:', response.data);
+          // Map relative paths if necessary
+          if (updatedProfile.logoUrl && !updatedProfile.logoUrl.startsWith('http')) {
+            updatedProfile.logoUrl = `${BASE_URL.replace('/api', '')}${updatedProfile.logoUrl}`;
+          }
 
-          // Update local state
+          // Update local state with total synced data
           set({
             user: {
               ...currentUser,
-              aiProfile: { ...currentUser.aiProfile, ...data },
+              aiProfile: { ...currentUser.aiProfile, ...updatedProfile },
             },
           });
           set({ isLoading: false });

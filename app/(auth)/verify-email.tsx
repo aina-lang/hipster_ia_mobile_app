@@ -6,7 +6,6 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Platform,
-  Alert,
   TouchableOpacity,
   BackHandler,
 } from 'react-native';
@@ -21,6 +20,8 @@ import { colors } from '../../theme/colors';
 import { api } from '../../api/client';
 import { useAuthStore } from '../../store/authStore';
 import { useOnboardingStore } from '../../store/onboardingStore';
+import { BackgroundGradientOnboarding } from '../../components/ui/BackgroundGradientOnboarding';
+import { GenericModal } from '../../components/ui/GenericModal';
 
 export default function VerifyEmailScreen() {
   const { email, redirectTo, stripeData, planId, userId } = useLocalSearchParams<{
@@ -39,42 +40,49 @@ export default function VerifyEmailScreen() {
   const navigation = useNavigation();
   const allowNavRef = useRef(false);
 
+  // Modal State
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalType, setModalType] = useState<any>('info');
+  const [modalTitle, setModalTitle] = useState('');
+  const [modalMessage, setModalMessage] = useState('');
+
+  const showModal = (type: any, title: string, message: string = '') => {
+    setModalType(type);
+    setModalTitle(title);
+    setModalMessage(message);
+    setModalVisible(true);
+  };
+
   // 1. Block back navigation on Android hardware button
   useEffect(() => {
     const onBackPress = () => {
-      if (!allowNavRef.current) {
-        Alert.alert(
-          'Action interdite',
-          'Veuillez vérifier votre email pour continuer.',
-          [{ text: 'OK', style: 'cancel' }]
-        );
+      const { isAuthenticated } = useAuthStore.getState();
+      if (!allowNavRef.current && !isAuthenticated) {
+        showModal('warning', 'Action interdite', 'Veuillez vérifier votre email pour continuer.');
         return true; // Block event
       }
       return false; // Allow event
     };
 
-    BackHandler.addEventListener('hardwareBackPress', onBackPress);
-    return () => BackHandler.removeEventListener('hardwareBackPress', onBackPress);
+    const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => subscription.remove();
   }, []);
 
   // 2. Block back navigation from UI (swipe, button, etc.)
   useEffect(() => {
     const unsubscribe = navigation.addListener('beforeRemove', (e) => {
-      if (allowNavRef.current) return;
+      const { isAuthenticated } = useAuthStore.getState();
+      if (allowNavRef.current || isAuthenticated) return;
 
       e.preventDefault();
-      Alert.alert(
-        'Action interdite',
-        'Veuillez vérifier votre email pour continuer.',
-        [{ text: 'OK', style: 'cancel' }]
-      );
+      showModal('warning', 'Action interdite', 'Veuillez vérifier votre email pour continuer.');
     });
     return unsubscribe;
   }, [navigation]);
 
   const handleVerify = async () => {
     if (!code || code.length < 4) {
-      Alert.alert('Erreur', 'Veuillez entrer le code de vérification.');
+      showModal('error', 'Erreur', 'Veuillez entrer le code de vérification.');
       return;
     }
 
@@ -108,7 +116,7 @@ export default function VerifyEmailScreen() {
     setError(null);
     try {
       await api.post('/ai/auth/resend-otp', { email });
-      Alert.alert('Envoyé', 'Un nouveau code a été envoyé à votre adresse email.');
+      showModal('success', 'Envoyé', 'Un nouveau code a été envoyé à votre adresse email.');
     } catch (e: any) {
       const message = e.response?.data?.message || "Erreur lors de l'envoi du nouveau code.";
       setError(message);
@@ -118,80 +126,89 @@ export default function VerifyEmailScreen() {
   };
 
   return (
-    <BackgroundGradient>
-      <StepIndicator currentStep={2} totalSteps={4} />
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.container}>
-        <Animated.View entering={FadeInDown.duration(800)} style={styles.content}>
-          <View style={styles.iconContainer}>
-            <ShieldCheck size={60} color={colors.primary.main} />
-          </View>
+    <>
+      <BackgroundGradientOnboarding blurIntensity={80}>
 
-          <Text style={styles.title}>Vérifiez votre email</Text>
-          <Text style={styles.subtitle}>
-            Nous avons envoyé un code de vérification à :{'\n'}
-            <Text style={styles.emailText}>{email}</Text>
-          </Text>
-
-          {error && (
-            <View style={styles.errorContainer}>
-              <AlertCircle size={20} color={colors.status.error} />
-              <Text style={styles.errorText}>{error}</Text>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.container}>
+          <Animated.View entering={FadeInDown.duration(800)} style={styles.content}>
+            <View style={styles.iconContainer}>
+              <ShieldCheck size={60} color={colors.primary.main} />
             </View>
-          )}
 
-          <View style={styles.form}>
-            <View style={styles.inputContainer}>
-              <TextInput
-                style={styles.input}
-                placeholder="Entrez le code"
-                placeholderTextColor={colors.text.muted}
-                value={code}
-                onChangeText={(text) => {
-                  setCode(text);
-                  setError(null);
-                }}
-                keyboardType="number-pad"
-                maxLength={6}
-                textAlign="center"
+            <Text style={styles.title}>Vérifiez votre email</Text>
+            <Text style={styles.subtitle}>
+              Nous avons envoyé un code de vérification à :{'\n'}
+              <Text style={styles.emailText}>{email}</Text>
+            </Text>
+
+            {error && (
+              <View style={styles.errorContainer}>
+                <AlertCircle size={20} color={colors.status.error} />
+                <Text style={styles.errorText}>{error}</Text>
+              </View>
+            )}
+
+            <View style={styles.form}>
+              <View style={styles.inputContainer}>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Entrez le code"
+                  placeholderTextColor={colors.text.muted}
+                  value={code}
+                  onChangeText={(text) => {
+                    setCode(text);
+                    setError(null);
+                  }}
+                  keyboardType="number-pad"
+                  maxLength={6}
+                  textAlign="center"
+                />
+              </View>
+
+              <NeonButton
+                title="Vérifier"
+                onPress={handleVerify}
+                size="lg"
+                variant="premium"
+                loading={isLoading}
+                style={styles.verifyButton}
               />
-            </View>
 
-            <NeonButton
-              title="Vérifier"
-              onPress={handleVerify}
-              size="lg"
-              variant="premium"
-              loading={isLoading}
-              style={styles.verifyButton}
-            />
+              <View style={styles.footer}>
+                <Text style={styles.footerText}>Vous n'avez pas reçu le code ? </Text>
+                <TouchableOpacity onPress={handleResend} disabled={isResending}>
+                  <Text style={[styles.footerLink, isResending && { opacity: 0.5 }]}>
+                    {isResending ? 'Envoi...' : 'Renvoyer'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
 
-            <View style={styles.footer}>
-              <Text style={styles.footerText}>Vous n'avez pas reçu le code ? </Text>
-              <TouchableOpacity onPress={handleResend} disabled={isResending}>
-                <Text style={[styles.footerLink, isResending && { opacity: 0.5 }]}>
-                  {isResending ? 'Envoi...' : 'Renvoyer'}
-                </Text>
+              <TouchableOpacity
+                style={styles.backButton}
+                onPress={() => {
+                  allowNavRef.current = true;
+                  router.replace({
+                    pathname: '/(auth)/register',
+                    params: { email }
+                  });
+                }}
+              >
+                <Text style={styles.backButtonText}>Modifier l'adresse email</Text>
               </TouchableOpacity>
             </View>
-
-            <TouchableOpacity
-              style={styles.backButton}
-              onPress={() => {
-                allowNavRef.current = true;
-                router.replace({
-                  pathname: '/(auth)/register',
-                  params: { email }
-                });
-              }}
-            >
-              <Text style={styles.backButtonText}>Modifier l'adresse email</Text>
-            </TouchableOpacity>
-          </View>
-        </Animated.View>
-      </KeyboardAvoidingView>
-    </BackgroundGradient>
+          </Animated.View>
+        </KeyboardAvoidingView>
+      </BackgroundGradientOnboarding>
+      <GenericModal
+        visible={modalVisible}
+        type={modalType}
+        title={modalTitle}
+        message={modalMessage}
+        onClose={() => setModalVisible(false)}
+      />
+    </>
   );
 }
 

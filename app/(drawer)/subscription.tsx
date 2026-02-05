@@ -6,7 +6,6 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
-  Alert,
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -17,6 +16,7 @@ import { useStripe } from '@stripe/stripe-react-native';
 import { api } from '../../api/client';
 import { useAuthStore } from '../../store/authStore';
 import { UsageBar } from '../../components/UsageBar';
+import { GenericModal } from '../../components/ui/GenericModal';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://hipster-api.fr';
 
@@ -38,6 +38,19 @@ export default function SubscriptionScreen() {
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const { initPaymentSheet, presentPaymentSheet } = useStripe();
   const { user, updateAiProfile } = useAuthStore();
+
+  // Modal State
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalType, setModalType] = useState<any>('info');
+  const [modalTitle, setModalTitle] = useState('');
+  const [modalMessage, setModalMessage] = useState('');
+
+  const showModal = (type: any, title: string, message: string = '') => {
+    setModalType(type);
+    setModalTitle(title);
+    setModalMessage(message);
+    setModalVisible(true);
+  };
 
   useEffect(() => {
     fetchPlans();
@@ -126,7 +139,7 @@ export default function SubscriptionScreen() {
 
       const presentResult: any = await presentPaymentSheet();
       if (presentResult.error) {
-        Alert.alert('Paiement échoué', presentResult.error.message || 'Erreur lors du paiement');
+        showModal('error', 'Paiement échoué', presentResult.error.message || 'Erreur lors du paiement');
         setLoading(false);
         return;
       }
@@ -135,7 +148,7 @@ export default function SubscriptionScreen() {
       await handlePlanConfirmation(selectedPlan!);
     } catch (e: any) {
       console.error('Stripe init error:', e);
-      Alert.alert('Erreur paiement', e?.message || 'Impossible d\'initialiser le paiement.');
+      showModal('error', 'Erreur paiement', e?.message || 'Impossible d\'initialiser le paiement.');
     } finally {
       setLoading(false);
     }
@@ -145,24 +158,28 @@ export default function SubscriptionScreen() {
     try {
       // Confirm plan on backend (applies limits to AiCredit)
       const confirmResp = await api.post('/ai/payment/confirm-plan', { planId });
-      
+
       console.log('[Plan Confirmation] Limits applied:', confirmResp.data?.limits);
-      
+
       // Update local user store with new limits
       await updateAiProfile({ planType: planId });
-      
+
       // Show success with limits info
       const limits = confirmResp.data?.limits;
-      const limitsText = limits 
+      const limitsText = limits
         ? `\n\nVos limites:\n• ${limits.promptsLimit} textes\n• ${limits.imagesLimit} images\n• ${limits.videosLimit} vidéos\n• ${limits.audioLimit} audios`
         : '';
-      
-      Alert.alert('Succès ! 🎉', `Abonnement activé avec succès.${limitsText}`, [
-        { text: 'OK', onPress: () => router.push('/(onboarding)/welcome') }
-      ]);
+
+      showModal('success', 'Succès ! 🎉', `Abonnement activé avec succès.${limitsText}`);
+
+      // Delay navigation slightly to let user see success message
+      setTimeout(() => {
+        setModalVisible(false);
+        router.push('/(onboarding)/welcome');
+      }, 3000);
     } catch (error) {
       console.error('Error saving plan:', error);
-      Alert.alert('Erreur', 'Impossible de sauvegarder votre plan.');
+      showModal('error', 'Erreur', 'Impossible de sauvegarder votre plan.');
     }
   };
 
@@ -272,6 +289,13 @@ export default function SubscriptionScreen() {
         </TouchableOpacity>
         <Text style={styles.secureText}>Paiement sécurisé via Stripe</Text>
       </View>
+      <GenericModal
+        visible={modalVisible}
+        type={modalType}
+        title={modalTitle}
+        message={modalMessage}
+        onClose={() => setModalVisible(false)}
+      />
     </SafeAreaView>
   );
 }

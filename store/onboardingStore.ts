@@ -5,9 +5,7 @@ interface OnboardingState {
   selectedPlan: string;
   setPlan: (plan: string) => void;
 
-  // Step 1: Profile & Identity
-  lastName: string;
-  setProfileData: (data: { lastName: string }) => void;
+  // Step 1: Profile & Identity - Removed redundant fields
 
   // Step 2: Branding
   brandingColor: string;
@@ -31,8 +29,7 @@ export const useOnboardingStore = create<OnboardingState>((set) => ({
   selectedPlan: 'curieux',
   setPlan: (plan) => set({ selectedPlan: plan }),
 
-  lastName: '',
-  setProfileData: (data) => set((state) => ({ ...state, ...data })),
+  // setProfileData: (data) => set((state) => ({ ...state, ...data })),
 
   brandingColor: '#000000',
   logoUri: null,
@@ -45,7 +42,6 @@ export const useOnboardingStore = create<OnboardingState>((set) => ({
   reset: () =>
     set({
       selectedPlan: 'curieux',
-      lastName: '',
       brandingColor: '#000000',
       logoUri: null,
       avatarUri: null,

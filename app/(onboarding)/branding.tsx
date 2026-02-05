@@ -19,10 +19,14 @@ export default function BrandingScreen() {
         brandingColor, setBrandingData,
         logoUri, avatarUri
     } = useOnboardingStore();
+    const { user } = useAuthStore();
 
-    const [selectedColor, setSelectedColor] = useState(brandingColor || '#FF0000');
-    const [localLogo, setLocalLogo] = useState(logoUri);
-    const [localAvatar, setLocalAvatar] = useState(avatarUri);
+    const initialLogo = user?.aiProfile?.logoUrl || logoUri;
+    const initialAvatar = user?.avatarUrl || avatarUri;
+
+    const [selectedColor, setSelectedColor] = useState(user?.aiProfile?.brandingColor || brandingColor || '#FF0000');
+    const [localLogo, setLocalLogo] = useState(initialLogo);
+    const [localAvatar, setLocalAvatar] = useState(initialAvatar);
 
     const pickImage = async (type: 'logo' | 'avatar') => {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -50,7 +54,28 @@ export default function BrandingScreen() {
             logoUri: localLogo,
             avatarUri: localAvatar
         });
-        await finishOnboarding();
+
+        const authStore = useAuthStore.getState();
+        const profileId = authStore.user?.aiProfile?.id;
+
+        try {
+            // 1. Sync color
+            await authStore.updateAiProfile({
+                brandingColor: selectedColor,
+            });
+
+            // 2. Upload images if changed
+            if (localAvatar && localAvatar !== initialAvatar) {
+                await authStore.uploadAvatar(localAvatar);
+            }
+            if (localLogo && localLogo !== initialLogo && profileId) {
+                await authStore.uploadLogo(profileId, localLogo);
+            }
+        } catch (e) {
+            console.error('Failed to sync branding data', e);
+        }
+
+        await authStore.finishOnboarding();
         router.replace('/(drawer)');
     };
 
@@ -61,7 +86,7 @@ export default function BrandingScreen() {
 
     return (
         <BackgroundGradientOnboarding blurIntensity={90}>
-            <StepIndicator currentStep={4} totalSteps={4} />
+            <StepIndicator currentStep={2} totalSteps={2} />
 
             <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
                 <View style={styles.container}>

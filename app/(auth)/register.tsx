@@ -71,7 +71,7 @@ export default function RegisterScreen() {
       // 1. Register User with Plan
       const response = await aiRegister({
         firstName: '',
-        lastName: fullName,
+        name: fullName,
         email,
         password,
         planId: selectedPlan || 'curieux'
@@ -109,7 +109,6 @@ export default function RegisterScreen() {
 
   return (
     <BackgroundGradientOnboarding blurIntensity={90}>
-      <StepIndicator currentStep={1} totalSteps={4} />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.container}>
@@ -226,7 +225,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   scrollContent: {
-    paddingBottom: 120,
+    paddingTop: 120,
   },
   content: {
     paddingTop: 0,

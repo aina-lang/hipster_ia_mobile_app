@@ -8,7 +8,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useNavigation, useGlobalSearchParams } from 'expo-router';
@@ -33,6 +32,8 @@ import { useCreationStore } from '../../store/creationStore';
 import { AiService } from '../../api/ai.service';
 import { api } from '../../api/client';
 import { colors } from '../../theme/colors';
+import { GenericModal } from '../../components/ui/GenericModal';
+import { BackgroundGradientOnboarding } from 'components/ui/BackgroundGradientOnboarding';
 
 interface Message {
   id: string;
@@ -92,6 +93,19 @@ export default function HomeScreen() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isBackendConnected, setIsBackendConnected] = useState<boolean | null>(null);
 
+  // Modal State
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalType, setModalType] = useState<any>('info');
+  const [modalTitle, setModalTitle] = useState('');
+  const [modalMessage, setModalMessage] = useState('');
+
+  const showModal = (type: any, title: string, message: string = '') => {
+    setModalType(type);
+    setModalTitle(title);
+    setModalMessage(message);
+    setModalVisible(true);
+  };
+
   useEffect(() => {
     const checkConnection = async () => {
       try {
@@ -142,7 +156,7 @@ export default function HomeScreen() {
         Identité: Hipster IA
         Rôle: Assistant créatif et intelligent
         Tone: Amical et professionnel
-        Cible: ${user?.firstName || "l'utilisateur"}
+        Cible: ${user?.lastName || "l'utilisateur"}
         Contexte: ${user?.aiProfile?.companyName ? `Entreprise: ${user.aiProfile.companyName}` : ''}
       `;
 
@@ -171,7 +185,7 @@ export default function HomeScreen() {
     } catch (error: any) {
       console.error('[DEBUG] Free Mode Error:', error);
       const errMsg = error?.response?.data?.message || error.message || 'Erreur inconnue';
-      Alert.alert('Erreur de génération', errMsg);
+      showModal('error', 'Erreur de génération', errMsg);
 
       setMessages((prev) => [
         ...prev,
@@ -211,8 +225,8 @@ export default function HomeScreen() {
   };
 
   return (
-    <BackgroundGradient>
-      <SafeAreaView className="flex-1">
+    <BackgroundGradientOnboarding>
+      <SafeAreaView className="flex-1" >
         <KeyboardAvoidingView
           className="flex-1"
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -244,12 +258,10 @@ export default function HomeScreen() {
                 <View className="mt-5 items-center">
                   <Text className="mb-2 text-lg text-white/60">
                     {getGreetingByTime()}{' '}
-                    {user?.aiProfile?.profileType === 'entreprise'
-                      ? user.aiProfile.companyName || 'Entreprise'
-                      : user?.firstName || 'Utilisateur'}
+                    {user?.aiProfile?.companyName || user?.lastName || 'Utilisateur'}
                   </Text>
                   <Text className="text-center text-2xl font-bold leading-9 text-white">
-                    Que créons-nous aujourd'hui ?
+                    {user?.aiProfile?.job ? `Prêt pour votre prochaine création en tant que ${user.aiProfile.job.toLowerCase()} ?` : 'Que créons-nous aujourd\'hui ?'}
                   </Text>
                 </View>
 
@@ -300,17 +312,17 @@ export default function HomeScreen() {
                     style={
                       msg.sender === 'user'
                         ? {
-                            backgroundColor: 'rgba(44, 70, 155, 0.2)',
-                            borderColor: 'rgba(44, 70, 155, 0.4)',
-                            alignSelf: 'flex-end',
-                            borderBottomRightRadius: 4,
-                          }
+                          backgroundColor: 'rgba(44, 70, 155, 0.2)',
+                          borderColor: 'rgba(44, 70, 155, 0.4)',
+                          alignSelf: 'flex-end',
+                          borderBottomRightRadius: 4,
+                        }
                         : {
-                            alignSelf: 'flex-start',
-                            borderBottomLeftRadius: 4,
-                            borderColor: 'rgba(255, 255, 255, 0.1)',
-                            backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                          }
+                          alignSelf: 'flex-start',
+                          borderBottomLeftRadius: 4,
+                          borderColor: 'rgba(255, 255, 255, 0.1)',
+                          backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                        }
                     }>
                     {msg.sender === 'user' ? (
                       <Text className="text-base leading-6 text-white">{msg.text}</Text>
@@ -387,6 +399,13 @@ export default function HomeScreen() {
           </View>
         </KeyboardAvoidingView>
       </SafeAreaView>
-    </BackgroundGradient>
+      <GenericModal
+        visible={modalVisible}
+        type={modalType}
+        title={modalTitle}
+        message={modalMessage}
+        onClose={() => setModalVisible(false)}
+      />
+    </BackgroundGradientOnboarding>
   );
 }

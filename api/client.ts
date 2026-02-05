@@ -5,7 +5,7 @@ import { LogBox } from 'react-native';
 // Ignore specific warnings
 LogBox.ignoreLogs(['SafeAreaView has been deprecated']);
 
-const BASE_URL = `https://hipster-api.fr/api`; // Pointing to local backend on port 4000
+export const BASE_URL = `https://hipster-api.fr/api`; // Pointing to local backend on port 4000
 // const BASE_URL = 'https://hipster-api.fr/api'; // Pointing to local backend to fix 401/connectivity issues
 console.log('[API] Initializing with BASE_URL:', BASE_URL);
 export const api = axios.create({
@@ -33,9 +33,7 @@ api.interceptors.request.use(
 
     const url = config.url || '';
     const isPublicAuthEndpoint =
-      url.includes('/login') ||
-      url.includes('/register') ||
-      url.includes('/ai/auth'); // includes verify-email, resend-otp, refresh, etc.
+      url.includes('/login') || url.includes('/register') || url.includes('/ai/auth'); // includes verify-email, resend-otp, refresh, etc.
 
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;

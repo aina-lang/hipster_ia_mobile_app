@@ -9,6 +9,7 @@ import { NeonButton } from '../../components/ui/NeonButton';
 import { SelectionCard } from '../../components/ui/SelectionCard';
 import { colors } from '../../theme/colors';
 import { useOnboardingStore } from '../../store/onboardingStore';
+import { useAuthStore } from '../../store/authStore';
 
 const JOBS = [
   { label: 'Coiffure & Esthétique', icon: Scissors },
@@ -24,50 +25,41 @@ const JOBS = [
 export default function SetupScreen() {
   const router = useRouter();
   const {
-    lastName, setProfileData,
     job, setJob
   } = useOnboardingStore();
 
-  const [localLastName, setLocalLastName] = useState(lastName);
-  const [localJob, setLocalJob] = useState(job);
+  const { user, updateAiProfile } = useAuthStore();
+  const [localJob, setLocalJob] = useState(user?.aiProfile?.job || job);
   const [localOtherJob, setLocalOtherJob] = useState('');
 
-  const handleNext = () => {
-    if (localLastName && localJob) {
-      setProfileData({
-        lastName: localLastName,
-      });
-      setJob(localJob === 'Autre' ? localOtherJob : localJob);
+  const handleNext = async () => {
+    if (localJob) {
+      const finalJob = localJob === 'Autre' ? localOtherJob : localJob;
+      setJob(finalJob);
+      try {
+        await updateAiProfile({ job: finalJob });
+      } catch (e) {
+        console.error('Failed to sync job to backend', e);
+      }
       router.push('/(onboarding)/branding');
     }
   };
 
-  const isValid = localLastName?.length > 0 &&
-    (localJob === 'Autre' ? localOtherJob.length > 0 : !!localJob);
+  const isValid = (localJob === 'Autre' ? localOtherJob.length > 0 : !!localJob);
 
   return (
     <BackgroundGradientOnboarding blurIntensity={90}>
-      <StepIndicator currentStep={3} totalSteps={4} />
+      <StepIndicator currentStep={1} totalSteps={2} />
 
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <Animated.View entering={FadeInRight.duration(800)} style={styles.content}>
-            <Text style={styles.title}>Qui êtes-vous ?</Text>
+            <Text style={styles.title}>Votre métier</Text>
             <Text style={styles.subtitle}>
-              Commençons par les présentations.
+              C'est la première étape pour personnaliser votre IA.
             </Text>
 
             <View style={styles.inputsContainer}>
-              <View style={styles.fullInputWrapper}>
-                <Text style={styles.label}>Votre Nom / Entreprise</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Ex: Hipster Records ou Mylène Farmer"
-                  placeholderTextColor={colors.text.muted}
-                  value={localLastName}
-                  onChangeText={setLocalLastName}
-                />
-              </View>
 
               <View style={[styles.inputsContainer, { marginTop: 10 }]}>
                 <Text style={styles.label}>Quel est votre métier ?</Text>

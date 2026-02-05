@@ -35,15 +35,15 @@ export default function RootLayout() {
     if (!isHydrated) return;
 
     const timeout = setTimeout(() => {
-      const inAuthGroup = segments[0] === '(auth)';
-      const inOnboardingGroup = segments[0] === '(onboarding)';
+      const inAuthGroup = segments.some(s => s.includes('(auth)')) || segments.includes('login') || segments.includes('register') || segments.includes('verify-email');
+      const inOnboardingGroup = segments.some(s => s.includes('(onboarding)')) || segments.includes('setup') || segments.includes('branding') || segments.includes('packs') || segments.includes('welcome');
       let targetRoute: string | null = null;
 
       if (isAuthenticated) {
         if (!hasFinishedOnboarding) {
           // Si connecté mais onboarding non fini, on force l'onboarding
           if (!inOnboardingGroup) {
-            targetRoute = '/(onboarding)/age';
+            targetRoute = '/(onboarding)/setup';
           }
         } else {
           // Si connecté et onboarding fini, on force le drawer (accueil)

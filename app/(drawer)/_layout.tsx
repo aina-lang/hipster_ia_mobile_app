@@ -99,8 +99,8 @@ function CustomDrawerContent(props: any) {
   console.log(userAvatar);
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background.dark }}>
-      <DrawerContentScrollView {...props} contentContainerStyle={{ paddingTop: 0 }}>
+    <View style={{ flex: 1,  backgroundColor:"#11111a" }}>
+      <DrawerContentScrollView {...props} contentContainerStyle={{ paddingTop: 0,  backgroundColor:"#11111a" }}>
         {/* ============================
             HEADER
         ============================ */}
