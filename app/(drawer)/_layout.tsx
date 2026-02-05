@@ -82,15 +82,8 @@ function CustomDrawerContent(props: any) {
    *   USER SAFE DATA
    * ============================ */
 
-  const companyName = user?.aiProfile?.companyName || null;
-  const companyLogo = user?.aiProfile?.logoUrl
-    ? `https://hipster-api.fr${user.aiProfile.logoUrl}` // <-- sécurise l’URL relative
-    : null;
 
-  const userName =
-    user?.firstName && user.firstName.trim() !== ''
-      ? user.firstName
-      : user?.lastName || 'Utilisateur';
+  const userName = user?.name || 'Utilisateur';
 
   const userAvatar = user?.avatarUrl
     ? `https://hipster-api.fr${user.avatarUrl}`
@@ -99,8 +92,8 @@ function CustomDrawerContent(props: any) {
   console.log(userAvatar);
 
   return (
-    <View style={{ flex: 1,  backgroundColor:"#11111a" }}>
-      <DrawerContentScrollView {...props} contentContainerStyle={{ paddingTop: 0,  backgroundColor:"#11111a" }}>
+    <View style={{ flex: 1, backgroundColor: "#11111a" }}>
+      <DrawerContentScrollView {...props} contentContainerStyle={{ paddingTop: 0, backgroundColor: "#11111a" }}>
         {/* ============================
             HEADER
         ============================ */}
@@ -111,26 +104,11 @@ function CustomDrawerContent(props: any) {
             <View>
               <Text style={styles.userName}>{userName}</Text>
               <Text style={styles.userRole}>
-                {user?.aiProfile?.profileType === 'entreprise' ? 'Entreprise' : 'Particulier'}
+                {user?.type === 'ai' ? 'Compte AI' : (user?.aiProfile?.profileType === 'entreprise' ? 'Entreprise' : 'Particulier')}
               </Text>
             </View>
           </View>
 
-          {/* COMPANY */}
-          {companyName && (
-            <View style={styles.companyRow}>
-              <View style={styles.logoContainer}>
-                {companyLogo ? (
-                  <Image source={{ uri: companyLogo }} style={styles.companyLogo} />
-                ) : (
-                  <Sparkles size={14} color={colors.primary.main} />
-                )}
-              </View>
-              <Text numberOfLines={1} style={styles.companyName}>
-                {companyName}
-              </Text>
-            </View>
-          )}
         </View>
 
         <View style={styles.separator} />

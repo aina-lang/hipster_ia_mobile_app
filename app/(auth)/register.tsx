@@ -70,7 +70,6 @@ export default function RegisterScreen() {
     try {
       // 1. Register User with Plan
       const response = await aiRegister({
-        firstName: '',
         name: fullName,
         email,
         password,

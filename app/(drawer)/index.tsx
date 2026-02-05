@@ -155,9 +155,8 @@ export default function HomeScreen() {
       const systemContext = `
         Identité: Hipster IA
         Rôle: Assistant créatif et intelligent
-        Tone: Amical et professionnel
-        Cible: ${user?.lastName || "l'utilisateur"}
-        Contexte: ${user?.aiProfile?.companyName ? `Entreprise: ${user.aiProfile.companyName}` : ''}
+        Cible: ${user?.name || "l'utilisateur"}
+        Contexte: ${user?.type !== 'ai' && user?.aiProfile?.job ? `Métier: ${user.aiProfile.job}` : ''}
       `;
 
       chatHistory.push({ role: 'system', content: `Tu es Hipster IA. ${systemContext}` });
@@ -258,7 +257,7 @@ export default function HomeScreen() {
                 <View className="mt-5 items-center">
                   <Text className="mb-2 text-lg text-white/60">
                     {getGreetingByTime()}{' '}
-                    {user?.aiProfile?.companyName || user?.lastName || 'Utilisateur'}
+                    {user?.name || 'Utilisateur'}
                   </Text>
                   <Text className="text-center text-2xl font-bold leading-9 text-white">
                     {user?.aiProfile?.job ? `Prêt pour votre prochaine création en tant que ${user.aiProfile.job.toLowerCase()} ?` : 'Que créons-nous aujourd\'hui ?'}

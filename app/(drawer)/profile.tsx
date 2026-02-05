@@ -54,7 +54,7 @@ export default function ProfileScreen() {
   } = useAuthStore();
 
   // Profile Info State
-  const [lastName, setLastName] = useState(user?.lastName || '');
+  const [name, setName] = useState(user?.name || '');
   const [avatarUrl, setAvatarUrl] = useState('https://hipster-api.fr' + user?.avatarUrl || '');
   const [isEditing, setIsEditing] = useState(false);
   const [professionalEmail, setProfessionalEmail] = useState(
@@ -147,7 +147,7 @@ export default function ProfileScreen() {
   };
 
   const handleSavePersonal = async () => {
-    if (!lastName.trim()) {
+    if (!name.trim()) {
       showFeedback('warning', 'Champs requis', 'Veuillez remplir votre nom.');
       return;
     }
@@ -161,7 +161,9 @@ export default function ProfileScreen() {
         finalAvatarUrl = await useAuthStore.getState().uploadAvatar(avatarUrl);
       }
 
-      await updateProfile({ lastName, avatarUrl: finalAvatarUrl });
+      const updateData = { name, avatarUrl: finalAvatarUrl };
+
+      await updateProfile(updateData);
       setIsEditing(false);
       showFeedback('success', 'Parfait !', 'Votre profil a été mis à jour avec succès.');
     } catch (err) {
@@ -290,7 +292,7 @@ export default function ProfileScreen() {
 
   const resetPersonalForm = () => {
     setIsEditing(false);
-    setLastName(user?.lastName || '');
+    setName(user?.name || '');
     setAvatarUrl(user?.avatarUrl || '');
   };
 
@@ -390,18 +392,18 @@ export default function ProfileScreen() {
 
               <View style={styles.form}>
                 <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Nom Complet / Entreprise *</Text>
+                  <Text style={styles.label}>Nom Complet *</Text>
                   <View style={[styles.inputContainer, isEditing && styles.activeInput]}>
                     <User size={16} color={colors.text.secondary} />
                     <TextInput
                       style={styles.input}
-                      value={lastName}
-                      onChangeText={setLastName}
+                      value={name}
+                      onChangeText={setName}
                       editable={isEditing}
-                      placeholder="Votre nom ou entreprise"
+                      placeholder="Votre nom"
                       placeholderTextColor={colors.text.muted}
                     />
-                    {isEditing && lastName && (
+                    {isEditing && name && (
                       <Check size={16} color={colors.primary.main} />
                     )}
                   </View>

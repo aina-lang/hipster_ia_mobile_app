@@ -31,10 +31,9 @@ const extractErrorMessage = (error: any, defaultMessage: string) => {
   return defaultMessage;
 };
 
-interface User {
   id: number;
   email: string;
-  lastName: string;
+  name?: string;
   avatarUrl?: string;
   isEmailVerified: boolean;
   profiles?: {
@@ -61,8 +60,6 @@ interface User {
     websiteUrl?: string;
     logoUrl?: string;
     isSetupComplete: boolean;
-    profileType?: 'particulier' | 'entreprise';
-    companyName?: string;
     job?: string;
     brandingColor?: string;
     aiCreditUsage?: {
@@ -99,8 +96,7 @@ interface AuthState {
   clearError: () => void;
   updateUser: (userData: Partial<User>) => void;
   updateProfile: (data: {
-    firstName?: string;
-    lastName?: string;
+    name?: string;
     avatarUrl?: string;
   }) => Promise<void>;
   updateAiProfile: (data: Partial<User['aiProfile']>) => Promise<void>;
@@ -155,14 +151,15 @@ export const useAuthStore = create<AuthState>()(
       },
 
       updateProfile: async (data: {
-        firstName?: string;
-        lastName?: string;
+        name?: string;
         avatarUrl?: string;
       }) => {
         set({ isLoading: true, error: null });
         try {
           // Call API to update profile
-          await api.patch('/users/me', data);
+          const user = get().user;
+          const endpoint = user?.type === 'ai' ? '/ai/auth/profile' : '/users/me';
+          await api.patch(endpoint, data);
 
           // Update local state
           const currentUser = get().user;
@@ -425,8 +422,7 @@ export const useAuthStore = create<AuthState>()(
         try {
           const payload = {
             ...registerData,
-            firstName: registerData.firstName || registerData.email.split('@')[0],
-            lastName: registerData.lastName || '',
+            name: registerData.name || registerData.email.split('@')[0],
             selectedProfile: 'client_marketing',
           };
 
