@@ -126,7 +126,7 @@ export default function Step2PersonalizeScreen() {
         <View >
           <ScrollView
             ref={scrollRef}
-            
+
             contentContainerStyle={{ paddingHorizontal: 20, }}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
@@ -159,10 +159,10 @@ export default function Step2PersonalizeScreen() {
           {/* Input & Button fixe */}
           <Animated.View
             style={{
-             
+
               paddingHorizontal: 16,
               paddingTop: 12,
-             
+
               gap: 12,
             }}
           >
@@ -201,8 +201,9 @@ export default function Step2PersonalizeScreen() {
                 <NeonButton
                   onPress={handleCreate}
                   title="Générer avec Hipster•IA"
-                  variant="primary"
-                 
+                  variant="premium"
+                  size="lg"
+                  icon={<Sparkles size={18} color={colors.text.primary} />}
                 />
               </View>
             </View>

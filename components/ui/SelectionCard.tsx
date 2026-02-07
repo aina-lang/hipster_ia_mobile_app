@@ -11,6 +11,7 @@ interface SelectionCardProps {
   onPress: () => void;
   fullWidth?: boolean;
   children?: React.ReactNode;
+  disabled?: boolean;
 }
 
 export const SelectionCard: React.FC<SelectionCardProps> = ({
@@ -20,12 +21,18 @@ export const SelectionCard: React.FC<SelectionCardProps> = ({
   onPress,
   fullWidth = false,
   children,
+  disabled = false,
 }) => {
   return (
     <TouchableOpacity
       onPress={onPress}
-      style={[styles.container, fullWidth && styles.fullWidth]}
-      activeOpacity={0.9}>
+      style={[
+        styles.container,
+        fullWidth && styles.fullWidth,
+        disabled && styles.disabled
+      ]}
+      activeOpacity={0.9}
+      disabled={disabled}>
       {selected ? (
         <LinearGradient
           colors={[colors.primary.main + '22', colors.primary.main + '08']}
@@ -123,5 +130,8 @@ const styles = StyleSheet.create({
   selectedLabel: {
     color: '#FFFFFF',
     fontWeight: '700',
+  },
+  disabled: {
+    opacity: 0.5,
   },
 });

@@ -364,7 +364,11 @@ export default function ProfileScreen() {
             <View style={styles.card}>
               {/* Avatar avec amélioration visuelle */}
               <View style={styles.avatarSection}>
-                <View style={styles.avatarWrapper}>
+                <TouchableOpacity
+                  style={styles.avatarWrapper}
+                  onPress={() => isEditing && pickImage('avatar')}
+                  activeOpacity={isEditing ? 0.7 : 1}
+                >
                   {avatarUrl ? (
                     <Image source={{ uri: avatarUrl }} style={styles.avatarImage} />
                   ) : (
@@ -373,14 +377,11 @@ export default function ProfileScreen() {
                     </View>
                   )}
                   {isEditing && (
-                    <TouchableOpacity
-                      style={styles.cameraButton}
-                      onPress={() => pickImage('avatar')}
-                      activeOpacity={0.8}>
+                    <View style={styles.cameraButton}>
                       <Camera size={14} color="#000" />
-                    </TouchableOpacity>
+                    </View>
                   )}
-                </View>
+                </TouchableOpacity>
                 {avatarUrl && isEditing && (
                   <TouchableOpacity
                     style={styles.removeImageButton}
@@ -453,17 +454,19 @@ export default function ProfileScreen() {
               <View style={styles.form}>
                 {/* Logo Section */}
                 {logoUrl ? (
-                  <View style={styles.logoPreviewContainer}>
+                  <TouchableOpacity
+                    style={styles.logoPreviewContainer}
+                    onPress={() => isEditingPro && pickImage('logo')}
+                    activeOpacity={isEditingPro ? 0.7 : 1}
+                  >
                     <Image source={{ uri: logoUrl }} style={styles.logoPreview} />
                     {isEditingPro && (
-                      <TouchableOpacity
-                        style={styles.changeLogoButton}
-                        onPress={() => pickImage('logo')}>
+                      <View style={styles.changeLogoButton}>
                         <Camera size={12} color={colors.primary.main} />
                         <Text style={styles.changeLogoText}>Changer</Text>
-                      </TouchableOpacity>
+                      </View>
                     )}
-                  </View>
+                  </TouchableOpacity>
                 ) : (
                   isEditingPro && (
                     <TouchableOpacity

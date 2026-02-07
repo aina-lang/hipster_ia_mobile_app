@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, Image, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
 import { Drawer } from 'expo-router/drawer';
-import { DrawerContentScrollView, DrawerItemList } from '@react-navigation/drawer';
+import { DrawerContentScrollView, DrawerItemList, useDrawerStatus } from '@react-navigation/drawer';
 import { colors } from '../../theme/colors';
 import {
   Home,
@@ -24,6 +24,22 @@ import { AiService } from '../../api/ai.service';
 import { GenericModal } from '../../components/ui/GenericModal';
 import { LogOut, Trash2, Plus } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
+import 'dayjs/locale/fr';
+
+dayjs.extend(relativeTime);
+dayjs.locale('fr');
+
+interface HistoryItem {
+  id: string;
+  type: string;
+  title: string;
+  date: string;
+  preview: string;
+  imageUrl?: string;
+  attributes?: any; // Keep attributes for smart label logic
+}
 
 function CustomDrawerContent(props: any) {
   const { user, logout } = useAuthStore();
@@ -50,6 +66,8 @@ function CustomDrawerContent(props: any) {
         setHistory((prev) => prev.filter((i) => i.id !== itemToDelete));
       } catch (e) {
         console.error('Failed to delete item', e);
+        // We could move alerts to a proper toast later, but for now ensure feedback
+        alert("Erreur lors de la suppression. Veuillez réessayer.");
       } finally {
         setShowDeleteModal(false);
         setItemToDelete(null);
@@ -60,18 +78,32 @@ function CustomDrawerContent(props: any) {
   /** ============================
    *   FETCH HISTORY
    * ============================ */
+  const isDrawerOpen = useDrawerStatus() === 'open';
+
+  /** ============================
+   *   FETCH HISTORY
+   * ============================ */
   useEffect(() => {
-    if (user?.type === 'ai') {
+    if (user?.type === 'ai' && isDrawerOpen) {
       loadHistory();
     }
-  }, [user]);
+  }, [user, isDrawerOpen]);
 
   const loadHistory = async () => {
     try {
       setLoading(true);
       const data = await AiService.getHistory();
-      if (Array.isArray(data)) {
-        setHistory(data.slice(0, 10));
+      if (data && Array.isArray(data)) {
+        const mappedData: HistoryItem[] = data.slice(0, 10).map((item: any) => ({
+          id: item.id.toString(),
+          type: item.type,
+          title: item.title || 'Sans titre',
+          date: dayjs(item.createdAt).fromNow(),
+          preview: item.result || item.prompt,
+          imageUrl: item.imageUrl,
+          attributes: item.attributes,
+        }));
+        setHistory(mappedData);
       }
     } catch (err) {
       console.error('Failed to fetch drawer history', err);
@@ -203,9 +235,7 @@ function CustomDrawerContent(props: any) {
                             {label}
                           </Text>
                           <Text numberOfLines={1} style={styles.historyItemSubtext}>
-                            {item.type === 'chat' || item.type === 'text'
-                              ? (item.result || item.prompt || '').replace(/\s+/g, ' ')
-                              : (item.prompt || '').replace(/\s+/g, ' ')}
+                            {item.preview.replace(/\s+/g, ' ')}
                           </Text>
                         </View>
                       </TouchableOpacity>

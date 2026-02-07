@@ -9,8 +9,9 @@ import {
   ChevronRight,
   Search,
 } from 'lucide-react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { AiService } from '../../api/ai.service';
+import { useCallback } from 'react';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/fr';
@@ -74,9 +75,11 @@ export default function HistoryScreen() {
     }
   };
 
-  useEffect(() => {
-    fetchHistory();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      fetchHistory();
+    }, [])
+  );
 
   const handleClearHistory = async () => {
     try {
@@ -188,15 +191,14 @@ export default function HistoryScreen() {
                   activeFilter === item.value
                     ? { backgroundColor: colors.primary.main, borderColor: colors.primary.main }
                     : {
-                        backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                        borderColor: 'rgba(255, 255, 255, 0.1)',
-                      }
+                      backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                      borderColor: 'rgba(255, 255, 255, 0.1)',
+                    }
                 }
                 onPress={() => setActiveFilter(item.value)}>
                 <Text
-                  className={`text-sm font-semibold ${
-                    activeFilter === item.value ? 'text-white' : 'text-white/60'
-                  }`}>
+                  className={`text-sm font-semibold ${activeFilter === item.value ? 'text-white' : 'text-white/60'
+                    }`}>
                   {item.label}
                 </Text>
               </TouchableOpacity>

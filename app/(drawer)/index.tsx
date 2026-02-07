@@ -9,6 +9,7 @@ import {
   Platform,
   ActivityIndicator,
 } from 'react-native';
+import { Audio } from 'expo-av';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useNavigation, useGlobalSearchParams } from 'expo-router';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
@@ -38,7 +39,8 @@ import { AiService } from '../../api/ai.service';
 import { api } from '../../api/client';
 import { colors } from '../../theme/colors';
 import { GenericModal } from '../../components/ui/GenericModal';
-import { BackgroundGradientOnboarding } from 'components/ui/BackgroundGradientOnboarding';
+import { BackgroundGradientOnboarding } from '../../components/ui/BackgroundGradientOnboarding';
+import { NeonButton } from '../../components/ui/NeonButton';
 
 interface Message {
   id: string;
@@ -137,22 +139,14 @@ const PaymentBlocker = ({ planId, onPay, loading }: { planId: string; onPay: () 
           <Text className="text-lg font-black text-primary" style={{ color: colors.primary.main }}>{plan.price}</Text>
         </View>
 
-        <TouchableOpacity
+        <NeonButton
+          title="Procéder au paiement"
           onPress={onPay}
-          disabled={loading}
-          activeOpacity={0.8}
-          className="flex-row items-center justify-center rounded-2xl bg-primary py-4 px-6 shadow-lg shadow-primary/30"
-          style={{ backgroundColor: colors.primary.main }}>
-          {loading ? (
-            <ActivityIndicator size="small" color="#000" />
-          ) : (
-            <>
-              <CreditCard size={20} color="#000" className="mr-2" />
-              <Text className="text-base font-bold text-black ml-2">Procéder au paiement</Text>
-              <ChevronRight size={20} color="#000" className="ml-1" />
-            </>
-          )}
-        </TouchableOpacity>
+          loading={loading}
+          variant="premium"
+          size="lg"
+          icon={<CreditCard size={20} color={colors.text.primary} />}
+        />
       </View>
     </View>
   );
@@ -180,6 +174,68 @@ export default function HomeScreen() {
 
   const [isPaymentLoading, setIsPaymentLoading] = useState(false);
   const { initPaymentSheet, presentPaymentSheet } = useStripe();
+
+  // Audio Recording
+  const [recording, setRecording] = useState<Audio.Recording | null>(null);
+  const [permissionResponse, requestPermission] = Audio.usePermissions();
+
+  async function startRecording() {
+    try {
+      if (permissionResponse?.status !== 'granted') {
+        const resp = await requestPermission();
+        if (resp.status !== 'granted') {
+          showModal('error', 'Permission refusée', 'Veuillez autoriser l\'accès au micro pour utiliser la dictée vocale.');
+          return;
+        }
+      }
+
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: true,
+        playsInSilentModeIOS: true,
+      });
+
+      const { recording } = await Audio.Recording.createAsync(
+        Audio.RecordingOptionsPresets.HIGH_QUALITY
+      );
+      setRecording(recording);
+    } catch (err) {
+      console.error('Failed to start recording', err);
+      showModal('error', 'Erreur', 'Impossible de démarrer l\'enregistrement.');
+    }
+  }
+
+  async function stopRecording() {
+    if (!recording) return;
+
+    setRecording(null);
+    setIsGenerating(true); // Reuse generating state for loader
+
+    try {
+      await recording.stopAndUnloadAsync();
+      const uri = recording.getURI();
+      if (!uri) throw new Error('No URI');
+
+      const formData = new FormData();
+      formData.append('file', {
+        uri,
+        name: 'audio.m4a',
+        type: 'audio/m4a',
+      } as any);
+
+      const response = await api.post('/ai/transcribe', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+
+      if (response.data && response.data.text) {
+        setInputValue((prev) => (prev ? prev + ' ' + response.data.text : response.data.text));
+      }
+    } catch (err) {
+      console.error('Transcription error', err);
+      showModal('error', 'Erreur', 'Impossible de transcrire l\'audio.');
+    } finally {
+      setIsGenerating(false);
+    }
+  }
 
   const planType = user?.aiProfile?.planType || 'curieux';
   const subStatus = user?.aiProfile?.subscriptionStatus;
@@ -427,7 +483,7 @@ export default function HomeScreen() {
         Contexte: ${user?.type !== 'ai' && user?.aiProfile?.job ? `Métier: ${user.aiProfile.job}` : ''}
       `;
 
-      chatHistory.push({ role: 'system', content: `Tu es Hipster IA. ${systemContext}` });
+      chatHistory.push({ role: 'system', content: `Tu es Hipster IA. ${systemContext}. IMPORTANT: Ne jamais utiliser d'emojis dans tes réponses. Garde un ton professionnel et direct.` });
 
       messages.forEach((m) =>
         chatHistory.push({ role: m.sender === 'user' ? 'user' : 'assistant', content: m.text })
@@ -442,9 +498,9 @@ export default function HomeScreen() {
       console.log('[DEBUG] Free Mode Response:', JSON.stringify(response, null, 2));
 
       // Store conversation ID for subsequent messages
-      if (response.conversationId && !conversationId) {
+      if (response.conversationId) {
         setConversationId(response.conversationId);
-        console.log('[DEBUG] New conversation started:', response.conversationId);
+        console.log('[DEBUG] Updated conversationId to:', response.conversationId);
       }
 
       // Handle nested response structure
@@ -657,11 +713,13 @@ export default function HomeScreen() {
                 <Text className="text-sm text-orange-200 font-medium mb-2">
                   Limite de 10 messages atteinte pour cette conversation.
                 </Text>
-                <TouchableOpacity
+                <NeonButton
+                  title="Nouvelle conversation"
                   onPress={resetChat}
-                  className="mt-2 rounded-lg bg-orange-500 py-2 px-4 self-start">
-                  <Text className="text-white font-semibold">Démarrer une nouvelle conversation</Text>
-                </TouchableOpacity>
+                  variant="premium"
+                  size="sm"
+                  style={{ marginTop: 8, alignSelf: 'flex-start' }}
+                />
               </View>
             )}
 
@@ -707,9 +765,11 @@ export default function HomeScreen() {
                     <TouchableOpacity className="rounded-lg bg-white/5 p-2">
                       <Paperclip size={20} color={colors.text.secondary} />
                     </TouchableOpacity>
-                    <TouchableOpacity className="rounded-lg bg-white/5 p-2">
-                      <Mic size={20} color={colors.text.secondary} />
-                    </TouchableOpacity>
+                    {/* <TouchableOpacity
+                      className={`rounded-lg p-2 ${recording ? 'bg-red-500/20' : 'bg-white/5'}`}
+                      onPress={recording ? stopRecording : startRecording}>
+                      <Mic size={20} color={recording ? colors.status.error : colors.text.secondary} />
+                    </TouchableOpacity> */}
                   </View>
 
                   <TouchableOpacity

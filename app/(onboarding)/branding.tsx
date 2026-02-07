@@ -27,8 +27,10 @@ export default function BrandingScreen() {
     const [selectedColor, setSelectedColor] = useState(user?.aiProfile?.brandingColor || brandingColor || '#FF0000');
     const [localLogo, setLocalLogo] = useState(initialLogo);
     const [localAvatar, setLocalAvatar] = useState(initialAvatar);
+    const [localLoading, setLocalLoading] = useState(false);
 
     const pickImage = async (type: 'logo' | 'avatar') => {
+        if (localLoading) return;
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (status !== 'granted') {
             alert('Besoin de la permission pour accéder à la galerie.');
@@ -37,7 +39,7 @@ export default function BrandingScreen() {
 
         const result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: ['images'],
-            allowsEditing: Platform.OS === 'ios', // Editing often crashes on Android with relative URIs
+            allowsEditing: true,
             aspect: [1, 1],
             quality: 0.8,
         });
@@ -50,16 +52,17 @@ export default function BrandingScreen() {
     };
 
     const handleNext = async () => {
-        setBrandingData({
-            brandingColor: selectedColor,
-            logoUri: localLogo,
-            avatarUri: localAvatar
-        });
-
-        const authStore = useAuthStore.getState();
-        const profileId = authStore.user?.aiProfile?.id;
-
+        setLocalLoading(true);
         try {
+            setBrandingData({
+                brandingColor: selectedColor,
+                logoUri: localLogo,
+                avatarUri: localAvatar
+            });
+
+            const authStore = useAuthStore.getState();
+            const profileId = authStore.user?.aiProfile?.id;
+
             // 1. Sync color
             console.log('[Branding] Syncing color:', selectedColor);
             await authStore.updateAiProfile({
@@ -75,12 +78,14 @@ export default function BrandingScreen() {
                 console.log('[Branding] Uploading logo:', localLogo);
                 await authStore.uploadLogo(profileId, localLogo);
             }
+
+            await authStore.finishOnboarding();
+            router.replace('/(drawer)');
         } catch (e) {
             console.error('Failed to sync branding data', e);
+        } finally {
+            setLocalLoading(false);
         }
-
-        await authStore.finishOnboarding();
-        router.replace('/(drawer)');
     };
 
     const onColorChange = ({ hex }: { hex: string }) => {
@@ -127,6 +132,13 @@ export default function BrandingScreen() {
                                         <Text style={styles.hexText}>{selectedColor.toUpperCase()}</Text>
                                     </View>
                                 </ColorPicker>
+                                {localLoading && (
+                                    <View style={{
+                                        ...StyleSheet.absoluteFillObject,
+                                        backgroundColor: 'transparent',
+                                        zIndex: 100
+                                    }} />
+                                )}
                             </View>
                         </View>
 
@@ -136,7 +148,11 @@ export default function BrandingScreen() {
                                 <User size={16} color={colors.text.secondary} />
                                 <Text style={styles.sectionTitleText}>Avatar / Logo</Text>
                             </View>
-                            <TouchableOpacity style={styles.uploadBox} onPress={() => pickImage('avatar')}>
+                            <TouchableOpacity
+                                style={[styles.uploadBox, localLoading && { opacity: 0.6 }]}
+                                onPress={() => !localLoading && pickImage('avatar')}
+                                disabled={localLoading}
+                            >
                                 {localAvatar ? (
                                     <Image source={{ uri: localAvatar }} style={styles.uploadedImage} />
                                 ) : (
@@ -159,6 +175,8 @@ export default function BrandingScreen() {
                         onPress={handleNext}
                         size="lg"
                         variant="premium"
+                        loading={localLoading}
+                        disabled={localLoading}
                         style={styles.button}
                     />
                 </Animated.View>

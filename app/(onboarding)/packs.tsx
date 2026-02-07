@@ -79,6 +79,7 @@ export default function PacksScreen() {
   const router = useRouter();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     fetchPlans();
@@ -110,6 +111,7 @@ export default function PacksScreen() {
   const { selectedPlan, setPlan } = useOnboardingStore();
 
   const handleContinue = () => {
+    setSubmitting(true);
     // Navigate to registration
     router.push('/(auth)/register');
   };
@@ -137,11 +139,13 @@ export default function PacksScreen() {
               {plans.map((plan) => (
                 <TouchableOpacity
                   key={plan.id}
-                  onPress={() => setPlan(plan.id)}
+                  onPress={() => !submitting && setPlan(plan.id)}
                   activeOpacity={0.85}
+                  disabled={submitting}
                   style={[
                     styles.planCard,
                     selectedPlan === plan.id && styles.selectedPlanCard,
+                    submitting && { opacity: 0.8 }
                   ]}
                 >
                   {plan.popular && (
@@ -218,7 +222,14 @@ export default function PacksScreen() {
 
         {/* Footer */}
         <View style={styles.footer}>
-          <NeonButton onPress={handleContinue} title="Continuer" size="lg" variant="premium" />
+          <NeonButton
+            onPress={handleContinue}
+            title="Continuer"
+            size="lg"
+            variant="premium"
+            loading={submitting}
+            disabled={submitting}
+          />
         </View>
       </View>
     </BackgroundGradientOnboarding>

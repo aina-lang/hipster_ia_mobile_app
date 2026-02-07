@@ -316,13 +316,13 @@ export default function Step3ResultScreen() {
         )}
 
         {data.appel_a_l_action && (
-          <TouchableOpacity
-            style={styles.posterCta}
-            onPress={() => copyValueToClipboard('cta', data.appel_a_l_action)}>
-            <Text selectable={true} style={styles.posterCtaText}>
-              {data.appel_a_l_action}
-            </Text>
-          </TouchableOpacity>
+          <NeonButton
+            title={data.appel_a_l_action}
+            onPress={() => copyValueToClipboard('cta', data.appel_a_l_action)}
+            variant="premium"
+            size="md"
+            style={{ marginTop: 12 }}
+          />
         )}
       </View>
     );
@@ -837,12 +837,15 @@ export default function Step3ResultScreen() {
   return (
     <GuidedScreenWrapper
       headerRight={
-        <TouchableOpacity onPress={handleFinish} style={styles.finishButton}>
-          <Home size={18} color={colors.primary.main} />
-          <Text selectable={true} style={styles.finishButtonText}>
-            Terminer
-          </Text>
-        </TouchableOpacity>
+        <View style={{ marginRight: 8 }}>
+          <NeonButton
+            title="Terminer"
+            onPress={handleFinish}
+            variant="ghost"
+            size="sm"
+            icon={<Home size={16} color={colors.primary.main} />}
+          />
+        </View>
       }>
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
         <View style={styles.content}>
@@ -1007,22 +1010,24 @@ export default function Step3ResultScreen() {
 
                     {/* Export Choices for Documents */}
                     <View style={styles.exportButtons}>
-                      <TouchableOpacity
-                        style={[styles.exportButton, styles.exportButtonPrimary]}
-                        onPress={() => handleDownload('pdf')}>
-                        <Download size={18} color="#000" />
-                        <Text selectable={true} style={styles.exportButtonTextPrimary}>
-                          PDF
-                        </Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={styles.exportButton}
-                        onPress={() => handleDownload('docx')}>
-                        <FileText size={18} color={colors.text.secondary} />
-                        <Text selectable={true} style={styles.exportButtonText}>
-                          Word
-                        </Text>
-                      </TouchableOpacity>
+                      <View style={{ flex: 1 }}>
+                        <NeonButton
+                          title="PDF"
+                          onPress={() => handleDownload('pdf')}
+                          variant="premium"
+                          size="sm"
+                          icon={<Download size={16} color={colors.text.primary} />}
+                        />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <NeonButton
+                          title="Word"
+                          onPress={() => handleDownload('docx')}
+                          variant="outline"
+                          size="sm"
+                          icon={<FileText size={16} color={colors.neon.primary} />}
+                        />
+                      </View>
                     </View>
 
                     {/* Content Preview */}
@@ -1096,26 +1101,37 @@ export default function Step3ResultScreen() {
             {/* 🛠️ NAVIGATION & ACTIONS BAR (Generic but adapted) */}
             {!loading && (
               <View style={styles.actionsBar}>
-                <TouchableOpacity style={styles.actionButton} onPress={handleCopyText}>
-                  <Copy size={20} color={colors.primary.main} />
-                  <Text style={styles.actionButtonText}>Copier</Text>
-                </TouchableOpacity>
+                <View style={{ flex: 1, paddingHorizontal: 4 }}>
+                  <NeonButton
+                    title="Copier"
+                    onPress={handleCopyText}
+                    variant="ghost"
+                    size="sm"
+                    icon={<Copy size={16} color={colors.neon.primary} />}
+                  />
+                </View>
 
                 {(selectedCategory === 'Image' || selectedCategory === 'Social' || imageUrl) && (
-                  <>
-                    <View style={styles.actionDivider} />
-                    <TouchableOpacity style={styles.actionButton} onPress={handleSaveToGallery}>
-                      <Download size={20} color={colors.primary.main} />
-                      <Text style={styles.actionButtonText}>Enregistrer</Text>
-                    </TouchableOpacity>
-                  </>
+                  <View style={{ flex: 1, paddingHorizontal: 4 }}>
+                    <NeonButton
+                      title="Enregistrer"
+                      onPress={handleSaveToGallery}
+                      variant="ghost"
+                      size="sm"
+                      icon={<Download size={16} color={colors.neon.primary} />}
+                    />
+                  </View>
                 )}
 
-                <View style={styles.actionDivider} />
-                <TouchableOpacity style={styles.actionButton} onPress={handleShare}>
-                  <ShareIcon size={20} color={colors.primary.main} />
-                  <Text style={styles.actionButtonText}>Partager</Text>
-                </TouchableOpacity>
+                <View style={{ flex: 1, paddingHorizontal: 4 }}>
+                  <NeonButton
+                    title="Partager"
+                    onPress={handleShare}
+                    variant="ghost"
+                    size="sm"
+                    icon={<ShareIcon size={16} color={colors.neon.primary} />}
+                  />
+                </View>
               </View>
             )}
           </View>
@@ -1124,12 +1140,14 @@ export default function Step3ResultScreen() {
           {!loading && (
             <View style={styles.regenerateContainer}>
               {!showRegeneratePanel ? (
-                <TouchableOpacity
-                  style={styles.regenerateToggle}
-                  onPress={() => setShowRegeneratePanel(true)}>
-                  <RefreshCcw size={20} color={colors.primary.main} />
-                  <Text style={styles.regenerateToggleText}>Modifier et régénérer</Text>
-                </TouchableOpacity>
+                <NeonButton
+                  title="Modifier et régénérer"
+                  onPress={() => setShowRegeneratePanel(true)}
+                  variant="outline"
+                  size="md"
+                  icon={<RefreshCcw size={18} color={colors.neon.primary} />}
+                  style={{ width: '100%' }}
+                />
               ) : (
                 <View style={styles.regeneratePanel}>
                   <View style={styles.regeneratePanelHeader}>
@@ -1242,7 +1260,7 @@ export default function Step3ResultScreen() {
         message={modalMessage}
         onClose={() => setModalVisible(false)}
       />
-    </GuidedScreenWrapper>
+    </GuidedScreenWrapper >
   );
 }
 

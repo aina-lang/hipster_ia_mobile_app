@@ -31,17 +31,21 @@ export default function SetupScreen() {
   const { user, updateAiProfile } = useAuthStore();
   const [localJob, setLocalJob] = useState(user?.aiProfile?.job || job);
   const [localOtherJob, setLocalOtherJob] = useState('');
+  const [localLoading, setLocalLoading] = useState(false);
 
   const handleNext = async () => {
     if (localJob) {
       const finalJob = localJob === 'Autre' ? localOtherJob : localJob;
       setJob(finalJob);
+      setLocalLoading(true);
       try {
         await updateAiProfile({ job: finalJob });
+        router.push('/(onboarding)/branding');
       } catch (e) {
         console.error('Failed to sync job to backend', e);
+      } finally {
+        setLocalLoading(false);
       }
-      router.push('/(onboarding)/branding');
     }
   };
 
@@ -71,7 +75,8 @@ export default function SetupScreen() {
                         label={j.label}
                         icon={j.icon}
                         selected={localJob === j.label}
-                        onPress={() => setLocalJob(j.label)}
+                        onPress={() => !localLoading && setLocalJob(j.label)}
+                        disabled={localLoading}
                       />
                     </View>
                   ))}
@@ -87,6 +92,7 @@ export default function SetupScreen() {
                       value={localOtherJob}
                       onChangeText={setLocalOtherJob}
                       autoFocus
+                      editable={!localLoading}
                     />
                   </Animated.View>
                 )}
@@ -104,7 +110,8 @@ export default function SetupScreen() {
             onPress={handleNext}
             size="lg"
             variant="premium"
-            disabled={!isValid}
+            disabled={!isValid || localLoading}
+            loading={localLoading}
             style={styles.button}
           />
         </Animated.View>
