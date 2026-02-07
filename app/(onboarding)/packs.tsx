@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { api } from '../../api/client';
 import {
   View,
   Text,
@@ -41,12 +42,19 @@ interface Feature {
 interface Plan {
   id: string;
   name: string;
-  price: string;
+  price: string | number;
   description?: string;
-  features: Feature[];
+  features: string[];
   icon: LucideIcon;
   popular?: boolean;
 }
+
+const planIcons: Record<string, LucideIcon> = {
+  curieux: Shield,
+  atelier: Edit3,
+  studio: Zap,
+  agence: Crown,
+};
 
 /* ================= ICON MAP ================= */
 
@@ -60,71 +68,43 @@ const featureIcons: Record<FeatureType, LucideIcon> = {
 
 /* ================= DATA ================= */
 
-const PLANS: Plan[] = [
-  {
-    id: 'curieux',
-    name: 'Curieux',
-    price: '7 jours gratuits',
-    // description:
-    //   '2 générations texte + 2 générations image. ',
-    features: [
-      { label: '2 générations texte', type: 'text' },
-      { label: '2 générations image', type: 'image' },
-      // { label: "Pas d’export", type: 'export' },
-    ],
-    icon: Shield,
-  },
-
-  {
-    id: 'atelier',
-    name: 'Atelier',
-    price: '9,90€ / mois',
-    description:
-      '30 premiers abonnés — ensuite 17,90€/mois.',
-    features: [
-      { label: 'Génération de texte', type: 'text' },
-      { label: 'Génération d’image', type: 'image' },
-    ],
-    icon: Edit3,
-  },
-
-  {
-    id: 'studio',
-    name: 'Studio',
-    price: '29,90€ / mois',
-    description:
-      'Pack orienté photo',
-    features: [
-      { label: 'Génération de texte', type: 'text' },
-      { label: 'Génération d’image', type: 'image' },
-      { label: 'Optimisation image HD / 4K', type: 'image' },
-    ],
-    icon: Zap,
-    popular: true,
-  },
-
-  {
-    id: 'agence',
-    name: 'Agence',
-    price: '69,99€ / mois',
-    description: 'Puissance Total',
-    features: [
-      { label: 'Génération de texte', type: 'text' },
-      { label: 'Génération d’image', type: 'image' },
-      { label: 'Amélioration image HD / 4K', type: 'image' },
-      { label: 'Création vidéo', type: 'video' },
-      { label: 'Création sonore', type: 'audio' },
-      { label: '25 générations 3D / Sketch', type: 'image' },
-    ],
-    icon: Crown,
-  },
-];
+// PLANS is now dynamic
 
 
 /* ================= SCREEN ================= */
 
 export default function PacksScreen() {
   const router = useRouter();
+  const [plans, setPlans] = useState<Plan[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchPlans();
+  }, []);
+
+  const fetchPlans = async () => {
+    try {
+      setLoading(true);
+      const resp = await api.get('/ai/subscriptions/plans');
+      const backendPlans = resp.data?.data ?? resp.data ?? [];
+
+      const mappedPlans: Plan[] = backendPlans.map((p: any) => ({
+        ...p,
+        price: typeof p.price === 'number' ? `${p.price.toFixed(2)}€ / mois` : p.price,
+        icon: planIcons[p.id] || Shield,
+      }));
+
+      setPlans(mappedPlans);
+      if (mappedPlans.length > 0 && !selectedPlan) {
+        setPlan(mappedPlans[1]?.id || mappedPlans[0].id); // Atelier or first
+      }
+    } catch (error) {
+      console.error('Error fetching plans in packs.tsx:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const { selectedPlan, setPlan } = useOnboardingStore();
 
   const handleContinue = () => {
@@ -146,7 +126,7 @@ export default function PacksScreen() {
         {/* Plans */}
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <View style={styles.plansContainer}>
-            {PLANS.map((plan) => (
+            {plans.map((plan) => (
               <TouchableOpacity
                 key={plan.id}
                 onPress={() => setPlan(plan.id)}
@@ -195,22 +175,23 @@ export default function PacksScreen() {
                 {/* Features */}
                 <View style={styles.featuresList}>
                   {plan.features.map((feature, idx) => {
-                    const Icon = featureIcons[feature.type];
                     return (
                       <View key={idx} style={styles.featureRow}>
-                        <Icon size={14} color={colors.text.muted} />
-                        <Text style={styles.featureText}>{feature.label}</Text>
+                        <FileText size={14} color={colors.text.muted} />
+                        <Text style={styles.featureText}>{feature}</Text>
                       </View>
                     );
                   })}
 
                   {/* 🔥 ACCOMPAGNEMENT AGENCE */}
-                  <View style={styles.agencyRow}>
-                    <Crown size={14} color={colors.text.primary} />
-                    <Text style={styles.agencyText}>
-                      Accompagnement de l'agence
-                    </Text>
-                  </View>
+                  {plan.id === 'agence' && (
+                    <View style={styles.agencyRow}>
+                      <Crown size={14} color={colors.text.primary} />
+                      <Text style={styles.agencyText}>
+                        Accompagnement de l'agence
+                      </Text>
+                    </View>
+                  )}
                 </View>
               </TouchableOpacity>
             ))}

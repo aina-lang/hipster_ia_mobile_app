@@ -23,13 +23,20 @@ const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://hipster-api.fr';
 interface Plan {
   id: string;
   name: string;
-  price: string;
+  price: number | string;
   description: string;
   features: string[];
   stripePriceId: string | null;
-  icon: LucideIcon;
+  icon?: LucideIcon;
   popular?: boolean;
 }
+
+const planIcons: Record<string, LucideIcon> = {
+  curieux: Shield,
+  atelier: Edit3,
+  studio: Zap,
+  agence: Crown,
+};
 
 export default function SubscriptionScreen() {
   const router = useRouter();
@@ -58,50 +65,30 @@ export default function SubscriptionScreen() {
 
   const fetchPlans = async () => {
     try {
-      // Mocking for now:
-      const mockPlans: Plan[] = [
-        {
-          id: 'curieux',
-          name: 'Pack Curieux',
-          price: 'Gratuit',
-          description: 'Découvrez Hipster sans engagement (7 jours)',
-          features: ['2 images/jour', '3 textes/jour', "Pas d'export", 'Consultation uniquement'],
-          stripePriceId: null,
-          icon: Shield,
-        },
-        {
-          id: 'atelier',
-          name: 'Atelier',
-          price: '17.90€',
-          description: "L'essentiel pour les créateurs",
-          features: ['100 images/mois', 'Texte illimité', 'Pas de vidéo', 'Choix du canal'],
-          stripePriceId: 'price_Atelier1790',
-          icon: Edit3,
-        },
-        {
-          id: 'studio',
-          name: 'Studio',
-          price: '29.90€',
-          description: 'Pour les productions régulières',
-          features: ['100 images/mois', 'Texte illimité', '3 vidéos', 'Support prioritaire'],
-          stripePriceId: 'price_Studio2990',
-          icon: Zap,
-          popular: true,
-        },
-        {
-          id: 'agence',
-          name: 'Agence',
-          price: '69.90€',
-          description: 'La puissance totale',
-          features: ['300 images/mois', 'Texte illimité', '10 vidéos', '60 sons'],
-          stripePriceId: 'price_Agence6990',
-          icon: Crown,
-        },
-      ];
-      setPlans(mockPlans);
-      setSelectedPlan('pro');
+      setLoading(true);
+      const resp = await api.get('/ai/subscriptions/plans');
+      const backendPlans = resp.data?.data ?? resp.data ?? [];
+
+      const mappedPlans: Plan[] = backendPlans.map((p: any) => ({
+        ...p,
+        price: typeof p.price === 'number' ? `${p.price.toFixed(2)}€` : p.price,
+        icon: planIcons[p.id] || Shield,
+      }));
+
+      setPlans(mappedPlans);
+
+      // Default selection (Atelier if available, else first)
+      const currentPlan = user?.aiProfile?.planType;
+      const defaultToSelect = mappedPlans.find(p => p.id === currentPlan)?.id ||
+        mappedPlans.find(p => p.id === 'atelier')?.id ||
+        mappedPlans[0]?.id;
+
+      setSelectedPlan(defaultToSelect);
     } catch (error) {
       console.error('Error fetching plans:', error);
+      showModal('error', 'Erreur', 'Impossible de charger les plans d\'abonnement.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -225,55 +212,60 @@ export default function SubscriptionScreen() {
         </View>
 
         <View style={styles.plansContainer}>
-          {plans.map((plan) => (
-            <TouchableOpacity
-              key={plan.id}
-              style={[styles.planCard, selectedPlan === plan.id && styles.selectedPlanCard]}
-              onPress={() => setSelectedPlan(plan.id)}
-              activeOpacity={0.8}>
-              {plan.popular && (
-                <View style={styles.popularBadge}>
-                  <Text style={styles.popularBadgeText}>PLUS POPULAIRE</Text>
-                </View>
-              )}
-
-              <View style={styles.planHeader}>
-                <View
-                  style={[
-                    styles.iconContainer,
-                    {
-                      backgroundColor:
-                        selectedPlan === plan.id
-                          ? colors.primary.main + '22'
-                          : 'rgba(255,255,255,0.05)',
-                    },
-                  ]}>
-                  <plan.icon
-                    size={24}
-                    color={selectedPlan === plan.id ? colors.primary.main : colors.text.muted}
-                  />
-                </View>
-                <View>
-                  <Text style={styles.planName}>{plan.name}</Text>
-                  <Text style={styles.planPrice}>
-                    {plan.price}
-                    <Text style={styles.pricePeriod}>/mois</Text>
-                  </Text>
-                </View>
-              </View>
-
-              <Text style={styles.planDescription}>{plan.description}</Text>
-
-              <View style={styles.featuresList}>
-                {plan.features.map((feature, idx) => (
-                  <View key={idx} style={styles.featureRow}>
-                    <Check size={16} color={colors.primary.main} />
-                    <Text style={styles.featureText}>{feature}</Text>
+          {plans.map((plan) => {
+            const PlanIcon = plan.icon;
+            return (
+              <TouchableOpacity
+                key={plan.id}
+                style={[styles.planCard, selectedPlan === plan.id && styles.selectedPlanCard]}
+                onPress={() => setSelectedPlan(plan.id)}
+                activeOpacity={0.8}>
+                {plan.popular && (
+                  <View style={styles.popularBadge}>
+                    <Text style={styles.popularBadgeText}>PLUS POPULAIRE</Text>
                   </View>
-                ))}
-              </View>
-            </TouchableOpacity>
-          ))}
+                )}
+
+                <View style={styles.planHeader}>
+                  <View
+                    style={[
+                      styles.iconContainer,
+                      {
+                        backgroundColor:
+                          selectedPlan === plan.id
+                            ? colors.primary.main + '22'
+                            : 'rgba(255,255,255,0.05)',
+                      },
+                    ]}>
+                    {PlanIcon && (
+                      <PlanIcon
+                        size={24}
+                        color={selectedPlan === plan.id ? colors.primary.main : colors.text.muted}
+                      />
+                    )}
+                  </View>
+                  <View>
+                    <Text style={styles.planName}>{plan.name}</Text>
+                    <Text style={styles.planPrice}>
+                      {plan.price}
+                      <Text style={styles.pricePeriod}>/mois</Text>
+                    </Text>
+                  </View>
+                </View>
+
+                <Text style={styles.planDescription}>{plan.description}</Text>
+
+                <View style={styles.featuresList}>
+                  {plan.features.map((feature, idx) => (
+                    <View key={idx} style={styles.featureRow}>
+                      <Check size={16} color={colors.primary.main} />
+                      <Text style={styles.featureText}>{feature}</Text>
+                    </View>
+                  ))}
+                </View>
+              </TouchableOpacity>
+            );
+          })}
         </View>
       </ScrollView>
 
