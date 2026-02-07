@@ -8,21 +8,25 @@ import {
   TouchableOpacity,
   Dimensions,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useOnboardingStore } from '../../store/onboardingStore';
 import { colors } from '../../theme/colors';
 import {
-  Crown,
-  Zap,
   Shield,
-  Edit3,
+  Sparkles,
+  Zap,
+  Crown,
   Image,
   FileText,
   Video,
   Music,
   Download,
   LucideIcon,
+  Box,
+  CheckCircle2,
+  XCircle,
 } from 'lucide-react-native';
 import { BackgroundGradientOnboarding } from '../../components/ui/BackgroundGradientOnboarding';
 import { NeonButton } from '../../components/ui/NeonButton';
@@ -51,24 +55,22 @@ interface Plan {
 
 const planIcons: Record<string, LucideIcon> = {
   curieux: Shield,
-  atelier: Edit3,
+  atelier: Sparkles,
   studio: Zap,
   agence: Crown,
 };
 
-/* ================= ICON MAP ================= */
-
-const featureIcons: Record<FeatureType, LucideIcon> = {
-  image: Image,
-  text: FileText,
-  video: Video,
-  audio: Music,
-  export: Download,
+const getFeatureIcon = (feature: string): LucideIcon => {
+  const f = feature.toLowerCase();
+  if (f.includes('image')) return Image;
+  if (f.includes('texte')) return FileText;
+  if (f.includes('vidéo')) return Video;
+  if (f.includes('sonore') || f.includes('audio')) return Music;
+  if (f.includes('3d') || f.includes('sketch')) return Box;
+  if (f.includes('export')) return f.includes('pas') ? XCircle : Download;
+  if (f.includes('accompagnement') || f.includes('hipster')) return Crown;
+  return CheckCircle2;
 };
-
-/* ================= DATA ================= */
-
-// PLANS is now dynamic
 
 
 /* ================= SCREEN ================= */
@@ -90,7 +92,7 @@ export default function PacksScreen() {
 
       const mappedPlans: Plan[] = backendPlans.map((p: any) => ({
         ...p,
-        price: typeof p.price === 'number' ? `${p.price.toFixed(2)}€ / mois` : p.price,
+        price: typeof p.price === 'number' ? `${p.price.toFixed(2)}€` : p.price,
         icon: planIcons[p.id] || Shield,
       }));
 
@@ -125,77 +127,93 @@ export default function PacksScreen() {
 
         {/* Plans */}
         <ScrollView contentContainerStyle={styles.scrollContent}>
-          <View style={styles.plansContainer}>
-            {plans.map((plan) => (
-              <TouchableOpacity
-                key={plan.id}
-                onPress={() => setPlan(plan.id)}
-                activeOpacity={0.85}
-                style={[
-                  styles.planCard,
-                  selectedPlan === plan.id && styles.selectedPlanCard,
-                ]}
-              >
-                {plan.popular && (
-                  <View style={styles.popularBadge}>
-                    <Text style={styles.popularBadgeText}>CONSEILLÉ</Text>
-                  </View>
-                )}
-
-                {/* Header */}
-                <View style={styles.planHeader}>
-                  <View
-                    style={[
-                      styles.iconContainer,
-                      selectedPlan === plan.id && styles.iconContainerActive,
-                    ]}
-                  >
-                    <plan.icon
-                      size={28}
-                      color={
-                        selectedPlan === plan.id
-                          ? colors.primary.main
-                          : colors.text.muted
-                      }
-                    />
-                  </View>
-
-                  <View>
-                    <Text style={styles.planName}>{plan.name}</Text>
-                    <Text style={styles.planPrice}>{plan.price}</Text>
-
-                    {plan.description && (
-                      <Text style={styles.planDescription}>
-                        {plan.description}
-                      </Text>
-                    )}
-                  </View>
-                </View>
-
-                {/* Features */}
-                <View style={styles.featuresList}>
-                  {plan.features.map((feature, idx) => {
-                    return (
-                      <View key={idx} style={styles.featureRow}>
-                        <FileText size={14} color={colors.text.muted} />
-                        <Text style={styles.featureText}>{feature}</Text>
-                      </View>
-                    );
-                  })}
-
-                  {/* 🔥 ACCOMPAGNEMENT AGENCE */}
-                  {plan.id === 'agence' && (
-                    <View style={styles.agencyRow}>
-                      <Crown size={14} color={colors.text.primary} />
-                      <Text style={styles.agencyText}>
-                        Accompagnement de l'agence
-                      </Text>
+          {loading ? (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 100 }}>
+              <ActivityIndicator color={colors.primary.main} size="large" />
+              <Text style={{ color: colors.text.secondary, marginTop: 16 }}>Chargement des plans...</Text>
+            </View>
+          ) : (
+            <View style={styles.plansContainer}>
+              {plans.map((plan) => (
+                <TouchableOpacity
+                  key={plan.id}
+                  onPress={() => setPlan(plan.id)}
+                  activeOpacity={0.85}
+                  style={[
+                    styles.planCard,
+                    selectedPlan === plan.id && styles.selectedPlanCard,
+                  ]}
+                >
+                  {plan.popular && (
+                    <View style={styles.popularBadge}>
+                      <Text style={styles.popularBadgeText}>CONSEILLÉ</Text>
                     </View>
                   )}
-                </View>
-              </TouchableOpacity>
-            ))}
-          </View>
+
+                  {/* Header */}
+                  <View style={styles.planHeader}>
+                    <View
+                      style={[
+                        styles.iconContainer,
+                        selectedPlan === plan.id && styles.iconContainerActive,
+                      ]}
+                    >
+                      <plan.icon
+                        size={28}
+                        color={
+                          selectedPlan === plan.id
+                            ? colors.primary.main
+                            : colors.text.muted
+                        }
+                      />
+                    </View>
+
+                    <View>
+                      <Text style={styles.planName}>{plan.name}</Text>
+                      <Text style={styles.planPrice}>{plan.price}</Text>
+
+                      {plan.description && (
+                        <Text style={styles.planDescription}>
+                          {plan.description}
+                        </Text>
+                      )}
+                    </View>
+                  </View>
+
+                  {/* Features */}
+                  <View style={styles.featuresList}>
+                    {plan.features.map((feature, idx) => {
+                      const FeatureIcon = getFeatureIcon(feature);
+                      const isAccompagnement = feature.toLowerCase().includes('accompagnement');
+                      return (
+                        <View
+                          key={idx}
+                          style={[
+                            styles.featureRow,
+                            isAccompagnement && styles.agencyRow
+                          ]}
+                        >
+                          <FeatureIcon
+                            size={14}
+                            color={isAccompagnement ? colors.text.primary : colors.text.muted}
+                          />
+                          <Text
+                            style={[
+                              styles.featureText,
+                              isAccompagnement && styles.agencyText
+                            ]}
+                          >
+                            {feature}
+                          </Text>
+                        </View>
+                      );
+                    })}
+
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
         </ScrollView>
 
         {/* Footer */}

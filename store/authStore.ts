@@ -556,10 +556,13 @@ export const useAuthStore = create<AuthState>()(
       },
 
       logout: async () => {
+        const token = get().accessToken || (await AsyncStorage.getItem('access_token'));
         try {
-          const user = get().user;
-          const endpoint = user?.type === 'ai' ? '/ai/auth/logout' : '/logout';
-          await api.post(endpoint);
+          if (token) {
+            const user = get().user;
+            const endpoint = user?.type === 'ai' ? '/ai/auth/logout' : '/logout';
+            await api.post(endpoint);
+          }
         } catch (e) {
           console.error('Logout error:', e);
         } finally {

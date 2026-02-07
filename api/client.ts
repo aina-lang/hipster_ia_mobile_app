@@ -67,7 +67,8 @@ api.interceptors.response.use(
       originalRequest.url.includes('/ai/auth');
 
     // If it's a 401 error and not a login/register request, try to refresh
-    if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint) {
+    const isLogout = originalRequest.url.includes('/logout');
+    if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint && !isLogout) {
       originalRequest._retry = true;
 
       try {

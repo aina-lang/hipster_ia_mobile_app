@@ -10,7 +10,23 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../../theme/colors';
-import { ChevronLeft, Check, Crown, Zap, Shield, LucideIcon, Edit3 } from 'lucide-react-native';
+import {
+  ChevronLeft,
+  Check,
+  Crown,
+  Zap,
+  Shield,
+  LucideIcon,
+  Sparkles,
+  Image,
+  FileText,
+  Video,
+  Music,
+  Download,
+  Box,
+  CheckCircle2,
+  XCircle,
+} from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useStripe } from '@stripe/stripe-react-native';
 import { api } from '../../api/client';
@@ -33,9 +49,21 @@ interface Plan {
 
 const planIcons: Record<string, LucideIcon> = {
   curieux: Shield,
-  atelier: Edit3,
+  atelier: Sparkles,
   studio: Zap,
   agence: Crown,
+};
+
+const getFeatureIcon = (feature: string): LucideIcon => {
+  const f = feature.toLowerCase();
+  if (f.includes('image')) return Image;
+  if (f.includes('texte')) return FileText;
+  if (f.includes('vidéo')) return Video;
+  if (f.includes('sonore') || f.includes('audio')) return Music;
+  if (f.includes('3d') || f.includes('sketch')) return Box;
+  if (f.includes('export')) return f.includes('pas') ? XCircle : Download;
+  if (f.includes('accompagnement') || f.includes('hipster')) return Crown;
+  return CheckCircle2;
 };
 
 export default function SubscriptionScreen() {
@@ -198,75 +226,106 @@ export default function SubscriptionScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <View style={styles.topSection}>
-          <Text style={styles.title}>Passez au niveau supérieur</Text>
-          <Text style={styles.subtitle}>Libérez votre créativité avec nos outils premium</Text>
-        </View>
+        {loading && plans.length === 0 ? (
+          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 100 }}>
+            <ActivityIndicator color={colors.primary.main} size="large" />
+            <Text style={{ color: colors.text.secondary, marginTop: 16 }}>Chargement des plans...</Text>
+          </View>
+        ) : (
+          <>
+            <View style={styles.topSection}>
+              <Text style={styles.title}>Passez au niveau supérieur</Text>
+              <Text style={styles.subtitle}>Libérez votre créativité avec nos outils premium</Text>
+            </View>
 
-        {/* Votre usage */}
-        <View style={{ paddingHorizontal: 24, marginBottom: 16 }}>
-          <Text style={{ color: colors.text.secondary, fontSize: 14, marginBottom: 8, fontWeight: '600' }}>
-            Votre usage
-          </Text>
-          <UsageBar />
-        </View>
+            {/* Votre usage */}
+            <View style={{ paddingHorizontal: 24, marginBottom: 16 }}>
+              <Text style={{ color: colors.text.secondary, fontSize: 14, marginBottom: 8, fontWeight: '600' }}>
+                Votre usage
+              </Text>
+              <UsageBar />
+            </View>
 
-        <View style={styles.plansContainer}>
-          {plans.map((plan) => {
-            const PlanIcon = plan.icon;
-            return (
-              <TouchableOpacity
-                key={plan.id}
-                style={[styles.planCard, selectedPlan === plan.id && styles.selectedPlanCard]}
-                onPress={() => setSelectedPlan(plan.id)}
-                activeOpacity={0.8}>
-                {plan.popular && (
-                  <View style={styles.popularBadge}>
-                    <Text style={styles.popularBadgeText}>PLUS POPULAIRE</Text>
-                  </View>
-                )}
-
-                <View style={styles.planHeader}>
-                  <View
-                    style={[
-                      styles.iconContainer,
-                      {
-                        backgroundColor:
-                          selectedPlan === plan.id
-                            ? colors.primary.main + '22'
-                            : 'rgba(255,255,255,0.05)',
-                      },
-                    ]}>
-                    {PlanIcon && (
-                      <PlanIcon
-                        size={24}
-                        color={selectedPlan === plan.id ? colors.primary.main : colors.text.muted}
-                      />
+            <View style={styles.plansContainer}>
+              {plans.map((plan) => {
+                const PlanIcon = plan.icon;
+                return (
+                  <TouchableOpacity
+                    key={plan.id}
+                    style={[styles.planCard, selectedPlan === plan.id && styles.selectedPlanCard]}
+                    onPress={() => setSelectedPlan(plan.id)}
+                    activeOpacity={0.8}>
+                    {plan.popular && (
+                      <View style={styles.popularBadge}>
+                        <Text style={styles.popularBadgeText}>PLUS POPULAIRE</Text>
+                      </View>
                     )}
-                  </View>
-                  <View>
-                    <Text style={styles.planName}>{plan.name}</Text>
-                    <Text style={styles.planPrice}>
-                      {plan.price}
-                      <Text style={styles.pricePeriod}>/mois</Text>
-                    </Text>
-                  </View>
-                </View>
 
-                <Text style={styles.planDescription}>{plan.description}</Text>
-
-                <View style={styles.featuresList}>
-                  {plan.features.map((feature, idx) => (
-                    <View key={idx} style={styles.featureRow}>
-                      <Check size={16} color={colors.primary.main} />
-                      <Text style={styles.featureText}>{feature}</Text>
+                    <View style={styles.planHeader}>
+                      <View
+                        style={[
+                          styles.iconContainer,
+                          {
+                            backgroundColor:
+                              selectedPlan === plan.id
+                                ? colors.primary.main + '22'
+                                : 'rgba(255,255,255,0.05)',
+                          },
+                        ]}>
+                        {PlanIcon && (
+                          <PlanIcon
+                            size={24}
+                            color={selectedPlan === plan.id ? colors.primary.main : colors.text.muted}
+                          />
+                        )}
+                      </View>
+                      <View>
+                        <Text style={styles.planName}>{plan.name}</Text>
+                        <Text style={styles.planPrice}>
+                          {plan.price}
+                          {typeof plan.price === 'string' && plan.price.toLowerCase().includes('€') ? (
+                            <Text style={styles.pricePeriod}>/mois</Text>
+                          ) : null}
+                        </Text>
+                      </View>
                     </View>
-                  ))}
-                </View>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
+
+                    <Text style={styles.planDescription}>{plan.description}</Text>
+
+                    <View style={styles.featuresList}>
+                      {plan.features.map((feature, idx) => {
+                        const FeatureIcon = getFeatureIcon(feature);
+                        const isAccompagnement = feature.toLowerCase().includes('accompagnement');
+                        return (
+                          <View
+                            key={idx}
+                            style={[
+                              styles.featureRow,
+                              isAccompagnement && styles.agencyRow
+                            ]}
+                          >
+                            <FeatureIcon
+                              size={16}
+                              color={isAccompagnement ? colors.text.primary : colors.text.muted}
+                            />
+                            <Text
+                              style={[
+                                styles.featureText,
+                                isAccompagnement && styles.agencyText
+                              ]}
+                            >
+                              {feature}
+                            </Text>
+                          </View>
+                        );
+                      })}
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </>
+        )}
       </ScrollView>
 
       <View style={styles.footer}>
@@ -414,6 +473,20 @@ const styles = StyleSheet.create({
   },
   featureText: {
     fontSize: 14,
+    color: colors.text.primary,
+  },
+  agencyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.08)',
+  },
+  agencyText: {
+    fontSize: 14,
+    fontWeight: '700',
     color: colors.text.primary,
   },
   footer: {
