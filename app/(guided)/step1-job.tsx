@@ -3,7 +3,6 @@ import {
   View,
   Text,
   TouchableOpacity,
-  ScrollView,
   TextInput,
   KeyboardAvoidingView,
   Platform,
@@ -32,15 +31,18 @@ import {
   Youtube,
   Plus,
   ArrowRight,
+  Briefcase,
+  Leaf,
 } from 'lucide-react-native';
 
 const JOBS: { label: JobType; icon: any }[] = [
-  { label: 'Coiffeur', icon: Scissors },
-  { label: 'Restaurant', icon: UtensilsCrossed },
-  { label: 'Boutique', icon: Store },
-  { label: 'Créateur', icon: Palette },
-  { label: 'Artisan', icon: Hammer },
+  { label: 'Coiffure & Esthétique', icon: Scissors },
+  { label: 'Restaurant / Bar', icon: UtensilsCrossed },
+  { label: 'Commerce / Boutique', icon: Store },
+  { label: 'Artisans du bâtiment', icon: Hammer },
   { label: 'Service local', icon: MapPin },
+  { label: 'Profession libérale', icon: Briefcase },
+  { label: 'Bien-être / Santé alternative', icon: Leaf },
   { label: 'Autre', icon: Plus },
 ];
 
@@ -104,31 +106,39 @@ export default function Step1JobScreen() {
           ? () => setStage('job')
           : isCustomSelected
             ? () => {
-                // @ts-ignore
-                setJob(null);
-              }
+              // @ts-ignore
+              setJob(null);
+            }
             : undefined
       }>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}>
-        <ScrollView
-          style={{ flex: 1 }}
-          contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}
-          showsVerticalScrollIndicator={false}>
+        <View style={{ paddingHorizontal: 20, paddingBottom: 40 }}>
+          {/* Header */}
+          <View style={styles.header}>
+            <Text style={styles.title}>
+              {stage === 'job' ? 'Quel est votre métier ?' : 'Que souhaitez-vous faire ?'}
+            </Text>
+            {stage === 'job' ? (
+              <Text style={styles.subtitle}>Nous personnalisons l'expérience pour vous.</Text>
+            ) : (
+              <View style={styles.breadcrumb}>
+                <Text style={styles.breadcrumbJob}>{selectedJob}</Text>
+                <ChevronRight size={14} color={colors.text.muted} />
+                <Text style={styles.breadcrumbCanal}>Canal</Text>
+              </View>
+            )}
+          </View>
+
+          {/* Animation - Outside conditional to prevent unmounting/flickering */}
+          <View style={styles.animationContainer}>
+            <DeerAnimation size={120} progress={stage === 'job' ? 20 : 40} />
+          </View>
+
+          {/* Content */}
           {stage === 'job' ? (
             <>
-              {/* Header */}
-              <View style={styles.header}>
-                <Text style={styles.title}>Quel est votre métier ?</Text>
-                <Text style={styles.subtitle}>Nous personnalisons l'expérience pour vous.</Text>
-              </View>
-
-              {/* Animation */}
-              <View style={styles.animationContainer}>
-                <DeerAnimation size={120} progress={20} />
-              </View>
-
               {/* Grid */}
               <View style={styles.grid}>
                 {JOBS.map((job) => (
@@ -177,21 +187,6 @@ export default function Step1JobScreen() {
             </>
           ) : (
             <>
-              {/* HEADER */}
-              <View style={styles.header}>
-                <Text style={styles.title}>Que souhaitez-vous faire ?</Text>
-                <View style={styles.breadcrumb}>
-                  <Text style={styles.breadcrumbJob}>{selectedJob}</Text>
-                  <ChevronRight size={14} color={colors.text.muted} />
-                  <Text style={styles.breadcrumbCanal}>Canal</Text>
-                </View>
-              </View>
-
-              {/* ANIMATION */}
-              <View style={styles.animationContainer}>
-                <DeerAnimation size={120} progress={40} />
-              </View>
-
               {/* LISTE */}
               <View style={styles.functionsList}>
                 {currentFunctions.map((fn, index) => (
@@ -212,7 +207,7 @@ export default function Step1JobScreen() {
               </TouchableOpacity>
             </>
           )}
-        </ScrollView>
+        </View>
       </KeyboardAvoidingView>
     </GuidedScreenWrapper>
   );

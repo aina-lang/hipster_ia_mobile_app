@@ -8,6 +8,7 @@ import { BackgroundGradient } from '../ui/BackgroundGradient';
 import { StepIndicator } from '../ui/StepIndicator';
 import { useCreationStore } from '../../store/creationStore';
 import { WORKFLOWS } from '../../constants/workflows';
+import { BackgroundGradientOnboarding } from 'components/ui/BackgroundGradientOnboarding';
 
 interface GuidedScreenWrapperProps {
   children: React.ReactNode;
@@ -49,7 +50,7 @@ export function GuidedScreenWrapper({ children, headerRight, onBack }: GuidedScr
   });
 
   return (
-    <BackgroundGradient>
+    <BackgroundGradientOnboarding>
       <View style={{ flex: 1 }}>
         {/* Absolute Header */}
         <Animated.View
@@ -99,7 +100,7 @@ export function GuidedScreenWrapper({ children, headerRight, onBack }: GuidedScr
           {children}
         </Animated.ScrollView>
       </View>
-    </BackgroundGradient>
+    </BackgroundGradientOnboarding>
   );
 }
 

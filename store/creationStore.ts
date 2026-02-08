@@ -1,12 +1,13 @@
 import { create } from 'zustand';
 
 export type JobType =
-  | 'Coiffeur'
-  | 'Restaurant'
-  | 'Boutique'
-  | 'Créateur'
-  | 'Artisan'
+  | 'Coiffure & Esthétique'
+  | 'Restaurant / Bar'
+  | 'Commerce / Boutique'
+  | 'Artisans du bâtiment'
   | 'Service local'
+  | 'Profession libérale'
+  | 'Bien-être / Santé alternative'
   | 'Autre'
   | (string & {});
 
