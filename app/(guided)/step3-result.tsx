@@ -85,12 +85,30 @@ export default function Step3ResultScreen() {
 
     reset,
   } = useCreationStore();
-  const { user } = useAuthStore();
+  const { user, aiRefreshUser } = useAuthStore();
 
   const isRestricted = user?.planType === 'curieux';
   const [loading, setLoading] = useState(true);
   const [result, setResult] = useState<string | null>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const planType = user?.planType || 'curieux';
+  const isPackCurieux = planType === 'curieux';
+  const promptLimit = user?.promptsLimit || 0;
+  const promptUsed = user?.promptsUsed || 0;
+  const imagesLimit = user?.imagesLimit || 0;
+  const imagesUsed = user?.imagesUsed || 0;
+
+  const textRemaining = Math.max(0, promptLimit - promptUsed);
+  const imagesRemaining = Math.max(0, imagesLimit - imagesUsed);
+
+  const isTextExhausted = isPackCurieux && promptLimit > 0 && promptUsed >= promptLimit && promptLimit !== 999999;
+  const isImagesExhausted = isPackCurieux && imagesLimit > 0 && imagesUsed >= imagesLimit && imagesLimit !== 999999;
+  const isFullyExhausted = isPackCurieux && isTextExhausted && isImagesExhausted;
+
+  // Check Expiration
+  const now = new Date();
+  const endDate = user?.subscriptionEndDate ? new Date(user.subscriptionEndDate) : null;
+  const isExpired = endDate && now > endDate;
   const [generationId, setGenerationId] = useState<number | null>(null);
   const [localQuery, setLocalQuery] = useState('');
   const [regenMode, setRegenMode] = useState<'text' | 'image' | 'both'>('text');
@@ -465,6 +483,24 @@ export default function Step3ResultScreen() {
     console.log('generateContent');
 
     // if (loading) return;
+
+    // Check credits before starting
+    const needsText = mode === 'text' || mode === 'both';
+    const needsImage = mode === 'image' || mode === 'both';
+
+    if (needsText && isTextExhausted) {
+      showModal('error', 'Limite textes atteinte', 'Vous avez déjà utilisé vos 2 textes du jour. Vous pouvez encore générer des images !');
+      return;
+    }
+    if (needsImage && isImagesExhausted) {
+      showModal('error', 'Limite images atteinte', 'Vous avez déjà utilisé vos 2 images du jour. Vous pouvez encore générer des textes !');
+      return;
+    }
+    if (isExpired && isPackCurieux) {
+      showModal('error', 'Essai terminé', 'Votre essai de 7 jours est terminé. Veuillez passer au Pack Studio.');
+      return;
+    }
+
     setLoading(true);
     setRegenMode(mode);
 
@@ -499,26 +535,11 @@ export default function Step3ResultScreen() {
       // Specialized prompts per category
       if (selectedCategory === 'Social') {
         const socialResponse = await AiService.generateSocial(params);
-        console.log('[DEBUG] Social Response:', JSON.stringify(socialResponse, null, 2));
         if (mode === 'text' || mode === 'both') {
           setResult(socialResponse.content);
-          // Decrement text credits
-          try {
-            await AiService.decrementCredits('text');
-            console.log('[DEBUG] Decremented text credits');
-          } catch (err) {
-            console.log('[DEBUG] Credit decrement not critical:', err);
-          }
         }
         if (mode === 'image' || mode === 'both') {
           setImageUrl(socialResponse.url);
-          // Decrement image credits
-          try {
-            await AiService.decrementCredits('image');
-            console.log('[DEBUG] Decremented image credits');
-          } catch (err) {
-            console.log('[DEBUG] Credit decrement not critical:', err);
-          }
         }
         setGenerationId(socialResponse.generationId);
       } else if (selectedCategory === 'Image') {
@@ -527,13 +548,6 @@ export default function Step3ResultScreen() {
           setImageUrl(flyerResult.url);
           setResult(flyerResult.url);
           setGenerationId(flyerResult.generationId);
-          // Decrement image credits
-          try {
-            await AiService.decrementCredits('image');
-            console.log('[DEBUG] Decremented image credits for flyer');
-          } catch (err) {
-            console.log('[DEBUG] Credit decrement not critical:', err);
-          }
         } else {
           const resultData = await AiService.generateImage(
             params,
@@ -541,57 +555,26 @@ export default function Step3ResultScreen() {
             currentNegativePrompt
           );
           setResult(resultData.url);
-          setImageUrl(resultData.url); // For consistency
+          setImageUrl(resultData.url);
           setGenerationId(resultData.generationId);
-          // Decrement image credits
-          try {
-            await AiService.decrementCredits('image');
-            console.log('[DEBUG] Decremented image credits');
-          } catch (err) {
-            console.log('[DEBUG] Credit decrement not critical:', err);
-          }
         }
       } else if (selectedCategory === 'Document') {
         const resultData = await AiService.generateDocument('business', params);
         setResult(resultData.content);
         setGenerationId(resultData.generationId);
-        // Decrement text credits (document is text-based)
-        try {
-          await AiService.decrementCredits('text');
-          console.log('[DEBUG] Decremented text credits for document');
-        } catch (err) {
-          console.log('[DEBUG] Credit decrement not critical:', err);
-        }
       } else if (selectedCategory === 'Texte') {
-        // Check if this is a flyer request
         if (selectedFunction && selectedFunction.includes('Flyers')) {
-          // Generate flyer as image
           const flyerResult = await AiService.generateFlyer(params, currentNegativePrompt);
           setImageUrl(flyerResult.url);
-          setResult(flyerResult.url); // Also set as result for display
+          setResult(flyerResult.url);
           setGenerationId(flyerResult.generationId);
-          // Decrement image credits
-          try {
-            await AiService.decrementCredits('image');
-            console.log('[DEBUG] Decremented image credits for text flyer');
-          } catch (err) {
-            console.log('[DEBUG] Credit decrement not critical:', err);
-          }
         } else {
-          // Regular text generation
           const resultData = await AiService.generateText(
             params,
             selectedCategory.toLowerCase() as TextGenerationType
           );
           setResult(resultData.content);
           setGenerationId(resultData.generationId);
-          // Decrement text/prompt credits
-          try {
-            await AiService.decrementCredits('text');
-            console.log('[DEBUG] Decremented text credits');
-          } catch (err) {
-            console.log('[DEBUG] Credit decrement not critical:', err);
-          }
         }
       }
     } catch (error: any) {
@@ -601,6 +584,8 @@ export default function Step3ResultScreen() {
       setResult('Une erreur est survenue lors de la génération. ' + errMsg);
     } finally {
       setLoading(false);
+      // Update credits in real-time
+      await aiRefreshUser();
     }
   };
 
@@ -1138,115 +1123,143 @@ export default function Step3ResultScreen() {
 
           {/* Panneau de régénération replié */}
           {!loading && (
-            <View style={styles.regenerateContainer}>
-              {!showRegeneratePanel ? (
-                <NeonButton
-                  title="Modifier et régénérer"
-                  onPress={() => setShowRegeneratePanel(true)}
-                  variant="outline"
-                  size="md"
-                  icon={<RefreshCcw size={18} color={colors.neon.primary} />}
-                  style={{ width: '100%' }}
-                />
-              ) : (
-                <View style={styles.regeneratePanel}>
-                  <View style={styles.regeneratePanelHeader}>
-                    <Text style={styles.regeneratePanelTitle}>Affinez votre demande</Text>
-                    <TouchableOpacity onPress={() => setShowRegeneratePanel(false)}>
-                      <X size={24} color={colors.text.secondary} />
-                    </TouchableOpacity>
-                  </View>
-
-                  <TextInput
-                    style={styles.regenerateInput}
-                    value={localQuery}
-                    onChangeText={setLocalQuery}
-                    placeholder="Ex: Ajoute plus de détails sur..."
-                    placeholderTextColor={colors.text.muted}
-                    multiline
-                    maxLength={500}
-                  />
-
-                  <View style={{ marginTop: 12 }}>
-                    <Text style={styles.modeLabel}>Inversion (ce que vous NE voulez PAS) :</Text>
-                    <TextInput
-                      style={[styles.regenerateInput, { minHeight: 60, marginTop: 8 }]}
-                      value={negativePrompt}
-                      onChangeText={setNegativePrompt}
-                      placeholder="Ex: Pas de texte flou, pas d'objets cassés..."
-                      placeholderTextColor={colors.text.muted}
-                      multiline
-                      maxLength={200}
-                    />
-                  </View>
-
-                  <View style={styles.regenerateTools}>
-                    <TouchableOpacity style={styles.toolIcon}>
-                      <LucideImage size={20} color={colors.text.secondary} />
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.toolIcon}>
-                      <Paperclip size={20} color={colors.text.secondary} />
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.toolIcon}>
-                      <Mic size={20} color={colors.text.secondary} />
-                    </TouchableOpacity>
-                    <View style={{ flex: 1 }} />
-                    <View style={styles.charCounter}>
-                      <Text style={styles.charCounterText}>{localQuery.length}/500</Text>
-                    </View>
-                  </View>
-
-                  {/* Choice for regeneration */}
-                  <View style={styles.modeSelector}>
-                    <Text style={styles.modeLabel}>Régénérer :</Text>
-                    <View style={styles.modeOptionsRow}>
-                      {[
-                        { id: 'text', label: 'Texte', icon: <FileText size={16} /> },
-                        { id: 'image', label: 'Image', icon: <LucideImage size={16} /> },
-                        { id: 'both', label: 'Les deux', icon: <Sparkles size={16} /> },
-                      ]
-                        .filter((m) => {
-                          if (selectedCategory === 'Social') return true;
-                          if (selectedCategory === 'Texte') return m.id !== 'both';
-                          if (selectedCategory === 'Image') return m.id === 'image';
-                          return m.id === 'text';
-                        })
-                        .map((m) => (
-                          <TouchableOpacity
-                            key={m.id}
-                            style={[styles.modeItem, regenMode === m.id && styles.modeItemSelected]}
-                            onPress={() => setRegenMode(m.id as any)}>
-                            {React.cloneElement(
-                              m.icon as React.ReactElement,
-                              {
-                                color:
-                                  regenMode === m.id
-                                    ? colors.background.dark
-                                    : colors.text.secondary,
-                              } as any
-                            )}
-                            <Text
-                              style={[
-                                styles.modeItemText,
-                                regenMode === m.id && styles.modeItemTextSelected,
-                              ]}>
-                              {m.label}
-                            </Text>
-                          </TouchableOpacity>
-                        ))}
-                    </View>
-                  </View>
-
-                  <NeonButton
-                    title="C'est parti"
-                    onPress={() => generateContent(localQuery, regenMode)}
-                    icon={<Sparkles size={20} color="#000" />}
-                    size="lg"
-                    variant="premium"
-                  />
+            <>
+              {/* Daily Quota Warnings */}
+              {isPackCurieux && (
+                <View style={{ marginBottom: 16, alignItems: 'center' }}>
+                  {isTextExhausted && !isImagesExhausted && (
+                    <Text style={{ fontSize: 13, color: '#fb923c', textAlign: 'center' }}>
+                      Limite de textes atteinte aujourd'hui.
+                    </Text>
+                  )}
+                  {!isTextExhausted && isImagesExhausted && (
+                    <Text style={{ fontSize: 13, color: '#fb923c', textAlign: 'center' }}>
+                      Limite d'images atteinte aujourd'hui.
+                    </Text>
+                  )}
+                  {isFullyExhausted && (
+                    <Text style={{ fontSize: 13, color: '#f87171', fontWeight: '700', textAlign: 'center' }}>
+                      Limites quotidiennes atteintes (2/2). Revenez demain !
+                    </Text>
+                  )}
+                  {!isFullyExhausted && (
+                    <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', textAlign: 'center' }}>
+                      Restant aujourd'hui: {textRemaining} textes, {imagesRemaining} images
+                    </Text>
+                  )}
                 </View>
               )}
-            </View>
+
+              <View style={styles.regenerateSection}>
+                {!showRegeneratePanel ? (
+                  <NeonButton
+                    title="Modifier et régénérer"
+                    onPress={() => setShowRegeneratePanel(true)}
+                    variant="outline"
+                    size="md"
+                    icon={<RefreshCcw size={18} color={colors.neon.primary} />}
+                    style={{ width: '100%' }}
+                  />
+                ) : (
+                  <View style={styles.regeneratePanel}>
+                    <View style={styles.regeneratePanelHeader}>
+                      <Text style={styles.regeneratePanelTitle}>Affinez votre demande</Text>
+                      <TouchableOpacity onPress={() => setShowRegeneratePanel(false)}>
+                        <X size={24} color={colors.text.secondary} />
+                      </TouchableOpacity>
+                    </View>
+
+                    <TextInput
+                      style={styles.regenerateInput}
+                      value={localQuery}
+                      onChangeText={setLocalQuery}
+                      placeholder="Ex: Ajoute plus de détails sur..."
+                      placeholderTextColor={colors.text.muted}
+                      multiline
+                      maxLength={500}
+                    />
+
+                    <View style={{ marginTop: 12 }}>
+                      <Text style={styles.modeLabel}>Inversion (ce que vous NE voulez PAS) :</Text>
+                      <TextInput
+                        style={[styles.regenerateInput, { minHeight: 60, marginTop: 8 }]}
+                        value={negativePrompt}
+                        onChangeText={setNegativePrompt}
+                        placeholder="Ex: Pas de texte flou, pas d'objets cassés..."
+                        placeholderTextColor={colors.text.muted}
+                        multiline
+                        maxLength={200}
+                      />
+                    </View>
+
+                    <View style={styles.regenerateTools}>
+                      <TouchableOpacity style={styles.toolIcon}>
+                        <LucideImage size={20} color={colors.text.secondary} />
+                      </TouchableOpacity>
+                      <TouchableOpacity style={styles.toolIcon}>
+                        <Paperclip size={20} color={colors.text.secondary} />
+                      </TouchableOpacity>
+                      <TouchableOpacity style={styles.toolIcon}>
+                        <Mic size={20} color={colors.text.secondary} />
+                      </TouchableOpacity>
+                      <View style={{ flex: 1 }} />
+                      <View style={styles.charCounter}>
+                        <Text style={styles.charCounterText}>{localQuery.length}/500</Text>
+                      </View>
+                    </View>
+
+                    {/* Choice for regeneration */}
+                    <View style={styles.modeSelector}>
+                      <Text style={styles.modeLabel}>Régénérer :</Text>
+                      <View style={styles.modeOptionsRow}>
+                        {[
+                          { id: 'text', label: 'Texte', icon: <FileText size={16} /> },
+                          { id: 'image', label: 'Image', icon: <LucideImage size={16} /> },
+                          { id: 'both', label: 'Les deux', icon: <Sparkles size={16} /> },
+                        ]
+                          .filter((m) => {
+                            if (selectedCategory === 'Social') return true;
+                            if (selectedCategory === 'Texte') return m.id !== 'both';
+                            if (selectedCategory === 'Image') return m.id === 'image';
+                            return m.id === 'text';
+                          })
+                          .map((m) => (
+                            <TouchableOpacity
+                              key={m.id}
+                              style={[styles.modeItem, regenMode === m.id && styles.modeItemSelected]}
+                              onPress={() => setRegenMode(m.id as any)}>
+                              {React.cloneElement(
+                                m.icon as React.ReactElement,
+                                {
+                                  color:
+                                    regenMode === m.id
+                                      ? colors.background.dark
+                                      : colors.text.secondary,
+                                } as any
+                              )}
+                              <Text
+                                style={[
+                                  styles.modeItemText,
+                                  regenMode === m.id && styles.modeItemTextSelected,
+                                ]}>
+                                {m.label}
+                              </Text>
+                            </TouchableOpacity>
+                          ))}
+                      </View>
+                    </View>
+
+                    <NeonButton
+                      title="C'est parti"
+                      onPress={() => generateContent(localQuery, regenMode)}
+                      icon={<Sparkles size={20} color="#000" />}
+                      size="lg"
+                      variant="premium"
+                    />
+                  </View>
+                )}
+              </View>
+            </>
           )}
 
           <View style={{ height: 60 }} />

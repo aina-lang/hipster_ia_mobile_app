@@ -35,6 +35,7 @@ import { DeerAnimation } from '../../components/ui/DeerAnimation';
 import { UsageBar } from '../../components/UsageBar';
 import { useAuthStore } from '../../store/authStore';
 import { useCreationStore } from '../../store/creationStore';
+import { useChatStore } from '../../store/chatStore';
 import { AiService } from '../../api/ai.service';
 import { api } from '../../api/client';
 import { colors } from '../../theme/colors';
@@ -168,10 +169,9 @@ export default function HomeScreen() {
   const scrollViewRef = useRef<ScrollView>(null);
 
   const [inputValue, setInputValue] = useState('');
-  const [messages, setMessages] = useState<Message[]>([]);
+  const { messages, setMessages, conversationId, setConversationId, resetChat: clearChatStore } = useChatStore();
   const [isGenerating, setIsGenerating] = useState(false);
   const [isBackendConnected, setIsBackendConnected] = useState<boolean | null>(null);
-  const [conversationId, setConversationId] = useState<string | null>(null);
   const [isLoadingConversation, setIsLoadingConversation] = useState(false);
 
   // Modal State
@@ -249,10 +249,20 @@ export default function HomeScreen() {
   const subStatus = user?.subscriptionStatus;
   const stripeId = user?.stripeCustomerId;
   const isSubscriptionActive = subStatus === 'active' || subStatus === 'trialing' || subStatus === 'trial';
+  const isPackCurieux = planType === 'curieux';
+
+  // Check Expiration
+  const now = new Date();
+  const endDate = user?.subscriptionEndDate ? new Date(user.subscriptionEndDate) : null;
+  const isExpired = endDate && now > endDate;
+
+  // If Curieux and expired => force Studio for blocker display
+  const effectivePlanId = (isPackCurieux && isExpired) ? 'studio' : planType;
 
   // Logic: Block if subscription is NOT active/trialing OR if Curieux trial hasn't been activated with a card
-  // We use stripeCustomerId as a marker that the user has added a card for the trial.
-  const isPaidPlanButInactive = !isSubscriptionActive || (planType === 'curieux' && !stripeId);
+  // OR if the trial has expired (even if active in Stripe, our local rule says 7 days).
+  const isTrialButNoCard = isPackCurieux && !stripeId;
+  const isPaidPlanButInactive = !isSubscriptionActive || isTrialButNoCard || (isPackCurieux && isExpired);
 
   const showModal = (type: 'success' | 'error' | 'info', title: string, message: string) => {
     setModalType(type);
@@ -451,16 +461,18 @@ export default function HomeScreen() {
   // Credit and message limit checks
   const promptLimit = user?.promptsLimit || 0;
   const promptUsed = user?.promptsUsed || 0;
-  const isPackCurieux = planType === 'curieux';
+  const imagesLimit = user?.imagesLimit || 0;
+  const imagesUsed = user?.imagesUsed || 0;
 
-  const userMessageCount = messages.filter(m => m.sender === 'user').length;
-  const messageLimit = isPackCurieux ? 10 : Infinity;
-  const messagesRemaining = messageLimit - userMessageCount;
+  const textRemaining = Math.max(0, promptLimit - promptUsed);
+  const imagesRemaining = Math.max(0, imagesLimit - imagesUsed);
 
-  const isMessageLimitReached = isPackCurieux && userMessageCount >= 10;
-  // Trigger credit exhaustion ONLY if we have a valid limit > 0 and usage >= limit
-  const isCreditsExhausted = promptLimit > 0 && promptUsed >= promptLimit && promptLimit !== 999999;
-  const isInputDisabled = isCreditsExhausted || isMessageLimitReached;
+  const isTextExhausted = isPackCurieux && promptLimit > 0 && promptUsed >= promptLimit && promptLimit !== 999999;
+  const isImagesExhausted = isPackCurieux && imagesLimit > 0 && imagesUsed >= imagesLimit && imagesLimit !== 999999;
+  const isFullyExhausted = isPackCurieux && isTextExhausted && isImagesExhausted;
+
+  // For the chat input, we only care about text limit
+  const isInputDisabled = isTextExhausted;
 
   useEffect(() => {
     if (messages.length > 0) {
@@ -472,16 +484,11 @@ export default function HomeScreen() {
     if (!inputValue.trim() || isGenerating) return;
 
     // Check credits
-    if (isCreditsExhausted) {
-      showModal('error', 'Crédits épuisés', 'Vous avez fini vos crédits. Veuillez recharger pour continuer.');
+    if (isTextExhausted) {
+      showModal('error', 'Limite textes atteinte', 'Vous avez atteint votre limite quotidienne de 2 textes. Vous pouvez encore générer des images via le mode guidé !');
       return;
     }
 
-    // Check Pack Curieux message limit
-    if (isMessageLimitReached) {
-      showModal('info', 'Limite atteinte', 'Limite de 10 messages atteinte pour cette conversation.\nDémarrez une nouvelle conversation pour continuer.');
-      return;
-    }
 
     const userMsg: Message = {
       id: Date.now().toString(),
@@ -560,9 +567,8 @@ export default function HomeScreen() {
   };
 
   const resetChat = () => {
-    setMessages([]);
+    clearChatStore();
     setInputValue('');
-    setConversationId(null); // Start a new conversation
     console.log('[DEBUG] Starting new conversation');
   };
 
@@ -631,6 +637,11 @@ export default function HomeScreen() {
                 <TouchableOpacity
                   className="bg-white/3 z-50 mt-80 mb-5 flex-row items-center gap-4 rounded-2xl border border-white/5 p-5"
                   onPress={() => {
+                    if (isFullyExhausted) {
+                      showModal('info', 'Limite quotidienne atteinte', 'Vous avez utilisé vos 2 textes et 2 images du jour. Revenez demain !');
+                      return;
+                    }
+
                     useCreationStore.getState().reset();
                     // If user already has a non-free plan, go straight to guided flow
                     const userPlan = user?.planType;
@@ -642,7 +653,8 @@ export default function HomeScreen() {
                     // Otherwise, ask to choose a plan first
                     router.push('/(drawer)/subscription');
                   }}
-                  activeOpacity={0.8}>
+                  activeOpacity={0.8}
+                  style={{ opacity: isFullyExhausted ? 0.5 : 1 }}>
                   <View className="w-15 h-15 items-center justify-center rounded-lg">
                     <Compass size={32} color={colors.primary.main} />
                   </View>
@@ -728,39 +740,34 @@ export default function HomeScreen() {
           {/* Input */}
           <View className="px-5 py-3 pt-0">
             {/* Limit warnings */}
-            {isMessageLimitReached && (
-              <View className="mb-3 rounded-xl bg-orange-500/20 border border-orange-500/40 p-4">
-                <Text className="text-sm text-orange-200 font-medium mb-2">
-                  Limite de 10 messages atteinte pour cette conversation.
-                </Text>
-                <NeonButton
-                  title="Nouvelle conversation"
-                  onPress={resetChat}
-                  variant="premium"
-                  size="sm"
-                  style={{ marginTop: 8, alignSelf: 'flex-start' }}
-                />
+            {isPackCurieux && (
+              <View className="mb-3 px-1">
+                {isTextExhausted && !isImagesExhausted && (
+                  <Text className="text-xs text-orange-400 font-medium text-center">
+                    Limite de textes atteinte aujourd'hui. Vous pouvez encore générer des images !
+                  </Text>
+                )}
+                {!isTextExhausted && isImagesExhausted && (
+                  <Text className="text-xs text-orange-400 font-medium text-center">
+                    Limite d'images atteinte aujourd'hui. Vous pouvez encore générer des textes !
+                  </Text>
+                )}
+                {isFullyExhausted && (
+                  <Text className="text-xs text-red-400 font-bold text-center">
+                    Limite quotidienne atteinte (2 textes, 2 images). Revenez demain !
+                  </Text>
+                )}
+                {!isFullyExhausted && hasMessages && (
+                  <Text className="text-xs text-white/40 text-center">
+                    Aujourd'hui: {textRemaining} textes et {imagesRemaining} images restants
+                  </Text>
+                )}
               </View>
-            )}
-
-            {/* {isCreditsExhausted && (
-              <View className="mb-3 rounded-xl bg-red-500/20 border border-red-500/40 p-4">
-                <Text className="text-sm text-red-200 font-medium">
-                  Vous avez fini vos crédits. Veuillez recharger pour continuer.
-                </Text>
-              </View>
-            )} */}
-
-            {/* Message counter for Pack Curieux */}
-            {isPackCurieux && !isMessageLimitReached && hasMessages && (
-              <Text className="text-xs text-white/60 text-center mb-2">
-                {messagesRemaining} message{messagesRemaining > 1 ? 's' : ''} restant{messagesRemaining > 1 ? 's' : ''} dans cette conversation
-              </Text>
             )}
 
             {isPaidPlanButInactive ? (
               <PaymentBlocker
-                planId={planType}
+                planId={effectivePlanId}
                 onPay={handleStripePayment}
                 loading={isPaymentLoading}
               />
