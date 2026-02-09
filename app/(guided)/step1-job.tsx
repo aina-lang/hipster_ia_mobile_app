@@ -131,10 +131,10 @@ export default function Step1JobScreen() {
             )}
           </View>
 
-          {/* Animation - Outside conditional to prevent unmounting/flickering */}
+          {/* Animation - Outside conditional to prevent unmounting/flickering
           <View style={styles.animationContainer}>
             <DeerAnimation size={120} progress={stage === 'job' ? 20 : 40} />
-          </View>
+          </View> */}
 
           {/* Content */}
           {stage === 'job' ? (

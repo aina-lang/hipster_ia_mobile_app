@@ -79,8 +79,8 @@ export default function BrandingScreen() {
                 await authStore.uploadLogo(profileId, localLogo);
             }
 
-            await authStore.finishOnboarding();
-            router.replace('/(drawer)');
+            // await authStore.finishOnboarding(); // Moved to payment.tsx
+            router.push('/(onboarding)/payment');
         } catch (e) {
             console.error('Failed to sync branding data', e);
         } finally {
