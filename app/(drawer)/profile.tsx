@@ -59,25 +59,25 @@ export default function ProfileScreen() {
   const [avatarUrl, setAvatarUrl] = useState('https://hipster-api.fr' + user?.avatarUrl || '');
   const [isEditing, setIsEditing] = useState(false);
   const [professionalEmail, setProfessionalEmail] = useState(
-    user?.aiProfile?.professionalEmail || ''
+    user?.professionalEmail || ''
   );
   const [professionalAddress, setProfessionalAddress] = useState(
-    user?.aiProfile?.professionalAddress || ''
+    user?.professionalAddress || ''
   );
-  const [city, setCity] = useState(user?.aiProfile?.city || '');
-  const [postalCode, setPostalCode] = useState(user?.aiProfile?.postalCode || '');
-  const [country, setCountry] = useState(user?.aiProfile?.country || 'France');
+  const [city, setCity] = useState(user?.city || '');
+  const [postalCode, setPostalCode] = useState(user?.postalCode || '');
+  const [country, setCountry] = useState(user?.country || 'France');
   const [professionalPhone, setProfessionalPhone] = useState(
-    user?.aiProfile?.professionalPhone || ''
+    user?.professionalPhone || ''
   );
   const [professionalPhone2, setProfessionalPhone2] = useState(
-    user?.aiProfile?.professionalPhone2 || ''
+    user?.professionalPhone2 || ''
   );
-  const [siret, setSiret] = useState(user?.aiProfile?.siret || '');
-  const [vatNumber, setVatNumber] = useState(user?.aiProfile?.vatNumber || '');
-  const [bankDetails, setBankDetails] = useState(user?.aiProfile?.bankDetails || '');
-  const [websiteUrl, setWebsiteUrl] = useState(user?.aiProfile?.websiteUrl || '');
-  const [logoUrl, setLogoUrl] = useState('https://hipster-api.fr' + user?.aiProfile?.logoUrl || '');
+  const [siret, setSiret] = useState(user?.siret || '');
+  const [vatNumber, setVatNumber] = useState(user?.vatNumber || '');
+  const [bankDetails, setBankDetails] = useState(user?.bankDetails || '');
+  const [websiteUrl, setWebsiteUrl] = useState(user?.websiteUrl || '');
+  const [logoUrl, setLogoUrl] = useState('https://hipster-api.fr' + user?.logoUrl || '');
   const [isEditingPro, setIsEditingPro] = useState(false);
   const [showCountryPicker, setShowCountryPicker] = useState(false);
   const [selectedCountry, setSelectedCountry] = useState<any>(null);
@@ -113,17 +113,17 @@ export default function ProfileScreen() {
   };
 
   useEffect(() => {
-    const userCountry = user?.aiProfile?.country;
+    const userCountry = user?.country;
     const initialCountry = userCountry ? getCountryByName(userCountry) : getCountryByName('France');
 
     setSelectedCountry(initialCountry);
     setCountry(initialCountry?.name || 'France');
 
     setProfessionalPhone(
-      getLocalNumber(user?.aiProfile?.professionalPhone || '', initialCountry?.phoneCode)
+      getLocalNumber(user?.professionalPhone || '', initialCountry?.phoneCode)
     );
     setProfessionalPhone2(
-      getLocalNumber(user?.aiProfile?.professionalPhone2 || '', initialCountry?.phoneCode)
+      getLocalNumber(user?.professionalPhone2 || '', initialCountry?.phoneCode)
     );
   }, [user]);
 
@@ -183,10 +183,10 @@ export default function ProfileScreen() {
 
       if (logoUrl && logoUrl.startsWith('file://')) {
         const currentUser = useAuthStore.getState().user;
-        if (currentUser?.aiProfile?.id) {
+        if (currentUser?.id) {
           finalLogoUrl = await useAuthStore
             .getState()
-            .uploadLogo(currentUser.aiProfile.id, logoUrl);
+            .uploadLogo(currentUser.id, logoUrl);
         }
       }
 
@@ -299,7 +299,7 @@ export default function ProfileScreen() {
 
   const resetProfessionalForm = () => {
     setIsEditingPro(false);
-    const profile = user?.aiProfile;
+    const profile = user;
     const savedCountry = profile?.country ? getCountryByName(profile.country) : null;
 
     setProfessionalEmail(profile?.professionalEmail || '');
@@ -716,12 +716,12 @@ export default function ProfileScreen() {
               <View style={styles.planContent}>
                 <View style={styles.planInfo}>
                   <Text style={styles.planName}>
-                    {user?.aiProfile?.planType
-                      ? `Hipster ${user.aiProfile.planType.charAt(0).toUpperCase() + user.aiProfile.planType.slice(1)}`
+                    {user?.planType
+                      ? `Hipster ${user.planType.charAt(0).toUpperCase() + user.planType.slice(1)}`
                       : 'Hipster Gratuit'}
                   </Text>
                   <Text style={styles.planDescription}>
-                    {user?.aiProfile?.planType === 'premium'
+                    {user?.planType === 'premium'
                       ? 'Accès illimité à tout'
                       : 'Fonctionnalités de base'}
                   </Text>
@@ -729,16 +729,16 @@ export default function ProfileScreen() {
                 <View
                   style={[
                     styles.planBadge,
-                    user?.aiProfile?.subscriptionStatus === 'active' && styles.planBadgeActive,
+                    user?.subscriptionStatus === 'active' && styles.planBadgeActive,
                   ]}>
                   <Text style={styles.planBadgeText}>
-                    {user?.aiProfile?.subscriptionStatus === 'active' ? 'Actif' : 'Gratuit'}
+                    {user?.subscriptionStatus === 'active' ? 'Actif' : 'Gratuit'}
                   </Text>
                 </View>
               </View>
               <View style={styles.planAction}>
                 <Text style={styles.planActionText}>
-                  {user?.aiProfile?.planType === 'premium' ? 'Gérer' : 'Passer Premium'}
+                  {user?.planType === 'premium' ? 'Gérer' : 'Passer Premium'}
                 </Text>
                 <ChevronRight size={18} color={colors.primary.main} />
               </View>

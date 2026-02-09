@@ -245,9 +245,9 @@ export default function HomeScreen() {
     }
   }
 
-  const planType = user?.aiProfile?.planType || 'curieux';
-  const subStatus = user?.aiProfile?.subscriptionStatus;
-  const stripeId = user?.aiProfile?.stripeCustomerId;
+  const planType = user?.planType || 'curieux';
+  const subStatus = user?.subscriptionStatus;
+  const stripeId = user?.stripeCustomerId;
   const isSubscriptionActive = subStatus === 'active' || subStatus === 'trialing' || subStatus === 'trial';
 
   // Logic: Block if subscription is NOT active/trialing OR if Curieux trial hasn't been activated with a card
@@ -449,8 +449,8 @@ export default function HomeScreen() {
   const hasMessages = messages.length > 0;
 
   // Credit and message limit checks
-  const promptLimit = user?.aiProfile?.aiCreditLimits?.promptsLimit || 0;
-  const promptUsed = user?.aiProfile?.aiCreditUsage?.promptsUsed || 0;
+  const promptLimit = user?.promptsLimit || 0;
+  const promptUsed = user?.promptsUsed || 0;
   const isPackCurieux = planType === 'curieux';
 
   const userMessageCount = messages.filter(m => m.sender === 'user').length;
@@ -500,7 +500,7 @@ export default function HomeScreen() {
         Identité: Hipster IA
         Rôle: Assistant créatif et intelligent
         Cible: ${user?.name || "l'utilisateur"}
-        Contexte: ${user?.type !== 'ai' && user?.aiProfile?.job ? `Métier: ${user.aiProfile.job}` : ''}
+        Contexte: ${user?.type !== 'ai' && user?.job ? `Métier: ${user.job}` : ''}
       `;
 
       chatHistory.push({ role: 'system', content: `Tu es Hipster IA. ${systemContext}. IMPORTANT: Ne jamais utiliser d'emojis dans tes réponses. Garde un ton professionnel et direct.` });
@@ -623,7 +623,7 @@ export default function HomeScreen() {
                     {user?.name || 'Utilisateur'}
                   </Text>
                   <Text className="text-center text-2xl font-bold leading-9 text-white">
-                    {user?.aiProfile?.job ? `Prêt pour votre prochaine création en tant que ${user.aiProfile.job.toLowerCase()} ?` : 'Que créons-nous aujourd\'hui ?'}
+                    {user?.job ? `Prêt pour votre prochaine création en tant que ${user.job.toLowerCase()} ?` : 'Que créons-nous aujourd\'hui ?'}
                   </Text>
                 </View>
 
@@ -633,7 +633,7 @@ export default function HomeScreen() {
                   onPress={() => {
                     useCreationStore.getState().reset();
                     // If user already has a non-free plan, go straight to guided flow
-                    const userPlan = user?.aiProfile?.planType;
+                    const userPlan = user?.planType;
                     if (userPlan && userPlan !== 'curieux') {
                       router.push('/(guided)/step1-job');
                       return;

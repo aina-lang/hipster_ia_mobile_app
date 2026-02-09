@@ -41,8 +41,8 @@ export default function RootLayout() {
 
       if (isAuthenticated) {
         // Redirection based on onboarding and subscription status
-        const planType = user?.aiProfile?.planType;
-        const subStatus = user?.aiProfile?.subscriptionStatus;
+        const planType = user?.planType;
+        const subStatus = user?.subscriptionStatus;
         const isPaidPlan = planType && planType !== 'curieux';
         const isSubscriptionActive = subStatus === 'active';
         const isPaidPlanButInactive = isPaidPlan && !isSubscriptionActive;

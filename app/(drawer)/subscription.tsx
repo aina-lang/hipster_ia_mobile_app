@@ -105,14 +105,14 @@ export default function SubscriptionScreen() {
       }));
 
       // Hide the user's own plan if their profile is canceled (don't display canceled packs)
-      const visiblePlans = (user?.aiProfile?.subscriptionStatus === 'canceled' && user?.aiProfile?.planType)
-        ? mappedPlans.filter(p => p.id !== user.aiProfile.planType)
+      const visiblePlans = (user?.subscriptionStatus === 'canceled' && user?.planType)
+        ? mappedPlans.filter(p => p.id !== user.planType)
         : mappedPlans;
 
       setPlans(visiblePlans);
 
       // Default selection (Atelier if available, else first)
-      const currentPlan = user?.aiProfile?.planType;
+      const currentPlan = user?.planType;
       const defaultToSelect = visiblePlans.find(p => p.id === currentPlan)?.id ||
         visiblePlans.find(p => p.id === 'atelier')?.id ||
         visiblePlans[0]?.id;

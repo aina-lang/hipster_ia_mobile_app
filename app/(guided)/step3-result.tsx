@@ -87,7 +87,7 @@ export default function Step3ResultScreen() {
   } = useCreationStore();
   const { user } = useAuthStore();
 
-  const isRestricted = user?.aiProfile?.planType === 'curieux';
+  const isRestricted = user?.planType === 'curieux';
   const [loading, setLoading] = useState(true);
   const [result, setResult] = useState<string | null>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
@@ -697,7 +697,7 @@ export default function Step3ResultScreen() {
       } else {
         showModal('error', 'Erreur', 'Le téléchargement a échoué.');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Download error:', error);
       setModalVisible(false);
       const msg = error?.message || String(error);
@@ -782,7 +782,7 @@ export default function Step3ResultScreen() {
 
       setModalVisible(false);
       showModal('success', 'Enregistré !', "L'image a été ajoutée à votre galerie");
-    } catch (error) {
+    } catch (error: any) {
       console.error('Save to gallery error:', error);
       setModalVisible(false);
       const msg = error?.message || String(error);

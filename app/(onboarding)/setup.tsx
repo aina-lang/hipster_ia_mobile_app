@@ -29,7 +29,7 @@ export default function SetupScreen() {
   } = useOnboardingStore();
 
   const { user, updateAiProfile } = useAuthStore();
-  const [localJob, setLocalJob] = useState(user?.aiProfile?.job || job);
+  const [localJob, setLocalJob] = useState(user?.job || job);
   const [localOtherJob, setLocalOtherJob] = useState('');
   const [localLoading, setLocalLoading] = useState(false);
 

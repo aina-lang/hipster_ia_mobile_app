@@ -21,10 +21,10 @@ export default function BrandingScreen() {
     } = useOnboardingStore();
     const { user } = useAuthStore();
 
-    const initialLogo = user?.aiProfile?.logoUrl || logoUri;
+    const initialLogo = user?.logoUrl || logoUri;
     const initialAvatar = user?.avatarUrl || avatarUri;
 
-    const [selectedColor, setSelectedColor] = useState(user?.aiProfile?.brandingColor || brandingColor || '#FF0000');
+    const [selectedColor, setSelectedColor] = useState(user?.brandingColor || brandingColor || '#FF0000');
     const [localLogo, setLocalLogo] = useState(initialLogo);
     const [localAvatar, setLocalAvatar] = useState(initialAvatar);
     const [localLoading, setLocalLoading] = useState(false);
@@ -61,7 +61,7 @@ export default function BrandingScreen() {
             });
 
             const authStore = useAuthStore.getState();
-            const profileId = authStore.user?.aiProfile?.id;
+            const profileId = authStore.user?.id;
 
             // 1. Sync color
             console.log('[Branding] Syncing color:', selectedColor);
