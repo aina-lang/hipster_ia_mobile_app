@@ -42,40 +42,24 @@ interface User {
     employee?: any;
   };
   profile?: any; // Specifically for AI platform users
-  aiProfile?: {
-    id: number;
-    planType: string;
-    subscriptionStatus: string;
-    credits: number;
-    nextRenewalDate?: string;
-    professionalEmail?: string;
-    professionalAddress?: string;
-    city?: string;
-    postalCode?: string;
-    country?: string;
-    professionalPhone?: string;
-    professionalPhone2?: string;
-    siret?: string;
-    vatNumber?: string;
-    bankDetails?: string;
-    websiteUrl?: string;
-    logoUrl?: string;
     isSetupComplete: boolean;
     job?: string;
     brandingColor?: string;
-    aiCreditUsage?: {
-      promptsUsed: number;
-      imagesUsed: number;
-      videosUsed: number;
-      audioUsed: number;
-    };
-    aiCreditLimits?: {
-      promptsLimit: number;
-      imagesLimit: number;
-      videosLimit: number;
-      audioLimit: number;
-    };
+    hasUsedTrial?: boolean;
+    promptsLimit?: number;
+    imagesLimit?: number;
+    videosLimit?: number;
+    audioLimit?: number;
+    threeDLimit?: number;
+    promptsUsed?: number;
+    imagesUsed?: number;
+    videosUsed?: number;
+    audioUsed?: number;
+    subscriptionStartDate?: string;
+    subscriptionEndDate?: string;
     stripeCustomerId?: string;
+    subscriptionStatus?: string;
+    planType?: string;
   };
   type?: 'ai' | 'standard'; // To distinguish entre standard and ai users
 }

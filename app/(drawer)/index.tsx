@@ -248,7 +248,7 @@ export default function HomeScreen() {
   const planType = user?.aiProfile?.planType || 'curieux';
   const subStatus = user?.aiProfile?.subscriptionStatus;
   const stripeId = user?.aiProfile?.stripeCustomerId;
-  const isSubscriptionActive = subStatus === 'active' || subStatus === 'trialing';
+  const isSubscriptionActive = subStatus === 'active' || subStatus === 'trialing' || subStatus === 'trial';
 
   // Logic: Block if subscription is NOT active/trialing OR if Curieux trial hasn't been activated with a card
   // We use stripeCustomerId as a marker that the user has added a card for the trial.
