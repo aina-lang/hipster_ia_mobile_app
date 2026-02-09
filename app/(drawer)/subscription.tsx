@@ -94,7 +94,8 @@ export default function SubscriptionScreen() {
   const fetchPlans = async () => {
     try {
       setLoading(true);
-      const resp = await api.get('/ai/subscriptions/plans');
+      // Authenticated request: show only plans available for this user
+      const resp = await api.get('/ai/subscriptions/plans/me');
       const backendPlans = resp.data?.data ?? resp.data ?? [];
 
       const mappedPlans: Plan[] = backendPlans.map((p: any) => ({
@@ -103,13 +104,18 @@ export default function SubscriptionScreen() {
         icon: planIcons[p.id] || Shield,
       }));
 
-      setPlans(mappedPlans);
+      // Hide the user's own plan if their profile is canceled (don't display canceled packs)
+      const visiblePlans = (user?.aiProfile?.subscriptionStatus === 'canceled' && user?.aiProfile?.planType)
+        ? mappedPlans.filter(p => p.id !== user.aiProfile.planType)
+        : mappedPlans;
+
+      setPlans(visiblePlans);
 
       // Default selection (Atelier if available, else first)
       const currentPlan = user?.aiProfile?.planType;
-      const defaultToSelect = mappedPlans.find(p => p.id === currentPlan)?.id ||
-        mappedPlans.find(p => p.id === 'atelier')?.id ||
-        mappedPlans[0]?.id;
+      const defaultToSelect = visiblePlans.find(p => p.id === currentPlan)?.id ||
+        visiblePlans.find(p => p.id === 'atelier')?.id ||
+        visiblePlans[0]?.id;
 
       setSelectedPlan(defaultToSelect);
     } catch (error) {
@@ -181,6 +187,9 @@ export default function SubscriptionScreen() {
         planType: planId,
         subscriptionStatus: 'active'
       });
+
+      // Refresh plans list to hide curieux if activated or based on new profile state
+      await fetchPlans();
 
       // Show success with limits info
       const limits = confirmResp.data?.limits;

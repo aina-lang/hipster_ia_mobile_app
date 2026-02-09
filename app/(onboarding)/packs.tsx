@@ -88,7 +88,9 @@ export default function PacksScreen() {
   const fetchPlans = async () => {
     try {
       setLoading(true);
+      // Public request for onboarding: always show all plans
       const resp = await api.get('/ai/subscriptions/plans');
+
       const backendPlans = resp.data?.data ?? resp.data ?? [];
 
       const mappedPlans: Plan[] = backendPlans.map((p: any) => ({
