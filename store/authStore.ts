@@ -41,27 +41,37 @@ interface User {
     client?: any;
     employee?: any;
   };
-  profile?: any; // Specifically for AI platform users
-    isSetupComplete: boolean;
-    job?: string;
-    brandingColor?: string;
-    hasUsedTrial?: boolean;
-    promptsLimit?: number;
-    imagesLimit?: number;
-    videosLimit?: number;
-    audioLimit?: number;
-    threeDLimit?: number;
-    promptsUsed?: number;
-    imagesUsed?: number;
-    videosUsed?: number;
-    audioUsed?: number;
-    subscriptionStartDate?: string;
-    subscriptionEndDate?: string;
-    stripeCustomerId?: string;
-    subscriptionStatus?: string;
-    planType?: string;
-  };
-  type?: 'ai' | 'standard'; // To distinguish entre standard and ai users
+  isSetupComplete?: boolean;
+  job?: string;
+  brandingColor?: string;
+  hasUsedTrial?: boolean;
+  promptsLimit?: number;
+  imagesLimit?: number;
+  videosLimit?: number;
+  audioLimit?: number;
+  threeDLimit?: number;
+  promptsUsed?: number;
+  imagesUsed?: number;
+  videosUsed?: number;
+  audioUsed?: number;
+  subscriptionStartDate?: string;
+  subscriptionEndDate?: string;
+  stripeCustomerId?: string;
+  subscriptionStatus?: string;
+  planType?: string;
+  professionalEmail?: string;
+  professionalAddress?: string;
+  city?: string;
+  postalCode?: string;
+  country?: string;
+  professionalPhone?: string;
+  professionalPhone2?: string;
+  siret?: string;
+  vatNumber?: string;
+  bankDetails?: string;
+  websiteUrl?: string;
+  logoUrl?: string;
+  type?: 'ai' | 'standard'; // To distinguish between standard and ai users
 }
 
 interface AuthState {
@@ -82,7 +92,7 @@ interface AuthState {
   clearError: () => void;
   updateUser: (userData: Partial<User>) => void;
   updateProfile: (data: { name?: string; avatarUrl?: string }) => Promise<void>;
-  updateAiProfile: (data: Partial<User['aiProfile']>) => Promise<void>;
+  updateAiProfile: (data: Partial<User>) => Promise<void>;
   changePassword: (data: any) => Promise<void>;
   finishOnboarding: () => void;
   uploadAvatar: (imageUri: string) => Promise<string>;
@@ -243,36 +253,29 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true, error: null });
         try {
           const currentUser = get().user;
-          if (!currentUser || !currentUser.aiProfile) {
-            throw new Error('AI Profile non trouvé');
+          if (!currentUser) {
+            throw new Error('Utilisateur non trouvé');
           }
 
-          console.log('[AuthStore] Updating AI Profile:', {
-            id: currentUser.aiProfile.id,
-            payload: data,
-          });
+          console.log('[AuthStore] Updating AI profile data:', data);
 
-          // Call API to update AI profile
-          // The backend endpoint is PATCH /profiles/ai/:id
-          const response = await api.patch(`/profiles/ai/${currentUser.aiProfile.id}`, data);
-          const updatedProfile = response.data.data;
-          console.log('[AuthStore] AI Profile updated successfully:', updatedProfile);
+          // Everything is now in AiUser, we update the user directly.
+          const response = await api.patch(`/profiles/ai/${currentUser.id}`, data);
+          const updatedData = response.data.data;
+          console.log('[AuthStore] AI profile updated successfully:', updatedData);
 
           // Map relative paths if necessary
-          if (updatedProfile.logoUrl && !updatedProfile.logoUrl.startsWith('http')) {
-            const oldLogo = updatedProfile.logoUrl;
-            updatedProfile.logoUrl = `${BASE_URL.replace('/api', '')}${updatedProfile.logoUrl}`;
-            console.log(`[AuthStore] Transformed logoUrl: ${oldLogo} -> ${updatedProfile.logoUrl}`);
+          if (updatedData.logoUrl && !updatedData.logoUrl.startsWith('http')) {
+            updatedData.logoUrl = `${BASE_URL.replace('/api', '')}${updatedData.logoUrl}`;
           }
 
-          console.log('[AuthStore] Syncing local state with:', updatedProfile);
           set({
             user: {
               ...currentUser,
-              aiProfile: { ...currentUser.aiProfile, ...updatedProfile },
+              ...updatedData,
             },
+            isLoading: false,
           });
-          set({ isLoading: false });
         } catch (error: any) {
           console.error('[AuthStore] Failed to update AI Profile:', error);
           const message = extractErrorMessage(
@@ -335,7 +338,6 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true, error: null });
         try {
           const { data } = await api.post('/ai/auth/login', credentials);
-
           const resData = data.data;
 
           console.log(
@@ -349,24 +351,11 @@ export const useAuthStore = create<AuthState>()(
           set({
             user: {
               ...resData.user,
-              aiProfile: resData.user.aiProfile
-                ? {
-                    ...resData.user.aiProfile,
-                    aiCreditLimits: resData.user.aiProfile.aiCredit
-                      ? {
-                          promptsLimit: resData.user.aiProfile.aiCredit.promptsLimit,
-                          imagesLimit: resData.user.aiProfile.aiCredit.imagesLimit,
-                          videosLimit: resData.user.aiProfile.aiCredit.videosLimit,
-                          audioLimit: resData.user.aiProfile.aiCredit.audioLimit,
-                        }
-                      : undefined,
-                  }
-                : undefined,
             },
             isAuthenticated: true,
             accessToken: resData.access_token,
             refreshToken: resData.refresh_token,
-            hasFinishedOnboarding: !!resData.user.aiProfile?.isSetupComplete,
+            hasFinishedOnboarding: !!resData.user.isSetupComplete,
             isLoading: false,
           });
 
@@ -377,31 +366,12 @@ export const useAuthStore = create<AuthState>()(
               const creditsData = creditsResp.data;
               set((state) => {
                 const user = state.user;
-                if (!user || !user.aiProfile) return state;
+                if (!user) return state;
 
                 return {
                   user: {
                     ...user,
-                    aiProfile: {
-                      ...user.aiProfile,
-                      id: user.aiProfile.id,
-                      planType: user.aiProfile.planType,
-                      subscriptionStatus: user.aiProfile.subscriptionStatus,
-                      credits: user.aiProfile.credits,
-                      isSetupComplete: user.aiProfile.isSetupComplete,
-                      aiCreditUsage: {
-                        promptsUsed: creditsData.promptsUsed || 0,
-                        imagesUsed: creditsData.imagesUsed || 0,
-                        videosUsed: creditsData.videosUsed || 0,
-                        audioUsed: creditsData.audioUsed || 0,
-                      },
-                      aiCreditLimits: {
-                        promptsLimit: creditsData.promptsLimit,
-                        imagesLimit: creditsData.imagesLimit,
-                        videosLimit: creditsData.videosLimit,
-                        audioLimit: creditsData.audioLimit,
-                      },
-                    },
+                    ...creditsData,
                   } as User,
                 };
               });
@@ -473,24 +443,11 @@ export const useAuthStore = create<AuthState>()(
           set({
             user: {
               ...resData.user,
-              aiProfile: resData.user.aiProfile
-                ? {
-                    ...resData.user.aiProfile,
-                    aiCreditLimits: resData.user.aiProfile.aiCredit
-                      ? {
-                          promptsLimit: resData.user.aiProfile.aiCredit.promptsLimit,
-                          imagesLimit: resData.user.aiProfile.aiCredit.imagesLimit,
-                          videosLimit: resData.user.aiProfile.aiCredit.videosLimit,
-                          audioLimit: resData.user.aiProfile.aiCredit.audioLimit,
-                        }
-                      : undefined,
-                  }
-                : undefined,
             },
             isAuthenticated: true,
             accessToken: resData.access_token,
             refreshToken: resData.refresh_token,
-            hasFinishedOnboarding: !!resData.user.aiProfile?.isSetupComplete,
+            hasFinishedOnboarding: !!resData.user.isSetupComplete,
             isLoading: false,
           });
 
@@ -501,31 +458,12 @@ export const useAuthStore = create<AuthState>()(
               const creditsData = creditsResp.data;
               set((state) => {
                 const user = state.user;
-                if (!user || !user.aiProfile) return state;
+                if (!user) return state;
 
                 return {
                   user: {
                     ...user,
-                    aiProfile: {
-                      ...user.aiProfile,
-                      id: user.aiProfile.id,
-                      planType: user.aiProfile.planType,
-                      subscriptionStatus: user.aiProfile.subscriptionStatus,
-                      credits: user.aiProfile.credits,
-                      isSetupComplete: user.aiProfile.isSetupComplete,
-                      aiCreditUsage: {
-                        promptsUsed: creditsData.promptsUsed || 0,
-                        imagesUsed: creditsData.imagesUsed || 0,
-                        videosUsed: creditsData.videosUsed || 0,
-                        audioUsed: creditsData.audioUsed || 0,
-                      },
-                      aiCreditLimits: {
-                        promptsLimit: creditsData.promptsLimit,
-                        imagesLimit: creditsData.imagesLimit,
-                        videosLimit: creditsData.videosLimit,
-                        audioLimit: creditsData.audioLimit,
-                      },
-                    },
+                    ...creditsData,
                   } as User,
                 };
               });
