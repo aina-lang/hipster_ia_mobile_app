@@ -103,14 +103,7 @@ export default function OnboardingPaymentScreen() {
                             <Check size={20} color={colors.primary.main} />
                             <Text style={styles.feature}>7 jours offerts maintenant</Text>
                         </View>
-                        <View style={styles.row}>
-                            <Check size={20} color={colors.primary.main} />
-                            <Text style={styles.feature}>Puis {thenPrice} (Pack Studio)</Text>
-                        </View>
-                        <View style={styles.row}>
-                            <Check size={20} color={colors.primary.main} />
-                            <Text style={styles.feature}>Annulable à tout moment</Text>
-                        </View>
+
                         <Text style={styles.disclaimer}>
                             Aucun prélèvement aujourd'hui. Une empreinte bancaire est nécessaire pour activer l'essai et éviter les abus.
                         </Text>
