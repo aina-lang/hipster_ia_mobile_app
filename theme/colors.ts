@@ -1,16 +1,18 @@
+// Unified Blue Color Scheme - Based on #203c8e
+// Removing all other colors (Violet, Cyan, Pink) for a focused brand identity.
 
 const blue = {
-  50: '#0288d1',
+  50: '#f0f3ff',
   100: '#e0e7ff',
   200: '#c7d2fe',
-  300: '#0288d1',
-  400: '#0288d1',
-  500: '#0288d1',
-  600: '#0288d1',
-  700: '#0288d1', 
-  800: '#0288d1',
-  900: '#0288d1',
-  950: '#0288d1',
+  300: '#a5b4fc',
+  400: '#818cf8',
+  500: '#6366f1',
+  600: '#4f46e5',
+  700: '#2c469b', // Softer primary blue
+  800: '#1e1b4b',
+  900: '#0f172a',
+  950: '#020617',
 };
 
 export const colors = {
