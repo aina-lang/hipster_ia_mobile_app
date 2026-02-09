@@ -75,6 +75,7 @@ interface User {
       videosLimit: number;
       audioLimit: number;
     };
+    stripeCustomerId?: string;
   };
   type?: 'ai' | 'standard'; // To distinguish entre standard and ai users
 }

@@ -117,6 +117,7 @@ const PLANS_METADATA = [
 
 const PaymentBlocker = ({ planId, onPay, loading }: { planId: string; onPay: () => void; loading: boolean }) => {
   const plan = PLANS_METADATA.find(p => p.id === planId) || PLANS_METADATA[1];
+  const isTrial = planId === 'curieux';
 
   return (
     <View className=" mb-5 overflow-hidden rounded-3xl border border-white/10 bg-slate-900/90 shadow-2xl">
@@ -126,7 +127,9 @@ const PaymentBlocker = ({ planId, onPay, loading }: { planId: string; onPay: () 
         </View>
         <Text className="text-center text-xl font-bold text-white">Action requise</Text>
         <Text className="mt-2 text-center text-sm text-white/60">
-          Veuillez finaliser votre abonnement pour débloquer toutes les fonctionnalités de votre plan.
+          {isTrial
+            ? "Démarrez votre essai gratuit de 7 jours pour accéder à toutes les fonctionnalités. Carte bancaire requise (0€)."
+            : "Veuillez finaliser votre abonnement pour débloquer toutes les fonctionnalités de votre plan."}
         </Text>
       </View>
 
@@ -140,13 +143,18 @@ const PaymentBlocker = ({ planId, onPay, loading }: { planId: string; onPay: () 
         </View>
 
         <NeonButton
-          title="Procéder au paiement"
+          title={isTrial ? "Démarrer l'essai (0€)" : "Procéder au paiement"}
           onPress={onPay}
           loading={loading}
           variant="premium"
           size="lg"
           icon={<CreditCard size={20} color={colors.text.primary} />}
         />
+        {isTrial && (
+          <Text className="mt-3 text-center text-xs text-white/40">
+            Aucun prélèvement immédiat. Annulable à tout moment.
+          </Text>
+        )}
       </View>
     </View>
   );
@@ -239,9 +247,12 @@ export default function HomeScreen() {
 
   const planType = user?.aiProfile?.planType || 'curieux';
   const subStatus = user?.aiProfile?.subscriptionStatus;
-  const isPaidPlan = planType !== 'curieux';
-  const isSubscriptionActive = subStatus === 'active';
-  const isPaidPlanButInactive = isPaidPlan && !isSubscriptionActive;
+  const stripeId = user?.aiProfile?.stripeCustomerId;
+  const isSubscriptionActive = subStatus === 'active' || subStatus === 'trialing';
+
+  // Logic: Block if subscription is NOT active/trialing OR if Curieux trial hasn't been activated with a card
+  // We use stripeCustomerId as a marker that the user has added a card for the trial.
+  const isPaidPlanButInactive = !isSubscriptionActive || (planType === 'curieux' && !stripeId);
 
   const showModal = (type: 'success' | 'error' | 'info', title: string, message: string) => {
     setModalType(type);
@@ -252,26 +263,34 @@ export default function HomeScreen() {
 
   const handleStripePayment = async () => {
     const planConfig = PLANS_METADATA.find(p => p.id === planType);
-    if (!planConfig || !planConfig.stripePriceId) return;
+    if (!planConfig) return;
+    if (planType !== 'curieux' && !planConfig.stripePriceId) return;
 
     setIsPaymentLoading(true);
     try {
-      const resp = await api.post(`/ai/payment/create-payment-sheet`, {
-        priceId: planConfig.stripePriceId,
+      // Determine correct params based on plan
+      const isCurieux = planType === 'curieux';
+      const payload = {
+        priceId: isCurieux ? 'price_Studio2990' : planConfig.stripePriceId, // Use Studio price for trial
+        planId: planType,
         userId: user?.id,
-      });
+      };
+
+      const resp = await api.post(`/ai/payment/create-payment-sheet`, payload);
 
       const data = resp.data?.data ?? resp.data ?? resp;
-      const paymentIntentClientSecret = data.paymentIntentClientSecret || data.clientSecret || data.paymentIntent?.client_secret;
+      const paymentIntentClientSecret = data.paymentIntentClientSecret || (!data.setupIntentClientSecret ? (data.clientSecret || data.paymentIntent?.client_secret) : undefined);
+      const setupIntentClientSecret = data.setupIntentClientSecret;
       const customerEphemeralKey = data.ephemeralKey || data.customer_ephemeral_key;
       const customerId = data.customerId || data.customer || data.customer_id;
 
-      if (!paymentIntentClientSecret) {
+      if (!paymentIntentClientSecret && !setupIntentClientSecret) {
         throw new Error('Impossible de récupérer le client secret.');
       }
 
       const initResult = await initPaymentSheet({
         paymentIntentClientSecret,
+        setupIntentClientSecret,
         merchantDisplayName: 'Hipster IA',
         customerEphemeralKeySecret: customerEphemeralKey,
         customerId,
@@ -290,7 +309,8 @@ export default function HomeScreen() {
 
       // Update local store
       await useAuthStore.getState().updateAiProfile({
-        subscriptionStatus: 'active' as any
+        subscriptionStatus: 'active' as any,
+        stripeCustomerId: customerId // Save the ID to hide the blocker
       });
 
       showModal('success', 'Félicitations !', 'Votre abonnement est maintenant actif.');
