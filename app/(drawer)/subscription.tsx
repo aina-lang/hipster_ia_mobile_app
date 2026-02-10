@@ -214,13 +214,40 @@ export default function SubscriptionScreen() {
     const plan = plans.find((p) => p.id === selectedPlan);
     if (!plan) return;
 
+    // If user already has an active subscription (not Curieux), use switch-plan
+    if (user?.stripeSubscriptionId && user?.planType !== 'curieux' && user?.subscriptionStatus === 'active') {
+      try {
+        setLoading(true);
+        const response = await api.post('/ai/payment/switch-plan', {
+          newPlanId: plan.id,
+        });
+
+        const data = response.data;
+        showModal(
+          'success',
+          data.isUpgrade ? 'Upgrade effectué !' : 'Downgrade planifié',
+          data.message
+        );
+
+        // Refresh user data and plans
+        await updateAiProfile({ planType: plan.id });
+        await fetchPlans();
+      } catch (error: any) {
+        const errorMsg = error?.response?.data?.message || 'Impossible de changer de plan';
+        showModal('error', 'Erreur', errorMsg);
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
     // For free plan, skip Stripe and just save
     if (plan.stripePriceId === null) {
       await handlePlanConfirmation(plan.id);
       return;
     }
 
-    // For paid plans, initialize payment sheet
+    // For paid plans (new subscription), initialize payment sheet
     await initializePaymentSheet(plan.stripePriceId);
   };
 

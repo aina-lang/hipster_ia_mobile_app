@@ -493,7 +493,8 @@ export default function HomeScreen() {
 
     // Check credits
     if (isTextExhausted) {
-      showModal('error', 'Limite textes atteinte', 'Vous avez atteint votre limite quotidienne de 2 textes. Vous pouvez encore générer des images via le mode guidé !');
+      const textLimitMsg = promptLimit >= 999999 ? 'illimitée' : `de ${promptLimit} texte${promptLimit > 1 ? 's' : ''}`;
+      showModal('error', 'Limite textes atteinte', `Vous avez atteint votre limite ${textLimitMsg} ${isPackCurieux ? 'par jour' : 'par mois'}. Vous pouvez encore générer des images !`);
       return;
     }
 

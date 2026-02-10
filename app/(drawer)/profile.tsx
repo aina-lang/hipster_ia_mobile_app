@@ -33,6 +33,7 @@ import {
   Globe,
   Check,
   AlertCircle,
+  XCircle,
 } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { GenericModal, ModalType } from '../../components/ui/GenericModal';
@@ -289,6 +290,30 @@ export default function ProfileScreen() {
   const handleLogout = () => {
     logout();
     router.replace('/(auth)/login');
+  };
+
+  const handleCancelSubscription = async () => {
+    if (!user?.stripeSubscriptionId) {
+      showFeedback('warning', 'Aucun abonnement', 'Vous n\'avez pas d\'abonnement actif à annuler.');
+      return;
+    }
+
+    try {
+      const response = await useAuthStore.getState().api.post('/ai/payment/cancel');
+      const cancelAt = response.data?.cancelAt ? new Date(response.data.cancelAt).toLocaleDateString('fr-FR') : 'la fin de la période';
+
+      showFeedback(
+        'success',
+        'Abonnement annulé',
+        `Votre abonnement sera annulé le ${cancelAt}. Vous conservez l'accès jusqu'à cette date.`
+      );
+
+      // Refresh user data
+      await useAuthStore.getState().aiRefreshUser();
+    } catch (error: any) {
+      const errorMsg = error?.response?.data?.message || 'Impossible d\'annuler l\'abonnement.';
+      showFeedback('error', 'Erreur', errorMsg);
+    }
   };
 
   const resetPersonalForm = () => {
@@ -743,6 +768,17 @@ export default function ProfileScreen() {
                 <ChevronRight size={18} color={colors.primary.main} />
               </View>
             </TouchableOpacity>
+
+            {/* Cancel Subscription Button - Only for active paid plans */}
+            {user?.stripeSubscriptionId && user?.subscriptionStatus === 'active' && user?.planType !== 'curieux' && (
+              <TouchableOpacity
+                style={styles.cancelSubscriptionButton}
+                onPress={handleCancelSubscription}
+                activeOpacity={0.8}>
+                <XCircle size={18} color={colors.status.warning} />
+                <Text style={styles.cancelSubscriptionText}>Annuler mon abonnement</Text>
+              </TouchableOpacity>
+            )}
           </View>
 
           {/* Security Section */}
@@ -1271,6 +1307,22 @@ const styles = StyleSheet.create({
     color: colors.status.error,
     fontSize: 14,
     fontWeight: '700',
+  },
+  cancelSubscriptionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    padding: 14,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,159,10,0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,159,10,0.3)',
+    marginTop: 12,
+  },
+  cancelSubscriptionText: {
+    color: colors.status.warning,
+    fontSize: 14,
+    fontWeight: '600',
   },
   modalOverlay: {
     flex: 1,

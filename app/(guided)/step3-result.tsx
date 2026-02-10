@@ -489,11 +489,13 @@ export default function Step3ResultScreen() {
     const needsImage = mode === 'image' || mode === 'both';
 
     if (needsText && isTextExhausted) {
-      showModal('error', 'Limite textes atteinte', 'Vous avez déjà utilisé vos 2 textes du jour. Vous pouvez encore générer des images !');
+      const textLimitMsg = promptLimit >= 999999 ? 'illimitée' : `de ${promptLimit} texte${promptLimit > 1 ? 's' : ''}`;
+      showModal('error', 'Limite textes atteinte', `Vous avez atteint votre limite ${textLimitMsg} ${isPackCurieux ? 'par jour' : 'par mois'}. Vous pouvez encore générer des images !`);
       return;
     }
     if (needsImage && isImagesExhausted) {
-      showModal('error', 'Limite images atteinte', 'Vous avez déjà utilisé vos 2 images du jour. Vous pouvez encore générer des textes !');
+      const imageLimitMsg = imagesLimit >= 999999 ? 'illimitée' : `de ${imagesLimit} image${imagesLimit > 1 ? 's' : ''}`;
+      showModal('error', 'Limite images atteinte', `Vous avez atteint votre limite ${imageLimitMsg} ${isPackCurieux ? 'par jour' : 'par mois'}. Vous pouvez encore générer des textes !`);
       return;
     }
     if (isExpired && isPackCurieux) {
