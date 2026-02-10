@@ -343,6 +343,7 @@ export default function HomeScreen() {
       }
     };
     checkConnection();
+    useAuthStore.getState().aiRefreshUser().catch(console.error);
   }, []);
 
   useEffect(() => {
@@ -467,12 +468,12 @@ export default function HomeScreen() {
   const textRemaining = Math.max(0, promptLimit - promptUsed);
   const imagesRemaining = Math.max(0, imagesLimit - imagesUsed);
 
-  const isTextExhausted = isPackCurieux && promptLimit > 0 && promptUsed >= promptLimit && promptLimit !== 999999;
-  const isImagesExhausted = isPackCurieux && imagesLimit > 0 && imagesUsed >= imagesLimit && imagesLimit !== 999999;
+  const isTextExhausted = isPackCurieux && promptLimit > 0 && promptLimit !== 999999 && promptUsed >= promptLimit;
+  const isImagesExhausted = isPackCurieux && imagesLimit > 0 && imagesLimit !== 999999 && imagesUsed >= imagesLimit;
   const isFullyExhausted = isPackCurieux && isTextExhausted && isImagesExhausted;
 
-  // For the chat input, we only care about text limit
-  const isInputDisabled = isTextExhausted;
+  // For the chat input, we disable if text limit reached or if currently generating
+  const isInputDisabled = isTextExhausted || isGenerating;
 
   useEffect(() => {
     if (messages.length > 0) {
@@ -559,6 +560,8 @@ export default function HomeScreen() {
       ]);
     } finally {
       setIsGenerating(false);
+      // Refresh credits to update limits in real-time
+      useAuthStore.getState().aiRefreshUser().catch(console.error);
     }
   };
 
@@ -757,7 +760,7 @@ export default function HomeScreen() {
                     Limite quotidienne atteinte (2 textes, 2 images). Revenez demain !
                   </Text>
                 )}
-                {!isFullyExhausted && hasMessages && (
+                {isPackCurieux && !isFullyExhausted && (
                   <Text className="text-xs text-white/40 text-center">
                     Aujourd'hui: {textRemaining} textes et {imagesRemaining} images restants
                   </Text>
@@ -772,7 +775,10 @@ export default function HomeScreen() {
                 loading={isPaymentLoading}
               />
             ) : (
-              <View className="relative rounded-2xl border border-white/10 bg-slate-900 p-4">
+              <View
+                className="relative rounded-2xl border border-white/10 bg-slate-900 p-4"
+                style={{ opacity: isInputDisabled ? 0.6 : 1 }}
+              >
                 <TypingPlaceholder text={placeholderText} inputValue={inputValue} />
                 <TextInput
                   value={inputValue}

@@ -95,7 +95,7 @@ export default function SubscriptionScreen() {
     try {
       setLoading(true);
       // Authenticated request: show only plans available for this user
-      const resp = await api.get('/ai/subscriptions/plans/me');
+      const resp = await api.get('/ai/payment/plans/me');
       const backendPlans = resp.data?.data ?? resp.data ?? [];
 
       const mappedPlans: Plan[] = backendPlans.map((p: any) => ({

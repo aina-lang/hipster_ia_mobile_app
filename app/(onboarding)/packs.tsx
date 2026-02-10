@@ -89,7 +89,7 @@ export default function PacksScreen() {
     try {
       setLoading(true);
       // Public request for onboarding: always show all plans
-      const resp = await api.get('/ai/subscriptions/plans');
+      const resp = await api.get('/ai/payment/plans');
 
       const backendPlans = resp.data?.data ?? resp.data ?? [];
 

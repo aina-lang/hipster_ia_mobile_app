@@ -97,6 +97,7 @@ interface AuthState {
   finishOnboarding: () => void;
   uploadAvatar: (imageUri: string) => Promise<string>;
   uploadLogo: (profileId: number, imageUri: string) => Promise<string>;
+  aiRefreshUser: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -117,14 +118,14 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true, error: null });
         try {
           const currentUser = get().user;
-          if (currentUser?.aiProfile) {
-            await api.patch(`/profiles/ai/${currentUser.aiProfile.id}`, {
+          if (currentUser?.type === 'ai') {
+            await api.patch(`/profiles/ai/${currentUser.id}`, {
               isSetupComplete: true,
             });
             set({
               user: {
                 ...currentUser,
-                aiProfile: { ...currentUser.aiProfile, isSetupComplete: true },
+                isSetupComplete: true,
               },
             });
           }
@@ -231,11 +232,11 @@ export const useAuthStore = create<AuthState>()(
 
           // Update local state
           const currentUser = get().user;
-          if (currentUser && currentUser.aiProfile && currentUser.aiProfile.id === profileId) {
+          if (currentUser && currentUser.type === 'ai' && currentUser.id === profileId) {
             set({
               user: {
                 ...currentUser,
-                aiProfile: { ...currentUser.aiProfile, logoUrl: fullLogoUrl },
+                logoUrl: fullLogoUrl,
               },
             });
           }
@@ -363,7 +364,7 @@ export const useAuthStore = create<AuthState>()(
           try {
             if (resData.user?.type === 'ai') {
               const creditsResp = await api.get('/ai/payment/credits');
-              const creditsData = creditsResp.data;
+              const creditsData = creditsResp.data?.data || creditsResp.data;
               set((state) => {
                 const user = state.user;
                 if (!user) return state;
@@ -455,7 +456,7 @@ export const useAuthStore = create<AuthState>()(
           try {
             if (resData.user?.type === 'ai') {
               const creditsResp = await api.get('/ai/payment/credits');
-              const creditsData = creditsResp.data;
+              const creditsData = creditsResp.data?.data || creditsResp.data;
               set((state) => {
                 const user = state.user;
                 if (!user) return state;
@@ -496,6 +497,19 @@ export const useAuthStore = create<AuthState>()(
             accessToken: null,
             refreshToken: null,
           });
+        }
+      },
+
+      aiRefreshUser: async () => {
+        try {
+          const user = get().user;
+          if (user?.type === 'ai') {
+            const { data: body } = await api.get('/ai/payment/credits');
+            const payload = body?.data || body;
+            set({ user: { ...user, ...payload } });
+          }
+        } catch (e) {
+          console.warn('[AuthStore] Failed to refresh AI credits', e);
         }
       },
     }),
