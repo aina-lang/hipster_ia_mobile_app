@@ -472,8 +472,8 @@ export default function HomeScreen() {
   const isImagesExhausted = isPackCurieux && imagesLimit > 0 && imagesLimit !== 999999 && imagesUsed >= imagesLimit;
   const isFullyExhausted = isPackCurieux && isTextExhausted && isImagesExhausted;
 
-  // For the chat input, we disable if text limit reached or if currently generating
-  const isInputDisabled = isTextExhausted || isGenerating;
+  // For the chat input, we only block if BOTH are reached or if currently generating
+  const isInputDisabled = isGenerating || isFullyExhausted;
 
   useEffect(() => {
     if (messages.length > 0) {
@@ -745,7 +745,7 @@ export default function HomeScreen() {
             {/* Limit warnings */}
             {isPackCurieux && (
               <View className="mb-3 px-1">
-                {isTextExhausted && !isImagesExhausted && (
+                {/* {isTextExhausted && !isImagesExhausted && (
                   <Text className="text-xs text-orange-400 font-medium text-center">
                     Limite de textes atteinte aujourd'hui. Vous pouvez encore générer des images !
                   </Text>
@@ -759,7 +759,7 @@ export default function HomeScreen() {
                   <Text className="text-xs text-red-400 font-bold text-center">
                     Limite quotidienne atteinte (2 textes, 2 images). Revenez demain !
                   </Text>
-                )}
+                )} */}
                 {isPackCurieux && !isFullyExhausted && (
                   <Text className="text-xs text-white/40 text-center">
                     Aujourd'hui: {textRemaining} textes et {imagesRemaining} images restants

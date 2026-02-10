@@ -8,6 +8,7 @@ import {
   FileSpreadsheet,
   ChevronRight,
   Search,
+  MessageSquare,
 } from 'lucide-react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { AiService } from '../../api/ai.service';
@@ -116,7 +117,7 @@ export default function HistoryScreen() {
       case 'document':
         return <FileSpreadsheet size={24} color={colors.text.accent} />;
       case 'chat':
-        return <Search size={24} color={colors.text.primary} />;
+        return <MessageSquare size={24} color={colors.text.primary} />;
     }
   };
 
