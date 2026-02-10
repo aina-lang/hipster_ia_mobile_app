@@ -57,6 +57,7 @@ interface User {
   subscriptionStartDate?: string;
   subscriptionEndDate?: string;
   stripeCustomerId?: string;
+  stripeSubscriptionId?: string;
   subscriptionStatus?: string;
   planType?: string;
   professionalEmail?: string;

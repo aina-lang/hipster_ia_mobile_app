@@ -129,7 +129,7 @@ const PaymentBlocker = ({ planId, onPay, loading }: { planId: string; onPay: () 
         <Text className="text-center text-xl font-bold text-white">Action requise</Text>
         <Text className="mt-2 text-center text-sm text-white/60">
           {isTrial
-            ? "Démarrez votre essai gratuit de 7 jours pour accéder à toutes les fonctionnalités. Carte bancaire requise (0€)."
+            ? "Démarrez votre essai gratuit pour accéder à tout. Carte requise (0€). Passage automatique au pack Atelier (9,90€/mois) après 7 jours."
             : "Veuillez finaliser votre abonnement pour débloquer toutes les fonctionnalités de votre plan."}
         </Text>
       </View>
@@ -140,7 +140,9 @@ const PaymentBlocker = ({ planId, onPay, loading }: { planId: string; onPay: () 
             <Text className="text-xs font-medium text-white/40 uppercase tracking-wider">Plan sélectionné</Text>
             <Text className="mt-1 text-lg font-bold text-white">{plan.name}</Text>
           </View>
-          <Text className="text-lg font-black text-primary" style={{ color: colors.primary.main }}>{plan.price}</Text>
+          <Text className="text-lg font-black text-primary" style={{ color: colors.primary.main }}>
+            {isTrial ? "0€ l'essai" : plan.price}
+          </Text>
         </View>
 
         <NeonButton
@@ -293,6 +295,7 @@ export default function HomeScreen() {
       const setupIntentClientSecret = data.setupIntentClientSecret;
       const customerEphemeralKey = data.ephemeralKey || data.customer_ephemeral_key;
       const customerId = data.customerId || data.customer || data.customer_id;
+      const subscriptionId = data.subscriptionId;
 
       if (!paymentIntentClientSecret && !setupIntentClientSecret) {
         throw new Error('Impossible de récupérer le client secret.');
@@ -315,12 +318,16 @@ export default function HomeScreen() {
       }
 
       // Success
-      await api.post('/ai/payment/confirm-plan', { planId: planType });
+      await api.post('/ai/payment/confirm-plan', {
+        planId: planType,
+        subscriptionId: subscriptionId
+      });
 
       // Update local store
       await useAuthStore.getState().updateAiProfile({
-        subscriptionStatus: 'active' as any,
-        stripeCustomerId: customerId // Save the ID to hide the blocker
+        subscriptionStatus: (planType === 'curieux' ? 'trial' : 'active') as any,
+        stripeCustomerId: customerId,
+        stripeSubscriptionId: subscriptionId
       });
 
       showModal('success', 'Félicitations !', 'Votre abonnement est maintenant actif.');
