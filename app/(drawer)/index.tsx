@@ -266,11 +266,52 @@ export default function HomeScreen() {
   const isTrialButNoCard = isPackCurieux && !stripeId;
   const isPaidPlanButInactive = !isSubscriptionActive || isTrialButNoCard || (isPackCurieux && isExpired);
 
-  const showModal = (type: 'success' | 'error' | 'info', title: string, message: string) => {
+  const showModal = (type: 'success' | 'error' | 'info' | 'warning', title: string, message: string) => {
     setModalType(type);
     setModalTitle(title);
     setModalMessage(message);
     setModalVisible(true);
+  };
+
+  // Feature access control based on subscription plan
+  const hasFeatureAccess = (feature: 'text' | 'image' | 'audio' | 'video' | '3d'): boolean => {
+    const accessMatrix: Record<string, string[]> = {
+      text: ['curieux', 'atelier', 'studio', 'agence'],
+      image: ['curieux', 'atelier', 'studio', 'agence'],
+      audio: ['studio', 'agence'],
+      video: ['studio', 'agence'],
+      '3d': ['agence'],
+    };
+
+    return accessMatrix[feature]?.includes(planType) || false;
+  };
+
+  const checkFeatureAccess = (feature: 'text' | 'image' | 'audio' | 'video' | '3d'): boolean => {
+    if (hasFeatureAccess(feature)) {
+      return true;
+    }
+
+    const requiredPlans: Record<string, string> = {
+      audio: 'Studio',
+      video: 'Studio',
+      '3d': 'Agence',
+    };
+
+    const featureNames: Record<string, string> = {
+      text: 'Génération de texte',
+      image: 'Génération d\'images',
+      audio: 'Génération audio',
+      video: 'Génération vidéo',
+      '3d': 'Génération 3D',
+    };
+
+    showModal(
+      'warning',
+      'Fonctionnalité non disponible',
+      `${featureNames[feature]} n'est disponible qu'à partir du pack ${requiredPlans[feature]}. Passez à un plan supérieur pour y accéder.`
+    );
+
+    return false;
   };
 
   const handleStripePayment = async () => {
