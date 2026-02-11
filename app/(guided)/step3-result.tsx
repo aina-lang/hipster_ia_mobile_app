@@ -51,11 +51,11 @@ import { GuidedScreenWrapper } from '../../components/layout/GuidedScreenWrapper
 // Configure notifications
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
+    shouldShowAlert: true,
     shouldPlaySound: false,
     shouldSetBadge: false,
     shouldShowBanner: true,
     shouldShowList: true,
-    priority: Notifications.AndroidNotificationPriority.HIGH,
   }),
 });
 
@@ -593,6 +593,17 @@ export default function Step3ResultScreen() {
 
   useEffect(() => {
     generateContent();
+
+    // Request permissions upfront
+    const requestPermissions = async () => {
+      try {
+        await MediaLibrary.requestPermissionsAsync();
+        await Notifications.requestPermissionsAsync();
+      } catch (e) {
+        console.warn('Permission request error:', e);
+      }
+    };
+    requestPermissions();
   }, []);
 
   const handleDownload = async (format: string) => {
@@ -750,7 +761,9 @@ export default function Step3ResultScreen() {
       showModal('loading', 'Enregistrement...', 'Sauvegarde dans votre galerie.');
 
       const filename = `Hipster-${Date.now()}.png`;
-      const fileUri = `${(FileSystem as any).cacheDirectory}${filename}`;
+      const cacheDir = (FileSystem as any).cacheDirectory;
+      if (!cacheDir) throw new Error('Cache directory not available');
+      const fileUri = cacheDir.endsWith('/') ? `${cacheDir}${filename}` : `${cacheDir}/${filename}`;
 
       const downloadRes = await (FileSystem as any).downloadAsync(imageUrl, fileUri);
 
@@ -760,11 +773,15 @@ export default function Step3ResultScreen() {
 
       const asset = await MediaLibrary.createAssetAsync(downloadRes.uri);
 
-      const album = await MediaLibrary.getAlbumAsync('Hipster');
-      if (album == null) {
-        await MediaLibrary.createAlbumAsync('Hipster', asset, false);
-      } else {
-        await MediaLibrary.addAssetsToAlbumAsync([asset], album, false);
+      try {
+        const album = await MediaLibrary.getAlbumAsync('Hipster');
+        if (album == null) {
+          await MediaLibrary.createAlbumAsync('Hipster', asset, false);
+        } else {
+          await MediaLibrary.addAssetsToAlbumAsync([asset], album, false);
+        }
+      } catch (albumError) {
+        console.warn('Could not add to album, but asset saved:', albumError);
       }
 
       setModalVisible(false);

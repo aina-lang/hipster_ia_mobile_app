@@ -8,15 +8,31 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { Audio } from 'expo-av';
+import * as MediaLibrary from 'expo-media-library';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useNavigation, useGlobalSearchParams } from 'expo-router';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
+import * as Notifications from 'expo-notifications';
+import { Modal } from 'react-native';
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    // shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+    shouldShowBanner: true,
+    shouldShowList: true,
+  }),
+});
+
+
 import {
   Compass,
   Menu,
-  Image,
+  Image as ImageIcon,
   Paperclip,
   Send,
   Mic,
@@ -28,6 +44,7 @@ import {
   CreditCard,
   Lock,
   ChevronRight,
+  ExternalLink,
 } from 'lucide-react-native';
 import { useStripe } from '@stripe/stripe-react-native';
 import { BackgroundGradient } from '../../components/ui/BackgroundGradient';
@@ -35,107 +52,20 @@ import { DeerAnimation } from '../../components/ui/DeerAnimation';
 import { UsageBar } from '../../components/UsageBar';
 import { useAuthStore } from '../../store/authStore';
 import { useCreationStore } from '../../store/creationStore';
-import { useChatStore } from '../../store/chatStore';
+import { useChatStore, Message } from '../../store/chatStore';
 import { AiService } from '../../api/ai.service';
 import { api } from '../../api/client';
 import { colors } from '../../theme/colors';
 import { GenericModal, ModalType } from '../../components/ui/GenericModal';
 import { BackgroundGradientOnboarding } from '../../components/ui/BackgroundGradientOnboarding';
 import { NeonButton } from '../../components/ui/NeonButton';
+import { MediaDisplay } from '../../components/MediaDisplay';
+import { TypingMessage, TypingPlaceholder } from '../../components/TypingMessage';
+import { PaymentBlocker } from '../../components/PaymentBlocker';
 
-interface Message {
-  id: string;
-  text: string;
-  sender: 'user' | 'ai';
-  timestamp: Date;
-  isTyping?: boolean;
-}
 
-const TypingMessage = ({ text, onComplete }: { text: string; onComplete?: () => void }) => {
-  const [displayedText, setDisplayedText] = useState('');
-  const [currentIndex, setCurrentIndex] = useState(0);
 
-  useEffect(() => {
-    if (currentIndex < text.length) {
-      const timeout = setTimeout(() => {
-        setDisplayedText(text.slice(0, currentIndex + 1));
-        setCurrentIndex(currentIndex + 1);
-      }, 5);
-      return () => clearTimeout(timeout);
-    } else if (onComplete) onComplete();
-  }, [currentIndex, text]);
 
-  return <Text className="text-base leading-6 text-white">{displayedText}</Text>;
-};
-
-const TypingPlaceholder = ({ text, inputValue }: { text: string; inputValue: string }) => {
-  const [displayedText, setDisplayedText] = useState('');
-
-  useEffect(() => {
-    if (inputValue) return setDisplayedText('');
-
-    let currentIndex = 0;
-    const interval = setInterval(() => {
-      if (currentIndex <= text.length) {
-        setDisplayedText(text.slice(0, currentIndex));
-        currentIndex++;
-      } else clearInterval(interval);
-    }, 30);
-
-    return () => clearInterval(interval);
-  }, [text, inputValue]);
-
-  if (inputValue) return null;
-  return <Text className="absolute left-4 top-4 text-base text-white/60">{displayedText}</Text>;
-};
-
-const PaymentBlocker = ({ plan, onPay, loading }: { plan: any; onPay: () => void; loading: boolean }) => {
-  const isTrial = plan?.id === 'curieux';
-
-  if (!plan) return null;
-
-  return (
-    <View className=" mb-5 overflow-hidden rounded-3xl border border-white/10 bg-slate-900/90 shadow-2xl">
-      <View className="bg-primary/10 p-6 items-center">
-        <View className="mb-4 h-16 w-16 items-center justify-center rounded-2xl bg-primary/20">
-          <Lock size={32} color={colors.primary.main} />
-        </View>
-        <Text className="text-center text-xl font-bold text-white">Action requise</Text>
-        <Text className="mt-2 text-center text-sm text-white/60">
-          {isTrial
-            ? "Démarrez votre essai gratuit pour accéder à tout. Carte requise (0€). Passage automatique au pack Atelier (9,90€/mois) après 7 jours."
-            : "Veuillez finaliser votre abonnement pour débloquer toutes les fonctionnalités de votre plan."}
-        </Text>
-      </View>
-
-      <View className="border-t border-white/5 p-6">
-        <View className="mb-6 flex-row items-center justify-between rounded-2xl bg-white/5 p-4 border border-white/10">
-          <View>
-            <Text className="text-xs font-medium text-white/40 uppercase tracking-wider">Plan sélectionné</Text>
-            <Text className="mt-1 text-lg font-bold text-white">{plan.name}</Text>
-          </View>
-          <Text className="text-lg font-black text-primary" style={{ color: colors.primary.main }}>
-            {isTrial ? "0€ l'essai" : plan.price}
-          </Text>
-        </View>
-
-        <NeonButton
-          title={isTrial ? "Démarrer l'essai (0€)" : "Procéder au paiement"}
-          onPress={onPay}
-          loading={loading}
-          variant="premium"
-          size="lg"
-          icon={<CreditCard size={20} color={colors.text.primary} />}
-        />
-        {isTrial && (
-          <Text className="mt-3 text-center text-xs text-white/40">
-            Aucun prélèvement immédiat. Annulable à tout moment.
-          </Text>
-        )}
-      </View>
-    </View>
-  );
-};
 
 export default function HomeScreen() {
   const { user } = useAuthStore();
@@ -412,6 +342,26 @@ export default function HomeScreen() {
     };
     checkConnection();
     useAuthStore.getState().aiRefreshUser().catch(console.error);
+
+    // Request permissions upfront
+    const requestInitialPermissions = async () => {
+      try {
+        await MediaLibrary.requestPermissionsAsync();
+        await Notifications.requestPermissionsAsync();
+        await Audio.requestPermissionsAsync();
+        if (Platform.OS === 'android') {
+          await Notifications.setNotificationChannelAsync('default', {
+            name: 'default',
+            importance: Notifications.AndroidImportance.MAX,
+            vibrationPattern: [0, 250, 250, 250],
+            lightColor: '#FF231F7C',
+          });
+        }
+      } catch (e) {
+        console.warn('Error requesting permissions:', e);
+      }
+    };
+    requestInitialPermissions();
   }, []);
 
   useEffect(() => {
@@ -540,8 +490,11 @@ export default function HomeScreen() {
   const isImagesExhausted = isPackCurieux && imagesLimit > 0 && imagesLimit !== 999999 && imagesUsed >= imagesLimit;
   const isFullyExhausted = isPackCurieux && isTextExhausted && isImagesExhausted;
 
-  // For the chat input, we only block if BOTH are reached or if currently generating
-  const isInputDisabled = isGenerating || isFullyExhausted;
+  // Check if any message is currently typing visually
+  const isAnyMessageTyping = messages.some(m => m.isTyping);
+
+  // For the chat input, we only block if BOTH are reached or if currently generating or typing
+  const isInputDisabled = isGenerating || isFullyExhausted || isAnyMessageTyping;
 
   useEffect(() => {
     if (messages.length > 0) {
@@ -574,11 +527,11 @@ export default function HomeScreen() {
     try {
       const chatHistory = [];
       const systemContext = `
-        Identité: Hipster IA
-        Rôle: Assistant créatif et intelligent
-        Cible: ${user?.name || "l'utilisateur"}
-        Contexte: ${user?.type !== 'ai' && user?.job ? `Métier: ${user.job}` : ''}
-      `;
+      Identité: Hipster IA
+      Rôle: Assistant créatif et intelligent
+      Cible: ${user?.name || "l'utilisateur"}
+      Contexte: ${user?.type !== 'ai' && user?.job ? `Métier: ${user.job}` : ''}
+    `;
 
       chatHistory.push({ role: 'system', content: `Tu es Hipster IA. ${systemContext}. IMPORTANT: Ne jamais utiliser d'emojis dans tes réponses. Garde un ton professionnel et direct.` });
 
@@ -591,8 +544,55 @@ export default function HomeScreen() {
       console.log('[DEBUG] Free Mode Chat History:', JSON.stringify(chatHistory, null, 2));
       console.log('[DEBUG] Conversation ID:', conversationId);
 
-      const response = await AiService.chat(chatHistory, conversationId);
-      console.log('[DEBUG] Free Mode Response:', JSON.stringify(response, null, 2));
+      // --- MOCK GENERATION LOGIC (Frontend Only) ---
+      const lowerInput = inputValue.toLowerCase();
+      let mockResponse: any = null;
+
+      if (lowerInput.includes('image') || lowerInput.includes('photo')) {
+        // Mock Image Generation
+        mockResponse = {
+          content: "Voici l'image que j'ai générée pour vous :",
+          type: 'image',
+          mediaUrl: 'https://picsum.photos/800/800.jpg',
+        };
+      } else if (lowerInput.includes('video')) {
+        // Mock Video Generation
+        mockResponse = {
+          content: "J'ai généré cette vidéo basée sur votre description :",
+          type: 'video',
+          mediaUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+        };
+      } else if (lowerInput.includes('audio') || lowerInput.includes('son') || lowerInput.includes('musique')) {
+        // Mock Audio Generation
+        mockResponse = {
+          content: "Voici l'audio généré :",
+          type: 'audio',
+          mediaUrl: 'https://raw.githubusercontent.com/rafaelreis-hotmart/Audio-Sample-files/master/sample.mp3',
+        };
+      } else if (lowerInput.includes('3d') || lowerInput.includes('model')) {
+        // Mock 3D Generation
+        mockResponse = {
+          content: "Voici le modèle 3D généré :",
+          type: '3d',
+          mediaUrl: 'https://raw.githubusercontent.com/rafaelreis-hotmart/Audio-Sample-files/master/sample.mp3',
+        };
+      }
+
+      let response;
+      if (mockResponse) {
+        // Simulate network delay
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        response = {
+          conversationId: conversationId || 'mock-id',
+          data: { content: mockResponse.content }, // Fallback structure
+          ...mockResponse
+        };
+      } else {
+        // Real Backend Call
+        response = await AiService.chat(chatHistory, conversationId);
+      }
+
+      console.log('[DEBUG] Response:', JSON.stringify(response, null, 2));
 
       // Store conversation ID for subsequent messages
       if (response.conversationId) {
@@ -609,6 +609,8 @@ export default function HomeScreen() {
         sender: 'ai',
         timestamp: new Date(),
         isTyping: true,
+        type: response.type,
+        mediaUrl: response.mediaUrl,
       };
 
       setMessages((prev) => [...prev, aiMsg]);
@@ -673,11 +675,11 @@ export default function HomeScreen() {
 
             <View className="flex-row items-center gap-2">
               {/* <TouchableOpacity
-                className="flex-row items-center gap-2 rounded-xl bg-white/5 py-2 px-3 border border-white/10"
-                onPress={resetChat}>
-                <Plus size={18} color={colors.primary.main} />
-                <Text className="text-white font-medium text-sm">Nouveau</Text>
-              </TouchableOpacity> */}
+              className="flex-row items-center gap-2 rounded-xl bg-white/5 py-2 px-3 border border-white/10"
+              onPress={resetChat}>
+              <Plus size={18} color={colors.primary.main} />
+              <Text className="text-white font-medium text-sm">Nouveau</Text>
+            </TouchableOpacity> */}
 
               {hasMessages && (
                 <TouchableOpacity className="rounded-lg bg-white/5 p-2" onPress={resetChat}>
@@ -774,6 +776,10 @@ export default function HomeScreen() {
                               backgroundColor: 'rgba(255, 255, 255, 0.15)',
                             }
                         }>
+                        {msg.type && msg.type !== 'text' && msg.mediaUrl && (
+                          <MediaDisplay type={msg.type} url={msg.mediaUrl} showModal={showModal} />
+                        )}
+
                         {msg.sender === 'user' ? (
                           <Text className="text-base leading-6 text-white">{msg.text}</Text>
                         ) : msg.isTyping ? (
@@ -815,20 +821,20 @@ export default function HomeScreen() {
             {isPackCurieux && (
               <View className="mb-3 px-1">
                 {/* {isTextExhausted && !isImagesExhausted && (
-                  <Text className="text-xs text-orange-400 font-medium text-center">
-                    Limite de textes atteinte aujourd'hui. Vous pouvez encore générer des images !
-                  </Text>
-                )}
-                {!isTextExhausted && isImagesExhausted && (
-                  <Text className="text-xs text-orange-400 font-medium text-center">
-                    Limite d'images atteinte aujourd'hui. Vous pouvez encore générer des textes !
-                  </Text>
-                )}
-                {isFullyExhausted && (
-                  <Text className="text-xs text-red-400 font-bold text-center">
-                    Limite quotidienne atteinte (2 textes, 2 images). Revenez demain !
-                  </Text>
-                )} */}
+                <Text className="text-xs text-orange-400 font-medium text-center">
+                  Limite de textes atteinte aujourd'hui. Vous pouvez encore générer des images !
+                </Text>
+              )}
+              {!isTextExhausted && isImagesExhausted && (
+                <Text className="text-xs text-orange-400 font-medium text-center">
+                  Limite d'images atteinte aujourd'hui. Vous pouvez encore générer des textes !
+                </Text>
+              )}
+              {isFullyExhausted && (
+                <Text className="text-xs text-red-400 font-bold text-center">
+                  Limite quotidienne atteinte (2 textes, 2 images). Revenez demain !
+                </Text>
+              )} */}
                 {isPackCurieux && !isFullyExhausted && (
                   <Text className="text-xs text-white/40 text-center">
                     Aujourd'hui: {textRemaining} textes et {imagesRemaining} images restants
@@ -862,16 +868,14 @@ export default function HomeScreen() {
                 <View className="flex-row items-center justify-between">
                   <View className="flex-row gap-3">
                     <TouchableOpacity className="rounded-lg bg-white/5 p-2">
-                      <Image size={20} color={colors.text.secondary} />
+                      <ImageIcon size={20} color={colors.text.secondary} />
                     </TouchableOpacity>
-                    <TouchableOpacity className="rounded-lg bg-white/5 p-2">
-                      <Paperclip size={20} color={colors.text.secondary} />
-                    </TouchableOpacity>
+                    {/* Paperclip removed as per request */}
                     {/* <TouchableOpacity
-                      className={`rounded-lg p-2 ${recording ? 'bg-red-500/20' : 'bg-white/5'}`}
-                      onPress={recording ? stopRecording : startRecording}>
-                      <Mic size={20} color={recording ? colors.status.error : colors.text.secondary} />
-                    </TouchableOpacity> */}
+                    className={`rounded-lg p-2 ${recording ? 'bg-red-500/20' : 'bg-white/5'}`}
+                    onPress={recording ? stopRecording : startRecording}>
+                    <Mic size={20} color={recording ? colors.status.error : colors.text.secondary} />
+                  </TouchableOpacity> */}
                   </View>
 
                   <TouchableOpacity

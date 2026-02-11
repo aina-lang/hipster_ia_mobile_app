@@ -24,12 +24,39 @@ import { useAuthStore } from '../store/authStore';
 import '../global.css';
 import { StripeProvider } from '@stripe/stripe-react-native';
 import { LoadingTransition } from '../components/ui/LoadingTransition';
+import * as MediaLibrary from 'expo-media-library';
+import * as Notifications from 'expo-notifications';
+import { Audio } from 'expo-av';
+import { Platform } from 'react-native';
 
 export default function RootLayout() {
   const { user, isAuthenticated, hasFinishedOnboarding, isHydrated } = useAuthStore();
   const segments = useSegments();
   const router = useRouter();
   const [isRouting, setIsRouting] = React.useState(true);
+
+  useEffect(() => {
+    // Request all necessary permissions upfront
+    const requestPermissions = async () => {
+      try {
+        await MediaLibrary.requestPermissionsAsync();
+        await Notifications.requestPermissionsAsync();
+        await Audio.requestPermissionsAsync();
+
+        if (Platform.OS === 'android') {
+          await Notifications.setNotificationChannelAsync('default', {
+            name: 'default',
+            importance: Notifications.AndroidImportance.MAX,
+            vibrationPattern: [0, 250, 250, 250],
+            lightColor: '#FF231F7C',
+          });
+        }
+      } catch (e) {
+        console.warn('Initial permission request failed:', e);
+      }
+    };
+    requestPermissions();
+  }, []);
 
   useEffect(() => {
     if (!isHydrated) return;

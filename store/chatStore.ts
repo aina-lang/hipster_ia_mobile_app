@@ -1,11 +1,13 @@
 import { create } from 'zustand';
 
-interface Message {
+export interface Message {
   id: string;
   text: string;
   sender: 'user' | 'ai';
   timestamp: Date;
   isTyping?: boolean;
+  type?: 'text' | 'image' | 'video' | 'audio' | '3d';
+  mediaUrl?: string;
 }
 
 interface ChatState {
