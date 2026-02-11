@@ -89,36 +89,10 @@ const TypingPlaceholder = ({ text, inputValue }: { text: string; inputValue: str
   return <Text className="absolute left-4 top-4 text-base text-white/60">{displayedText}</Text>;
 };
 
-const PLANS_METADATA = [
-  {
-    id: 'curieux',
-    name: 'Pack Curieux',
-    price: '7 jours gratuits',
-    stripePriceId: null,
-  },
-  {
-    id: 'atelier',
-    name: 'Atelier',
-    price: '9,90€ / mois',
-    stripePriceId: 'price_Atelier1790',
-  },
-  {
-    id: 'studio',
-    name: 'Studio',
-    price: '29,90€ / mois',
-    stripePriceId: 'price_Studio2990',
-  },
-  {
-    id: 'agence',
-    name: 'Agence',
-    price: '69,99€ / mois',
-    stripePriceId: 'price_Agence6990',
-  },
-];
+const PaymentBlocker = ({ plan, onPay, loading }: { plan: any; onPay: () => void; loading: boolean }) => {
+  const isTrial = plan?.id === 'curieux';
 
-const PaymentBlocker = ({ planId, onPay, loading }: { planId: string; onPay: () => void; loading: boolean }) => {
-  const plan = PLANS_METADATA.find(p => p.id === planId) || PLANS_METADATA[1];
-  const isTrial = planId === 'curieux';
+  if (!plan) return null;
 
   return (
     <View className=" mb-5 overflow-hidden rounded-3xl border border-white/10 bg-slate-900/90 shadow-2xl">
@@ -176,6 +150,10 @@ export default function HomeScreen() {
   const [isBackendConnected, setIsBackendConnected] = useState<boolean | null>(null);
   const [isLoadingConversation, setIsLoadingConversation] = useState(false);
 
+  // Plans State
+  const [plans, setPlans] = useState<any[]>([]);
+  const [loadingPlans, setLoadingPlans] = useState(false);
+
   // Modal State
   const [modalVisible, setModalVisible] = useState(false);
   const [modalType, setModalType] = useState<ModalType>('info');
@@ -188,6 +166,32 @@ export default function HomeScreen() {
   // Audio Recording
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
   const [permissionResponse, requestPermission] = Audio.usePermissions();
+
+  useEffect(() => {
+    fetchPlans();
+  }, []);
+
+  const fetchPlans = async () => {
+    try {
+      setLoadingPlans(true);
+      const resp = await api.get('/ai/payment/plans');
+      const backendPlans = resp.data?.data ?? resp.data ?? [];
+
+      const mappedPlans = backendPlans.map((p: any) => ({
+        ...p,
+        price: typeof p.price === 'number' ? `${p.price.toFixed(2)}€ / mois` : p.price,
+      }));
+
+      // Manual override for Curieux price display if needed or verify backend returns "Gratuit"
+      // Assuming backend consistency
+
+      setPlans(mappedPlans);
+    } catch (error) {
+      console.error('Error fetching plans:', error);
+    } finally {
+      setLoadingPlans(false);
+    }
+  };
 
   async function startRecording() {
     try {
@@ -261,6 +265,9 @@ export default function HomeScreen() {
   // If Curieux and expired => force Studio for blocker display
   const effectivePlanId = (isPackCurieux && isExpired) ? 'studio' : planType;
 
+  // Find the effective plan object
+  const currentPlanObject = plans.find(p => p.id === effectivePlanId) || plans.find(p => p.id === 'atelier');
+
   // Logic: Block if subscription is NOT active/trialing OR if Curieux trial hasn't been activated with a card
   // OR if the trial has expired (even if active in Stripe, our local rule says 7 days).
   const isTrialButNoCard = isPackCurieux && !stripeId;
@@ -315,16 +322,29 @@ export default function HomeScreen() {
   };
 
   const handleStripePayment = async () => {
-    const planConfig = PLANS_METADATA.find(p => p.id === planType);
-    if (!planConfig) return;
-    if (planType !== 'curieux' && !planConfig.stripePriceId) return;
+    const planConfig = plans.find(p => p.id === planType);
+
+    // Safety check: if plans aren't loaded yet or strictly curieux with stripePriceId null
+    // But for curieux we handle it specially below
+    if (!planConfig && planType !== 'curieux') return;
 
     setIsPaymentLoading(true);
     try {
       // Determine correct params based on plan
       const isCurieux = planType === 'curieux';
+
+      // Special handling for trial if Stripe ID is missing in fetched plans or needs fallback
+      // Assuming fetched plans have correct Prctbl IDs now. 
+      // User wanted: "Use Studio price for trial"
+      const studioPlan = plans.find(p => p.id === 'studio');
+      const trialPriceId = studioPlan?.stripePriceId; // Fallback or ensuring we have IT
+
+      if (isCurieux && !trialPriceId) {
+        throw new Error("Impossible de trouver le plan Studio pour l'essai gratuit");
+      }
+
       const payload = {
-        priceId: isCurieux ? 'price_Studio2990' : planConfig.stripePriceId, // Use Studio price for trial
+        priceId: isCurieux ? trialPriceId : planConfig.stripePriceId,
         planId: planType,
         userId: user?.id,
       };
@@ -819,7 +839,7 @@ export default function HomeScreen() {
 
             {isPaidPlanButInactive ? (
               <PaymentBlocker
-                planId={effectivePlanId}
+                plan={currentPlanObject} // Pass full plan object
                 onPay={handleStripePayment}
                 loading={isPaymentLoading}
               />
