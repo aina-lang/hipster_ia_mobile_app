@@ -82,7 +82,7 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <StripeProvider
-          publishableKey="pk_test_51SwUCtIBocWEq1MHOai63QOvSnEtYMU7kdDQUyo81zNt1XBYINS07FGgboCZnhTawtSu9nAu9F4uGgUo538aKnCN007HrfkxE0"
+          publishableKey="pk_test_51SCdnjFhrfQ5vRxFnG03V2aEFEsGvoTSbhEa1CyB2J07h6W8VVtNbirPeJtT9yOnLw3EPFlfPqARXKBBRAXdFz1G00xhCi28vk"
           merchantIdentifier="merchant.com.hipster">
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="(auth)" />

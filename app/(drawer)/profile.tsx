@@ -14,6 +14,7 @@ import { useRouter } from 'expo-router';
 import { colors } from '../../theme/colors';
 import { BackgroundGradient } from '../../components/ui/BackgroundGradient';
 import { useAuthStore } from '../../store/authStore';
+import { api } from '../../api/client';
 import {
   User,
   Lock,
@@ -299,7 +300,7 @@ export default function ProfileScreen() {
     }
 
     try {
-      const response = await useAuthStore.getState().api.post('/ai/payment/cancel');
+      const response = await api.post('/ai/payment/cancel');
       const cancelAt = response.data?.cancelAt ? new Date(response.data.cancelAt).toLocaleDateString('fr-FR') : 'la fin de la période';
 
       showFeedback(

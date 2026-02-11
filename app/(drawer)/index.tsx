@@ -39,7 +39,7 @@ import { useChatStore } from '../../store/chatStore';
 import { AiService } from '../../api/ai.service';
 import { api } from '../../api/client';
 import { colors } from '../../theme/colors';
-import { GenericModal } from '../../components/ui/GenericModal';
+import { GenericModal, ModalType } from '../../components/ui/GenericModal';
 import { BackgroundGradientOnboarding } from '../../components/ui/BackgroundGradientOnboarding';
 import { NeonButton } from '../../components/ui/NeonButton';
 
@@ -178,7 +178,7 @@ export default function HomeScreen() {
 
   // Modal State
   const [modalVisible, setModalVisible] = useState(false);
-  const [modalType, setModalType] = useState<'success' | 'error' | 'info'>('info');
+  const [modalType, setModalType] = useState<ModalType>('info');
   const [modalTitle, setModalTitle] = useState('');
   const [modalMessage, setModalMessage] = useState('');
 
@@ -266,7 +266,7 @@ export default function HomeScreen() {
   const isTrialButNoCard = isPackCurieux && !stripeId;
   const isPaidPlanButInactive = !isSubscriptionActive || isTrialButNoCard || (isPackCurieux && isExpired);
 
-  const showModal = (type: 'success' | 'error' | 'info' | 'warning', title: string, message: string) => {
+  const showModal = (type: ModalType, title: string, message: string) => {
     setModalType(type);
     setModalTitle(title);
     setModalMessage(message);
