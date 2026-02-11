@@ -133,6 +133,7 @@ export default function SubscriptionScreen() {
       // Include userId so webhook can find user after payment
       const resp = await api.post(`/ai/payment/create-payment-sheet`, {
         priceId,
+        planId: selectedPlan,
         userId: user?.id, // ← Pass userId for webhook lookup
       });
 
