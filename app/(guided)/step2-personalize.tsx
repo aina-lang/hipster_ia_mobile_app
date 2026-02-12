@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+
 import {
   View,
   Text,
@@ -11,26 +11,112 @@ import {
   Dimensions,
   StyleSheet,
   KeyboardAvoidingView,
+  Image,
+  Alert,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import * as ImagePicker from 'expo-image-picker';
 import { colors } from '../../theme/colors';
 import { DeerAnimation } from '../../components/ui/DeerAnimation';
 import { useCreationStore } from '../../store/creationStore';
 import { WORKFLOWS, WorkflowQuestion } from '../../constants/workflows';
 import { GuidedScreenWrapper } from '../../components/layout/GuidedScreenWrapper';
-import { Sparkles, ChevronRight, Mic, Image as LucideImage, Paperclip } from 'lucide-react-native';
-import { NeonButton } from '../../components/ui/NeonButton';
+import { SelectionCard } from '../../components/ui/SelectionCard';
+import { BlurView } from 'expo-blur';
+import { ChatInput } from '../../components/ChatInput';
+import {
+  Sparkles,
+  ChevronRight,
+  Mic,
+  Image as LucideImage,
+  Paperclip,
+  Moon,
+  Sun,
+  Upload,
+  X,
+  TrendingUp,
+  Gem,
+  BookOpen,
+  Target,
+  GraduationCap,
+  Megaphone,
+  Gift,
+  RotateCcw,
+  Handshake,
+  Newspaper,
+  Zap,
+  Trophy,
+  Building2,
+  ShoppingBag,
+  Calendar,
+  Mail,
+  Heart,
+  Plus,
+} from 'lucide-react-native';
+
+import illus2 from "../../assets/illus2.jpeg"
+import illus3 from "../../assets/illus3.jpeg"
+import illus4 from "../../assets/illus4.jpeg"
+import { useEffect, useRef, useState } from 'react';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
+// Visual style options
+// Visual style options
+const VISUAL_STYLES = [
+  {
+    label: 'Monochrome',
+    icon: Moon,
+    description: 'Noir & blanc élégant et contrasté.\nIntemporel, artistique, sophistiqué.',
+    image: illus2,
+  },
+  {
+    label: 'Hero Studio',
+    icon: Sun,
+    description: 'Produit mis en scène comme une icône.\nLumière maîtrisée, impact fort, effet “wow”.',
+    image: illus3,
+  },
+
+  {
+    label: 'Minimal Studio ',
+    icon: Sun,
+    description: 'Fond clair, composition épurée.\nModerne, haut de gamme, ultra lisible.',
+    image: illus4,
+  },
+];
+
+// Text intention options
+const WRITING_INTENTIONS = [
+  { label: 'Promotion', icon: TrendingUp, description: 'Mettre en avant une offre, réduction, lancement' },
+  { label: 'Présentation', icon: Building2, description: 'Présenter votre activité, produit ou service' },
+  { label: 'Storytelling', icon: BookOpen, description: 'Raconter une histoire engageante' },
+  { label: 'Conversion directe', icon: Target, description: 'Inciter à l\'action immédiate' },
+];
+
 export default function Step2PersonalizeScreen() {
   const router = useRouter();
-  const { selectedJob, selectedFunction, workflowAnswers, setWorkflowAnswer, userQuery, setQuery } =
-    useCreationStore();
+  const {
+    selectedJob,
+    selectedFunction,
+    selectedCategory,
+    workflowAnswers,
+    setWorkflowAnswer,
+    userQuery,
+    setQuery,
+    selectedStyle,
+    setStyle,
+    selectedIntention,
+    setIntention,
+    uploadedImage,
+    setUploadedImage,
+  } = useCreationStore();
 
-  const [keyboardHeight] = useState(new Animated.Value(0));
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+  const keyboardHeight = useRef(new Animated.Value(0)).current;
   const scrollRef = useRef<ScrollView>(null);
+
+
 
   // Fallback to generic if specific not found
   const questions: WorkflowQuestion[] =
@@ -71,6 +157,40 @@ export default function Step2PersonalizeScreen() {
       hideSubscription.remove();
     };
   }, []);
+
+  // Get intentions based on selected function
+  const getIntentions = () => {
+    return WRITING_INTENTIONS;
+  };
+
+  // Image picker for visual flow
+  const pickImage = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (status !== 'granted') {
+        Alert.alert(
+          'Permission requise',
+          'Nous avons besoin de votre permission pour accéder à vos photos.'
+        );
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        setUploadedImage(result.assets[0].uri);
+      }
+    } catch (error) {
+      console.error('Error picking image:', error);
+      Alert.alert('Erreur', 'Impossible de sélectionner l\'image');
+    }
+  };
 
   const renderQuestion = (q: WorkflowQuestion, index: number) => {
     const value = workflowAnswers[q.id];
@@ -114,102 +234,137 @@ export default function Step2PersonalizeScreen() {
   };
 
   const handleCreate = () => {
+    // Validate based on category
+    if (selectedCategory === 'Image' || selectedCategory === 'Social') {
+      // Visual flow: require style and image
+      if (!selectedStyle) {
+        Alert.alert('Style requis', 'Veuillez choisir un style artistique.');
+        return;
+      }
+      if (!uploadedImage) {
+        Alert.alert('Image requise', 'Veuillez sélectionner une image.');
+        return;
+      }
+    } else if (selectedCategory === 'Texte') {
+      // Text flow: require intention
+      if (!selectedIntention) {
+        Alert.alert('Intention requise', 'Veuillez choisir une intention.');
+        return;
+      }
+
+    }
+
+    // All validations passed, go to result
     router.push('/(guided)/step3-result');
   };
 
+  const insets = useSafeAreaInsets();
+
   return (
-    <GuidedScreenWrapper>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
-        <View >
-          <ScrollView
-            ref={scrollRef}
-
-            contentContainerStyle={{ paddingHorizontal: 20, }}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-          >
-            {/* Header */}
-            <View style={styles.header}>
-              <Text style={styles.headerTitle}>Personnalisez votre création</Text>
-              <View style={styles.breadcrumb}>
-                <Text style={styles.breadcrumbJob}>{selectedJob}</Text>
-                <ChevronRight size={14} color={colors.text.muted} />
-                <Text style={styles.breadcrumbFunction}>{selectedFunction?.split('(')[0]}</Text>
-              </View>
-            </View>
-
-            {/* Animation - visible seulement si clavier fermé */}
-            {!isKeyboardVisible && (
-              <View style={styles.animationContainer}>
-                <DeerAnimation size={80} progress={70} />
-              </View>
-            )}
-
-            {/* Questions */}
-            {questions.length > 0 && (
-              <View style={{ marginBottom: 32 }}>
-                {questions.map((q, index) => renderQuestion(q, index))}
-              </View>
-            )}
-          </ScrollView>
-
-          {/* Input & Button fixe */}
-          <Animated.View
-            style={{
-
-              paddingHorizontal: 16,
-              paddingTop: 12,
-
-              gap: 12,
-            }}
-          >
-            <View style={styles.questionContainer}>
-              <Text style={styles.questionLabel}>Votre demande / Détails</Text>
-              <View style={styles.chatInputContainer}>
-                <TextInput
-                  style={[styles.chatTextInput, { height: 100, textAlignVertical: 'top' }]}
-                  placeholder="Décrivez ce que vous voulez générer..."
-                  placeholderTextColor="rgba(255, 255, 255, 0.4)"
-                  value={userQuery}
-                  onChangeText={(text) => {
-                    setQuery(text);
-                    scrollRef.current?.scrollToEnd({ animated: true });
-                  }}
-                  multiline
-                />
-                <View style={styles.chatActionsRow}>
-                  <View style={styles.chatIconsGroup}>
-                    <TouchableOpacity style={styles.chatIconButton}>
-                      <LucideImage size={20} color={colors.text.secondary} />
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.chatIconButton}>
-                      <Paperclip size={20} color={colors.text.secondary} />
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.chatIconButton}>
-                      <Mic size={20} color={colors.text.secondary} />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </View>
-            </View>
-
-            <View style={{ flexDirection: 'row', gap: 12 }}>
-              <View style={{ flex: 1 }}>
-                <NeonButton
-                  onPress={handleCreate}
-                  title="Générer avec Hipster•IA"
-                  variant="premium"
-                  size="lg"
-                  icon={<Sparkles size={18} color={colors.text.primary} />}
-                />
-              </View>
-            </View>
-          </Animated.View>
+    <GuidedScreenWrapper
+      scrollViewRef={scrollRef}
+      footer={
+        null
+      }
+    >
+      <View style={{ paddingHorizontal: 20 }}>
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Personnalisez votre création</Text>
+          <View style={styles.breadcrumb}>
+            <Text style={styles.breadcrumbJob}>{selectedJob}</Text>
+            <ChevronRight size={14} color={colors.text.muted} />
+            <Text style={styles.breadcrumbFunction}>{selectedFunction?.split('(')[0]}</Text>
+          </View>
         </View>
-      </KeyboardAvoidingView>
+
+
+        {/* Questions */}
+
+
+        {/* CONDITIONAL FLOW: Visual Style Selection */}
+        {(selectedCategory === 'Image' || selectedCategory === 'Social') && (
+          <View style={{ marginBottom: 32 }}>
+            <Text style={styles.sectionTitle}>Choisissez le style artistique</Text>
+            <View style={{ flexDirection: 'column', gap: 16, marginTop: 16 }}>
+              {VISUAL_STYLES.map((style) => {
+                const isSelected = selectedStyle === style.label;
+                return (
+                  <TouchableOpacity
+                    key={style.label}
+                    style={[
+                      styles.styleCard,
+                      // Removed conditional border
+                    ]}
+                    onPress={() => {
+                      setStyle(style.label as any);
+                      setTimeout(() => {
+                        router.push('/(guided)/step3-result');
+                      }, 100);
+                    }}
+                    activeOpacity={0.9}
+                  >
+                    <Image
+                      source={
+                        typeof style.image === 'string'
+                          ? { uri: style.image }
+                          : style.image
+                      }
+                      style={styles.styleCardImage}
+                      resizeMode='cover'
+                    />
+
+                    {/* Content always visible unless selected? Or just overlay? */}
+                    <View style={styles.styleCardContent}>
+                      <Text style={styles.styleCardLabel}>{style.label}</Text>
+                      <Text style={styles.styleCardDescription} numberOfLines={2}>
+                        {style.description}
+                      </Text>
+                    </View>
+
+                    {/* Selected State: Blur Overlay */}
+                    {isSelected && (
+                      <BlurView
+                        intensity={20}
+                        tint="light"
+                        style={StyleSheet.absoluteFill}
+                      >
+                        <View style={styles.selectedOverlayContent}>
+                          <View style={styles.styleCardCheck}>
+                            <View style={styles.styleCardCheckInner} />
+                          </View>
+                        </View>
+                      </BlurView>
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+          </View>
+        )}
+        {/* CONDITIONAL FLOW: Text Intention Selection */}
+        {selectedCategory === 'Texte' && (
+          <View style={{ marginBottom: 32 }}>
+            <Text style={styles.sectionTitle}>Quelle est l'intention ?</Text>
+            <View style={{ gap: 12, marginTop: 16 }}>
+              {getIntentions().map((intention) => (
+                <SelectionCard
+                  key={intention.label}
+                  label={intention.label}
+                  icon={intention.icon}
+                  selected={selectedIntention === intention.label}
+                  onPress={() => setIntention(intention.label as any)}
+                  fullWidth
+                >
+                  <Text style={styles.cardDescription}>{intention.description}</Text>
+                </SelectionCard>
+              ))}
+
+            </View>
+          </View>
+        )}
+      </View>
     </GuidedScreenWrapper>
   );
 }
@@ -304,33 +459,170 @@ const styles = StyleSheet.create({
     borderColor: colors.primary.main,
     backgroundColor: colors.primary.main + '0D',
   },
-  chatInputContainer: {
-    backgroundColor: '#0f172a',
+  // Conditional flow styles
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginBottom: 8,
+  },
+  cardDescription: {
+    fontSize: 14,
+    color: colors.text.muted,
+    marginTop: 4,
+  },
+  uploadButton: {
+    width: '100%',
+    aspectRatio: 1,
+    maxHeight: 300,
     borderRadius: 20,
+    borderWidth: 2,
+    borderStyle: 'dashed',
+    borderColor: colors.primary.main,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 12,
+  },
+  uploadText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    marginTop: 8,
+  },
+  uploadHint: {
+    fontSize: 14,
+    color: colors.text.muted,
+  },
+  imagePreviewContainer: {
+    width: '100%',
+    aspectRatio: 1,
+    maxHeight: 300,
+    borderRadius: 20,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  imagePreview: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  removeImageButton: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  changeImageButton: {
+    marginTop: 16,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  changeImageText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.primary.main,
+  },
+  customIntentionSection: {
+    marginTop: 16,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    marginBottom: 16,
+  },
+  customIntentionLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: 'rgba(255, 255, 255, 0.7)',
+    marginBottom: 12,
+  },
+  customIntentionInput: {
+    minHeight: 80,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.1)',
-    padding: 18,
-    marginTop: 10,
-  },
-  chatTextInput: {
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    paddingHorizontal: 18,
+    paddingVertical: 16,
     fontSize: 16,
     color: '#FFFFFF',
-    marginBottom: 12,
-    minHeight: 100,
     textAlignVertical: 'top',
   },
-  chatActionsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  customIntentionInputActive: {
+    borderColor: colors.primary.main,
+    backgroundColor: colors.primary.main + '0D',
   },
-  chatIconsGroup: {
-    flexDirection: 'row',
-    gap: 14,
-  },
-  chatIconButton: {
-    padding: 10,
-    borderRadius: 12,
+  styleCard: {
+    width: '100%',
+    borderRadius: 16,
+    overflow: 'hidden',
+    position: 'relative',
+    borderWidth: 2,
+    borderColor: 'transparent',
     backgroundColor: 'rgba(255, 255, 255, 0.05)',
+  },
+
+  styleCardSelected: {
+    // Removed border
+  },
+  styleCardImage: {
+    width: '100%',
+    height: undefined,     // ← IMPORTANT
+    aspectRatio: 1,        // ← mets l’aspect réel (voir plus bas)
+
+  },
+
+  styleCardOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.2)',
+  },
+  styleCardContent: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 12,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+  },
+  styleCardLabel: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginBottom: 4,
+  },
+  styleCardDescription: {
+    fontSize: 11,
+    color: 'rgba(255, 255, 255, 0.8)',
+    lineHeight: 14,
+  },
+  styleCardCheck: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.5)',
+  },
+  styleCardCheckInner: {
+    width: 14,
+    height: 9,
+    borderBottomWidth: 2,
+    borderLeftWidth: 2,
+    borderColor: '#FFFFFF',
+    transform: [{ rotate: '-45deg' }, { translateY: -2 }],
+  },
+  selectedOverlayContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
   },
 });

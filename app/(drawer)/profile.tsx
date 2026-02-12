@@ -16,31 +16,20 @@ import { BackgroundGradient } from '../../components/ui/BackgroundGradient';
 import { useAuthStore } from '../../store/authStore';
 import { api } from '../../api/client';
 import {
-  User,
-  Lock,
+  Briefcase,
+  AtSign,
   Sparkles,
   LogOut,
   ChevronRight,
-  Briefcase,
-  MapPin,
-  Phone,
-  Building2,
-  AtSign,
   CreditCard,
-  Link,
-  Image as LucideImage,
-  Camera,
-  X,
-  Globe,
-  Check,
-  AlertCircle,
   XCircle,
+  X,
+  Check,
+  User,
+  Lock,
 } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { GenericModal, ModalType } from '../../components/ui/GenericModal';
-import * as ImagePicker from 'expo-image-picker';
-import { CountryPicker } from '../../components/ui/CountryPicker';
-import { getCountryByName, Country } from '../../api/countries';
 import { BackgroundGradientOnboarding } from 'components/ui/BackgroundGradientOnboarding';
 
 export default function ProfileScreen() {
@@ -55,34 +44,6 @@ export default function ProfileScreen() {
     error,
     clearError,
   } = useAuthStore();
-
-  // Profile Info State
-  const [name, setName] = useState(user?.name || '');
-  const [avatarUrl, setAvatarUrl] = useState('https://hipster-api.fr' + user?.avatarUrl || '');
-  const [isEditing, setIsEditing] = useState(false);
-  const [professionalEmail, setProfessionalEmail] = useState(
-    user?.professionalEmail || ''
-  );
-  const [professionalAddress, setProfessionalAddress] = useState(
-    user?.professionalAddress || ''
-  );
-  const [city, setCity] = useState(user?.city || '');
-  const [postalCode, setPostalCode] = useState(user?.postalCode || '');
-  const [country, setCountry] = useState(user?.country || 'France');
-  const [professionalPhone, setProfessionalPhone] = useState(
-    user?.professionalPhone || ''
-  );
-  const [professionalPhone2, setProfessionalPhone2] = useState(
-    user?.professionalPhone2 || ''
-  );
-  const [siret, setSiret] = useState(user?.siret || '');
-  const [vatNumber, setVatNumber] = useState(user?.vatNumber || '');
-  const [bankDetails, setBankDetails] = useState(user?.bankDetails || '');
-  const [websiteUrl, setWebsiteUrl] = useState(user?.websiteUrl || '');
-  const [logoUrl, setLogoUrl] = useState('https://hipster-api.fr' + user?.logoUrl || '');
-  const [isEditingPro, setIsEditingPro] = useState(false);
-  const [showCountryPicker, setShowCountryPicker] = useState(false);
-  const [selectedCountry, setSelectedCountry] = useState<any>(null);
 
   // Password Modal State
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -102,126 +63,9 @@ export default function ProfileScreen() {
     message: '',
   });
 
-  // Animation
-  const [saveButtonScale] = useState(new Animated.Value(1));
-
-  const getLocalNumber = (phone: string, phoneCode?: string) => {
-    if (!phone) return '';
-    if (!phoneCode) return phone;
-    if (phone.startsWith(phoneCode)) {
-      return phone.replace(phoneCode, '').trim();
-    }
-    return phone.trim();
-  };
-
-  useEffect(() => {
-    const userCountry = user?.country;
-    const initialCountry = userCountry ? getCountryByName(userCountry) : getCountryByName('France');
-
-    setSelectedCountry(initialCountry);
-    setCountry(initialCountry?.name || 'France');
-
-    setProfessionalPhone(
-      getLocalNumber(user?.professionalPhone || '', initialCountry?.phoneCode)
-    );
-    setProfessionalPhone2(
-      getLocalNumber(user?.professionalPhone2 || '', initialCountry?.phoneCode)
-    );
-  }, [user]);
-
   const showFeedback = (type: ModalType, title: string, message: string) => {
     setModalConfig({ type, title, message });
     setModalVisible(true);
-  };
-
-  const animateSaveButton = () => {
-    Animated.sequence([
-      Animated.timing(saveButtonScale, {
-        toValue: 0.95,
-        duration: 100,
-        useNativeDriver: true,
-      }),
-      Animated.timing(saveButtonScale, {
-        toValue: 1,
-        duration: 100,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  };
-
-  const handleSavePersonal = async () => {
-    if (!name.trim()) {
-      showFeedback('warning', 'Champs requis', 'Veuillez remplir votre nom.');
-      return;
-    }
-
-    animateSaveButton();
-
-    try {
-      let finalAvatarUrl = avatarUrl;
-
-      if (avatarUrl && avatarUrl.startsWith('file://')) {
-        finalAvatarUrl = await useAuthStore.getState().uploadAvatar(avatarUrl);
-      }
-
-      const updateData = { name, avatarUrl: finalAvatarUrl };
-
-      await updateProfile(updateData);
-      setIsEditing(false);
-      showFeedback('success', 'Parfait !', 'Votre profil a été mis à jour avec succès.');
-    } catch (err) {
-      const errorMessage = useAuthStore.getState().error;
-      showFeedback('error', 'Erreur', errorMessage || 'Une erreur est survenue.');
-    }
-  };
-
-  const handleSaveProfessional = async () => {
-    // Simplified: No companyName check needed
-
-    animateSaveButton();
-
-    try {
-      let finalLogoUrl = logoUrl;
-
-      if (logoUrl && logoUrl.startsWith('file://')) {
-        const currentUser = useAuthStore.getState().user;
-        if (currentUser?.id) {
-          finalLogoUrl = await useAuthStore
-            .getState()
-            .uploadLogo(currentUser.id, logoUrl);
-        }
-      }
-
-      const fullPhone1 =
-        professionalPhone && selectedCountry
-          ? `${selectedCountry.phoneCode} ${professionalPhone.trim()}`.replace(/\s+/g, ' ')
-          : professionalPhone;
-
-      const fullPhone2 =
-        professionalPhone2 && selectedCountry
-          ? `${selectedCountry.phoneCode} ${professionalPhone2.trim()}`.replace(/\s+/g, ' ')
-          : professionalPhone2;
-
-      await updateAiProfile({
-        professionalEmail,
-        professionalAddress,
-        city,
-        postalCode,
-        country,
-        professionalPhone: fullPhone1,
-        professionalPhone2: fullPhone2,
-        siret,
-        vatNumber,
-        bankDetails,
-        websiteUrl,
-        logoUrl: finalLogoUrl,
-      });
-      setIsEditingPro(false);
-      showFeedback('success', 'Parfait !', 'Votre profil professionnel a été mis à jour.');
-    } catch (err) {
-      const errorMessage = useAuthStore.getState().error;
-      showFeedback('error', 'Erreur', errorMessage || 'Une erreur est survenue.');
-    }
   };
 
   const handleChangePassword = async () => {
@@ -253,41 +97,6 @@ export default function ProfileScreen() {
     }
   };
 
-  const pickImage = async (type: 'avatar' | 'logo') => {
-    try {
-      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-      if (!permissionResult.granted) {
-        showFeedback('warning', 'Permission requise', "Veuillez autoriser l'accès à la galerie.");
-        return;
-      }
-
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.8,
-      });
-
-      if (!result.canceled && result.assets[0]) {
-        const imageUri = result.assets[0].uri;
-        if (type === 'avatar') {
-          setAvatarUrl(imageUri);
-        } else {
-          setLogoUrl(imageUri);
-        }
-      }
-    } catch (error) {
-      console.error('Image picker error:', error);
-      showFeedback('error', 'Erreur', "Impossible de sélectionner l'image.");
-    }
-  };
-
-  const handleCountrySelect = (countryData: Country) => {
-    setSelectedCountry(countryData);
-    setCountry(countryData.name);
-  };
-
   const handleLogout = () => {
     logout();
     router.replace('/(auth)/login');
@@ -317,36 +126,6 @@ export default function ProfileScreen() {
     }
   };
 
-  const resetPersonalForm = () => {
-    setIsEditing(false);
-    setName(user?.name || '');
-    setAvatarUrl(user?.avatarUrl || '');
-  };
-
-  const resetProfessionalForm = () => {
-    setIsEditingPro(false);
-    const profile = user;
-    const savedCountry = profile?.country ? getCountryByName(profile.country) : null;
-
-    setProfessionalEmail(profile?.professionalEmail || '');
-    setProfessionalAddress(profile?.professionalAddress || '');
-    setCity(profile?.city || '');
-    setPostalCode(profile?.postalCode || '');
-    setCountry(profile?.country || 'France');
-    setSelectedCountry(savedCountry);
-    setProfessionalPhone(
-      getLocalNumber(profile?.professionalPhone || '', savedCountry?.phoneCode)
-    );
-    setProfessionalPhone2(
-      getLocalNumber(profile?.professionalPhone2 || '', savedCountry?.phoneCode)
-    );
-    setSiret(profile?.siret || '');
-    setVatNumber(profile?.vatNumber || '');
-    setBankDetails(profile?.bankDetails || '');
-    setWebsiteUrl(profile?.websiteUrl || '');
-    setLogoUrl(profile?.logoUrl || '');
-  };
-
   return (
     <BackgroundGradientOnboarding blurIntensity={90}>
       <SafeAreaView style={styles.container}>
@@ -371,355 +150,40 @@ export default function ProfileScreen() {
             </View>
           </View>
 
-          {/* Personal Profile Section */}
+          {/* Account Details Section */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <View style={styles.iconBadge}>
                 <User size={18} color={colors.primary.main} />
               </View>
-              <Text style={styles.sectionTitle}>Profil Personnel</Text>
-              {!isEditing && (
-                <TouchableOpacity
-                  style={styles.quickEditButton}
-                  onPress={() => setIsEditing(true)}>
-                  <Text style={styles.quickEditText}>Modifier</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-
-            <View style={styles.card}>
-              {/* Avatar avec amélioration visuelle */}
-              <View style={styles.avatarSection}>
-                <TouchableOpacity
-                  style={styles.avatarWrapper}
-                  onPress={() => isEditing && pickImage('avatar')}
-                  activeOpacity={isEditing ? 0.7 : 1}
-                >
-                  {avatarUrl ? (
-                    <Image source={{ uri: avatarUrl }} style={styles.avatarImage} />
-                  ) : (
-                    <View style={styles.avatarPlaceholder}>
-                      <User size={36} color={colors.text.muted} />
-                    </View>
-                  )}
-                  {isEditing && (
-                    <View style={styles.cameraButton}>
-                      <Camera size={14} color="#000" />
-                    </View>
-                  )}
-                </TouchableOpacity>
-                {avatarUrl && isEditing && (
-                  <TouchableOpacity
-                    style={styles.removeImageButton}
-                    onPress={() => setAvatarUrl('')}>
-                    <X size={12} color={colors.status.error} />
-                    <Text style={styles.removeImageText}>Retirer</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-
-              <View style={styles.form}>
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Nom Complet *</Text>
-                  <View style={[styles.inputContainer, isEditing && styles.activeInput]}>
-                    <User size={16} color={colors.text.secondary} />
-                    <TextInput
-                      style={styles.input}
-                      value={name}
-                      onChangeText={setName}
-                      editable={isEditing}
-                      placeholder="Votre nom"
-                      placeholderTextColor={colors.text.muted}
-                    />
-                    {isEditing && name && (
-                      <Check size={16} color={colors.primary.main} />
-                    )}
-                  </View>
-                </View>
-
-                {isEditing && (
-                  <View style={styles.editActions}>
-                    <TouchableOpacity style={styles.cancelButton} onPress={resetPersonalForm}>
-                      <Text style={styles.cancelButtonText}>Annuler</Text>
-                    </TouchableOpacity>
-                    <Animated.View style={{ flex: 1, transform: [{ scale: saveButtonScale }] }}>
-                      <TouchableOpacity
-                        style={[styles.saveButton, isLoading && styles.disabledButton]}
-                        onPress={handleSavePersonal}
-                        disabled={isLoading}
-                        activeOpacity={0.8}>
-                        <Check size={18} color="#000" />
-                        <Text style={styles.saveButtonText}>
-                          {isLoading ? 'Sauvegarde...' : 'Enregistrer'}
-                        </Text>
-                      </TouchableOpacity>
-                    </Animated.View>
-                  </View>
-                )}
-              </View>
-            </View>
-          </View>
-
-          {/* Professional Profile Section */}
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <View style={styles.iconBadge}>
-                <Briefcase size={18} color={colors.primary.main} />
-              </View>
-              <Text style={styles.sectionTitle}>Profil Professionnel</Text>
-              {!isEditingPro && (
-                <TouchableOpacity
-                  style={styles.quickEditButton}
-                  onPress={() => setIsEditingPro(true)}>
-                  <Text style={styles.quickEditText}>Modifier</Text>
-                </TouchableOpacity>
-              )}
+              <Text style={styles.sectionTitle}>Détails du Compte</Text>
             </View>
 
             <View style={styles.card}>
               <View style={styles.form}>
-                {/* Logo Section */}
-                {logoUrl ? (
-                  <TouchableOpacity
-                    style={styles.logoPreviewContainer}
-                    onPress={() => isEditingPro && pickImage('logo')}
-                    activeOpacity={isEditingPro ? 0.7 : 1}
-                  >
-                    <Image source={{ uri: logoUrl }} style={styles.logoPreview} />
-                    {isEditingPro && (
-                      <View style={styles.changeLogoButton}>
-                        <Camera size={12} color={colors.primary.main} />
-                        <Text style={styles.changeLogoText}>Changer</Text>
-                      </View>
-                    )}
-                  </TouchableOpacity>
-                ) : (
-                  isEditingPro && (
-                    <TouchableOpacity
-                      style={styles.addLogoButton}
-                      onPress={() => pickImage('logo')}>
-                      <LucideImage size={20} color={colors.primary.main} />
-                      <Text style={styles.addLogoText}>Ajouter un logo</Text>
-                    </TouchableOpacity>
-                  )
-                )}
-
-                {/* Form Fields */}
                 <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Email professionnel</Text>
-                  <View style={[styles.inputContainer, isEditingPro && styles.activeInput]}>
+                  <Text style={styles.label}>Adresse Email</Text>
+                  <View style={[styles.inputContainer, styles.disabledInput]}>
                     <AtSign size={16} color={colors.text.secondary} />
                     <TextInput
                       style={styles.input}
-                      value={professionalEmail}
-                      onChangeText={setProfessionalEmail}
-                      editable={isEditingPro}
-                      placeholder="contact@entreprise.com"
-                      placeholderTextColor={colors.text.muted}
-                      keyboardType="email-address"
-                      autoCapitalize="none"
+                      value={user?.email || ''}
+                      editable={false}
                     />
                   </View>
                 </View>
 
-                {/* Address Row */}
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Adresse</Text>
-                  <View style={[styles.inputContainer, isEditingPro && styles.activeInput]}>
-                    <MapPin size={16} color={colors.text.secondary} />
-                    <TextInput
-                      style={styles.input}
-                      value={professionalAddress}
-                      onChangeText={setProfessionalAddress}
-                      editable={isEditingPro}
-                      placeholder="Rue, numéro"
-                      placeholderTextColor={colors.text.muted}
-                    />
-                  </View>
-                </View>
-
-                <View style={styles.inputRow}>
-                  <View style={[styles.inputGroup, { flex: 2 }]}>
-                    <Text style={styles.label}>Ville</Text>
-                    <View style={[styles.inputContainer, isEditingPro && styles.activeInput]}>
+                {user?.job && (
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.label}>Métier / Secteur</Text>
+                    <View style={[styles.inputContainer, styles.disabledInput]}>
+                      <Briefcase size={16} color={colors.text.secondary} />
                       <TextInput
-                        style={[styles.input, { marginLeft: 12 }]}
-                        value={city}
-                        onChangeText={setCity}
-                        editable={isEditingPro}
-                        placeholder="Paris"
-                        placeholderTextColor={colors.text.muted}
+                        style={styles.input}
+                        value={user.job}
+                        editable={false}
                       />
                     </View>
-                  </View>
-
-                  <View style={[styles.inputGroup, { flex: 1 }]}>
-                    <Text style={styles.label}>CP</Text>
-                    <View style={[styles.inputContainer, isEditingPro && styles.activeInput]}>
-                      <TextInput
-                        style={[styles.input, { marginLeft: 12 }]}
-                        value={postalCode}
-                        onChangeText={setPostalCode}
-                        editable={isEditingPro}
-                        placeholder="75001"
-                        placeholderTextColor={colors.text.muted}
-                        keyboardType="numeric"
-                        maxLength={5}
-                      />
-                    </View>
-                  </View>
-                </View>
-
-                {/* Country Picker */}
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Pays</Text>
-                  <TouchableOpacity
-                    style={[
-                      styles.countryPickerButton,
-                      !isEditingPro && styles.disabledButton,
-                    ]}
-                    onPress={() => isEditingPro && setShowCountryPicker(true)}
-                    disabled={!isEditingPro}>
-                    <Globe size={16} color={colors.text.secondary} />
-                    <Text style={styles.countryPickerText}>
-                      {selectedCountry
-                        ? `${selectedCountry.flag} ${selectedCountry.name}`
-                        : country || 'Sélectionner'}
-                    </Text>
-                    <ChevronRight size={14} color={colors.text.muted} />
-                  </TouchableOpacity>
-                </View>
-
-                {/* Phone Numbers */}
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Téléphone principal</Text>
-                  <View style={[styles.inputContainer, isEditingPro && styles.activeInput]}>
-                    <Phone size={16} color={colors.text.secondary} />
-                    {selectedCountry && (
-                      <View style={styles.inlinePrefix}>
-                        <Text style={styles.prefixFlag}>{selectedCountry.flag}</Text>
-                        <Text style={styles.prefixCode}>{selectedCountry.phoneCode}</Text>
-                      </View>
-                    )}
-                    <TextInput
-                      style={styles.input}
-                      value={professionalPhone}
-                      onChangeText={setProfessionalPhone}
-                      editable={isEditingPro}
-                      placeholder="6 12 34 56 78"
-                      placeholderTextColor={colors.text.muted}
-                      keyboardType="phone-pad"
-                    />
-                  </View>
-                </View>
-
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Téléphone secondaire</Text>
-                  <View style={[styles.inputContainer, isEditingPro && styles.activeInput]}>
-                    <Phone size={16} color={colors.text.secondary} />
-                    {selectedCountry && (
-                      <View style={styles.inlinePrefix}>
-                        <Text style={styles.prefixFlag}>{selectedCountry.flag}</Text>
-                        <Text style={styles.prefixCode}>{selectedCountry.phoneCode}</Text>
-                      </View>
-                    )}
-                    <TextInput
-                      style={styles.input}
-                      value={professionalPhone2}
-                      onChangeText={setProfessionalPhone2}
-                      editable={isEditingPro}
-                      placeholder="Optionnel"
-                      placeholderTextColor={colors.text.muted}
-                      keyboardType="phone-pad"
-                    />
-                  </View>
-                </View>
-
-                {/* SIRET & TVA (France uniquement) */}
-                {selectedCountry?.name === 'France' && (
-                  <View style={styles.inputRow}>
-                    <View style={[styles.inputGroup, { flex: 1 }]}>
-                      <Text style={styles.label}>SIRET</Text>
-                      <View style={[styles.inputContainer, isEditingPro && styles.activeInput]}>
-                        <TextInput
-                          style={[styles.input, { marginLeft: 12, fontSize: 13 }]}
-                          value={siret}
-                          onChangeText={setSiret}
-                          editable={isEditingPro}
-                          placeholder="14 chiffres"
-                          placeholderTextColor={colors.text.muted}
-                          keyboardType="numeric"
-                          maxLength={14}
-                        />
-                      </View>
-                    </View>
-
-                    <View style={[styles.inputGroup, { flex: 1 }]}>
-                      <Text style={styles.label}>N° TVA</Text>
-                      <View style={[styles.inputContainer, isEditingPro && styles.activeInput]}>
-                        <TextInput
-                          style={[styles.input, { marginLeft: 12, fontSize: 13 }]}
-                          value={vatNumber}
-                          onChangeText={setVatNumber}
-                          editable={isEditingPro}
-                          placeholder="FR..."
-                          placeholderTextColor={colors.text.muted}
-                        />
-                      </View>
-                    </View>
-                  </View>
-                )}
-
-                {/* Bank & Website */}
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>IBAN / BIC</Text>
-                  <View style={[styles.inputContainer, isEditingPro && styles.activeInput]}>
-                    <CreditCard size={16} color={colors.text.secondary} />
-                    <TextInput
-                      style={styles.input}
-                      value={bankDetails}
-                      onChangeText={setBankDetails}
-                      editable={isEditingPro}
-                      placeholder="Coordonnées bancaires"
-                      placeholderTextColor={colors.text.muted}
-                    />
-                  </View>
-                </View>
-
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Site Web</Text>
-                  <View style={[styles.inputContainer, isEditingPro && styles.activeInput]}>
-                    <Link size={16} color={colors.text.secondary} />
-                    <TextInput
-                      style={styles.input}
-                      value={websiteUrl}
-                      onChangeText={setWebsiteUrl}
-                      editable={isEditingPro}
-                      placeholder="www.votre-site.com"
-                      placeholderTextColor={colors.text.muted}
-                      autoCapitalize="none"
-                      keyboardType="url"
-                    />
-                  </View>
-                </View>
-
-                {isEditingPro && (
-                  <View style={styles.editActions}>
-                    <TouchableOpacity style={styles.cancelButton} onPress={resetProfessionalForm}>
-                      <Text style={styles.cancelButtonText}>Annuler</Text>
-                    </TouchableOpacity>
-                    <Animated.View style={{ flex: 1, transform: [{ scale: saveButtonScale }] }}>
-                      <TouchableOpacity
-                        style={[styles.saveButton, isLoading && styles.disabledButton]}
-                        onPress={handleSaveProfessional}
-                        disabled={isLoading}
-                        activeOpacity={0.8}>
-                        <Check size={18} color="#000" />
-                        <Text style={styles.saveButtonText}>
-                          {isLoading ? 'Sauvegarde...' : 'Enregistrer'}
-                        </Text>
-                      </TouchableOpacity>
-                    </Animated.View>
                   </View>
                 )}
               </View>
@@ -747,31 +211,31 @@ export default function ProfileScreen() {
                       : 'Hipster Gratuit'}
                   </Text>
                   <Text style={styles.planDescription}>
-                    {user?.planType === 'premium'
-                      ? 'Accès illimité à tout'
-                      : 'Fonctionnalités de base'}
+                    {user?.planType === 'studio' || user?.planType === 'agence'
+                      ? 'Accès Creatif Illimité'
+                      : 'Pack Curieux'}
                   </Text>
                 </View>
                 <View
                   style={[
                     styles.planBadge,
-                    user?.subscriptionStatus === 'active' && styles.planBadgeActive,
+                    (user?.subscriptionStatus === 'active' || user?.subscriptionStatus === 'trialing') && styles.planBadgeActive,
                   ]}>
                   <Text style={styles.planBadgeText}>
-                    {user?.subscriptionStatus === 'active' ? 'Actif' : 'Gratuit'}
+                    {user?.subscriptionStatus === 'active' || user?.subscriptionStatus === 'trialing' ? 'Actif' : 'Gratuit'}
                   </Text>
                 </View>
               </View>
               <View style={styles.planAction}>
                 <Text style={styles.planActionText}>
-                  {user?.planType === 'premium' ? 'Gérer' : 'Passer Premium'}
+                  Gérer mon abonnement
                 </Text>
                 <ChevronRight size={18} color={colors.primary.main} />
               </View>
             </TouchableOpacity>
 
             {/* Cancel Subscription Button - Only for active paid plans */}
-            {user?.stripeSubscriptionId && user?.subscriptionStatus === 'active' && user?.planType !== 'curieux' && (
+            {user?.stripeSubscriptionId && (user?.subscriptionStatus === 'active' || user?.subscriptionStatus === 'trialing') && user?.planType !== 'curieux' && (
               <TouchableOpacity
                 style={styles.cancelSubscriptionButton}
                 onPress={handleCancelSubscription}
@@ -900,13 +364,7 @@ export default function ProfileScreen() {
         </View>
       </Modal>
 
-      {/* Country Picker Modal */}
-      <CountryPicker
-        visible={showCountryPicker}
-        onClose={() => setShowCountryPicker(false)}
-        onSelect={handleCountrySelect}
-        selectedCountry={selectedCountry}
-      />
+
 
       {/* Feedback Modal */}
       <GenericModal
@@ -1085,6 +543,10 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     fontSize: 14,
     marginLeft: 10,
+  },
+  disabledInput: {
+    backgroundColor: 'rgba(255, 255, 255, 0.02)',
+    opacity: 0.7,
   },
   editActions: {
     flexDirection: 'row',

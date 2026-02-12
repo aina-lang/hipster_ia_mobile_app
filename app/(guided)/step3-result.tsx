@@ -82,6 +82,9 @@ export default function Step3ResultScreen() {
     selectedTone,
     selectedTarget,
     workflowAnswers,
+    selectedStyle,
+    selectedIntention,
+    uploadedImage,
 
     reset,
   } = useCreationStore();
@@ -529,6 +532,9 @@ export default function Step3ResultScreen() {
         userQuery: overrideQuery || userQuery,
         workflowAnswers,
         category: selectedCategory,
+        style: selectedStyle,
+        intention: selectedIntention,
+        reference_image: uploadedImage,
         instruction_speciale: 'Génère UNIQUEMENT la section demandée.',
       };
 

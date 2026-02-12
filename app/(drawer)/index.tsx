@@ -12,11 +12,12 @@ import {
 } from 'react-native';
 import { Audio } from 'expo-av';
 import * as MediaLibrary from 'expo-media-library';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useNavigation, useGlobalSearchParams } from 'expo-router';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
 import * as Notifications from 'expo-notifications';
 import { Modal } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -42,6 +43,7 @@ import {
   WifiOff,
   Plus,
   CreditCard,
+  X,
   Lock,
   ChevronRight,
   ExternalLink,
@@ -62,6 +64,7 @@ import { NeonButton } from '../../components/ui/NeonButton';
 import { MediaDisplay } from '../../components/MediaDisplay';
 import { TypingMessage, TypingPlaceholder } from '../../components/TypingMessage';
 import { PaymentBlocker } from '../../components/PaymentBlocker';
+import { ChatInput } from '../../components/ChatInput';
 
 
 
@@ -73,12 +76,14 @@ export default function HomeScreen() {
   const { chatId, reset } = useGlobalSearchParams();
   const navigation = useNavigation<DrawerNavigationProp<any>>();
   const scrollViewRef = useRef<ScrollView>(null);
+  const insets = useSafeAreaInsets();
 
   const [inputValue, setInputValue] = useState('');
   const { messages, setMessages, conversationId, setConversationId, resetChat: clearChatStore } = useChatStore();
   const [isGenerating, setIsGenerating] = useState(false);
   const [isBackendConnected, setIsBackendConnected] = useState<boolean | null>(null);
   const [isLoadingConversation, setIsLoadingConversation] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   // Plans State
   const [plans, setPlans] = useState<any[]>([]);
@@ -147,6 +152,29 @@ export default function HomeScreen() {
       showModal('error', 'Erreur', 'Impossible de démarrer l\'enregistrement.');
     }
   }
+
+  const pickImage = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        showModal('error', 'Permission refusée', 'Veuillez autoriser l\'accès à la galerie pour sélectionner une photo.');
+        return;
+      }
+
+      let result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        quality: 1,
+      });
+
+      if (!result.canceled) {
+        setSelectedImage(result.assets[0].uri);
+      }
+    } catch (error) {
+      console.error('Error picking image:', error);
+      showModal('error', 'Erreur', 'Impossible de sélectionner l\'image.');
+    }
+  };
 
   async function stopRecording() {
     if (!recording) return;
@@ -503,7 +531,9 @@ export default function HomeScreen() {
   }, [messages]);
 
   const handleSend = async () => {
-    if (!inputValue.trim() || isGenerating) return;
+    if ((!inputValue.trim() && !selectedImage) || isGenerating) return;
+
+    const currentImage = selectedImage;
 
     // Check credits
     if (isTextExhausted) {
@@ -518,10 +548,13 @@ export default function HomeScreen() {
       text: inputValue.trim(),
       sender: 'user',
       timestamp: new Date(),
+      type: currentImage ? 'image' : 'text',
+      mediaUrl: currentImage || undefined,
     };
 
     setMessages((prev) => [...prev, userMsg]);
     setInputValue('');
+    setSelectedImage(null);
     setIsGenerating(true);
 
     try {
@@ -529,7 +562,7 @@ export default function HomeScreen() {
       const systemContext = `
       Identité: Hipster IA
       Rôle: Assistant créatif et intelligent
-      Cible: ${user?.name || "l'utilisateur"}
+      Cible: ${user?.email?.split('@')[0] || "l'utilisateur"}
       Contexte: ${user?.type !== 'ai' && user?.job ? `Métier: ${user.job}` : ''}
     `;
 
@@ -551,28 +584,28 @@ export default function HomeScreen() {
       if (lowerInput.includes('image') || lowerInput.includes('photo')) {
         // Mock Image Generation
         mockResponse = {
-          content: "Voici l'image que j'ai générée pour vous :",
+          content: "",
           type: 'image',
           mediaUrl: 'https://picsum.photos/800/800.jpg',
         };
       } else if (lowerInput.includes('video')) {
         // Mock Video Generation
         mockResponse = {
-          content: "J'ai généré cette vidéo basée sur votre description :",
+          content: "",
           type: 'video',
           mediaUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
         };
       } else if (lowerInput.includes('audio') || lowerInput.includes('son') || lowerInput.includes('musique')) {
         // Mock Audio Generation
         mockResponse = {
-          content: "Voici l'audio généré :",
+          content: "",
           type: 'audio',
           mediaUrl: 'https://raw.githubusercontent.com/rafaelreis-hotmart/Audio-Sample-files/master/sample.mp3',
         };
       } else if (lowerInput.includes('3d') || lowerInput.includes('model')) {
         // Mock 3D Generation
         mockResponse = {
-          content: "Voici le modèle 3D généré :",
+          content: "",
           type: '3d',
           mediaUrl: 'https://raw.githubusercontent.com/rafaelreis-hotmart/Audio-Sample-files/master/sample.mp3',
         };
@@ -589,7 +622,29 @@ export default function HomeScreen() {
         };
       } else {
         // Real Backend Call
-        response = await AiService.chat(chatHistory, conversationId);
+        if (currentImage) {
+          const formData = new FormData();
+          formData.append('messages', JSON.stringify(chatHistory));
+          if (conversationId) formData.append('conversationId', conversationId);
+
+          const filename = currentImage.split('/').pop() || 'image.jpg';
+          const match = /\.(\w+)$/.exec(filename);
+          const ext = match ? match[1] : 'jpg';
+          const type = `image/${ext}`;
+
+          formData.append('file', {
+            uri: currentImage,
+            name: filename,
+            type,
+          } as any);
+
+          const res = await api.post('/ai/chat', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+          });
+          response = res.data.data;
+        } else {
+          response = await AiService.chat(chatHistory, conversationId);
+        }
       }
 
       console.log('[DEBUG] Response:', JSON.stringify(response, null, 2));
@@ -601,7 +656,7 @@ export default function HomeScreen() {
       }
 
       // Handle nested response structure
-      const content = response.data?.content || response.content || response.message || response;
+      const content = response.data?.content ?? response.content ?? response.message ?? response;
 
       const aiMsg: Message = {
         id: (Date.now() + 1).toString(),
@@ -661,12 +716,15 @@ export default function HomeScreen() {
 
   return (
     <BackgroundGradientOnboarding blurIntensity={90}>
-      <SafeAreaView className="flex-1" >
+      <View className="flex-1" >
         <KeyboardAvoidingView
           className="flex-1"
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}>
-          <View className="flex-row items-center justify-between px-5 py-2">
+          <View
+            className="flex-row items-center justify-between px-5 pb-2"
+            style={{ paddingTop: insets.top + 10 }}
+          >
             <TouchableOpacity
               className="rounded-lg bg-white/5 p-2"
               onPress={() => navigation.openDrawer()}>
@@ -700,7 +758,7 @@ export default function HomeScreen() {
                 <View className="mt-5 items-center">
                   <Text className="mb-2 text-lg text-white/60">
                     {getGreetingByTime()}{' '}
-                    {user?.name || 'Utilisateur'}
+                    {user?.email?.split('@')[0] || 'Utilisateur'}
                   </Text>
                   <Text className="text-center text-2xl font-bold leading-9 text-white">
                     {user?.job ? `Prêt pour votre prochaine création en tant que ${user.job.toLowerCase()} ?` : 'Que créons-nous aujourd\'hui ?'}
@@ -781,14 +839,14 @@ export default function HomeScreen() {
                         )}
 
                         {msg.sender === 'user' ? (
-                          <Text className="text-base leading-6 text-white">{msg.text}</Text>
+                          msg.text ? <Text className="text-base leading-6 text-white">{msg.text}</Text> : null
                         ) : msg.isTyping ? (
                           <TypingMessage text={msg.text} onComplete={() => completeTyping(msg.id)} />
                         ) : (
-                          <Text className="text-base leading-6 text-white">{msg.text}</Text>
+                          msg.text ? <Text className="text-base leading-6 text-white">{msg.text}</Text> : null
                         )}
 
-                        {msg.sender === 'ai' && !msg.isTyping && (
+                        {msg.sender === 'ai' && !msg.isTyping && (!msg.type || msg.type === 'text') && msg.text && (
                           <TouchableOpacity
                             onPress={() => copyToClipboard(msg.text)}
                             className="mt-2 self-end p-1">
@@ -816,7 +874,13 @@ export default function HomeScreen() {
           {/* {hasMessages && <UsageBar />} */}
 
           {/* Input */}
-          <View className="px-5 py-3 pt-0">
+          <View
+            className="px-5 pb-3 border-t border-white/5"
+            style={{
+              paddingBottom: (Platform.OS === 'ios' ? insets.bottom : 0) + 12,
+              backgroundColor: '#020617', // Consistent footer background
+            }}
+          >
             {/* Limit warnings */}
             {isPackCurieux && (
               <View className="mb-3 px-1">
@@ -824,7 +888,7 @@ export default function HomeScreen() {
                 <Text className="text-xs text-orange-400 font-medium text-center">
                   Limite de textes atteinte aujourd'hui. Vous pouvez encore générer des images !
                 </Text>
-              )}
+                )}
               {!isTextExhausted && isImagesExhausted && (
                 <Text className="text-xs text-orange-400 font-medium text-center">
                   Limite d'images atteinte aujourd'hui. Vous pouvez encore générer des textes !
@@ -836,7 +900,7 @@ export default function HomeScreen() {
                 </Text>
               )} */}
                 {isPackCurieux && !isFullyExhausted && (
-                  <Text className="text-xs text-white/40 text-center">
+                  <Text className="text-xs text-white/40 text-center mb-2">
                     Aujourd'hui: {textRemaining} textes et {imagesRemaining} images restants
                   </Text>
                 )}
@@ -850,54 +914,22 @@ export default function HomeScreen() {
                 loading={isPaymentLoading}
               />
             ) : (
-              <View
-                className="relative rounded-2xl border border-white/10 bg-slate-900 p-4"
-                style={{ opacity: isInputDisabled ? 0.6 : 1 }}
-              >
-                <TypingPlaceholder text={placeholderText} inputValue={inputValue} />
-                <TextInput
-                  value={inputValue}
-                  onChangeText={setInputValue}
-                  multiline
-                  maxLength={500}
-                  placeholderTextColor="transparent"
-                  className="mb-3 max-h-[100px] min-h-[24px] text-base text-white"
-                  editable={!isInputDisabled}
-                />
-
-                <View className="flex-row items-center justify-between">
-                  <View className="flex-row gap-3">
-                    <TouchableOpacity className="rounded-lg bg-white/5 p-2">
-                      <ImageIcon size={20} color={colors.text.secondary} />
-                    </TouchableOpacity>
-                    {/* Paperclip removed as per request */}
-                    {/* <TouchableOpacity
-                    className={`rounded-lg p-2 ${recording ? 'bg-red-500/20' : 'bg-white/5'}`}
-                    onPress={recording ? stopRecording : startRecording}>
-                    <Mic size={20} color={recording ? colors.status.error : colors.text.secondary} />
-                  </TouchableOpacity> */}
-                  </View>
-
-                  <TouchableOpacity
-                    onPress={handleSend}
-                    disabled={!inputValue.trim() || isGenerating || isInputDisabled}
-                    className="rounded-lg p-3 shadow-lg"
-                    style={{
-                      backgroundColor: colors.primary.main,
-                      opacity: (!inputValue.trim() || isGenerating || isInputDisabled) ? 0.4 : 1,
-                    }}>
-                    {isGenerating ? (
-                      <ActivityIndicator size="small" color="#000" />
-                    ) : (
-                      <Send size={20} color={colors.text.secondary} />
-                    )}
-                  </TouchableOpacity>
-                </View>
-              </View>
+              <ChatInput
+                inputValue={inputValue}
+                onChangeText={setInputValue}
+                selectedImage={selectedImage}
+                onImageSelect={pickImage}
+                onImageRemove={() => setSelectedImage(null)}
+                onSend={handleSend}
+                isGenerating={isGenerating}
+                isDisabled={isInputDisabled}
+                placeholderText={placeholderText}
+                maxLength={500}
+              />
             )}
           </View>
         </KeyboardAvoidingView>
-      </SafeAreaView>
+      </View>
       <GenericModal
         visible={modalVisible}
         type={modalType}

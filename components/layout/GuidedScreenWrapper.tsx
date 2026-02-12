@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { View, StyleSheet, TouchableOpacity, Animated, Text } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Animated, Text, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useRouter, useSegments } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArrowLeft } from 'lucide-react-native';
@@ -14,9 +14,11 @@ interface GuidedScreenWrapperProps {
   children: React.ReactNode;
   headerRight?: React.ReactNode;
   onBack?: () => void;
+  footer?: React.ReactNode;
+  scrollViewRef?: React.RefObject<ScrollView | null>;
 }
 
-export function GuidedScreenWrapper({ children, headerRight, onBack }: GuidedScreenWrapperProps) {
+export function GuidedScreenWrapper({ children, headerRight, onBack, footer, scrollViewRef }: GuidedScreenWrapperProps) {
   const router = useRouter();
   const segments = useSegments();
   const insets = useSafeAreaInsets();
@@ -50,7 +52,7 @@ export function GuidedScreenWrapper({ children, headerRight, onBack }: GuidedScr
   });
 
   return (
-    <BackgroundGradientOnboarding>
+    <BackgroundGradientOnboarding blurIntensity={80}>
       <View style={{ flex: 1 }}>
         {/* Absolute Header */}
         <Animated.View
@@ -87,18 +89,42 @@ export function GuidedScreenWrapper({ children, headerRight, onBack }: GuidedScr
         </Animated.View>
 
         {/* contentContainerStyle needs paddingBottom for safe area and paddingTop for header space */}
-        <Animated.ScrollView
-          onScroll={Animated.event(
-            [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-            { useNativeDriver: false } // backgroundColor interpolation requires false
-          )}
-          scrollEventThrottle={16}
-          contentContainerStyle={{
-            paddingTop: insets.top + 150, // Space for the header
-            paddingBottom: insets.bottom + 20,
-          }}>
-          {children}
-        </Animated.ScrollView>
+        {/* contentContainerStyle needs paddingBottom for safe area and paddingTop for header space */}
+        {footer ? (
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            style={{ flex: 1 }}
+          >
+            <Animated.ScrollView
+              ref={scrollViewRef as any} // Animated.ScrollView ref type mismatch workaround
+              onScroll={Animated.event(
+                [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+                { useNativeDriver: false } // backgroundColor interpolation requires false
+              )}
+              scrollEventThrottle={16}
+              contentContainerStyle={{
+                paddingTop: insets.top + 150, // Space for the header
+                paddingBottom: insets.bottom + 20,
+              }}>
+              {children}
+            </Animated.ScrollView>
+            {footer}
+          </KeyboardAvoidingView>
+        ) : (
+          <Animated.ScrollView
+            ref={scrollViewRef as any}
+            onScroll={Animated.event(
+              [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+              { useNativeDriver: false } // backgroundColor interpolation requires false
+            )}
+            scrollEventThrottle={16}
+            contentContainerStyle={{
+              paddingTop: insets.top + 150, // Space for the header
+              paddingBottom: insets.bottom + 20,
+            }}>
+            {children}
+          </Animated.ScrollView>
+        )}
       </View>
     </BackgroundGradientOnboarding>
   );

@@ -28,6 +28,7 @@ import * as MediaLibrary from 'expo-media-library';
 import * as Notifications from 'expo-notifications';
 import { Audio } from 'expo-av';
 import { Platform } from 'react-native';
+import * as Sharing from 'expo-sharing';
 
 export default function RootLayout() {
   const { user, isAuthenticated, hasFinishedOnboarding, isHydrated } = useAuthStore();
@@ -56,6 +57,20 @@ export default function RootLayout() {
       }
     };
     requestPermissions();
+  }, []);
+
+  useEffect(() => {
+    const subscription = Notifications.addNotificationResponseReceivedListener(response => {
+      const data = response.notification.request.content.data as { fileUri?: string };
+      const { fileUri } = data;
+      if (fileUri) {
+        Sharing.shareAsync(fileUri).catch(err => {
+          console.error('Failed to open file:', err);
+        });
+      }
+    });
+
+    return () => subscription.remove();
   }, []);
 
   useEffect(() => {

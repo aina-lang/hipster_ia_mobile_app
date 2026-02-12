@@ -33,6 +33,8 @@ import {
   ArrowRight,
   Briefcase,
   Leaf,
+  Globe,
+  Smartphone,
 } from 'lucide-react-native';
 
 const JOBS: { label: JobType; icon: any }[] = [
@@ -53,10 +55,11 @@ interface JobFunction {
 }
 
 const UNIVERSAL_FUNCTIONS: JobFunction[] = [
-  { label: 'Réseaux sociaux (image/texte)', category: 'Social', icon: Instagram },
-  { label: 'Site internet / SEO (texte)', category: 'Texte', icon: MousePointer2 },
-  { label: 'Flyers (image)', category: 'Image', icon: Ticket },
-  { label: 'Email / Newsletter (texte)', category: 'Texte', icon: Mail },
+  { label: 'Contenu réseaux', category: 'Social', icon: Smartphone },
+  { label: 'Visuel publicitaire', category: 'Image', icon: Palette },
+  { label: 'Texte marketing', category: 'Texte', icon: FileText },
+  { label: 'Page web / SEO', category: 'Texte', icon: Globe },
+  { label: 'Email', category: 'Texte', icon: Mail },
 ];
 
 const CREATOR_FUNCTIONS: JobFunction[] = [
@@ -118,7 +121,7 @@ export default function Step1JobScreen() {
           {/* Header */}
           <View style={styles.header}>
             <Text style={styles.title}>
-              {stage === 'job' ? 'Quel est votre métier ?' : 'Que souhaitez-vous faire ?'}
+              {stage === 'job' ? 'Quel est votre métier ?' : 'Que souhaitez-vous produire ?'}
             </Text>
             {stage === 'job' ? (
               <Text style={styles.subtitle}>Nous personnalisons l'expérience pour vous.</Text>

@@ -8,7 +8,7 @@ export interface WorkflowQuestion {
 
 // Generic workflow definitions for all job types
 export const GENERIC_WORKFLOWS: Record<string, WorkflowQuestion[]> = {
-  'Réseaux sociaux (image/texte)': [
+  'Contenu réseaux': [
     {
       id: 'platform',
       label: 'Plateforme principale',
@@ -22,7 +22,7 @@ export const GENERIC_WORKFLOWS: Record<string, WorkflowQuestion[]> = {
       options: ['Professionnel', 'Décontracté', 'Inspirant', 'Humoristique'],
     },
   ],
-  'Site internet / SEO (texte)': [
+  'Page web / SEO': [
     {
       id: 'section',
       label: 'Section du site',
@@ -46,7 +46,7 @@ export const GENERIC_WORKFLOWS: Record<string, WorkflowQuestion[]> = {
       options: ['Expert', 'Accueillant', 'Persuasif', 'Informatif'],
     },
   ],
-  'Flyers (image)': [
+  'Visuel publicitaire': [
     {
       id: 'type',
       label: 'Type de support',
@@ -79,7 +79,27 @@ export const GENERIC_WORKFLOWS: Record<string, WorkflowQuestion[]> = {
       options: ['Accrocheur', 'Professionnel', 'Inspirant', 'Urgent', 'Informatif'],
     },
   ],
-  'Email / Newsletter (texte)': [
+  'Texte marketing': [
+    {
+      id: 'target',
+      label: 'Public cible',
+      type: 'text',
+      placeholder: 'Ex: Jeunes entrepreneurs, parents...',
+    },
+    {
+      id: 'goal',
+      label: 'Objectif principal',
+      type: 'choice',
+      options: ['Vendre un produit', 'Présenter un service', 'Fidéliser les clients', 'Informer'],
+    },
+    {
+      id: 'tone',
+      label: 'Ton du texte',
+      type: 'choice',
+      options: ['Persuasif', 'Institutionnel', 'Amical', 'Urgent'],
+    },
+  ],
+  Email: [
     {
       id: 'frequency',
       label: 'Fréquence',
@@ -149,7 +169,7 @@ export const GENERIC_WORKFLOWS: Record<string, WorkflowQuestion[]> = {
 
 export const COIFFEUR_WORKFLOWS: Record<string, WorkflowQuestion[]> = {
   ...GENERIC_WORKFLOWS,
-  'Flyers (image)': [
+  'Visuel publicitaire': [
     {
       id: 'service',
       label: 'Service à mettre en avant',
@@ -162,13 +182,13 @@ export const COIFFEUR_WORKFLOWS: Record<string, WorkflowQuestion[]> = {
         'Soins Capillaires',
       ],
     },
-    ...GENERIC_WORKFLOWS['Flyers (image)'],
+    ...GENERIC_WORKFLOWS['Visuel publicitaire'],
   ],
 };
 
 export const RESTAURANT_WORKFLOWS: Record<string, WorkflowQuestion[]> = {
   ...GENERIC_WORKFLOWS,
-  'Flyers (image)': [
+  'Visuel publicitaire': [
     {
       id: 'cuisine',
       label: 'Type de cuisine',
@@ -188,13 +208,13 @@ export const RESTAURANT_WORKFLOWS: Record<string, WorkflowQuestion[]> = {
       type: 'choice',
       options: ['Aucun', 'Nouveau Menu', 'Brunch du Dimanche', 'Soirée Thématique', 'Happy Hour'],
     },
-    ...GENERIC_WORKFLOWS['Flyers (image)'],
+    ...GENERIC_WORKFLOWS['Visuel publicitaire'],
   ],
 };
 
 export const BOUTIQUE_WORKFLOWS: Record<string, WorkflowQuestion[]> = {
   ...GENERIC_WORKFLOWS,
-  'Flyers (image)': [
+  'Visuel publicitaire': [
     {
       id: 'category',
       label: 'Catégorie de produits',
@@ -213,13 +233,13 @@ export const BOUTIQUE_WORKFLOWS: Record<string, WorkflowQuestion[]> = {
       type: 'choice',
       options: ['Tout public', 'Femmes', 'Hommes', 'Enfants / Bébés', 'Jeunes adultes'],
     },
-    ...GENERIC_WORKFLOWS['Flyers (image)'],
+    ...GENERIC_WORKFLOWS['Visuel publicitaire'],
   ],
 };
 
 export const ARTISAN_WORKFLOWS: Record<string, WorkflowQuestion[]> = {
   ...GENERIC_WORKFLOWS,
-  'Flyers (image)': [
+  'Visuel publicitaire': [
     {
       id: 'trade',
       label: 'Votre spécialité',
@@ -239,13 +259,13 @@ export const ARTISAN_WORKFLOWS: Record<string, WorkflowQuestion[]> = {
       type: 'choice',
       options: ['Devis Gratuit', 'Dépannage Urgent', 'Rénovation Complète', 'Entretien Annuel'],
     },
-    ...GENERIC_WORKFLOWS['Flyers (image)'],
+    ...GENERIC_WORKFLOWS['Visuel publicitaire'],
   ],
 };
 
 export const SERVICE_LOCAL_WORKFLOWS: Record<string, WorkflowQuestion[]> = {
   ...GENERIC_WORKFLOWS,
-  'Flyers (image)': [
+  'Visuel publicitaire': [
     {
       id: 'service_type',
       label: 'Type de service',
@@ -258,7 +278,7 @@ export const SERVICE_LOCAL_WORKFLOWS: Record<string, WorkflowQuestion[]> = {
         'Livraison',
       ],
     },
-    ...GENERIC_WORKFLOWS['Flyers (image)'],
+    ...GENERIC_WORKFLOWS['Visuel publicitaire'],
   ],
 };
 

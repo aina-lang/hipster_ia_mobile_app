@@ -34,17 +34,16 @@ const extractErrorMessage = (error: any, defaultMessage: string) => {
 interface User {
   id: number;
   email: string;
-  name?: string;
-  avatarUrl?: string;
+  avatarUrl?: string; // Keep avatar if still used elsewhere
   isEmailVerified: boolean;
-  profiles?: {
-    client?: any;
-    employee?: any;
-  };
   isSetupComplete?: boolean;
   job?: string;
-  brandingColor?: string;
-  hasUsedTrial?: boolean;
+  subscriptionStartDate?: string;
+  subscriptionEndDate?: string;
+  stripeCustomerId?: string;
+  stripeSubscriptionId?: string;
+  subscriptionStatus?: string;
+  planType?: string;
   promptsLimit?: number;
   imagesLimit?: number;
   videosLimit?: number;
@@ -54,25 +53,7 @@ interface User {
   imagesUsed?: number;
   videosUsed?: number;
   audioUsed?: number;
-  subscriptionStartDate?: string;
-  subscriptionEndDate?: string;
-  stripeCustomerId?: string;
-  stripeSubscriptionId?: string;
-  subscriptionStatus?: string;
-  planType?: string;
-  professionalEmail?: string;
-  professionalAddress?: string;
-  city?: string;
-  postalCode?: string;
-  country?: string;
-  professionalPhone?: string;
-  professionalPhone2?: string;
-  siret?: string;
-  vatNumber?: string;
-  bankDetails?: string;
-  websiteUrl?: string;
-  logoUrl?: string;
-  type?: 'ai' | 'standard'; // To distinguish between standard and ai users
+  type?: 'ai' | 'standard';
 }
 
 interface AuthState {
@@ -92,12 +73,11 @@ interface AuthState {
   logout: () => Promise<void>;
   clearError: () => void;
   updateUser: (userData: Partial<User>) => void;
-  updateProfile: (data: { name?: string; avatarUrl?: string }) => Promise<void>;
+  updateProfile: (data: { avatarUrl?: string }) => Promise<void>;
   updateAiProfile: (data: Partial<User>) => Promise<void>;
   changePassword: (data: any) => Promise<void>;
   finishOnboarding: () => void;
   uploadAvatar: (imageUri: string) => Promise<string>;
-  uploadLogo: (profileId: number, imageUri: string) => Promise<string>;
   aiRefreshUser: () => Promise<void>;
 }
 
@@ -145,7 +125,7 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      updateProfile: async (data: { name?: string; avatarUrl?: string }) => {
+      updateProfile: async (data: { avatarUrl?: string }) => {
         set({ isLoading: true, error: null });
         try {
           // Call API to update profile
@@ -206,52 +186,7 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      uploadLogo: async (profileId: number, imageUri: string): Promise<string> => {
-        set({ isLoading: true, error: null });
-        try {
-          const formData = new FormData();
-          const filename = imageUri.split('/').pop() || 'logo.jpg';
-          const match = /\.(\w+)$/.exec(filename);
-          const type = match ? `image/${match[1]}` : `image`;
-
-          formData.append('file', {
-            uri: imageUri,
-            name: filename,
-            type,
-          } as any);
-
-          const { data } = await api.post(`/profiles/ai/${profileId}/logo`, formData, {
-            headers: {
-              'Content-Type': 'multipart/form-data',
-            },
-          });
-
-          const logoUrl = data.data.logoUrl;
-          const fullLogoUrl = logoUrl.startsWith('http')
-            ? logoUrl
-            : `${BASE_URL.replace('/api', '')}${logoUrl}`;
-
-          // Update local state
-          const currentUser = get().user;
-          if (currentUser && currentUser.type === 'ai' && currentUser.id === profileId) {
-            set({
-              user: {
-                ...currentUser,
-                logoUrl: fullLogoUrl,
-              },
-            });
-          }
-
-          set({ isLoading: false });
-          return fullLogoUrl;
-        } catch (error: any) {
-          const message = extractErrorMessage(error, "Erreur lors de l'upload du logo.");
-          set({ error: message, isLoading: false });
-          throw error;
-        }
-      },
-
-      updateAiProfile: async (data) => {
+      updateAiProfile: async (data: any) => {
         set({ isLoading: true, error: null });
         try {
           const currentUser = get().user;
@@ -265,11 +200,6 @@ export const useAuthStore = create<AuthState>()(
           const response = await api.patch(`/profiles/ai/${currentUser.id}`, data);
           const updatedData = response.data.data;
           console.log('[AuthStore] AI profile updated successfully:', updatedData);
-
-          // Map relative paths if necessary
-          if (updatedData.logoUrl && !updatedData.logoUrl.startsWith('http')) {
-            updatedData.logoUrl = `${BASE_URL.replace('/api', '')}${updatedData.logoUrl}`;
-          }
 
           set({
             user: {

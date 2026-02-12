@@ -28,6 +28,9 @@ export type ContextType =
 
 export type CreationCategory = 'Texte' | 'Image' | 'Document' | 'Social';
 
+export type VisualStyle = 'Luxe cinématique (foncé)' | 'Luxe minimal (clair)' | 'Monochrome';
+export type TextIntention = 'Promotion' | 'Présentation' | 'Storytelling' | 'Conversion directe';
+
 interface CreationState {
   // Selection state
   selectedJob: JobType | null;
@@ -37,6 +40,11 @@ interface CreationState {
   selectedTone: string | null;
   selectedTarget: string | null;
   workflowAnswers: Record<string, string>;
+
+  // Conditional flow state
+  selectedStyle: VisualStyle | null;
+  selectedIntention: TextIntention | null;
+  uploadedImage: string | null;
 
   // Input state
   userQuery: string;
@@ -49,6 +57,9 @@ interface CreationState {
   setTarget: (target: string) => void;
   setWorkflowAnswer: (key: string, value: string) => void;
   setQuery: (query: string) => void;
+  setStyle: (style: VisualStyle) => void;
+  setIntention: (intention: TextIntention) => void;
+  setUploadedImage: (uri: string | null) => void;
   reset: () => void;
 }
 
@@ -61,6 +72,9 @@ export const useCreationStore = create<CreationState>((set) => ({
   selectedTarget: null,
   workflowAnswers: {},
   userQuery: '',
+  selectedStyle: null,
+  selectedIntention: null,
+  uploadedImage: null,
 
   setJob: (job) => set({ selectedJob: job }),
   setFunction: (fn, cat) => set({ selectedFunction: fn, selectedCategory: cat }),
@@ -70,6 +84,9 @@ export const useCreationStore = create<CreationState>((set) => ({
   setWorkflowAnswer: (key, value) =>
     set((state) => ({ workflowAnswers: { ...state.workflowAnswers, [key]: value } })),
   setQuery: (query) => set({ userQuery: query }),
+  setStyle: (style) => set({ selectedStyle: style }),
+  setIntention: (intention) => set({ selectedIntention: intention }),
+  setUploadedImage: (uri) => set({ uploadedImage: uri }),
 
   reset: () =>
     set({
@@ -81,5 +98,8 @@ export const useCreationStore = create<CreationState>((set) => ({
       selectedTarget: null,
       workflowAnswers: {},
       userQuery: '',
+      selectedStyle: null,
+      selectedIntention: null,
+      uploadedImage: null,
     }),
 }));

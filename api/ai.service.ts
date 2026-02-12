@@ -1,7 +1,7 @@
 import { api } from './client';
 
 export type TextGenerationType = 'blog' | 'social' | 'ad' | 'email' | 'video' | 'text' | 'texte';
-export type ImageStyle = 'realistic' | 'cartoon' | 'sketch';
+export type ImageStyle = 'realistic' | 'cartoon' | 'sketch' | 'Monochrome';
 export type DocumentType = 'legal' | 'business';
 export type GenerationType = 'text' | 'image' | 'video' | 'audio' | 'document' | 'chat';
 

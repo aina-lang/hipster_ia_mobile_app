@@ -1,0 +1,5 @@
+api/configService.ts(20,7): error TS2322: Type 'AppConfig | null' is not assignable to type 'AppConfig'.
+  Type 'null' is not assignable to type 'AppConfig'.
+app/(drawer)/index.tsx(924,24): error TS2304: Cannot find name 'X'.
+app/(guided)/step3-result.tsx(1172,35): error TS2339: Property 'regenerateSection' does not exist on type '{ container: { flex: number; }; content: { paddingHorizontal: number; }; finishButton: { flexDirection: "row"; alignItems: "center"; gap: number; backgroundColor: string; paddingHorizontal: number; paddingVertical: number; borderRadius: number; }; ... 90 more ...; imageSeparator: { ...; }; }'.
+app/(tabs)/index.tsx(16,48): error TS2339: Property 'firstName' does not exist on type 'User'.
