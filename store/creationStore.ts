@@ -28,7 +28,7 @@ export type ContextType =
 
 export type CreationCategory = 'Texte' | 'Image' | 'Document' | 'Social';
 
-export type VisualStyle = 'Luxe cinématique (foncé)' | 'Luxe minimal (clair)' | 'Monochrome';
+export type VisualStyle = 'Monochrome' | 'Hero Studio' | 'Minimal Studio';
 export type TextIntention = 'Promotion' | 'Présentation' | 'Storytelling' | 'Conversion directe';
 
 interface CreationState {

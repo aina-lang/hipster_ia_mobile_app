@@ -124,7 +124,6 @@ export default function Step3ResultScreen() {
   const [modalTitle, setModalTitle] = useState('');
   const [modalMessage, setModalMessage] = useState('');
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
-  const [negativePrompt, setNegativePrompt] = useState('');
 
   // Animation for skeleton text
   const [pulseAnim] = useState(new Animated.Value(0.3));
@@ -480,8 +479,7 @@ export default function Step3ResultScreen() {
 
   const generateContent = async (
     overrideQuery?: string,
-    mode: 'text' | 'image' | 'both' = 'both',
-    manualNegativePrompt?: string
+    mode: 'text' | 'image' | 'both' = 'both'
   ) => {
     console.log('generateContent');
 
@@ -522,8 +520,18 @@ export default function Step3ResultScreen() {
         return;
       }
 
-      const currentNegativePrompt =
-        manualNegativePrompt !== undefined ? manualNegativePrompt : negativePrompt;
+      let finalReferenceImage = uploadedImage;
+      if (uploadedImage && (uploadedImage.startsWith('file://') || uploadedImage.startsWith('/') || uploadedImage.startsWith('content://'))) {
+        try {
+          console.log('[Step3] Converting image to base64:', uploadedImage);
+          const base64 = await FileSystem.readAsStringAsync(uploadedImage, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+          finalReferenceImage = base64; // Send raw base64, backend will prefix if needed or handle as buffer
+        } catch (e) {
+          console.error('[Step3] Error converting image to base64:', e);
+        }
+      }
 
       const params = {
         job: selectedJob,
@@ -534,7 +542,7 @@ export default function Step3ResultScreen() {
         category: selectedCategory,
         style: selectedStyle,
         intention: selectedIntention,
-        reference_image: uploadedImage,
+        reference_image: finalReferenceImage,
         instruction_speciale: 'Génère UNIQUEMENT la section demandée.',
       };
 
@@ -552,15 +560,14 @@ export default function Step3ResultScreen() {
         setGenerationId(socialResponse.generationId);
       } else if (selectedCategory === 'Image') {
         if (selectedFunction && selectedFunction.includes('Flyers')) {
-          const flyerResult = await AiService.generateFlyer(params, currentNegativePrompt);
+          const flyerResult = await AiService.generateFlyer(params);
           setImageUrl(flyerResult.url);
           setResult(flyerResult.url);
           setGenerationId(flyerResult.generationId);
         } else {
           const resultData = await AiService.generateImage(
             params,
-            'realistic',
-            currentNegativePrompt
+            (selectedStyle as any) || 'realistic'
           );
           setResult(resultData.url);
           setImageUrl(resultData.url);
@@ -572,7 +579,7 @@ export default function Step3ResultScreen() {
         setGenerationId(resultData.generationId);
       } else if (selectedCategory === 'Texte') {
         if (selectedFunction && selectedFunction.includes('Flyers')) {
-          const flyerResult = await AiService.generateFlyer(params, currentNegativePrompt);
+          const flyerResult = await AiService.generateFlyer(params);
           setImageUrl(flyerResult.url);
           setResult(flyerResult.url);
           setGenerationId(flyerResult.generationId);
@@ -777,7 +784,17 @@ export default function Step3ResultScreen() {
         throw new Error('Download failed');
       }
 
-      const asset = await MediaLibrary.createAssetAsync(downloadRes.uri);
+      let asset;
+      try {
+        asset = await MediaLibrary.createAssetAsync(downloadRes.uri);
+      } catch (assetError: any) {
+        console.warn('MediaLibrary.createAssetAsync failed:', assetError);
+        // Fallback to sharing
+        setModalVisible(false);
+        await Sharing.shareAsync(downloadRes.uri, { dialogTitle: 'Enregistrer l\'image' });
+        showModal('info', 'Astuce', "L'enregistrement direct a échoué. Utilisez le menu de partage pour sauvegarder l'image dans vos photos.");
+        return;
+      }
 
       try {
         const album = await MediaLibrary.getAlbumAsync('Hipster');

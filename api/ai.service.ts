@@ -1,7 +1,7 @@
 import { api } from './client';
 
 export type TextGenerationType = 'blog' | 'social' | 'ad' | 'email' | 'video' | 'text' | 'texte';
-export type ImageStyle = 'realistic' | 'cartoon' | 'sketch' | 'Monochrome';
+export type ImageStyle = 'Monochrome' | 'Hero Studio' | 'Minimal Studio';
 export type DocumentType = 'legal' | 'business';
 export type GenerationType = 'text' | 'image' | 'video' | 'audio' | 'document' | 'chat';
 
@@ -30,9 +30,9 @@ export const AiService = {
     return response.data.data;
   },
 
-  generateImage: async (params: any, style: ImageStyle, negativePrompt?: string) => {
+  generateImage: async (params: any, style: ImageStyle) => {
     console.log('[AiService] generateImage:', style, params.job);
-    const response = await api.post('/ai/image', { params, style, negativePrompt });
+    const response = await api.post('/ai/image', { params, style });
     console.log('[AiService] generateImage result URL:', response.data.data?.url);
     return response.data.data;
   },
@@ -51,9 +51,9 @@ export const AiService = {
     return response.data.data;
   },
 
-  generateFlyer: async (params: any, negativePrompt?: string) => {
+  generateFlyer: async (params: any) => {
     console.log('[AiService] generateFlyer');
-    const response = await api.post('/ai/flyer', { params, negativePrompt });
+    const response = await api.post('/ai/flyer', { params });
     console.log('[AiService] generateFlyer result URL:', response.data.data?.url);
     return response.data.data;
   },

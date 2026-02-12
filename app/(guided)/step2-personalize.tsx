@@ -79,7 +79,7 @@ const VISUAL_STYLES = [
   },
 
   {
-    label: 'Minimal Studio ',
+    label: 'Minimal Studio',
     icon: Sun,
     description: 'Fond clair, composition épurée.\nModerne, haut de gamme, ultra lisible.',
     image: illus4,
@@ -241,10 +241,6 @@ export default function Step2PersonalizeScreen() {
         Alert.alert('Style requis', 'Veuillez choisir un style artistique.');
         return;
       }
-      if (!uploadedImage) {
-        Alert.alert('Image requise', 'Veuillez sélectionner une image.');
-        return;
-      }
     } else if (selectedCategory === 'Texte') {
       // Text flow: require intention
       if (!selectedIntention) {
@@ -282,65 +278,88 @@ export default function Step2PersonalizeScreen() {
         {/* Questions */}
 
 
-        {/* CONDITIONAL FLOW: Visual Style Selection */}
+        {/* CONDITIONAL FLOW: Visual Style Selection & Image Upload */}
         {(selectedCategory === 'Image' || selectedCategory === 'Social') && (
           <View style={{ marginBottom: 32 }}>
-            <Text style={styles.sectionTitle}>Choisissez le style artistique</Text>
-            <View style={{ flexDirection: 'column', gap: 16, marginTop: 16 }}>
-              {VISUAL_STYLES.map((style) => {
-                const isSelected = selectedStyle === style.label;
-                return (
-                  <TouchableOpacity
-                    key={style.label}
-                    style={[
-                      styles.styleCard,
-                      // Removed conditional border
-                    ]}
-                    onPress={() => {
-                      setStyle(style.label as any);
-                      setTimeout(() => {
-                        router.push('/(guided)/step3-result');
-                      }, 100);
-                    }}
-                    activeOpacity={0.9}
-                  >
-                    <Image
-                      source={
-                        typeof style.image === 'string'
-                          ? { uri: style.image }
-                          : style.image
-                      }
-                      style={styles.styleCardImage}
-                      resizeMode='cover'
-                    />
+            <Text style={styles.sectionTitle}>Image de référence (Optionnel)</Text>
+            <Text style={[styles.cardDescription, { marginBottom: 12 }]}>
+              Ajoutez une photo pour guider l'IA sur la structure ou la composition souhaitée.
+            </Text>
 
-                    {/* Content always visible unless selected? Or just overlay? */}
-                    <View style={styles.styleCardContent}>
-                      <Text style={styles.styleCardLabel}>{style.label}</Text>
-                      <Text style={styles.styleCardDescription} numberOfLines={2}>
-                        {style.description}
-                      </Text>
-                    </View>
+            {!uploadedImage ? (
+              <TouchableOpacity
+                style={styles.uploadButton}
+                onPress={pickImage}
+                activeOpacity={0.7}
+              >
+                <Upload size={32} color={colors.primary.main} />
+                <Text style={styles.uploadText}>Choisir une image</Text>
+                <Text style={styles.uploadHint}>JPG, PNG supportés</Text>
+              </TouchableOpacity>
+            ) : (
+              <View style={styles.imagePreviewContainer}>
+                <Image source={{ uri: uploadedImage }} style={styles.imagePreview} />
+                <TouchableOpacity
+                  style={styles.removeImageButton}
+                  onPress={() => setUploadedImage(null)}
+                >
+                  <X size={20} color="#FFFFFF" />
+                </TouchableOpacity>
+              </View>
+            )}
 
-                    {/* Selected State: Blur Overlay */}
-                    {isSelected && (
-                      <BlurView
-                        intensity={20}
-                        tint="light"
-                        style={StyleSheet.absoluteFill}
-                      >
-                        <View style={styles.selectedOverlayContent}>
-                          <View style={styles.styleCardCheck}>
-                            <View style={styles.styleCardCheckInner} />
+            <View style={{ marginTop: 32 }}>
+              <Text style={styles.sectionTitle}>Choisissez le style artistique</Text>
+              <View style={{ flexDirection: 'column', gap: 16, marginTop: 16 }}>
+                {VISUAL_STYLES.map((style) => {
+                  const isSelected = selectedStyle === style.label;
+                  return (
+                    <TouchableOpacity
+                      key={style.label}
+                      style={styles.styleCard}
+                      onPress={() => {
+                        setStyle(style.label as any);
+                        setTimeout(() => {
+                          router.push('/(guided)/step3-result');
+                        }, 100);
+                      }}
+                      activeOpacity={0.9}
+                    >
+                      <Image
+                        source={
+                          typeof style.image === 'string'
+                            ? { uri: style.image }
+                            : style.image
+                        }
+                        style={styles.styleCardImage}
+                        resizeMode='cover'
+                      />
+
+                      <View style={styles.styleCardContent}>
+                        <Text style={styles.styleCardLabel}>{style.label}</Text>
+                        <Text style={styles.styleCardDescription} numberOfLines={2}>
+                          {style.description}
+                        </Text>
+                      </View>
+
+                      {isSelected && (
+                        <BlurView
+                          intensity={20}
+                          tint="light"
+                          style={StyleSheet.absoluteFill}
+                        >
+                          <View style={styles.selectedOverlayContent}>
+                            <View style={styles.styleCardCheck}>
+                              <View style={styles.styleCardCheckInner} />
+                            </View>
                           </View>
-                        </View>
-                      </BlurView>
-                    )}
-                  </TouchableOpacity>
-                );
-              })}
+                        </BlurView>
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
             </View>
-
           </View>
         )}
         {/* CONDITIONAL FLOW: Text Intention Selection */}
