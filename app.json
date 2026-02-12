@@ -22,6 +22,12 @@
         {
           "microphonePermission": "Allow $(PRODUCT_NAME) to access your microphone."
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Cette application accède à vos photos pour vous permettre de les personnaliser avec l'IA."
+        }
       ]
     ],
     "orientation": "portrait",
