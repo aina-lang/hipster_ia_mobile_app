@@ -33,22 +33,40 @@ export const AiService = {
 
   generateImage: async (params: any, style: ImageStyle) => {
     console.log('[AiService] generateImage:', style, params.job);
-    let referenceImage = params.reference_image;
+    const referenceImage = params.reference_image;
 
+    // Create FormData for multipart/form-data upload
+    const formData = new FormData();
+
+    // If we have a local image file, append it as binary
     if (
       referenceImage &&
       (referenceImage.startsWith('file://') ||
         referenceImage.startsWith('/') ||
         referenceImage.startsWith('content://'))
     ) {
-      console.log('[AiService] Converting local image to base64...');
-      const base64 = await new FileSystem.File(referenceImage).base64();
-      referenceImage = `data:image/jpeg;base64,${base64}`;
+      console.log('[AiService] Appending image as binary file...');
+      // @ts-ignore - React Native FormData supports file URIs
+      formData.append('image', {
+        uri: referenceImage,
+        type: 'image/jpeg',
+        name: 'reference.jpg',
+      });
+
+      // Remove reference_image from params since we're sending it as a file
+      const { reference_image, ...restParams } = params;
+      formData.append('params', JSON.stringify(restParams));
+    } else {
+      // No image or already base64 (legacy support)
+      formData.append('params', JSON.stringify(params));
     }
 
-    const response = await api.post('/ai/image', {
-      params: { ...params, reference_image: referenceImage },
-      style,
+    formData.append('style', style);
+
+    const response = await api.post('/ai/image', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
     });
     console.log('[AiService] generateImage result URL:', response.data.data?.url);
     return response.data.data;
@@ -63,7 +81,9 @@ export const AiService = {
 
   generateSocial: async (params: any) => {
     console.log('[AiService] generateSocial:', params.job);
-    let referenceImage = params.reference_image;
+    const referenceImage = params.reference_image;
+
+    const formData = new FormData();
 
     if (
       referenceImage &&
@@ -71,13 +91,24 @@ export const AiService = {
         referenceImage.startsWith('/') ||
         referenceImage.startsWith('content://'))
     ) {
-      console.log('[AiService] Converting social image to base64...');
-      const base64 = await new FileSystem.File(referenceImage).base64();
-      referenceImage = `data:image/jpeg;base64,${base64}`;
+      console.log('[AiService] Appending social image as binary file...');
+      // @ts-ignore
+      formData.append('image', {
+        uri: referenceImage,
+        type: 'image/jpeg',
+        name: 'reference.jpg',
+      });
+
+      const { reference_image, ...restParams } = params;
+      formData.append('params', JSON.stringify(restParams));
+    } else {
+      formData.append('params', JSON.stringify(params));
     }
 
-    const response = await api.post('/ai/social', {
-      params: { ...params, reference_image: referenceImage },
+    const response = await api.post('/ai/social', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
     });
     console.log('[AiService] generateSocial result keys:', Object.keys(response.data.data || {}));
     return response.data.data;
@@ -85,7 +116,9 @@ export const AiService = {
 
   generateFlyer: async (params: any) => {
     console.log('[AiService] generateFlyer');
-    let referenceImage = params.reference_image;
+    const referenceImage = params.reference_image;
+
+    const formData = new FormData();
 
     if (
       referenceImage &&
@@ -93,13 +126,24 @@ export const AiService = {
         referenceImage.startsWith('/') ||
         referenceImage.startsWith('content://'))
     ) {
-      console.log('[AiService] Converting flyer image to base64...');
-      const base64 = await new FileSystem.File(referenceImage).base64();
-      referenceImage = `data:image/jpeg;base64,${base64}`;
+      console.log('[AiService] Appending flyer image as binary file...');
+      // @ts-ignore
+      formData.append('image', {
+        uri: referenceImage,
+        type: 'image/jpeg',
+        name: 'reference.jpg',
+      });
+
+      const { reference_image, ...restParams } = params;
+      formData.append('params', JSON.stringify(restParams));
+    } else {
+      formData.append('params', JSON.stringify(params));
     }
 
-    const response = await api.post('/ai/flyer', {
-      params: { ...params, reference_image: referenceImage },
+    const response = await api.post('/ai/flyer', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
     });
     console.log('[AiService] generateFlyer result URL:', response.data.data?.url);
     return response.data.data;
