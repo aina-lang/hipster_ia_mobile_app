@@ -1,3 +1,4 @@
+import * as FileSystem from 'expo-file-system';
 import { api } from './client';
 
 export type TextGenerationType = 'blog' | 'social' | 'ad' | 'email' | 'video' | 'text' | 'texte';
@@ -32,7 +33,7 @@ export const AiService = {
 
   generateImage: async (params: any, style: ImageStyle) => {
     console.log('[AiService] generateImage:', style, params.job);
-    const referenceImage = params.reference_image;
+    let referenceImage = params.reference_image;
 
     if (
       referenceImage &&
@@ -40,31 +41,15 @@ export const AiService = {
         referenceImage.startsWith('/') ||
         referenceImage.startsWith('content://'))
     ) {
-      // Multipart upload
-      const formData = new FormData();
-      formData.append('style', style);
-
-      // Extract filename from URI
-      const filename = referenceImage.split('/').pop() || 'upload.jpg';
-      const match = /\.(\w+)$/.exec(filename);
-      const type = match ? `image/${match[1]}` : `image`;
-
-      formData.append('image', {
-        uri: referenceImage,
-        name: filename,
-        type: type === 'image/jpg' ? 'image/jpeg' : type,
-      } as any);
-
-      // Send other params as a JSON string
-      formData.append('params', JSON.stringify(params));
-
-      const response = await api.post('/ai/image', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      return response.data;
+      console.log('[AiService] Converting local image to base64...');
+      const base64 = await new FileSystem.File(referenceImage).base64();
+      referenceImage = `data:image/jpeg;base64,${base64}`;
     }
 
-    const response = await api.post('/ai/image', { params, style });
+    const response = await api.post('/ai/image', {
+      params: { ...params, reference_image: referenceImage },
+      style,
+    });
     console.log('[AiService] generateImage result URL:', response.data.data?.url);
     return response.data.data;
   },
@@ -78,7 +63,7 @@ export const AiService = {
 
   generateSocial: async (params: any) => {
     console.log('[AiService] generateSocial:', params.job);
-    const referenceImage = params.reference_image;
+    let referenceImage = params.reference_image;
 
     if (
       referenceImage &&
@@ -86,32 +71,21 @@ export const AiService = {
         referenceImage.startsWith('/') ||
         referenceImage.startsWith('content://'))
     ) {
-      const formData = new FormData();
-      const filename = referenceImage.split('/').pop() || 'upload.jpg';
-      const match = /\.(\w+)$/.exec(filename);
-      const type = match ? `image/${match[1]}` : `image`;
-
-      formData.append('image', {
-        uri: referenceImage,
-        name: filename,
-        type: type === 'image/jpg' ? 'image/jpeg' : type,
-      } as any);
-      formData.append('params', JSON.stringify(params));
-
-      const response = await api.post('/ai/social', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      return response.data;
+      console.log('[AiService] Converting social image to base64...');
+      const base64 = await new FileSystem.File(referenceImage).base64();
+      referenceImage = `data:image/jpeg;base64,${base64}`;
     }
 
-    const response = await api.post('/ai/social', { params });
+    const response = await api.post('/ai/social', {
+      params: { ...params, reference_image: referenceImage },
+    });
     console.log('[AiService] generateSocial result keys:', Object.keys(response.data.data || {}));
     return response.data.data;
   },
 
   generateFlyer: async (params: any) => {
     console.log('[AiService] generateFlyer');
-    const referenceImage = params.reference_image;
+    let referenceImage = params.reference_image;
 
     if (
       referenceImage &&
@@ -119,25 +93,14 @@ export const AiService = {
         referenceImage.startsWith('/') ||
         referenceImage.startsWith('content://'))
     ) {
-      const formData = new FormData();
-      const filename = referenceImage.split('/').pop() || 'upload.jpg';
-      const match = /\.(\w+)$/.exec(filename);
-      const type = match ? `image/${match[1]}` : `image`;
-
-      formData.append('image', {
-        uri: referenceImage,
-        name: filename,
-        type: type === 'image/jpg' ? 'image/jpeg' : type,
-      } as any);
-      formData.append('params', JSON.stringify(params));
-
-      const response = await api.post('/ai/flyer', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      return response.data;
+      console.log('[AiService] Converting flyer image to base64...');
+      const base64 = await new FileSystem.File(referenceImage).base64();
+      referenceImage = `data:image/jpeg;base64,${base64}`;
     }
 
-    const response = await api.post('/ai/flyer', { params });
+    const response = await api.post('/ai/flyer', {
+      params: { ...params, reference_image: referenceImage },
+    });
     console.log('[AiService] generateFlyer result URL:', response.data.data?.url);
     return response.data.data;
   },

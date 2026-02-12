@@ -13,7 +13,7 @@ import {
   ScrollView,
   Share as RNShare,
 } from 'react-native';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import * as Clipboard from 'expo-clipboard';
 import * as Notifications from 'expo-notifications';
@@ -636,11 +636,11 @@ export default function Step3ResultScreen() {
       const downloadUrl = `${apiBaseUrl}/ai/export/${generationId}?format=${format}&model=${selectedModel}`;
       const extension = format === 'excel' ? 'xlsx' : format === 'image' ? 'png' : format;
       const fileName = `Hipster_${generationId}_${Date.now()}.${extension}`;
-      const fileUri = `${(FileSystem as any).documentDirectory}${fileName}`;
+      const fileUri = `${FileSystem.documentDirectory}${fileName}`;
 
       const token = await AsyncStorage.getItem('access_token');
 
-      const downloadRes = await (FileSystem as any).downloadAsync(downloadUrl, fileUri, {
+      const downloadRes = await FileSystem.downloadAsync(downloadUrl, fileUri, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -666,7 +666,7 @@ export default function Step3ResultScreen() {
         // Pour les autres fichiers ou si MediaLibrary échoue
         if (Platform.OS === 'android') {
           try {
-            const contentUri = await (FileSystem as any).getContentUriAsync(downloadRes.uri);
+            const contentUri = await FileSystem.getContentUriAsync(downloadRes.uri);
             await IntentLauncher.startActivityAsync('android.intent.action.VIEW', {
               data: contentUri,
               flags: 1,
@@ -744,8 +744,8 @@ export default function Step3ResultScreen() {
           try {
             showModal('loading', 'Préparation', "Téléchargement de l'image pour partage...");
             const filename = `Hipster-${Date.now()}.png`;
-            const fileUri = `${(FileSystem as any).cacheDirectory}${filename}`;
-            const downloadRes = await (FileSystem as any).downloadAsync(imageUrl, fileUri);
+            const fileUri = `${FileSystem.cacheDirectory}${filename}`;
+            const downloadRes = await FileSystem.downloadAsync(imageUrl, fileUri);
             setModalVisible(false);
             if (downloadRes.status === 200) {
               await Sharing.shareAsync(downloadRes.uri, { dialogTitle: 'Enregistrer l\'image' });
@@ -765,11 +765,11 @@ export default function Step3ResultScreen() {
       showModal('loading', 'Enregistrement...', 'Sauvegarde dans votre galerie.');
 
       const filename = `Hipster-${Date.now()}.png`;
-      const cacheDir = (FileSystem as any).cacheDirectory;
+      const cacheDir = FileSystem.cacheDirectory;
       if (!cacheDir) throw new Error('Cache directory not available');
       const fileUri = cacheDir.endsWith('/') ? `${cacheDir}${filename}` : `${cacheDir}/${filename}`;
 
-      const downloadRes = await (FileSystem as any).downloadAsync(imageUrl, fileUri);
+      const downloadRes = await FileSystem.downloadAsync(imageUrl, fileUri);
 
       if (downloadRes.status !== 200) {
         throw new Error('Download failed');
