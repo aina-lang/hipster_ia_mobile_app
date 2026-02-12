@@ -534,7 +534,6 @@ export default function Step3ResultScreen() {
         style: selectedStyle,
         intention: selectedIntention,
         reference_image: finalReferenceImage,
-        instruction_speciale: 'Génère UNIQUEMENT la section demandée.',
       };
 
       console.log('[DEBUG] Generating Content with params:', JSON.stringify(params, null, 2));
