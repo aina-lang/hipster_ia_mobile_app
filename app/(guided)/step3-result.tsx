@@ -13,7 +13,7 @@ import {
   ScrollView,
   Share as RNShare,
 } from 'react-native';
-import * as FileSystem from 'expo-file-system/legacy';
+import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import * as Clipboard from 'expo-clipboard';
 import * as Notifications from 'expo-notifications';
@@ -521,17 +521,8 @@ export default function Step3ResultScreen() {
       }
 
       let finalReferenceImage = uploadedImage;
-      if (uploadedImage && (uploadedImage.startsWith('file://') || uploadedImage.startsWith('/') || uploadedImage.startsWith('content://'))) {
-        try {
-          console.log('[Step3] Converting image to base64:', uploadedImage);
-          const base64 = await FileSystem.readAsStringAsync(uploadedImage, {
-            encoding: FileSystem.EncodingType.Base64,
-          });
-          finalReferenceImage = base64; // Send raw base64, backend will prefix if needed or handle as buffer
-        } catch (e) {
-          console.error('[Step3] Error converting image to base64:', e);
-        }
-      }
+      // No longer converting to base64 here. AiService will handle the multipart upload if a URI is detected.
+
 
       const params = {
         job: selectedJob,

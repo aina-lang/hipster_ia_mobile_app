@@ -32,6 +32,38 @@ export const AiService = {
 
   generateImage: async (params: any, style: ImageStyle) => {
     console.log('[AiService] generateImage:', style, params.job);
+    const referenceImage = params.reference_image;
+
+    if (
+      referenceImage &&
+      (referenceImage.startsWith('file://') ||
+        referenceImage.startsWith('/') ||
+        referenceImage.startsWith('content://'))
+    ) {
+      // Multipart upload
+      const formData = new FormData();
+      formData.append('style', style);
+
+      // Extract filename from URI
+      const filename = referenceImage.split('/').pop() || 'upload.jpg';
+      const match = /\.(\w+)$/.exec(filename);
+      const type = match ? `image/${match[1]}` : `image`;
+
+      formData.append('image', {
+        uri: referenceImage,
+        name: filename,
+        type: type === 'image/jpg' ? 'image/jpeg' : type,
+      } as any);
+
+      // Send other params as a JSON string
+      formData.append('params', JSON.stringify(params));
+
+      const response = await api.post('/ai/image', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      return response.data;
+    }
+
     const response = await api.post('/ai/image', { params, style });
     console.log('[AiService] generateImage result URL:', response.data.data?.url);
     return response.data.data;
@@ -46,6 +78,32 @@ export const AiService = {
 
   generateSocial: async (params: any) => {
     console.log('[AiService] generateSocial:', params.job);
+    const referenceImage = params.reference_image;
+
+    if (
+      referenceImage &&
+      (referenceImage.startsWith('file://') ||
+        referenceImage.startsWith('/') ||
+        referenceImage.startsWith('content://'))
+    ) {
+      const formData = new FormData();
+      const filename = referenceImage.split('/').pop() || 'upload.jpg';
+      const match = /\.(\w+)$/.exec(filename);
+      const type = match ? `image/${match[1]}` : `image`;
+
+      formData.append('image', {
+        uri: referenceImage,
+        name: filename,
+        type: type === 'image/jpg' ? 'image/jpeg' : type,
+      } as any);
+      formData.append('params', JSON.stringify(params));
+
+      const response = await api.post('/ai/social', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      return response.data;
+    }
+
     const response = await api.post('/ai/social', { params });
     console.log('[AiService] generateSocial result keys:', Object.keys(response.data.data || {}));
     return response.data.data;
@@ -53,6 +111,32 @@ export const AiService = {
 
   generateFlyer: async (params: any) => {
     console.log('[AiService] generateFlyer');
+    const referenceImage = params.reference_image;
+
+    if (
+      referenceImage &&
+      (referenceImage.startsWith('file://') ||
+        referenceImage.startsWith('/') ||
+        referenceImage.startsWith('content://'))
+    ) {
+      const formData = new FormData();
+      const filename = referenceImage.split('/').pop() || 'upload.jpg';
+      const match = /\.(\w+)$/.exec(filename);
+      const type = match ? `image/${match[1]}` : `image`;
+
+      formData.append('image', {
+        uri: referenceImage,
+        name: filename,
+        type: type === 'image/jpg' ? 'image/jpeg' : type,
+      } as any);
+      formData.append('params', JSON.stringify(params));
+
+      const response = await api.post('/ai/flyer', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      return response.data;
+    }
+
     const response = await api.post('/ai/flyer', { params });
     console.log('[AiService] generateFlyer result URL:', response.data.data?.url);
     return response.data.data;

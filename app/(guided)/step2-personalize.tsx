@@ -184,6 +184,19 @@ export default function Step2PersonalizeScreen() {
       });
 
       if (!result.canceled && result.assets[0]) {
+        const uri = result.assets[0].uri.toLowerCase();
+        const allowedExtensions = ['.jpg', '.jpeg', '.png', '.webp'];
+        const hasValidExtension = allowedExtensions.some((ext) =>
+          uri.endsWith(ext)
+        );
+
+        if (!hasValidExtension) {
+          Alert.alert(
+            'Format non supporté',
+            'Veuillez sélectionner une image au format JPEG, PNG ou WebP.'
+          );
+          return;
+        }
         setUploadedImage(result.assets[0].uri);
       }
     } catch (error) {
