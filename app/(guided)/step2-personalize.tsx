@@ -294,11 +294,16 @@ export default function Step2PersonalizeScreen() {
         {/* CONDITIONAL FLOW: Visual Style Selection & Image Upload */}
         {(selectedCategory === 'Image' || selectedCategory === 'Social') && (
           <View style={{ marginBottom: 32 }}>
+            {/* TEMPORARILY DISABLED - Image Upload Section */}
+            {/*
             <Text style={styles.sectionTitle}>Image de référence (Optionnel)</Text>
             <Text style={[styles.cardDescription, { marginBottom: 12 }]}>
               Ajoutez une photo (JPEG, PNG, WebP) pour guider l'IA sur la structure ou la composition souhaitée.
             </Text>
+            */}
 
+            {/* TEMPORARILY DISABLED - Image Upload */}
+            {/* 
             {!uploadedImage ? (
               <TouchableOpacity
                 style={styles.uploadButton}
@@ -320,6 +325,7 @@ export default function Step2PersonalizeScreen() {
                 </TouchableOpacity>
               </View>
             )}
+            */}
 
             <View style={{ marginTop: 32 }}>
               <Text style={styles.sectionTitle}>Choisissez le style artistique</Text>
