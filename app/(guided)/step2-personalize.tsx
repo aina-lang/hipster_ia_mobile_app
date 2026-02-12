@@ -283,7 +283,7 @@ export default function Step2PersonalizeScreen() {
           <View style={{ marginBottom: 32 }}>
             <Text style={styles.sectionTitle}>Image de référence (Optionnel)</Text>
             <Text style={[styles.cardDescription, { marginBottom: 12 }]}>
-              Ajoutez une photo pour guider l'IA sur la structure ou la composition souhaitée.
+              Ajoutez une photo (JPEG, PNG, WebP) pour guider l'IA sur la structure ou la composition souhaitée.
             </Text>
 
             {!uploadedImage ? (
