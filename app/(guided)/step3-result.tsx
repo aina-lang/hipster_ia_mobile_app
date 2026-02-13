@@ -118,6 +118,7 @@ export default function Step3ResultScreen() {
   const [selectedModel, setSelectedModel] = useState('Moderne');
   const [showRegeneratePanel, setShowRegeneratePanel] = useState(false);
   const [showModelPicker, setShowModelPicker] = useState(false);
+  const [negativePrompt, setNegativePrompt] = useState('');
 
   const [modalVisible, setModalVisible] = useState(false);
   const [modalType, setModalType] = useState<ModalType>('success');
@@ -138,6 +139,8 @@ export default function Step3ResultScreen() {
     setModalMessage(message);
     setModalVisible(true);
   };
+
+
 
   useEffect(() => {
     let animation: Animated.CompositeAnimation | null = null;
@@ -227,7 +230,7 @@ export default function Step3ResultScreen() {
       <View style={styles.imageContainer}>
         <View style={styles.imageHeader}>
           <Text selectable={true} style={styles.imageLabel}>
-            🎨 Flyer Généré
+            Flyer Généré
           </Text>
           <TouchableOpacity
             onPress={() => copyValueToClipboard('flyer_image', imageUrl)}
@@ -533,6 +536,8 @@ export default function Step3ResultScreen() {
         category: selectedCategory,
         style: selectedStyle,
         intention: selectedIntention,
+        tone: selectedTone,
+        target: selectedTarget,
         reference_image: finalReferenceImage,
       };
 
@@ -1553,24 +1558,11 @@ const styles = StyleSheet.create({
     height: 24,
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
   },
-  regenerateContainer: {
+  regenerateSection: {
     marginTop: 24,
-  },
-  regenerateToggle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    paddingVertical: 16,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(0, 255, 170, 0.2)',
-  },
-  regenerateToggleText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: colors.primary.main,
+    paddingTop: 24,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.1)',
   },
   regeneratePanel: {
     backgroundColor: 'rgba(255, 255, 255, 0.05)',

@@ -23,6 +23,7 @@ import { useCreationStore } from '../../store/creationStore';
 import { WORKFLOWS, WorkflowQuestion } from '../../constants/workflows';
 import { GuidedScreenWrapper } from '../../components/layout/GuidedScreenWrapper';
 import { SelectionCard } from '../../components/ui/SelectionCard';
+import { NeonButton } from '../../components/ui/NeonButton';
 import { BlurView } from 'expo-blur';
 import { ChatInput } from '../../components/ChatInput';
 import {
@@ -115,6 +116,27 @@ export default function Step2PersonalizeScreen() {
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   const keyboardHeight = useRef(new Animated.Value(0)).current;
   const scrollRef = useRef<ScrollView>(null);
+  const [localQuery, setLocalQuery] = useState(userQuery || '');
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    const animation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.1,
+          duration: 1500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 1500,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    animation.start();
+    return () => animation.stop();
+  }, []);
 
 
 
@@ -257,14 +279,10 @@ export default function Step2PersonalizeScreen() {
       }
     } else if (selectedCategory === 'Texte') {
       // Text flow: require intention
-      if (!selectedIntention) {
-        Alert.alert('Intention requise', 'Veuillez choisir une intention.');
-        return;
-      }
-
     }
 
-    // All validations passed, go to result
+    // All validations passed, save query and go to result
+    setQuery(localQuery);
     router.push('/(guided)/step3-result');
   };
 
@@ -289,15 +307,6 @@ export default function Step2PersonalizeScreen() {
         </View>
 
 
-        {/* Questions Section - ONLY FOR TEXTE */}
-        {selectedCategory === 'Texte' && questions.length > 0 && (
-          <View style={{ marginBottom: 32 }}>
-            <Text style={styles.sectionTitle}>Quelques détails de plus</Text>
-            <View style={{ marginTop: 16 }}>
-              {questions.map((q, index) => renderQuestion(q, index))}
-            </View>
-          </View>
-        )}
         {/* CONDITIONAL FLOW: Visual Style Selection */}
         {(selectedCategory === 'Image' || selectedCategory === 'Social') && (
           <View style={{ marginBottom: 32 }}>
@@ -313,9 +322,6 @@ export default function Step2PersonalizeScreen() {
                       style={styles.styleCard}
                       onPress={() => {
                         setStyle(style.label as any);
-                        setTimeout(() => {
-                          router.push('/(guided)/step3-result');
-                        }, 100);
                       }}
                       activeOpacity={0.9}
                     >
@@ -367,7 +373,9 @@ export default function Step2PersonalizeScreen() {
                   label={intention.label}
                   icon={intention.icon}
                   selected={selectedIntention === intention.label}
-                  onPress={() => setIntention(intention.label as any)}
+                  onPress={() => {
+                    setIntention(intention.label as any);
+                  }}
                   fullWidth
                 >
                   <Text style={styles.cardDescription}>{intention.description}</Text>
@@ -377,6 +385,40 @@ export default function Step2PersonalizeScreen() {
             </View>
           </View>
         )}
+
+        {/* Prompt Section */}
+        <View style={{ marginTop: 20, marginBottom: 40 }}>
+          <Text style={styles.sectionTitle}>Étape finale : Précisez votre besoin</Text>
+          <Text style={styles.sectionSubtitle}>
+            Décrivez précisément l'offre ou le visuel souhaité (ex: promotion -20% sur les burgers...)
+          </Text>
+
+          <View style={styles.promptContainer}>
+            <TextInput
+              style={styles.promptInput}
+              placeholder="Ex: Une offre spéciale pour la Saint-Valentin..."
+              placeholderTextColor="rgba(255, 255, 255, 0.3)"
+              multiline
+              value={localQuery}
+              onChangeText={setLocalQuery}
+            />
+
+            <TouchableOpacity style={styles.micButton} activeOpacity={0.7}>
+              <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
+                <Mic size={24} color={colors.primary.main} />
+              </Animated.View>
+            </TouchableOpacity>
+          </View>
+
+          <NeonButton
+            title="Démarrer la création"
+            icon={<Sparkles size={20} color="white" />}
+            onPress={handleCreate}
+            variant="premium"
+            size="lg"
+            style={{ width: '100%' }}
+          />
+        </View>
       </View>
     </GuidedScreenWrapper>
   );
@@ -477,12 +519,48 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '700',
     color: '#FFFFFF',
-    marginBottom: 8,
+    marginBottom: 4,
+  },
+  sectionSubtitle: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.5)',
+    marginBottom: 20,
+    lineHeight: 20,
   },
   cardDescription: {
     fontSize: 14,
     color: colors.text.muted,
     marginTop: 4,
+  },
+  promptContainer: {
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    minHeight: 150,
+    padding: 16,
+    position: 'relative',
+    marginBottom: 24,
+  },
+  promptInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#FFFFFF',
+    textAlignVertical: 'top',
+    paddingTop: 0,
+  },
+  micButton: {
+    position: 'absolute',
+    bottom: 12,
+    right: 12,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: colors.primary.main + '20',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.primary.main + '40',
   },
   uploadButton: {
     width: '100%',

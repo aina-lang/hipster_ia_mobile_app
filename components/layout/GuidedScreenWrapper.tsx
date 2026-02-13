@@ -35,8 +35,10 @@ export function GuidedScreenWrapper({ children, headerRight, onBack, footer, scr
     currentStep = 1;
   } else if (currentRoute === 'step2-personalize') {
     currentStep = 2;
-  } else if (currentRoute === 'step3-result') {
+  } else if (currentRoute === 'step3-prompt') {
     currentStep = 3;
+  } else if (currentRoute === 'step4-result') {
+    currentStep = 3; // Keep result as step 3 visually or hide it
   }
 
   const headerOpacity = scrollY.interpolate({
