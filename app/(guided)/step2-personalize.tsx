@@ -20,7 +20,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { colors } from '../../theme/colors';
 import { DeerAnimation } from '../../components/ui/DeerAnimation';
 import { useCreationStore } from '../../store/creationStore';
-import { WORKFLOWS, WorkflowQuestion } from '../../constants/workflows';
+import { WORKFLOWS, WorkflowQuestion, GENERIC_WORKFLOWS } from '../../constants/workflows';
 import { GuidedScreenWrapper } from '../../components/layout/GuidedScreenWrapper';
 import { SelectionCard } from '../../components/ui/SelectionCard';
 import { BlurView } from 'expo-blur';
@@ -120,7 +120,9 @@ export default function Step2PersonalizeScreen() {
 
   // Fallback to generic if specific not found
   const questions: WorkflowQuestion[] =
-    (selectedJob && selectedFunction && WORKFLOWS[selectedJob]?.[selectedFunction]) || [];
+    (selectedJob && selectedFunction && WORKFLOWS[selectedJob]?.[selectedFunction]) ||
+    (selectedFunction && GENERIC_WORKFLOWS[selectedFunction]) ||
+    [];
 
   useEffect(() => {
     const showSubscription = Keyboard.addListener(
@@ -288,9 +290,15 @@ export default function Step2PersonalizeScreen() {
         </View>
 
 
-        {/* Questions */}
-
-
+        {/* Questions Section */}
+        {questions.length > 0 && (
+          <View style={{ marginBottom: 32 }}>
+            <Text style={styles.sectionTitle}>Quelques détails de plus</Text>
+            <View style={{ marginTop: 16 }}>
+              {questions.map((q, index) => renderQuestion(q, index))}
+            </View>
+          </View>
+        )}
         {/* CONDITIONAL FLOW: Visual Style Selection & Image Upload */}
         {(selectedCategory === 'Image' || selectedCategory === 'Social') && (
           <View style={{ marginBottom: 32 }}>

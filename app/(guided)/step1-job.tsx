@@ -62,11 +62,6 @@ const UNIVERSAL_FUNCTIONS: JobFunction[] = [
   { label: 'Email', category: 'Texte', icon: Mail },
 ];
 
-const CREATOR_FUNCTIONS: JobFunction[] = [
-  { label: 'script vidéo (texte)', category: 'Texte', icon: Video },
-  { label: 'miniatures (image)', category: 'Image', icon: Youtube },
-];
-
 export default function Step1JobScreen() {
   const router = useRouter();
   const { setJob, selectedJob, setFunction, selectedFunction } = useCreationStore();
@@ -100,7 +95,7 @@ export default function Step1JobScreen() {
     }, 300);
   };
 
-  const currentFunctions = selectedJob === 'Créateur' ? CREATOR_FUNCTIONS : UNIVERSAL_FUNCTIONS;
+  const currentFunctions = UNIVERSAL_FUNCTIONS;
 
   return (
     <GuidedScreenWrapper
