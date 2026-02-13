@@ -53,12 +53,14 @@ export const AiService = {
         name: 'reference.jpg',
       });
 
-      // Remove reference_image from params since we're sending it as a file
-      const { reference_image, ...restParams } = params;
+      // Remove reference_image and style from params since we're sending them as separate fields
+      const { reference_image, style: _, ...restParams } = params;
       formData.append('params', JSON.stringify(restParams));
     } else {
       // No image or already base64 (legacy support)
-      formData.append('params', JSON.stringify(params));
+      // Also remove style from params to avoid duplication
+      const { style: _, ...restParams } = params;
+      formData.append('params', JSON.stringify(restParams));
     }
 
     formData.append('style', style);

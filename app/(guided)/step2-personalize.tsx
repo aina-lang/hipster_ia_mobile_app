@@ -20,7 +20,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { colors } from '../../theme/colors';
 import { DeerAnimation } from '../../components/ui/DeerAnimation';
 import { useCreationStore } from '../../store/creationStore';
-import { WORKFLOWS, WorkflowQuestion, GENERIC_WORKFLOWS } from '../../constants/workflows';
+import { WORKFLOWS, WorkflowQuestion } from '../../constants/workflows';
 import { GuidedScreenWrapper } from '../../components/layout/GuidedScreenWrapper';
 import { SelectionCard } from '../../components/ui/SelectionCard';
 import { BlurView } from 'expo-blur';
@@ -118,10 +118,9 @@ export default function Step2PersonalizeScreen() {
 
 
 
-  // Fallback to generic if specific not found
+  // Get questions directly from WORKFLOWS
   const questions: WorkflowQuestion[] =
     (selectedJob && selectedFunction && WORKFLOWS[selectedJob]?.[selectedFunction]) ||
-    (selectedFunction && GENERIC_WORKFLOWS[selectedFunction]) ||
     [];
 
   useEffect(() => {
@@ -290,8 +289,8 @@ export default function Step2PersonalizeScreen() {
         </View>
 
 
-        {/* Questions Section */}
-        {questions.length > 0 && (
+        {/* Questions Section - ONLY FOR TEXTE */}
+        {selectedCategory === 'Texte' && questions.length > 0 && (
           <View style={{ marginBottom: 32 }}>
             <Text style={styles.sectionTitle}>Quelques détails de plus</Text>
             <View style={{ marginTop: 16 }}>
@@ -299,41 +298,9 @@ export default function Step2PersonalizeScreen() {
             </View>
           </View>
         )}
-        {/* CONDITIONAL FLOW: Visual Style Selection & Image Upload */}
+        {/* CONDITIONAL FLOW: Visual Style Selection */}
         {(selectedCategory === 'Image' || selectedCategory === 'Social') && (
           <View style={{ marginBottom: 32 }}>
-            {/* TEMPORARILY DISABLED - Image Upload Section */}
-            {/*
-            <Text style={styles.sectionTitle}>Image de référence (Optionnel)</Text>
-            <Text style={[styles.cardDescription, { marginBottom: 12 }]}>
-              Ajoutez une photo (JPEG, PNG, WebP) pour guider l'IA sur la structure ou la composition souhaitée.
-            </Text>
-            */}
-
-            {/* TEMPORARILY DISABLED - Image Upload */}
-            {/* 
-            {!uploadedImage ? (
-              <TouchableOpacity
-                style={styles.uploadButton}
-                onPress={pickImage}
-                activeOpacity={0.7}
-              >
-                <Upload size={32} color={colors.primary.main} />
-                <Text style={styles.uploadText}>Choisir une image</Text>
-                <Text style={styles.uploadHint}>JPG, PNG supportés</Text>
-              </TouchableOpacity>
-            ) : (
-              <View style={styles.imagePreviewContainer}>
-                <Image source={{ uri: uploadedImage }} style={styles.imagePreview} />
-                <TouchableOpacity
-                  style={styles.removeImageButton}
-                  onPress={() => setUploadedImage(null)}
-                >
-                  <X size={20} color="#FFFFFF" />
-                </TouchableOpacity>
-              </View>
-            )}
-            */}
 
             <View style={{ marginTop: 32 }}>
               <Text style={styles.sectionTitle}>Choisissez le style artistique</Text>

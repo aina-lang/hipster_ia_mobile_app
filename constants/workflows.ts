@@ -6,8 +6,7 @@ export interface WorkflowQuestion {
   options?: string[];
 }
 
-// Generic workflow definitions for all job types
-export const GENERIC_WORKFLOWS: Record<string, WorkflowQuestion[]> = {
+const COMMON_FUNCTIONS: Record<string, WorkflowQuestion[]> = {
   'Contenu réseaux': [
     {
       id: 'platform',
@@ -80,20 +79,13 @@ export const GENERIC_WORKFLOWS: Record<string, WorkflowQuestion[]> = {
   ],
 };
 
-const JOBS_LABELS = [
-  'Coiffure & Esthétique',
-  'Restaurant / Bar',
-  'Commerce / Boutique',
-  'Artisans du bâtiment',
-  'Service local',
-  'Profession libérale',
-  'Bien-être / Santé alternative',
-  'Autre',
-];
-
-export const WORKFLOWS: Record<string, Record<string, WorkflowQuestion[]>> = {};
-
-// Apply generic workflows to all jobs
-JOBS_LABELS.forEach((job) => {
-  WORKFLOWS[job] = { ...GENERIC_WORKFLOWS };
-});
+export const WORKFLOWS: Record<string, Record<string, WorkflowQuestion[]>> = {
+  'Coiffure & Esthétique': { ...COMMON_FUNCTIONS },
+  'Restaurant / Bar': { ...COMMON_FUNCTIONS },
+  'Commerce / Boutique': { ...COMMON_FUNCTIONS },
+  'Artisans du bâtiment': { ...COMMON_FUNCTIONS },
+  'Service local': { ...COMMON_FUNCTIONS },
+  'Profession libérale': { ...COMMON_FUNCTIONS },
+  'Bien-être / Santé alternative': { ...COMMON_FUNCTIONS },
+  Autre: { ...COMMON_FUNCTIONS },
+};
