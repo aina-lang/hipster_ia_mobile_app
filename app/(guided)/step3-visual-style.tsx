@@ -8,9 +8,9 @@ import { GuidedScreenWrapper } from '../../components/layout/GuidedScreenWrapper
 import { Moon, Sun, Zap } from 'lucide-react-native';
 
 const VISUAL_STYLES: { label: VisualStyle; displayName: string; icon: any; description: string }[] = [
-    { label: 'Monochrome', displayName: 'Luxe cinématique', icon: Moon, description: 'Ambiance sombre et dramatique' },
-    { label: 'Hero Studio', displayName: 'Action & Authenticité', icon: Zap, description: 'Photographie authentique en action' },
-    { label: 'Minimal Studio', displayName: 'Luxe minimal', icon: Sun, description: 'Clarté et élégance épurée' },
+    { label: 'Monochrome', displayName: 'Noir et blanc', icon: Moon, description: 'Contraste élevé, très classe' },
+    { label: 'Hero Studio', displayName: 'Photos réelles', icon: Zap, description: 'Vraies personnes, vraies situations' },
+    { label: 'Minimal Studio', displayName: 'Propre et simple', icon: Sun, description: 'Sujet bien visible, fond épuré' },
 ];
 
 export default function Step3VisualStyleScreen() {
