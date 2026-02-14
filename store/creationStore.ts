@@ -84,7 +84,10 @@ export const useCreationStore = create<CreationState>((set) => ({
   setWorkflowAnswer: (key, value) =>
     set((state) => ({ workflowAnswers: { ...state.workflowAnswers, [key]: value } })),
   setQuery: (query) => set({ userQuery: query }),
-  setStyle: (style) => set({ selectedStyle: style }),
+  setStyle: (style) => set((state) => ({ 
+    selectedStyle: style,
+    workflowAnswers: { ...state.workflowAnswers, style }
+  })),
   setIntention: (intention) => set({ selectedIntention: intention }),
   setUploadedImage: (uri) => set({ uploadedImage: uri }),
 

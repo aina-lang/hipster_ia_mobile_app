@@ -5,11 +5,12 @@ import { colors } from '../../theme/colors';
 import { SelectionCard } from '../../components/ui/SelectionCard';
 import { useCreationStore, VisualStyle } from '../../store/creationStore';
 import { GuidedScreenWrapper } from '../../components/layout/GuidedScreenWrapper';
-import { Moon, Sun } from 'lucide-react-native';
+import { Moon, Sun, Zap } from 'lucide-react-native';
 
-const VISUAL_STYLES: { label: VisualStyle; icon: any; description: string }[] = [
-    { label: 'Luxe cinématique', icon: Moon, description: 'Ambiance sombre et dramatique' },
-    { label: 'Luxe minimal', icon: Sun, description: 'Clarté et élégance épurée' },
+const VISUAL_STYLES: { label: VisualStyle; displayName: string; icon: any; description: string }[] = [
+    { label: 'Monochrome', displayName: 'Luxe cinématique', icon: Moon, description: 'Ambiance sombre et dramatique' },
+    { label: 'Hero Studio', displayName: 'Action & Authenticité', icon: Zap, description: 'Photographie authentique en action' },
+    { label: 'Minimal Studio', displayName: 'Luxe minimal', icon: Sun, description: 'Clarté et élégance épurée' },
 ];
 
 export default function Step3VisualStyleScreen() {
@@ -37,7 +38,7 @@ export default function Step3VisualStyleScreen() {
                     {VISUAL_STYLES.map((style) => (
                         <SelectionCard
                             key={style.label}
-                            label={style.label}
+                            label={style.displayName}
                             icon={style.icon}
                             selected={selectedStyle === style.label}
                             onPress={() => handleSelectStyle(style.label)}
