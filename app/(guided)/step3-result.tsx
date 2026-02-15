@@ -588,6 +588,17 @@ export default function Step3ResultScreen() {
           setResult(resultData.content);
           setGenerationId(resultData.generationId);
         }
+      } else if (selectedCategory === 'Video') {
+        const videoResponse = await AiService.generateVideo(params, seed);
+        setImageUrl(videoResponse.url); // Use image preview for video if available or just the video url
+        setResult(videoResponse.url);
+        setGenerationId(videoResponse.generationId);
+        if (videoResponse.seed !== undefined) setSeed(videoResponse.seed);
+      } else if (selectedCategory === 'Audio') {
+        const audioResponse = await AiService.generateAudio(params, seed);
+        setResult(audioResponse.content);
+        setImageUrl(null);
+        setGenerationId(audioResponse.generationId);
       }
     } catch (error: any) {
       console.error('Generation error:', error);

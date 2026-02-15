@@ -11,7 +11,7 @@ export type JobType =
   | 'Autre'
   | (string & {});
 
-export type CreationCategory = 'Texte' | 'Image' | 'Document' | 'Social';
+export type CreationCategory = 'Texte' | 'Image' | 'Document' | 'Social' | 'Video' | 'Audio';
 
 export type VisualStyle =
   | 'Premium'

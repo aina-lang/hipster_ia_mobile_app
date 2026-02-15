@@ -1,7 +1,15 @@
 import * as FileSystem from 'expo-file-system';
 import { api } from './client';
 
-export type TextGenerationType = 'blog' | 'social' | 'ad' | 'email' | 'video' | 'text' | 'texte';
+export type TextGenerationType =
+  | 'blog'
+  | 'social'
+  | 'ad'
+  | 'email'
+  | 'video'
+  | 'text'
+  | 'texte'
+  | 'seo';
 export type ImageStyle =
   | 'Monochrome'
   | 'Hero Studio'
@@ -180,6 +188,18 @@ export const AiService = {
       },
     });
     console.log('[AiService] generateFlyer result URL:', response.data.data?.url);
+    return response.data.data;
+  },
+
+  generateVideo: async (params: any, seed?: number) => {
+    console.log('[AiService] generateVideo:', params.job);
+    const response = await api.post('/ai/video', { params, seed });
+    return response.data.data;
+  },
+
+  generateAudio: async (params: any, seed?: number) => {
+    console.log('[AiService] generateAudio:', params.job);
+    const response = await api.post('/ai/audio', { params, seed });
     return response.data.data;
   },
 
