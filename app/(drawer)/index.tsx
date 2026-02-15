@@ -577,74 +577,30 @@ export default function HomeScreen() {
       console.log('[DEBUG] Free Mode Chat History:', JSON.stringify(chatHistory, null, 2));
       console.log('[DEBUG] Conversation ID:', conversationId);
 
-      // --- MOCK GENERATION LOGIC (Frontend Only) ---
-      const lowerInput = inputValue.toLowerCase();
-      let mockResponse: any = null;
-
-      if (lowerInput.includes('image') || lowerInput.includes('photo')) {
-        // Mock Image Generation
-        mockResponse = {
-          content: "",
-          type: 'image',
-          mediaUrl: 'https://picsum.photos/800/800.jpg',
-        };
-      } else if (lowerInput.includes('video')) {
-        // Mock Video Generation
-        mockResponse = {
-          content: "",
-          type: 'video',
-          mediaUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-        };
-      } else if (lowerInput.includes('audio') || lowerInput.includes('son') || lowerInput.includes('musique')) {
-        // Mock Audio Generation
-        mockResponse = {
-          content: "",
-          type: 'audio',
-          mediaUrl: 'https://raw.githubusercontent.com/rafaelreis-hotmart/Audio-Sample-files/master/sample.mp3',
-        };
-      } else if (lowerInput.includes('3d') || lowerInput.includes('model')) {
-        // Mock 3D Generation
-        mockResponse = {
-          content: "",
-          type: '3d',
-          mediaUrl: 'https://raw.githubusercontent.com/rafaelreis-hotmart/Audio-Sample-files/master/sample.mp3',
-        };
-      }
-
       let response;
-      if (mockResponse) {
-        // Simulate network delay
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        response = {
-          conversationId: conversationId || 'mock-id',
-          data: { content: mockResponse.content }, // Fallback structure
-          ...mockResponse
-        };
+      // Real Backend Call
+      if (currentImage) {
+        const formData = new FormData();
+        formData.append('messages', JSON.stringify(chatHistory));
+        if (conversationId) formData.append('conversationId', conversationId);
+
+        const filename = currentImage.split('/').pop() || 'image.jpg';
+        const match = /\.(\w+)$/.exec(filename);
+        const ext = match ? match[1] : 'jpg';
+        const type = `image/${ext}`;
+
+        formData.append('file', {
+          uri: currentImage,
+          name: filename,
+          type,
+        } as any);
+
+        const res = await api.post('/ai/chat', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        response = res.data.data;
       } else {
-        // Real Backend Call
-        if (currentImage) {
-          const formData = new FormData();
-          formData.append('messages', JSON.stringify(chatHistory));
-          if (conversationId) formData.append('conversationId', conversationId);
-
-          const filename = currentImage.split('/').pop() || 'image.jpg';
-          const match = /\.(\w+)$/.exec(filename);
-          const ext = match ? match[1] : 'jpg';
-          const type = `image/${ext}`;
-
-          formData.append('file', {
-            uri: currentImage,
-            name: filename,
-            type,
-          } as any);
-
-          const res = await api.post('/ai/chat', formData, {
-            headers: { 'Content-Type': 'multipart/form-data' },
-          });
-          response = res.data.data;
-        } else {
-          response = await AiService.chat(chatHistory, conversationId);
-        }
+        response = await AiService.chat(chatHistory, conversationId);
       }
 
       console.log('[DEBUG] Response:', JSON.stringify(response, null, 2));
@@ -663,8 +619,8 @@ export default function HomeScreen() {
         text: typeof content === 'string' ? content : JSON.stringify(content),
         sender: 'ai',
         timestamp: new Date(),
-        isTyping: true,
-        type: response.type,
+        isTyping: !!(typeof content === 'string' && content.length > 0),
+        type: response.type || 'text',
         mediaUrl: response.mediaUrl,
       };
 

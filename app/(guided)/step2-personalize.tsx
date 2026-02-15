@@ -427,6 +427,38 @@ export default function Step2PersonalizeScreen() {
               </View>
             </View>
 
+            {/* 2. REFERENCE IMAGE */}
+            <View style={{ marginTop: 32 }}>
+              <Text style={styles.sectionTitle}>2. Image de référence (Optionnel)</Text>
+              <Text style={styles.sectionSubtitle}>
+                Ajoutez une photo pour que l'IA s'en inspire (composition, structure).
+              </Text>
+
+              {uploadedImage ? (
+                <View style={styles.imagePreviewContainer}>
+                  <Image source={{ uri: uploadedImage }} style={styles.imagePreview} />
+                  <TouchableOpacity
+                    style={styles.removeImageButton}
+                    onPress={() => setUploadedImage(null)}
+                  >
+                    <X size={20} color="white" />
+                  </TouchableOpacity>
+                  <BlurView intensity={30} tint="dark" style={styles.changeImageOverlay}>
+                    <TouchableOpacity onPress={pickImage} style={styles.changeImageButton}>
+                      <Text style={styles.changeImageText}>Changer l'image</Text>
+                    </TouchableOpacity>
+                  </BlurView>
+                </View>
+              ) : (
+                <TouchableOpacity style={styles.uploadButton} onPress={pickImage}>
+                  <View style={styles.uploadIconContainer}>
+                    <Upload size={32} color={colors.primary.main} />
+                  </View>
+                  <Text style={styles.uploadText}>Cliquez pour ajouter une photo</Text>
+                  <Text style={styles.uploadHint}>JPG, PNG ou WebP</Text>
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
         )}
 
@@ -434,7 +466,7 @@ export default function Step2PersonalizeScreen() {
         <View style={{ marginTop: 20, marginBottom: 40 }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
             <Text style={styles.sectionTitle}>
-              {(selectedCategory === 'Image' || selectedCategory === 'Social') ? '2. ' : ''}Précisez votre besoin
+              {(selectedCategory === 'Image' || selectedCategory === 'Social') ? '3. ' : ''}Précisez votre besoin
             </Text>
 
             {/* MAGIC REFINE BUTTON */}
@@ -639,34 +671,41 @@ const styles = StyleSheet.create({
   },
   uploadButton: {
     width: '100%',
-    aspectRatio: 1,
-    maxHeight: 300,
-    borderRadius: 20,
+    height: 160,
+    borderRadius: 16,
     borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
     borderStyle: 'dashed',
-    borderColor: colors.primary.main,
     backgroundColor: 'rgba(255, 255, 255, 0.05)',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 12,
+    gap: 8,
+  },
+  uploadIconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: colors.primary.main + '20',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 4,
   },
   uploadText: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
-    marginTop: 8,
   },
   uploadHint: {
-    fontSize: 14,
-    color: colors.text.muted,
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.4)',
   },
   imagePreviewContainer: {
     width: '100%',
-    aspectRatio: 1,
-    maxHeight: 300,
-    borderRadius: 20,
+    height: 200,
+    borderRadius: 16,
     overflow: 'hidden',
     position: 'relative',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
   },
   imagePreview: {
     width: '100%',
@@ -693,6 +732,21 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: colors.primary.main,
+  },
+  sectionSubtitle: {
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.5)',
+    marginTop: 4,
+    marginBottom: 16,
+  },
+  changeImageOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 48,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   customIntentionSection: {
     marginTop: 16,
