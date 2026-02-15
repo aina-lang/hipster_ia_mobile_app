@@ -66,6 +66,7 @@ const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 // Visual style options
 // Visual style options
 const VISUAL_STYLES = [
+  // Custom Styles
   {
     label: 'Monochrome',
     icon: Moon,
@@ -75,14 +76,116 @@ const VISUAL_STYLES = [
   {
     label: 'Hero Studio',
     icon: Sun,
-    description: 'Produit mis en scène comme une icône.\nLumière maîtrisée, impact fort, effet “wow”.',
+    description: 'Produit mis en scène comme une icône.\nLumière maîtrisée, impact fort.',
     image: illus3,
   },
-
   {
     label: 'Minimal Studio',
     icon: Sun,
     description: 'Fond clair, composition épurée.\nModerne, haut de gamme, ultra lisible.',
+    image: illus4,
+  },
+  // Stability AI Presets
+  {
+    label: '3D Model',
+    icon: Gem,
+    description: 'Rendu 3D net et moderne.\nVolume parfait, textures lisses.',
+    image: illus4,
+  },
+  {
+    label: 'Analog Film',
+    icon: Sparkles,
+    description: 'Grain argentique, couleurs rétro.\nAuthentique, nostalgique, chaleureux.',
+    image: illus3,
+  },
+  {
+    label: 'Anime',
+    icon: Sparkles,
+    description: 'Style animation japonaise vibrant.\nTraits dynamiques, couleurs vives.',
+    image: illus2,
+  },
+  {
+    label: 'Cinematic',
+    icon: Moon,
+    description: 'Ambiance film, lumière dramatique.\nProfondeur de champ, rendu cinéma.',
+    image: illus2,
+  },
+  {
+    label: 'Comic Book',
+    icon: Zap,
+    description: 'Style bande dessinée américaine.\nTraits noirs, couleurs aplat, dynamique.',
+    image: illus2,
+  },
+  {
+    label: 'Digital Art',
+    icon: Zap,
+    description: 'Art numérique créatif et poli.\nModerne, expressif, détaillé.',
+    image: illus4,
+  },
+  {
+    label: 'Enhance',
+    icon: Sparkles,
+    description: 'Amélioration créative et magique.\nDétails boostés, rendu supérieur.',
+    image: illus3,
+  },
+  {
+    label: 'Fantasy Art',
+    icon: Sparkles,
+    description: 'Magie et imaginaire fantastique.\nOnirique, épique, surnaturel.',
+    image: illus2,
+  },
+  {
+    label: 'Isometric',
+    icon: Gem,
+    description: 'Vue 3D isométrique technique.\nParfait pour architecture/objets.',
+    image: illus4,
+  },
+  {
+    label: 'Line Art',
+    icon: Sun,
+    description: 'Dessin au trait pur et simple.\nMinimaliste, élégant, sans couleur.',
+    image: illus4,
+  },
+  {
+    label: 'Low Poly',
+    icon: Gem,
+    description: 'Style géométrique facetté.\nModerne, abstrait, ludique.',
+    image: illus4,
+  },
+  {
+    label: 'Modeling Compound',
+    icon: Gem,
+    description: 'Style pâte à modeler / clay.\nTexture douce, ludique, tactile.',
+    image: illus4,
+  },
+  {
+    label: 'Neon Punk',
+    icon: Zap,
+    description: 'Esthétique cyberpunk urbaine et néon.\nContrastes forts, futuriste.',
+    image: illus2,
+  },
+  {
+    label: 'Origami',
+    icon: Sun,
+    description: 'Art du pliage de papier.\nGéométrique, délicat, texturé.',
+    image: illus4,
+  },
+  {
+    label: 'Photographic',
+    icon: Sparkles,
+    description: 'Rendu photo-réaliste impeccable.\nLumière naturelle, détails fins.',
+    image: illus3,
+  },
+  {
+    label: 'Pixel Art',
+    icon: Zap, // Using Zap as a proxy for digital/pixel
+    description: 'Style rétro 8-bit / 16-bit.\nNostalgique, numérique, carré.',
+    image: illus2,
+  },
+  {
+    label: 'Tile Texture',
+    icon: Gem,
+    description: 'Texture répétable sans raccord.\nIdéal pour fonds et motifs.',
     image: illus4,
   },
 ];
