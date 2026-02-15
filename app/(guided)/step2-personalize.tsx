@@ -87,13 +87,7 @@ const VISUAL_STYLES = [
   },
 ];
 
-// Text intention options
-const WRITING_INTENTIONS = [
-  { label: 'Promotion', icon: TrendingUp, description: 'Mettre en avant une offre, réduction, lancement' },
-  { label: 'Présentation', icon: Building2, description: 'Présenter votre activité, produit ou service' },
-  { label: 'Storytelling', icon: BookOpen, description: 'Raconter une histoire engageante' },
-  { label: 'Conversion directe', icon: Target, description: 'Inciter à l\'action immédiate' },
-];
+// Visual style options
 
 export default function Step2PersonalizeScreen() {
   const router = useRouter();
@@ -101,14 +95,10 @@ export default function Step2PersonalizeScreen() {
     selectedJob,
     selectedFunction,
     selectedCategory,
-    workflowAnswers,
-    setWorkflowAnswer,
     userQuery,
     setQuery,
     selectedStyle,
     setStyle,
-    selectedIntention,
-    setIntention,
     uploadedImage,
     setUploadedImage,
   } = useCreationStore();
@@ -140,10 +130,7 @@ export default function Step2PersonalizeScreen() {
 
 
 
-  // Get questions directly from WORKFLOWS
-  const questions: WorkflowQuestion[] =
-    (selectedJob && selectedFunction && WORKFLOWS[selectedJob]?.[selectedFunction]) ||
-    [];
+  // No longer using dynamic questions
 
   useEffect(() => {
     const showSubscription = Keyboard.addListener(
@@ -181,10 +168,7 @@ export default function Step2PersonalizeScreen() {
     };
   }, []);
 
-  // Get intentions based on selected function
-  const getIntentions = () => {
-    return WRITING_INTENTIONS;
-  };
+  // No longer using intentions
 
   // Image picker for visual flow
   const pickImage = async () => {
@@ -228,46 +212,7 @@ export default function Step2PersonalizeScreen() {
     }
   };
 
-  const renderQuestion = (q: WorkflowQuestion, index: number) => {
-    const value = workflowAnswers[q.id];
-
-    return (
-      <View key={q.id} style={styles.questionContainer}>
-        <Text style={styles.questionLabel}>
-          {index + 1}. {q.label}
-        </Text>
-
-        {q.type === 'choice' && q.options && (
-          <View style={styles.choicesGrid}>
-            {q.options.map((opt) => {
-              const isSelected = value === opt;
-              return (
-                <TouchableOpacity
-                  key={opt}
-                  style={[styles.choiceButton, isSelected && styles.choiceButtonSelected]}
-                  onPress={() => setWorkflowAnswer(q.id, opt)}
-                  activeOpacity={0.7}>
-                  <Text style={[styles.choiceText, isSelected && styles.choiceTextSelected]}>
-                    {opt}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        )}
-
-        {q.type === 'text' && (
-          <TextInput
-            style={[styles.textInput, value ? styles.textInputActive : null]}
-            placeholder={q.placeholder || 'Votre réponse...'}
-            placeholderTextColor={colors.text.muted}
-            value={value || ''}
-            onChangeText={(text) => setWorkflowAnswer(q.id, text)}
-          />
-        )}
-      </View>
-    );
-  };
+  // No longer rendering questions
 
   const handleCreate = () => {
     // Validate based on category
@@ -362,29 +307,7 @@ export default function Step2PersonalizeScreen() {
             </View>
           </View>
         )}
-        {/* CONDITIONAL FLOW: Text Intention Selection */}
-        {selectedCategory === 'Texte' && (
-          <View style={{ marginBottom: 32 }}>
-            <Text style={styles.sectionTitle}>Quelle est l'intention ?</Text>
-            <View style={{ gap: 12, marginTop: 16 }}>
-              {getIntentions().map((intention) => (
-                <SelectionCard
-                  key={intention.label}
-                  label={intention.label}
-                  icon={intention.icon}
-                  selected={selectedIntention === intention.label}
-                  onPress={() => {
-                    setIntention(intention.label as any);
-                  }}
-                  fullWidth
-                >
-                  <Text style={styles.cardDescription}>{intention.description}</Text>
-                </SelectionCard>
-              ))}
-
-            </View>
-          </View>
-        )}
+        {/* Intentions removed */}
 
         {/* Prompt Section */}
         <View style={{ marginTop: 20, marginBottom: 40 }}>

@@ -78,12 +78,7 @@ export default function Step3ResultScreen() {
     selectedJob,
     selectedFunction,
     selectedCategory,
-    selectedContext,
-    selectedTone,
-    selectedTarget,
-    workflowAnswers,
     selectedStyle,
-    selectedIntention,
     uploadedImage,
 
     reset,
@@ -530,14 +525,8 @@ export default function Step3ResultScreen() {
       const params = {
         job: selectedJob,
         function: selectedFunction, // e.g. "Flyers / Affiches"
-        context: selectedContext,
         userQuery: overrideQuery || userQuery,
-        workflowAnswers,
-        category: selectedCategory,
         style: selectedStyle,
-        intention: selectedIntention,
-        tone: selectedTone,
-        target: selectedTarget,
         reference_image: finalReferenceImage,
       };
 
