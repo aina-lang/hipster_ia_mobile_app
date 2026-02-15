@@ -541,11 +541,14 @@ export default function Step3ResultScreen() {
       // Specialized prompts per category
       if (selectedCategory === 'Social') {
         const socialResponse = await AiService.generateSocial(params, seed);
+        console.log('[DEBUG] Social Response:', JSON.stringify(socialResponse, null, 2));
         if (mode === 'text' || mode === 'both') {
-          setResult(socialResponse.content);
+          // Backend returns 'text' field, not 'content'
+          setResult(socialResponse.text || socialResponse.content || '');
         }
         if (mode === 'image' || mode === 'both') {
-          setImageUrl(socialResponse.url);
+          // Backend returns 'image' field, not 'url'
+          setImageUrl(socialResponse.image || socialResponse.url || '');
           if (socialResponse.seed !== undefined) setSeed(socialResponse.seed);
         }
         setGenerationId(socialResponse.generationId);
