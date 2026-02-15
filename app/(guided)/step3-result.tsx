@@ -108,8 +108,6 @@ export default function Step3ResultScreen() {
   const endDate = user?.subscriptionEndDate ? new Date(user.subscriptionEndDate) : null;
   const isExpired = endDate && now > endDate;
   const [generationId, setGenerationId] = useState<number | null>(null);
-  const [seed, setSeed] = useState<number | null>(null); // New Seed State
-  const [customSeed, setCustomSeed] = useState(''); // User input for seed
   const [localQuery, setLocalQuery] = useState('');
   const [regenMode, setRegenMode] = useState<'text' | 'image' | 'both'>('text');
 
@@ -119,7 +117,6 @@ export default function Step3ResultScreen() {
   const [selectedModel, setSelectedModel] = useState('Moderne');
   const [showRegeneratePanel, setShowRegeneratePanel] = useState(false);
   const [showModelPicker, setShowModelPicker] = useState(false);
-  const [negativePrompt, setNegativePrompt] = useState('');
 
   const [modalVisible, setModalVisible] = useState(false);
   const [modalType, setModalType] = useState<ModalType>('success');
@@ -234,16 +231,6 @@ export default function Step3ResultScreen() {
             Visuel Généré
           </Text>
           <View style={{ flexDirection: 'row', gap: 8 }}>
-            {/* Seed Display */}
-            {seed && (
-              <TouchableOpacity
-                onPress={() => copyValueToClipboard('seed', seed)}
-                style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.1)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12, gap: 4 }}
-              >
-                <Sparkles size={12} color={colors.text.muted} />
-                <Text style={{ color: colors.text.muted, fontSize: 10, fontFamily: 'monospace' }}>Seed: {seed}</Text>
-              </TouchableOpacity>
-            )}
             <TouchableOpacity
               onPress={() => copyValueToClipboard('flyer_image', imageUrl)}
               style={styles.miniCopyButton}>
@@ -495,10 +482,9 @@ export default function Step3ResultScreen() {
 
   const generateContent = async (
     overrideQuery?: string,
-    mode: 'text' | 'image' | 'both' = 'both',
-    useSeed?: number
+    mode: 'text' | 'image' | 'both' = 'both'
   ) => {
-    console.log('generateContent', { mode, useSeed });
+    console.log('generateContent', { mode });
 
     // if (loading) return;
 
@@ -570,13 +556,11 @@ export default function Step3ResultScreen() {
         } else {
           const resultData = await AiService.generateImage(
             params,
-            (selectedStyle as any) || 'realistic',
-            useSeed // Pass seed!
+            (selectedStyle as any) || 'realistic'
           );
           setResult(resultData.url);
           setImageUrl(resultData.url);
           setGenerationId(resultData.generationId);
-          if (resultData.seed) setSeed(resultData.seed); // Capture Seed
         }
       } else if (selectedCategory === 'Document') {
         const resultData = await AiService.generateDocument('business', params);
@@ -1216,41 +1200,9 @@ export default function Step3ResultScreen() {
                       </TouchableOpacity>
                     </View>
 
-                    <TextInput
-                      style={styles.regenerateInput}
-                      value={localQuery}
-                      onChangeText={setLocalQuery}
-                      placeholder="Ex: Ajoute plus de détails sur..."
-                      placeholderTextColor={colors.text.muted}
-                      multiline
-                      maxLength={500}
-                    />
-
-                    <View style={{ marginTop: 12 }}>
-                      <Text style={styles.modeLabel}>Inversion (ce que vous NE voulez PAS) :</Text>
-                      <TextInput
-                        style={[styles.regenerateInput, { minHeight: 60, marginTop: 8 }]}
-                        value={negativePrompt}
-                        onChangeText={setNegativePrompt}
-                        placeholder="Ex: Pas de texte flou, pas d'objets cassés..."
-                        placeholderTextColor={colors.text.muted}
-                        multiline
-                        maxLength={200}
-                      />
-                    </View>
-
-                    {/* SEED INPUT */}
-                    <View style={{ marginTop: 12 }}>
-                      <Text style={styles.modeLabel}>Seed (Optionnel) :</Text>
-                      <TextInput
-                        style={[styles.regenerateInput, { minHeight: 40, marginTop: 8 }]}
-                        value={customSeed}
-                        onChangeText={setCustomSeed}
-                        placeholder="Ex: 123456789"
-                        placeholderTextColor={colors.text.muted}
-                        keyboardType="numeric"
-                      />
-                    </View>
+                    <Text style={{ color: colors.text.secondary, marginBottom: 20 }}>
+                      Voulez-vous générer une nouvelle version de ce visuel ?
+                    </Text>
 
                     <View style={styles.regenerateTools}>
                       <TouchableOpacity style={styles.toolIcon}>
@@ -1312,8 +1264,7 @@ export default function Step3ResultScreen() {
                     <NeonButton
                       title="C'est parti"
                       onPress={() => {
-                        const seedNum = customSeed ? parseInt(customSeed, 10) : undefined;
-                        generateContent(localQuery, regenMode, seedNum);
+                        generateContent(localQuery, regenMode);
                       }}
                       icon={<Sparkles size={20} color="#000" />}
                       size="lg"
