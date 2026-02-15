@@ -2,7 +2,28 @@ import * as FileSystem from 'expo-file-system';
 import { api } from './client';
 
 export type TextGenerationType = 'blog' | 'social' | 'ad' | 'email' | 'video' | 'text' | 'texte';
-export type ImageStyle = 'Monochrome' | 'Hero Studio' | 'Minimal Studio';
+export type ImageStyle =
+  | 'Monochrome'
+  | 'Hero Studio'
+  | 'Minimal Studio'
+  | 'None'
+  | '3d-model'
+  | 'analog-film'
+  | 'anime'
+  | 'cinematic'
+  | 'comic-book'
+  | 'digital-art'
+  | 'enhance'
+  | 'fantasy-art'
+  | 'isometric'
+  | 'line-art'
+  | 'low-poly'
+  | 'modeling-compound'
+  | 'neon-punk'
+  | 'origami'
+  | 'photographic'
+  | 'pixel-art'
+  | 'tile-texture';
 export type DocumentType = 'legal' | 'business';
 export type GenerationType = 'text' | 'image' | 'video' | 'audio' | 'document' | 'chat';
 

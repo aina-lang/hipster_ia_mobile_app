@@ -28,7 +28,28 @@ export type ContextType =
 
 export type CreationCategory = 'Texte' | 'Image' | 'Document' | 'Social';
 
-export type VisualStyle = 'Monochrome' | 'Hero Studio' | 'Minimal Studio';
+export type VisualStyle =
+  | 'Monochrome'
+  | 'Hero Studio'
+  | 'Minimal Studio'
+  | 'None'
+  | '3d-model'
+  | 'analog-film'
+  | 'anime'
+  | 'cinematic'
+  | 'comic-book'
+  | 'digital-art'
+  | 'enhance'
+  | 'fantasy-art'
+  | 'isometric'
+  | 'line-art'
+  | 'low-poly'
+  | 'modeling-compound'
+  | 'neon-punk'
+  | 'origami'
+  | 'photographic'
+  | 'pixel-art'
+  | 'tile-texture';
 export type TextIntention = 'Promotion' | 'Présentation' | 'Storytelling' | 'Conversion directe';
 
 interface CreationState {
