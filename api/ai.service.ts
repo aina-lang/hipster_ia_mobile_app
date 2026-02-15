@@ -105,8 +105,8 @@ export const AiService = {
     return response.data.data;
   },
 
-  generateSocial: async (params: any) => {
-    console.log('[AiService] generateSocial:', params.job);
+  generateSocial: async (params: any, seed?: number) => {
+    console.log('[AiService] generateSocial:', params.job, 'Seed:', seed);
     const referenceImage = params.reference_image;
 
     const formData = new FormData();
@@ -131,6 +131,10 @@ export const AiService = {
       formData.append('params', JSON.stringify(params));
     }
 
+    if (seed) {
+      formData.append('seed', seed.toString());
+    }
+
     const response = await api.post('/ai/social', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
@@ -140,8 +144,8 @@ export const AiService = {
     return response.data.data;
   },
 
-  generateFlyer: async (params: any) => {
-    console.log('[AiService] generateFlyer');
+  generateFlyer: async (params: any, seed?: number) => {
+    console.log('[AiService] generateFlyer', 'Seed:', seed);
     const referenceImage = params.reference_image;
 
     const formData = new FormData();
@@ -164,6 +168,10 @@ export const AiService = {
       formData.append('params', JSON.stringify(restParams));
     } else {
       formData.append('params', JSON.stringify(params));
+    }
+
+    if (seed) {
+      formData.append('seed', seed.toString());
     }
 
     const response = await api.post('/ai/flyer', formData, {

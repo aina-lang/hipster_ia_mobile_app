@@ -108,6 +108,7 @@ export default function Step3ResultScreen() {
   const endDate = user?.subscriptionEndDate ? new Date(user.subscriptionEndDate) : null;
   const isExpired = endDate && now > endDate;
   const [generationId, setGenerationId] = useState<number | null>(null);
+  const [seed, setSeed] = useState<number | undefined>();
   const [localQuery, setLocalQuery] = useState('');
   const [regenMode, setRegenMode] = useState<'text' | 'image' | 'both'>('text');
 
@@ -535,43 +536,50 @@ export default function Step3ResultScreen() {
         reference_image: finalReferenceImage,
       };
 
-      console.log('[DEBUG] Generating Content with params:', JSON.stringify(params, null, 2));
+      console.log('[DEBUG] Generating Content with params:', JSON.stringify(params, null, 2), 'Seed:', seed);
 
       // Specialized prompts per category
       if (selectedCategory === 'Social') {
-        const socialResponse = await AiService.generateSocial(params);
+        const socialResponse = await AiService.generateSocial(params, seed);
         if (mode === 'text' || mode === 'both') {
           setResult(socialResponse.content);
         }
         if (mode === 'image' || mode === 'both') {
           setImageUrl(socialResponse.url);
+          if (socialResponse.seed !== undefined) setSeed(socialResponse.seed);
         }
         setGenerationId(socialResponse.generationId);
       } else if (selectedCategory === 'Image') {
-        if (selectedFunction && selectedFunction.includes('Flyers')) {
-          const flyerResult = await AiService.generateFlyer(params);
+        const isFlyer = selectedFunction && (selectedFunction.includes('Flyers') || selectedFunction.includes('publicitaire'));
+        if (isFlyer) {
+          const flyerResult = await AiService.generateFlyer(params, seed);
           setImageUrl(flyerResult.url);
           setResult(flyerResult.url);
           setGenerationId(flyerResult.generationId);
+          if (flyerResult.seed !== undefined) setSeed(flyerResult.seed);
         } else {
           const resultData = await AiService.generateImage(
             params,
-            (selectedStyle as any) || 'realistic'
+            (selectedStyle as any) || 'realistic',
+            seed
           );
           setResult(resultData.url);
           setImageUrl(resultData.url);
           setGenerationId(resultData.generationId);
+          if (resultData.seed !== undefined) setSeed(resultData.seed);
         }
       } else if (selectedCategory === 'Document') {
         const resultData = await AiService.generateDocument('business', params);
         setResult(resultData.content);
         setGenerationId(resultData.generationId);
       } else if (selectedCategory === 'Texte') {
-        if (selectedFunction && selectedFunction.includes('Flyers')) {
-          const flyerResult = await AiService.generateFlyer(params);
+        const isFlyer = selectedFunction && (selectedFunction.includes('Flyers') || selectedFunction.includes('publicitaire'));
+        if (isFlyer) {
+          const flyerResult = await AiService.generateFlyer(params, seed);
           setImageUrl(flyerResult.url);
           setResult(flyerResult.url);
           setGenerationId(flyerResult.generationId);
+          if (flyerResult.seed !== undefined) setSeed(flyerResult.seed);
         } else {
           const resultData = await AiService.generateText(
             params,
