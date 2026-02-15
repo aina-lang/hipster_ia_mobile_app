@@ -117,7 +117,7 @@ function CustomDrawerContent(props: any) {
    * ============================ */
 
 
-  const userName = user?.name || 'Utilisateur';
+  const userName = user?.name|| 'Utilisateur';
 
   const userAvatar = user?.avatarUrl
     ? `https://hipster-api.fr${user.avatarUrl}`
@@ -235,7 +235,7 @@ function CustomDrawerContent(props: any) {
                             {label}
                           </Text>
                           <Text numberOfLines={1} style={styles.historyItemSubtext}>
-                            {item.preview.replace(/\s+/g, ' ')}
+                            {(item.preview || '').replace(/\s+/g, ' ')}
                           </Text>
                         </View>
                       </TouchableOpacity>

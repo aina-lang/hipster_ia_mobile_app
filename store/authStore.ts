@@ -54,6 +54,7 @@ interface User {
   videosUsed?: number;
   audioUsed?: number;
   type?: 'ai' | 'standard';
+  name?: string;
 }
 
 interface AuthState {
