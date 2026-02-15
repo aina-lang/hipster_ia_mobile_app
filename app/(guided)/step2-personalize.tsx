@@ -13,6 +13,7 @@ import {
   KeyboardAvoidingView,
   Image,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -59,6 +60,7 @@ import {
 import illus2 from "../../assets/illus2.jpeg"
 import illus3 from "../../assets/illus3.jpeg"
 import illus4 from "../../assets/illus4.jpeg"
+import { api } from '../../api/client';
 import { useEffect, useRef, useState } from 'react';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -317,6 +319,25 @@ export default function Step2PersonalizeScreen() {
 
   // No longer rendering questions
 
+  const [refining, setRefining] = useState(false);
+
+  // Magic Refine Handler
+  const handleRefine = async () => {
+    if (!localQuery.trim()) return;
+    setRefining(true);
+    try {
+      const response = await api.post('/ai/refine-text', { text: localQuery });
+      if (response.data && response.data.refined) {
+        setLocalQuery(response.data.refined);
+      }
+    } catch (error) {
+      console.error('Refine error:', error);
+      Alert.alert('Erreur', 'Impossible d\'améliorer le texte.');
+    } finally {
+      setRefining(false);
+    }
+  };
+
   const handleCreate = () => {
     // Validate based on category
     if (selectedCategory === 'Image' || selectedCategory === 'Social') {
@@ -325,8 +346,6 @@ export default function Step2PersonalizeScreen() {
         Alert.alert('Style requis', 'Veuillez choisir un style artistique.');
         return;
       }
-    } else if (selectedCategory === 'Texte') {
-      // Text flow: require intention
     }
 
     // All validations passed, save query and go to result
@@ -339,9 +358,7 @@ export default function Step2PersonalizeScreen() {
   return (
     <GuidedScreenWrapper
       scrollViewRef={scrollRef}
-      footer={
-        null
-      }
+      footer={null}
     >
       <View style={{ paddingHorizontal: 20 }}>
         {/* Header */}
@@ -359,8 +376,9 @@ export default function Step2PersonalizeScreen() {
         {(selectedCategory === 'Image' || selectedCategory === 'Social') && (
           <View style={{ marginBottom: 32 }}>
 
+            {/* 1. VISUAL STYLE */}
             <View style={{ marginTop: 32 }}>
-              <Text style={styles.sectionTitle}>Choisissez le style artistique</Text>
+              <Text style={styles.sectionTitle}>1. Choisissez le style artistique</Text>
               <View style={{ flexDirection: 'column', gap: 16, marginTop: 16 }}>
                 {VISUAL_STYLES.map((style) => {
                   const isSelected = selectedStyle === style.label;
@@ -408,13 +426,44 @@ export default function Step2PersonalizeScreen() {
                 })}
               </View>
             </View>
+
           </View>
         )}
-        {/* Intentions removed */}
 
         {/* Prompt Section */}
         <View style={{ marginTop: 20, marginBottom: 40 }}>
-          <Text style={styles.sectionTitle}>Étape finale : Précisez votre besoin</Text>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Text style={styles.sectionTitle}>
+              {(selectedCategory === 'Image' || selectedCategory === 'Social') ? '2. ' : ''}Précisez votre besoin
+            </Text>
+
+            {/* MAGIC REFINE BUTTON */}
+            <TouchableOpacity
+              onPress={handleRefine}
+              disabled={refining || !localQuery}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 6,
+                backgroundColor: refining ? colors.primary.main + '40' : colors.primary.main + '20',
+                paddingHorizontal: 12,
+                paddingVertical: 6,
+                borderRadius: 20,
+                borderWidth: 1,
+                borderColor: colors.primary.main + '60'
+              }}
+            >
+              {refining ? (
+                <ActivityIndicator size="small" color={colors.primary.main} />
+              ) : (
+                <Sparkles size={14} color={colors.primary.main} />
+              )}
+              <Text style={{ color: colors.primary.main, fontSize: 12, fontWeight: '600' }}>
+                {refining ? 'Optimisation...' : 'Améliorer avec IA'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
           <Text style={styles.sectionSubtitle}>
             Décrivez précisément l'offre ou le visuel souhaité (ex: promotion -20% sur les burgers...)
           </Text>

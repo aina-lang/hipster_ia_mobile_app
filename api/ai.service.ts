@@ -52,8 +52,8 @@ export const AiService = {
     return response.data.data;
   },
 
-  generateImage: async (params: any, style: ImageStyle) => {
-    console.log('[AiService] generateImage:', style, params.job);
+  generateImage: async (params: any, style: ImageStyle, seed?: number) => {
+    console.log('[AiService] generateImage:', style, params.job, 'Seed:', seed);
     const referenceImage = params.reference_image;
 
     // Create FormData for multipart/form-data upload
@@ -85,6 +85,9 @@ export const AiService = {
     }
 
     formData.append('style', style);
+    if (seed) {
+      formData.append('seed', seed.toString());
+    }
 
     const response = await api.post('/ai/image', formData, {
       headers: {

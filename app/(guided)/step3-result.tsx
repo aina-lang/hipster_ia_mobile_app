@@ -108,8 +108,14 @@ export default function Step3ResultScreen() {
   const endDate = user?.subscriptionEndDate ? new Date(user.subscriptionEndDate) : null;
   const isExpired = endDate && now > endDate;
   const [generationId, setGenerationId] = useState<number | null>(null);
+  const [seed, setSeed] = useState<number | null>(null); // New Seed State
+  const [customSeed, setCustomSeed] = useState(''); // User input for seed
   const [localQuery, setLocalQuery] = useState('');
   const [regenMode, setRegenMode] = useState<'text' | 'image' | 'both'>('text');
+
+  // ... (existing code)
+
+
   const [selectedModel, setSelectedModel] = useState('Moderne');
   const [showRegeneratePanel, setShowRegeneratePanel] = useState(false);
   const [showModelPicker, setShowModelPicker] = useState(false);
@@ -225,17 +231,29 @@ export default function Step3ResultScreen() {
       <View style={styles.imageContainer}>
         <View style={styles.imageHeader}>
           <Text selectable={true} style={styles.imageLabel}>
-            Flyer Généré
+            Visuel Généré
           </Text>
-          <TouchableOpacity
-            onPress={() => copyValueToClipboard('flyer_image', imageUrl)}
-            style={styles.miniCopyButton}>
-            {copiedKey === 'flyer_image' ? (
-              <Check size={16} color={colors.primary.main} />
-            ) : (
-              <Copy size={16} color={colors.primary.main} />
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            {/* Seed Display */}
+            {seed && (
+              <TouchableOpacity
+                onPress={() => copyValueToClipboard('seed', seed)}
+                style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.1)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12, gap: 4 }}
+              >
+                <Sparkles size={12} color={colors.text.muted} />
+                <Text style={{ color: colors.text.muted, fontSize: 10, fontFamily: 'monospace' }}>Seed: {seed}</Text>
+              </TouchableOpacity>
             )}
-          </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => copyValueToClipboard('flyer_image', imageUrl)}
+              style={styles.miniCopyButton}>
+              {copiedKey === 'flyer_image' ? (
+                <Check size={16} color={colors.primary.main} />
+              ) : (
+                <Copy size={16} color={colors.primary.main} />
+              )}
+            </TouchableOpacity>
+          </View>
         </View>
         <View style={styles.imageWrapper}>
           <Image source={{ uri: imageUrl }} style={styles.flyerImage} resizeMode="contain" />
@@ -477,9 +495,10 @@ export default function Step3ResultScreen() {
 
   const generateContent = async (
     overrideQuery?: string,
-    mode: 'text' | 'image' | 'both' = 'both'
+    mode: 'text' | 'image' | 'both' = 'both',
+    useSeed?: number
   ) => {
-    console.log('generateContent');
+    console.log('generateContent', { mode, useSeed });
 
     // if (loading) return;
 
@@ -551,11 +570,13 @@ export default function Step3ResultScreen() {
         } else {
           const resultData = await AiService.generateImage(
             params,
-            (selectedStyle as any) || 'realistic'
+            (selectedStyle as any) || 'realistic',
+            useSeed // Pass seed!
           );
           setResult(resultData.url);
           setImageUrl(resultData.url);
           setGenerationId(resultData.generationId);
+          if (resultData.seed) setSeed(resultData.seed); // Capture Seed
         }
       } else if (selectedCategory === 'Document') {
         const resultData = await AiService.generateDocument('business', params);
@@ -580,7 +601,7 @@ export default function Step3ResultScreen() {
       console.error('Generation error:', error);
       const errMsg = error?.response?.data?.message || error.message || 'Erreur inconnue';
       showModal('error', 'Erreur de génération', errMsg);
-      setResult('Une erreur est survenue lors de la génération. ' + errMsg);
+      setResult('Une erreur est survenue lors du génération. ' + errMsg);
     } finally {
       setLoading(false);
       // Update credits in real-time
@@ -1218,6 +1239,19 @@ export default function Step3ResultScreen() {
                       />
                     </View>
 
+                    {/* SEED INPUT */}
+                    <View style={{ marginTop: 12 }}>
+                      <Text style={styles.modeLabel}>Seed (Optionnel) :</Text>
+                      <TextInput
+                        style={[styles.regenerateInput, { minHeight: 40, marginTop: 8 }]}
+                        value={customSeed}
+                        onChangeText={setCustomSeed}
+                        placeholder="Ex: 123456789"
+                        placeholderTextColor={colors.text.muted}
+                        keyboardType="numeric"
+                      />
+                    </View>
+
                     <View style={styles.regenerateTools}>
                       <TouchableOpacity style={styles.toolIcon}>
                         <LucideImage size={20} color={colors.text.secondary} />
@@ -1277,7 +1311,10 @@ export default function Step3ResultScreen() {
 
                     <NeonButton
                       title="C'est parti"
-                      onPress={() => generateContent(localQuery, regenMode)}
+                      onPress={() => {
+                        const seedNum = customSeed ? parseInt(customSeed, 10) : undefined;
+                        generateContent(localQuery, regenMode, seedNum);
+                      }}
                       icon={<Sparkles size={20} color="#000" />}
                       size="lg"
                       variant="premium"
