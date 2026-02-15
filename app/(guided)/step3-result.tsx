@@ -523,7 +523,7 @@ export default function Step3ResultScreen() {
 
 
       const params = {
-        job: selectedJob,
+        job: selectedJob || 'Autre', // Safeguard against null job
         function: selectedFunction, // e.g. "Flyers / Affiches"
         userQuery: overrideQuery || userQuery,
         style: selectedStyle,
