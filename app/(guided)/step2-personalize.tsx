@@ -68,9 +68,9 @@ const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 const VISUAL_STYLES = [
   // Custom Styles
   {
-    label: 'Monochrome',
+    label: 'Premium',
     icon: Moon,
-    description: 'Noir & blanc élégant et contrasté.\nIntemporel, artistique, sophistiqué.',
+    description: 'Noir & blanc haut de gamme.\nContrasté, intemporel, effet luxe.',
     image: illus2,
   },
   {

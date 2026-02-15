@@ -14,7 +14,7 @@ export type JobType =
 export type CreationCategory = 'Texte' | 'Image' | 'Document' | 'Social';
 
 export type VisualStyle =
-  | 'Monochrome'
+  | 'Premium'
   | 'Hero Studio'
   | 'Minimal Studio'
   | '3D Model'
