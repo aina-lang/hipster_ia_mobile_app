@@ -893,9 +893,19 @@ export default function Step3ResultScreen() {
           <View style={styles.resultCard}>
             {/* 📱 SOCIAL CATEGORY (Image + Caption) */}
             {selectedCategory === 'Social' && (
-              <View>
+              <View style={styles.socialCard}>
+                <View style={styles.socialHeader}>
+                  <View style={styles.socialAvatar}>
+                    <Sparkles size={16} color={colors.primary.main} />
+                  </View>
+                  <View>
+                    <Text style={styles.socialUser}>Hipster IA</Text>
+                    <Text style={styles.socialTime}>À l'instant • Publicité</Text>
+                  </View>
+                </View>
+
                 {/* Image Section */}
-                <View style={styles.imageSection}>
+                <View style={[styles.socialImageSection, { aspectRatio: 0.8 }]}>
                   {loading || (regenMode === 'image' && imageUrl === '') ? (
                     <View style={styles.imagePlaceholder}>
                       <LucideImage size={48} color="rgba(255,255,255,0.2)" />
@@ -905,7 +915,7 @@ export default function Step3ResultScreen() {
                     </View>
                   ) : (
                     <Image
-                      source={{ uri: imageUrl || result || '' }}
+                      source={{ uri: imageUrl || '' }}
                       style={styles.generatedImage}
                       resizeMode="cover"
                     />
@@ -913,7 +923,7 @@ export default function Step3ResultScreen() {
                 </View>
 
                 {/* Caption Section */}
-                <View style={styles.textSection}>
+                <View style={styles.socialCaptionSection}>
                   {loading || (regenMode === 'text' && result === '') ? (
                     <View style={styles.textPlaceholder}>
                       {[1, 2, 3].map((i) => (
@@ -927,7 +937,7 @@ export default function Step3ResultScreen() {
                       ))}
                     </View>
                   ) : (
-                    <Text selectable={true} style={styles.contentText}>
+                    <Text selectable={true} style={styles.socialCaptionText}>
                       {result}
                     </Text>
                   )}
@@ -1374,6 +1384,49 @@ const styles = StyleSheet.create({
   generatedImage: {
     width: '100%',
     aspectRatio: 1,
+  },
+  /* --- SOCIAL POST STYLE --- */
+  socialCard: {
+    width: '100%',
+    backgroundColor: 'rgba(255, 255, 255, 0.02)',
+  },
+  socialHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    gap: 12,
+  },
+  socialAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: `${colors.primary.main}20`,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: `${colors.primary.main}40`,
+  },
+  socialUser: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FFF',
+  },
+  socialTime: {
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.4)',
+  },
+  socialImageSection: {
+    width: '100%',
+    backgroundColor: '#000',
+  },
+  socialCaptionSection: {
+    padding: 16,
+    paddingTop: 12,
+  },
+  socialCaptionText: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: '#EEE',
   },
   documentSection: {
     padding: 24,

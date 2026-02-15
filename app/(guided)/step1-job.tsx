@@ -35,6 +35,8 @@ import {
   Leaf,
   Globe,
   Smartphone,
+  Music,
+  Box,
 } from 'lucide-react-native';
 
 const JOBS: { label: JobType; icon: any }[] = [
@@ -55,11 +57,9 @@ interface JobFunction {
 }
 
 const UNIVERSAL_FUNCTIONS: JobFunction[] = [
-  { label: 'Contenu réseaux', category: 'Social', icon: Smartphone },
   { label: 'Visuel publicitaire', category: 'Image', icon: Palette },
-  { label: 'Texte marketing', category: 'Texte', icon: FileText },
   { label: 'Page web / SEO', category: 'Texte', icon: Globe },
-  { label: 'Email', category: 'Texte', icon: Mail },
+  { label: 'Contenu réseaux', category: 'Social', icon: Smartphone },
 ];
 
 export default function Step1JobScreen() {
