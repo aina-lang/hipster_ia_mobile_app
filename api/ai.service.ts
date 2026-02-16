@@ -11,7 +11,7 @@ export type TextGenerationType =
   | 'texte'
   | 'seo';
 export type ImageStyle =
-  | 'Monochrome'
+  | 'Premium'
   | 'Hero Studio'
   | 'Minimal Studio'
   | 'None'
