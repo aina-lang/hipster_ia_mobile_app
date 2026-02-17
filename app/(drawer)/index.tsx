@@ -291,18 +291,8 @@ export default function HomeScreen() {
       // Determine correct params based on plan
       const isCurieux = planType === 'curieux';
 
-      // Special handling for trial if Stripe ID is missing in fetched plans or needs fallback
-      // Assuming fetched plans have correct Prctbl IDs now. 
-      // User wanted: "Use Studio price for trial"
-      const studioPlan = plans.find(p => p.id === 'studio');
-      const trialPriceId = studioPlan?.stripePriceId; // Fallback or ensuring we have IT
-
-      if (isCurieux && !trialPriceId) {
-        throw new Error("Impossible de trouver le plan Studio pour l'essai gratuit");
-      }
-
       const payload = {
-        priceId: isCurieux ? trialPriceId : planConfig.stripePriceId,
+        priceId: !isCurieux ? planConfig?.stripePriceId : undefined,
         planId: planType,
         userId: user?.id,
       };
