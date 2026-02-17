@@ -604,6 +604,14 @@ export default function HomeScreen() {
       // Handle nested response structure
       const content = response.data?.content ?? response.content ?? response.message ?? response;
 
+      // Format image base64 for React Native
+      let mediaUrl: string | undefined;
+      if (response.type === 'image' && response.imageBase64) {
+        mediaUrl = `data:image/png;base64,${response.imageBase64}`;
+      } else {
+        mediaUrl = response.mediaUrl;
+      }
+
       const aiMsg: Message = {
         id: (Date.now() + 1).toString(),
         text: typeof content === 'string' ? content : JSON.stringify(content),
@@ -611,7 +619,7 @@ export default function HomeScreen() {
         timestamp: new Date(),
         isTyping: !!(typeof content === 'string' && content.length > 0),
         type: response.type || 'text',
-        mediaUrl: response.mediaUrl,
+        mediaUrl: mediaUrl,
       };
 
       setMessages((prev) => [...prev, aiMsg]);
