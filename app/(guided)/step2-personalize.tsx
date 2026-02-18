@@ -341,8 +341,8 @@ export default function Step2PersonalizeScreen() {
   const handleCreate = () => {
     // Validate based on category
     if (selectedCategory === 'Image' || selectedCategory === 'Social') {
-      // Visual flow: require style and image
-      if (!selectedStyle) {
+      // Visual flow: require style only if NO image is uploaded
+      if (!uploadedImage && !selectedStyle) {
         Alert.alert('Style requis', 'Veuillez choisir un style artistique.');
         return;
       }
@@ -376,60 +376,68 @@ export default function Step2PersonalizeScreen() {
         {(selectedCategory === 'Image' || selectedCategory === 'Social') && (
           <View style={{ marginBottom: 32 }}>
 
-            {/* 1. VISUAL STYLE */}
-            <View style={{ marginTop: 32 }}>
-              <Text style={styles.sectionTitle}>1. Choisissez le style artistique</Text>
-              <View style={{ flexDirection: 'column', gap: 16, marginTop: 16 }}>
-                {VISUAL_STYLES.map((style) => {
-                  const isSelected = selectedStyle === style.label;
-                  return (
-                    <TouchableOpacity
-                      key={style.label}
-                      style={styles.styleCard}
-                      onPress={() => {
-                        setStyle(style.label as any);
-                      }}
-                      activeOpacity={0.9}
-                    >
-                      <Image
-                        source={
-                          typeof style.image === 'string'
-                            ? { uri: style.image }
-                            : style.image
-                        }
-                        style={styles.styleCardImage}
-                        resizeMode='cover'
-                      />
+            {/* 1. VISUAL STYLE (Hidden if image is uploaded) */}
+            {!uploadedImage && (
+              <View style={{ marginTop: 32 }}>
+                <Text style={styles.sectionTitle}>1. Choisissez le style artistique</Text>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={{ gap: 16, marginTop: 16, paddingRight: 40 }}
+                >
+                  {VISUAL_STYLES.map((style) => {
+                    const isSelected = selectedStyle === style.label;
+                    return (
+                      <TouchableOpacity
+                        key={style.label}
+                        style={[styles.styleCard, { width: 160 }]}
+                        onPress={() => {
+                          setStyle(style.label as any);
+                        }}
+                        activeOpacity={0.9}
+                      >
+                        <Image
+                          source={
+                            typeof style.image === 'string'
+                              ? { uri: style.image }
+                              : style.image
+                          }
+                          style={styles.styleCardImage}
+                          resizeMode='cover'
+                        />
 
-                      <View style={styles.styleCardContent}>
-                        <Text style={styles.styleCardLabel}>{style.label}</Text>
-                        <Text style={styles.styleCardDescription} numberOfLines={2}>
-                          {style.description}
-                        </Text>
-                      </View>
+                        <View style={styles.styleCardContent}>
+                          <Text style={styles.styleCardLabel}>{style.label}</Text>
+                          <Text style={styles.styleCardDescription} numberOfLines={2}>
+                            {style.description}
+                          </Text>
+                        </View>
 
-                      {isSelected && (
-                        <BlurView
-                          intensity={20}
-                          tint="light"
-                          style={StyleSheet.absoluteFill}
-                        >
-                          <View style={styles.selectedOverlayContent}>
-                            <View style={styles.styleCardCheck}>
-                              <View style={styles.styleCardCheckInner} />
+                        {isSelected && (
+                          <BlurView
+                            intensity={20}
+                            tint="light"
+                            style={StyleSheet.absoluteFill}
+                          >
+                            <View style={styles.selectedOverlayContent}>
+                              <View style={styles.styleCardCheck}>
+                                <View style={styles.styleCardCheckInner} />
+                              </View>
                             </View>
-                          </View>
-                        </BlurView>
-                      )}
-                    </TouchableOpacity>
-                  );
-                })}
+                          </BlurView>
+                        )}
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
               </View>
-            </View>
+            )}
 
             {/* 2. REFERENCE IMAGE */}
             <View style={{ marginTop: 32 }}>
-              <Text style={styles.sectionTitle}>2. Image de référence (Optionnel)</Text>
+              <Text style={styles.sectionTitle}>
+                {uploadedImage ? '1' : '2'}. Image de référence (Optionnel)
+              </Text>
               <Text style={styles.sectionSubtitle}>
                 Ajoutez une photo pour que l'IA s'en inspire (composition, structure).
               </Text>
@@ -466,7 +474,9 @@ export default function Step2PersonalizeScreen() {
         <View style={{ marginTop: 20, marginBottom: 40 }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
             <Text style={styles.sectionTitle}>
-              {(selectedCategory === 'Image' || selectedCategory === 'Social') ? '3. ' : ''}Précisez votre besoin
+              {(selectedCategory === 'Image' || selectedCategory === 'Social')
+                ? (uploadedImage ? '2. ' : '3. ')
+                : ''}Précisez votre besoin
             </Text>
 
             {/* MAGIC REFINE BUTTON */}
@@ -733,12 +743,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.primary.main,
   },
-  sectionSubtitle: {
-    fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.5)',
-    marginTop: 4,
-    marginBottom: 16,
-  },
   changeImageOverlay: {
     position: 'absolute',
     bottom: 0,
@@ -779,7 +783,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary.main + '0D',
   },
   styleCard: {
-    width: '100%',
     borderRadius: 16,
     overflow: 'hidden',
     position: 'relative',
