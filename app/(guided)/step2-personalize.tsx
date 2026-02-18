@@ -366,20 +366,49 @@ export default function Step2PersonalizeScreen() {
           <Text style={styles.headerTitle}>Personnalisez votre création</Text>
           <View style={styles.breadcrumb}>
             <Text style={styles.breadcrumbJob}>{selectedJob}</Text>
-            <ChevronRight size={14} color={colors.text.muted} />
-            <Text style={styles.breadcrumbFunction}>{selectedFunction?.split('(')[0]}</Text>
+            <ChevronRight size={14} color={colors.text.primary} />
+            <Text style={styles.breadcrumbJob}>{selectedFunction?.split('(')[0]}</Text>
           </View>
         </View>
 
 
-        {/* CONDITIONAL FLOW: Visual Style Selection */}
+        {/* CONDITIONAL FLOW: Visual Layout */}
         {(selectedCategory === 'Image' || selectedCategory === 'Social') && (
           <View style={{ marginBottom: 32 }}>
 
-            {/* 1. VISUAL STYLE (Hidden if image is uploaded) */}
+            {/* 1. REFERENCE IMAGE (Now at the top) */}
+            <View style={{ marginTop: 32 }}>
+              <Text style={styles.sectionTitle}>Image de référence (Optionnel)</Text>
+              {uploadedImage ? (
+                <View style={styles.imagePreviewContainer}>
+                  <Image source={{ uri: uploadedImage }} style={styles.imagePreview} />
+                  <TouchableOpacity
+                    style={styles.removeImageButton}
+                    onPress={() => setUploadedImage(null)}
+                  >
+                    <X size={20} color="white" />
+                  </TouchableOpacity>
+                  <BlurView intensity={30} tint="dark" style={styles.changeImageOverlay}>
+                    <TouchableOpacity onPress={pickImage} style={styles.changeImageButton}>
+                      <Text style={styles.changeImageText}>Changer l'image</Text>
+                    </TouchableOpacity>
+                  </BlurView>
+                </View>
+              ) : (
+                <TouchableOpacity style={styles.uploadButton} onPress={pickImage}>
+                  <View style={styles.uploadIconContainer}>
+                    <Upload size={32} color={colors.primary.main} />
+                  </View>
+                  <Text style={styles.uploadText}>Cliquez pour ajouter une photo</Text>
+                  <Text style={styles.uploadHint}>JPG, PNG ou WebP</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {/* 2. VISUAL STYLE (Hidden if image is uploaded) */}
             {!uploadedImage && (
               <View style={{ marginTop: 32 }}>
-                <Text style={styles.sectionTitle}>1. Choisissez le style artistique</Text>
+                <Text style={styles.sectionTitle}>Choisissez le style artistique</Text>
                 <ScrollView
                   horizontal
                   showsHorizontalScrollIndicator={false}
@@ -432,41 +461,6 @@ export default function Step2PersonalizeScreen() {
                 </ScrollView>
               </View>
             )}
-
-            {/* 2. REFERENCE IMAGE */}
-            <View style={{ marginTop: 32 }}>
-              <Text style={styles.sectionTitle}>
-                {uploadedImage ? '1' : '2'}. Image de référence (Optionnel)
-              </Text>
-              <Text style={styles.sectionSubtitle}>
-                Ajoutez une photo pour que l'IA s'en inspire (composition, structure).
-              </Text>
-
-              {uploadedImage ? (
-                <View style={styles.imagePreviewContainer}>
-                  <Image source={{ uri: uploadedImage }} style={styles.imagePreview} />
-                  <TouchableOpacity
-                    style={styles.removeImageButton}
-                    onPress={() => setUploadedImage(null)}
-                  >
-                    <X size={20} color="white" />
-                  </TouchableOpacity>
-                  <BlurView intensity={30} tint="dark" style={styles.changeImageOverlay}>
-                    <TouchableOpacity onPress={pickImage} style={styles.changeImageButton}>
-                      <Text style={styles.changeImageText}>Changer l'image</Text>
-                    </TouchableOpacity>
-                  </BlurView>
-                </View>
-              ) : (
-                <TouchableOpacity style={styles.uploadButton} onPress={pickImage}>
-                  <View style={styles.uploadIconContainer}>
-                    <Upload size={32} color={colors.primary.main} />
-                  </View>
-                  <Text style={styles.uploadText}>Cliquez pour ajouter une photo</Text>
-                  <Text style={styles.uploadHint}>JPG, PNG ou WebP</Text>
-                </TouchableOpacity>
-              )}
-            </View>
           </View>
         )}
 
@@ -474,41 +468,11 @@ export default function Step2PersonalizeScreen() {
         <View style={{ marginTop: 20, marginBottom: 40 }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
             <Text style={styles.sectionTitle}>
-              {(selectedCategory === 'Image' || selectedCategory === 'Social')
-                ? (uploadedImage ? '2. ' : '3. ')
-                : ''}Précisez votre besoin
+          Précisez votre besoin
             </Text>
-
-            {/* MAGIC REFINE BUTTON */}
-            <TouchableOpacity
-              onPress={handleRefine}
-              disabled={refining || !localQuery}
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: 6,
-                backgroundColor: refining ? colors.primary.main + '40' : colors.primary.main + '20',
-                paddingHorizontal: 12,
-                paddingVertical: 6,
-                borderRadius: 20,
-                borderWidth: 1,
-                borderColor: colors.primary.main + '60'
-              }}
-            >
-              {refining ? (
-                <ActivityIndicator size="small" color={colors.primary.main} />
-              ) : (
-                <Sparkles size={14} color={colors.primary.main} />
-              )}
-              <Text style={{ color: colors.primary.main, fontSize: 12, fontWeight: '600' }}>
-                {refining ? 'Optimisation...' : 'Améliorer avec IA'}
-              </Text>
-            </TouchableOpacity>
           </View>
 
-          <Text style={styles.sectionSubtitle}>
-            Décrivez précisément l'offre ou le visuel souhaité (ex: promotion -20% sur les burgers...)
-          </Text>
+        
 
           <View style={styles.promptContainer}>
             <TextInput
@@ -522,7 +486,7 @@ export default function Step2PersonalizeScreen() {
 
             <TouchableOpacity style={styles.micButton} activeOpacity={0.7}>
               <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
-                <Mic size={24} color={colors.primary.main} />
+                <Mic size={24} color={colors.primary.light} />
               </Animated.View>
             </TouchableOpacity>
           </View>

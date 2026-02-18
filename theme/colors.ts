@@ -2,17 +2,17 @@
 // Removing all other colors (Violet, Cyan, Pink) for a focused brand identity.
 
 const blue = {
-  50: '#f0f3ff',
-  100: '#e0e7ff',
-  200: '#c7d2fe',
-  300: '#a5b4fc',
-  400: '#818cf8',
-  500: '#6366f1',
-  600: '#4f46e5',
-  700: '#2c469b', // Softer primary blue
-  800: '#1e1b4b',
-  900: '#0f172a',
-  950: '#020617',
+  50:  '#eef2ff',  // Très clair, presque blanc bleuté
+  100: '#dce6ff',
+  200: '#b9ceff',
+  300: '#8aadff',
+  400: '#5c88ff',
+  500: '#3a65f0',
+  600: '#2d52c8',  // Entre 500 et 700
+  700: '#203c8e',  // ← TA COULEUR DE MARQUE
+  800: '#162a66',
+  900: '#0d1a40',
+  950: '#070e24',
 };
 
 export const colors = {
