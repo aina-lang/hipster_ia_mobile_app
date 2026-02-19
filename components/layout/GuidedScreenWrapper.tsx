@@ -54,7 +54,7 @@ export function GuidedScreenWrapper({ children, headerRight, onBack, footer, scr
   });
 
   return (
-    <BackgroundGradientOnboarding blurIntensity={80}>
+    <BackgroundGradientOnboarding blurIntensity={80} darkOverlay={true}>
       <View style={{ flex: 1 }}>
         {/* Absolute Header */}
         <Animated.View

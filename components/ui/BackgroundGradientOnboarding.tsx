@@ -8,9 +8,10 @@ const { width, height } = Dimensions.get('screen');
 interface BackgroundGradientProps {
   children?: React.ReactNode;
   blurIntensity?: number;
+  darkOverlay?: boolean;
 }
 
-export function BackgroundGradientOnboarding({ children, blurIntensity = 0 }: BackgroundGradientProps) {
+export function BackgroundGradientOnboarding({ children, blurIntensity = 0, darkOverlay = false }: BackgroundGradientProps) {
   return (
     <View style={styles.container}>
       <Image
@@ -22,6 +23,8 @@ export function BackgroundGradientOnboarding({ children, blurIntensity = 0 }: Ba
       {blurIntensity > 0 && (
         <BlurView intensity={blurIntensity} style={StyleSheet.absoluteFill} tint="dark" />
       )}
+      {/* Dark overlay to focus on content */}
+      {darkOverlay && <View style={[StyleSheet.absoluteFill, styles.darkOverlay]} />}
       {children}
     </View>
   );
@@ -41,5 +44,9 @@ const styles = StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFillObject,
     // backgroundColor: 'rgba(2, 6, 23, 0.4)',
+  },
+  darkOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
   },
 });
