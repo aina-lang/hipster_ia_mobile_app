@@ -985,105 +985,58 @@ export default function Step3ResultScreen() {
             )}
           </View>
 
-          {/* Main Result Card */}
-          <View style={styles.resultCard}>
-            {/* 📱 SOCIAL CATEGORY (Image + Caption) */}
-            {selectedCategory === 'Social' && (
-              <View style={styles.socialCard}>
-                <View style={styles.socialHeader}>
-                  <View style={styles.socialAvatar}>
-                    <Sparkles size={16} color={colors.primary.main} />
-                  </View>
-                  <View>
-                    <Text style={styles.socialUser}>Hipster IA</Text>
-                    <Text style={styles.socialTime}>À l'instant • Publicité</Text>
-                  </View>
-                </View>
-
-                {/* Image Section */}
-                <View style={[styles.socialImageSection, { aspectRatio: 0.8 }]}>
-                  {loading || (regenMode === 'image' && imageUrl === '') ? (
-                    <View style={styles.imagePlaceholder}>
-                      <LucideImage size={48} color="rgba(255,255,255,0.2)" />
-                      <Text selectable={true} style={styles.placeholderText}>
-                        Génération du visuel...
-                      </Text>
+          {!loading && (
+            <View style={styles.resultCard}>
+              {/* 📱 SOCIAL CATEGORY (Image + Caption) */}
+              {selectedCategory === 'Social' && (
+                <View style={styles.socialCard}>
+                  <View style={styles.socialHeader}>
+                    <View style={styles.socialAvatar}>
+                      <Sparkles size={16} color={colors.primary.main} />
                     </View>
-                  ) : (
+                    <View>
+                      <Text style={styles.socialUser}>Hipster IA</Text>
+                      <Text style={styles.socialTime}>À l'instant • Publicité</Text>
+                    </View>
+                  </View>
+
+                  <View style={[styles.socialImageSection, { aspectRatio: 0.8 }]}>
                     <Image
                       source={{ uri: imageUrl || '' }}
                       style={styles.generatedImage}
                       resizeMode="cover"
                     />
-                  )}
-                </View>
+                  </View>
 
-                {/* Caption Section */}
-                <View style={styles.socialCaptionSection}>
-                  {loading || (regenMode === 'text' && result === '') ? (
-                    <View style={styles.textPlaceholder}>
-                      {[1, 2, 3].map((i) => (
-                        <Animated.View
-                          key={i}
-                          style={[
-                            styles.skeletonLine,
-                            { width: i === 3 ? '60%' : '100%', opacity: pulseAnim },
-                          ]}
-                        />
-                      ))}
-                    </View>
-                  ) : (
+                  <View style={styles.socialCaptionSection}>
                     <Text selectable={true} style={styles.socialCaptionText}>
                       {result}
                     </Text>
-                  )}
-                </View>
-              </View>
-            )}
-
-            {/* 🖼️ IMAGE CATEGORY (Full Visual focus) */}
-            {selectedCategory === 'Image' && (
-              <View style={styles.imageSection}>
-                {loading || (regenMode === 'image' && imageUrl === '') ? (
-                  <View style={styles.imagePlaceholder}>
-                    <LucideImage size={48} color="rgba(255,255,255,0.2)" />
-                    <Text selectable={true} style={styles.placeholderText}>
-                      Génération de l'image...
-                    </Text>
                   </View>
-                ) : (
+                </View>
+              )}
+
+              {/* 🖼️ IMAGE CATEGORY (Full Visual focus) */}
+              {selectedCategory === 'Image' && (
+                <View style={styles.imageSection}>
                   <Image
                     source={{ uri: imageUrl || result || '' }}
                     style={styles.generatedImage}
                     resizeMode="contain"
                   />
-                )}
-              </View>
-            )}
-
-            {/* 📄 DOCUMENT CATEGORY (Structured View) */}
-            {selectedCategory === 'Document' && (
-              <View style={styles.documentSection}>
-                <View style={styles.documentHeader}>
-                  <FileText size={32} color={colors.primary.main} />
-                  <Text selectable={true} style={styles.documentTitle}>
-                    Document structuré
-                  </Text>
                 </View>
+              )}
 
-                {loading || (regenMode === 'text' && result === '') ? (
-                  <View style={styles.textPlaceholder}>
-                    {[1, 2, 3, 4].map((i) => (
-                      <Animated.View
-                        key={i}
-                        style={[
-                          styles.skeletonLine,
-                          { width: i === 4 ? '40%' : '100%', opacity: pulseAnim },
-                        ]}
-                      />
-                    ))}
+              {/* 📄 DOCUMENT CATEGORY (Structured View) */}
+              {selectedCategory === 'Document' && (
+                <View style={styles.documentSection}>
+                  <View style={styles.documentHeader}>
+                    <FileText size={32} color={colors.primary.main} />
+                    <Text selectable={true} style={styles.documentTitle}>
+                      Document structuré
+                    </Text>
                   </View>
-                ) : (
+
                   <View style={styles.structuredContent}>
                     {/* Model Picker for Documents */}
                     <TouchableOpacity
@@ -1171,26 +1124,12 @@ export default function Step3ResultScreen() {
                       );
                     })()}
                   </View>
-                )}
-              </View>
-            )}
+                </View>
+              )}
 
-            {/* ✍️ TEXT CATEGORY (Clean Reading focus) */}
-            {selectedCategory === 'Texte' && (
-              <View style={styles.textSection}>
-                {loading || (regenMode === 'text' && result === '') ? (
-                  <View style={styles.textPlaceholder}>
-                    {[1, 2, 3, 4, 5].map((i) => (
-                      <Animated.View
-                        key={i}
-                        style={[
-                          styles.skeletonLine,
-                          { width: i === 5 ? '70%' : '100%', opacity: pulseAnim },
-                        ]}
-                      />
-                    ))}
-                  </View>
-                ) : (
+              {/* ✍️ TEXT CATEGORY (Clean Reading focus) */}
+              {selectedCategory === 'Texte' && (
+                <View style={styles.textSection}>
                   <View>
                     {/* Display flyer image if it's a flyer */}
                     {imageUrl && selectedFunction?.includes('Flyers') && renderFlyerImage()}
@@ -1216,12 +1155,10 @@ export default function Step3ResultScreen() {
                       })()}
                     </View>
                   </View>
-                )}
-              </View>
-            )}
+                </View>
+              )}
 
-            {/* 🛠️ NAVIGATION & ACTIONS BAR (Generic but adapted) */}
-            {!loading && (
+              {/* 🛠️ NAVIGATION & ACTIONS BAR (Generic but adapted) */}
               <View style={styles.actionsBar}>
                 <View style={{ flex: 1, paddingHorizontal: 4 }}>
                   <NeonButton
@@ -1255,8 +1192,8 @@ export default function Step3ResultScreen() {
                   />
                 </View>
               </View>
-            )}
-          </View>
+            </View>
+          )}
 
           {/* Panneau de régénération replié */}
           {!loading && (
