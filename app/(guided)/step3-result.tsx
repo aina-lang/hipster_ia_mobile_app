@@ -566,10 +566,46 @@ export default function Step3ResultScreen() {
             (selectedStyle as any) || 'realistic',
             seed
           );
-          setResult(resultData.url);
-          setImageUrl(resultData.url);
-          setGenerationId(resultData.generationId);
-          if (resultData.seed !== undefined) setSeed(resultData.seed);
+
+          if (resultData.isAsync) {
+            console.log('[DEBUG] Async generation detected. Starting polling for ID:', resultData.generationId);
+            setGenerationId(resultData.generationId);
+
+            let isCompleted = false;
+            let attempts = 0;
+            const maxAttempts = 60; // 5 minutes (60 * 5s)
+
+            while (!isCompleted && attempts < maxAttempts) {
+              attempts++;
+              console.log(`[DEBUG] Polling attempt ${attempts}/${maxAttempts}...`);
+
+              // Wait 5 seconds
+              await new Promise(resolve => setTimeout(resolve, 5000));
+
+              try {
+                const updatedGen = await AiService.getConversation(resultData.generationId.toString());
+                if (updatedGen && updatedGen.imageUrl && updatedGen.imageUrl.startsWith('http')) {
+                  console.log('[DEBUG] Polling SUCCESS - Image ready:', updatedGen.imageUrl);
+                  setImageUrl(updatedGen.imageUrl);
+                  setResult(updatedGen.imageUrl);
+                  isCompleted = true;
+                } else if (updatedGen && updatedGen.result && updatedGen.result.startsWith('ERROR')) {
+                  throw new Error(updatedGen.result);
+                }
+              } catch (pollError) {
+                console.warn('[DEBUG] Polling error (continuing):', pollError);
+              }
+            }
+
+            if (!isCompleted) {
+              throw new Error('Délai de génération dépassé. Veuillez vérifier votre historique dans quelques instants.');
+            }
+          } else {
+            setResult(resultData.url);
+            setImageUrl(resultData.url);
+            setGenerationId(resultData.generationId);
+            if (resultData.seed !== undefined) setSeed(resultData.seed);
+          }
         }
       } else if (selectedCategory === 'Document') {
         const resultData = await AiService.generateDocument('business', params);
