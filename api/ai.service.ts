@@ -102,6 +102,7 @@ export const AiService = {
         'Content-Type': 'multipart/form-data',
       },
     });
+    console.log('[AiService] generateImage full response:', JSON.stringify(response.data, null, 2));
     console.log('[AiService] generateImage result URL:', response.data.data?.url);
     return response.data.data;
   },
@@ -187,6 +188,7 @@ export const AiService = {
         'Content-Type': 'multipart/form-data',
       },
     });
+    console.log('[AiService] generateFlyer full response:', JSON.stringify(response.data, null, 2));
     console.log('[AiService] generateFlyer result URL:', response.data.data?.url);
     return response.data.data;
   },

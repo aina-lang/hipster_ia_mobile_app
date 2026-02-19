@@ -244,7 +244,18 @@ export default function Step3ResultScreen() {
           </View>
         </View>
         <View style={styles.imageWrapper}>
-          <Image source={{ uri: imageUrl }} style={styles.flyerImage} resizeMode="contain" />
+          {imageUrl && imageUrl.trim() ? (
+            <Image 
+              source={{ uri: imageUrl }} 
+              style={styles.flyerImage} 
+              resizeMode="contain"
+              onError={(e) => console.error('[Image Error]', e.nativeEvent.error)}
+            />
+          ) : (
+            <Text style={{ color: colors.text.muted, textAlign: 'center' }}>
+              URL d'image invalide: {imageUrl}
+            </Text>
+          )}
         </View>
         <View style={styles.imageSeparator} />
       </View>
@@ -559,12 +570,16 @@ export default function Step3ResultScreen() {
           const maxAttempts = 60;
           while (!isCompleted && attempts < maxAttempts) {
             attempts++;
-            await new Promise(resolve => setTimeout(resolve, 5000));
+            await new Promise(resolve => setTimeout(resolve, 2000));
             try {
               const updatedGen = await AiService.getConversation(socialResponse.generationId.toString());
-              if (updatedGen?.imageUrl?.startsWith('http')) {
-                setImageUrl(updatedGen.imageUrl);
+              console.log('[DEBUG] Social Poll attempt', attempts, ':', JSON.stringify(updatedGen, null, 2));
+              // Check for imageUrl (backend field), url, or image
+              const imageUrl = updatedGen?.imageUrl || updatedGen?.url || updatedGen?.image;
+              if (imageUrl && typeof imageUrl === 'string' && imageUrl.startsWith('http')) {
+                setImageUrl(imageUrl);
                 isCompleted = true;
+                console.log('[DEBUG] ✅ Social image found:', imageUrl);
               } else if (updatedGen?.result?.startsWith('ERROR')) {
                 throw new Error(updatedGen.result);
               }
@@ -650,13 +665,112 @@ export default function Step3ResultScreen() {
         setResult(resultData.content);
         setGenerationId(resultData.generationId);
       } else if (selectedCategory === 'Texte') {
-        const isFlyer = selectedFunction && (selectedFunction.includes('Flyers') || selectedFunction.includes('publicitaire'));
-        if (isFlyer) {
+        // Améliore la détection pour différencier correctement les types
+        const isFlyerExact = selectedFunction && selectedFunction.includes('Flyers');
+        const isVisuel = selectedFunction && selectedFunction.includes('Visuel');
+        
+        console.log('[DEBUG] Texte category - selectedFunction:', selectedFunction, 'isFlyerExact:', isFlyerExact, 'isVisuel:', isVisuel);
+        
+        if (isFlyerExact) {
           const flyerResult = await AiService.generateFlyer(params, seed);
-          setImageUrl(flyerResult.url);
-          setResult(flyerResult.url);
-          setGenerationId(flyerResult.generationId);
-          if (flyerResult.seed !== undefined) setSeed(flyerResult.seed);
+          console.log('[DEBUG] Flyer Result:', JSON.stringify(flyerResult, null, 2));
+          
+          // Détecte si c'est asynchrone (URL null mais generationId présent)
+          const isAsync = !flyerResult.url && flyerResult.generationId;
+          console.log('[DEBUG] Flyer isAsync:', isAsync, 'generationId:', flyerResult.generationId, 'url:', flyerResult.url);
+          
+          if (isAsync) {
+            console.log('[DEBUG] ⏳ Starting Flyer polling with generationId:', flyerResult.generationId);
+            setGenerationId(flyerResult.generationId);
+            let isCompleted = false;
+            let attempts = 0;
+            const maxAttempts = 30; // Timeout plus rapide: 1 min au lieu de 3 min
+            let lastImageUrl = null;
+            
+            while (!isCompleted && attempts < maxAttempts) {
+              attempts++;
+              console.log(`[DEBUG] 🔄 Flyer Poll attempt ${attempts}/${maxAttempts}`);
+              await new Promise(resolve => setTimeout(resolve, 2000));
+              try {
+                console.log('[DEBUG] 📡 Fetching conversation with ID:', flyerResult.generationId);
+                const updatedGen = await AiService.getConversation(flyerResult.generationId.toString());
+                console.log('[DEBUG] Flyer Poll attempt', attempts, 'response:', JSON.stringify(updatedGen, null, 2));
+                // Check for imageUrl (backend field), url, or image
+                const imageUrl = updatedGen?.imageUrl || updatedGen?.url || updatedGen?.image;
+                console.log('[DEBUG] Extracted imageUrl:', imageUrl);
+                
+                if (imageUrl && typeof imageUrl === 'string' && imageUrl.startsWith('http')) {
+                  console.log('[DEBUG] ✅ Flyer image found:', imageUrl);
+                  setImageUrl(imageUrl);
+                  setResult(imageUrl);
+                  isCompleted = true;
+                } else if (updatedGen?.result?.startsWith('ERROR')) {
+                  console.error('[DEBUG] Generation error:', updatedGen.result);
+                  throw new Error(updatedGen.result);
+                } else {
+                  lastImageUrl = imageUrl; // Track if it's stuck
+                }
+              } catch (pollError) {
+                console.warn('[DEBUG] ⚠️ Flyer poll error on attempt', attempts, ':', pollError);
+              }
+            }
+            
+            if (!isCompleted) {
+              console.error('[DEBUG] ❌ Flyer polling timed out after', maxAttempts, 'attempts. LastImageUrl:', lastImageUrl);
+              showModal('error', 'Génération échouée', 'L\'API de génération d\'images n\'a pas pu créer votre image. Vérifiez vos paramètres et réessayez.');
+              throw new Error('Image generation timed out');
+            }
+          } else {
+            setImageUrl(flyerResult.url);
+            setResult(flyerResult.url);
+            setGenerationId(flyerResult.generationId);
+            if (flyerResult.seed !== undefined) setSeed(flyerResult.seed);
+          }
+        } else if (isVisuel) {
+          // Génère une image pour "Visuel publicitaire"
+          const resultData = await AiService.generateImage(params, (selectedStyle as any) || 'realistic', seed);
+          console.log('[DEBUG] Visuel Image Result:', JSON.stringify(resultData, null, 2));
+          
+          // Détecte si c'est asynchrone (URL null mais generationId présent)
+          const isAsync = !resultData.url && resultData.generationId;
+          console.log('[DEBUG] Visuel Image isAsync:', isAsync, 'generationId:', resultData.generationId, 'url:', resultData.url);
+          
+          if (isAsync) {
+            console.log('[DEBUG] Visuel Image Async detected. Polling...');
+            setGenerationId(resultData.generationId);
+            let isCompleted = false;
+            let attempts = 0;
+            const maxAttempts = 60;
+            while (!isCompleted && attempts < maxAttempts) {
+              attempts++;
+              await new Promise(resolve => setTimeout(resolve, 2000));
+              try {
+                const updatedGen = await AiService.getConversation(resultData.generationId.toString());
+                console.log('[DEBUG] Visuel Image Poll attempt', attempts, ':', JSON.stringify(updatedGen, null, 2));
+                // Check for imageUrl (backend field), url, or image
+                const imageUrl = updatedGen?.imageUrl || updatedGen?.url || updatedGen?.image;
+                if (imageUrl && typeof imageUrl === 'string' && imageUrl.startsWith('http')) {
+                  setImageUrl(imageUrl);
+                  setResult(imageUrl);
+                  isCompleted = true;
+                  console.log('[DEBUG] ✅ Visuel Image found:', imageUrl);
+                } else if (updatedGen?.result?.startsWith('ERROR')) {
+                  throw new Error(updatedGen.result);
+                }
+              } catch (pollError) {
+                console.warn('Visuel Image poll error:', pollError);
+              }
+            }
+            if (!isCompleted) {
+              throw new Error('Délai de génération dépassé. Veuillez vérifier votre historique dans quelques instants.');
+            }
+          } else {
+            const imageUrl = resultData.url || resultData.image || resultData.imageUrl;
+            setResult(imageUrl || '');
+            setImageUrl(imageUrl || '');
+            setGenerationId(resultData.generationId);
+            if (resultData.seed !== undefined) setSeed(resultData.seed);
+          }
         } else {
           const resultData = await AiService.generateText(
             params,
@@ -692,13 +806,23 @@ export default function Step3ResultScreen() {
   useEffect(() => {
     generateContent();
 
-    // Request permissions upfront
+    // Request permissions upfront - with better error handling
     const requestPermissions = async () => {
       try {
-        await MediaLibrary.requestPermissionsAsync();
-        await Notifications.requestPermissionsAsync();
+        try {
+          await MediaLibrary.requestPermissionsAsync();
+        } catch (mediaError) {
+          console.warn('[PERMISSION] MediaLibrary not available in Expo Go:', mediaError);
+          // Continue anyway - it's not critical for the feature
+        }
+        
+        try {
+          await Notifications.requestPermissionsAsync();
+        } catch (notifError) {
+          console.warn('[PERMISSION] Notifications permission error:', notifError);
+        }
       } catch (e) {
-        console.warn('Permission request error:', e);
+        console.warn('[PERMISSION] General permission request error:', e);
       }
     };
     requestPermissions();
@@ -1037,6 +1161,9 @@ export default function Step3ResultScreen() {
                     </Text>
                   </View>
 
+                  {/* Display image if generated */}
+                  {imageUrl && renderFlyerImage()}
+
                   <View style={styles.structuredContent}>
                     {/* Model Picker for Documents */}
                     <TouchableOpacity
@@ -1131,8 +1258,8 @@ export default function Step3ResultScreen() {
               {selectedCategory === 'Texte' && (
                 <View style={styles.textSection}>
                   <View>
-                    {/* Display flyer image if it's a flyer */}
-                    {imageUrl && selectedFunction?.includes('Flyers') && renderFlyerImage()}
+                    {/* Display image if generated */}
+                    {imageUrl && renderFlyerImage()}
 
                     <View style={{ marginTop: 12 }}>
                       {(() => {
