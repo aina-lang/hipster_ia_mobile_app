@@ -542,61 +542,99 @@ export default function Step3ResultScreen() {
       if (selectedCategory === 'Social') {
         const socialResponse = await AiService.generateSocial(params, seed);
         console.log('[DEBUG] Social Response:', JSON.stringify(socialResponse, null, 2));
+
         if (mode === 'text' || mode === 'both') {
-          // Backend returns 'text' field, not 'content'
           setResult(socialResponse.text || socialResponse.content || '');
         }
         if (mode === 'image' || mode === 'both') {
-          // Backend returns 'image' field, not 'url'
           setImageUrl(socialResponse.image || socialResponse.url || '');
           if (socialResponse.seed !== undefined) setSeed(socialResponse.seed);
         }
         setGenerationId(socialResponse.generationId);
+
+        if (socialResponse.isAsync) {
+          console.log('[DEBUG] Social Async detected. Polling...');
+          let isCompleted = false;
+          let attempts = 0;
+          const maxAttempts = 60;
+          while (!isCompleted && attempts < maxAttempts) {
+            attempts++;
+            await new Promise(resolve => setTimeout(resolve, 5000));
+            try {
+              const updatedGen = await AiService.getConversation(socialResponse.generationId.toString());
+              if (updatedGen?.imageUrl?.startsWith('http')) {
+                setImageUrl(updatedGen.imageUrl);
+                isCompleted = true;
+              } else if (updatedGen?.result?.startsWith('ERROR')) {
+                throw new Error(updatedGen.result);
+              }
+            } catch (pollError) {
+              console.warn('Social poll error:', pollError);
+            }
+          }
+          if (!isCompleted) {
+            throw new Error('Délai de génération dépassé. Veuillez vérifier votre historique dans quelques instants.');
+          }
+        }
       } else if (selectedCategory === 'Image') {
         const isFlyer = selectedFunction && (selectedFunction.includes('Flyers') || selectedFunction.includes('publicitaire'));
         if (isFlyer) {
           const flyerResult = await AiService.generateFlyer(params, seed);
-          setImageUrl(flyerResult.url);
-          setResult(flyerResult.url);
-          setGenerationId(flyerResult.generationId);
-          if (flyerResult.seed !== undefined) setSeed(flyerResult.seed);
-        } else {
-          const resultData = await AiService.generateImage(
-            params,
-            (selectedStyle as any) || 'realistic',
-            seed
-          );
-
-          if (resultData.isAsync) {
-            console.log('[DEBUG] Async generation detected. Starting polling for ID:', resultData.generationId);
-            setGenerationId(resultData.generationId);
-
+          if (flyerResult.isAsync) {
+            console.log('[DEBUG] Flyer Async detected. Polling...');
+            setGenerationId(flyerResult.generationId);
             let isCompleted = false;
             let attempts = 0;
-            const maxAttempts = 60; // 5 minutes (60 * 5s)
-
+            const maxAttempts = 60;
             while (!isCompleted && attempts < maxAttempts) {
               attempts++;
-              console.log(`[DEBUG] Polling attempt ${attempts}/${maxAttempts}...`);
-
-              // Wait 5 seconds
               await new Promise(resolve => setTimeout(resolve, 5000));
-
               try {
-                const updatedGen = await AiService.getConversation(resultData.generationId.toString());
-                if (updatedGen && updatedGen.imageUrl && updatedGen.imageUrl.startsWith('http')) {
-                  console.log('[DEBUG] Polling SUCCESS - Image ready:', updatedGen.imageUrl);
+                const updatedGen = await AiService.getConversation(flyerResult.generationId.toString());
+                if (updatedGen?.imageUrl?.startsWith('http')) {
                   setImageUrl(updatedGen.imageUrl);
                   setResult(updatedGen.imageUrl);
                   isCompleted = true;
-                } else if (updatedGen && updatedGen.result && updatedGen.result.startsWith('ERROR')) {
+                } else if (updatedGen?.result?.startsWith('ERROR')) {
                   throw new Error(updatedGen.result);
                 }
               } catch (pollError) {
-                console.warn('[DEBUG] Polling error (continuing):', pollError);
+                console.warn('Flyer poll error:', pollError);
               }
             }
-
+            if (!isCompleted) {
+              throw new Error('Délai de génération dépassé. Veuillez vérifier votre historique dans quelques instants.');
+            }
+          } else {
+            setImageUrl(flyerResult.url);
+            setResult(flyerResult.url);
+            setGenerationId(flyerResult.generationId);
+            if (flyerResult.seed !== undefined) setSeed(flyerResult.seed);
+          }
+        } else {
+          const resultData = await AiService.generateImage(params, (selectedStyle as any) || 'realistic', seed);
+          if (resultData.isAsync) {
+            console.log('[DEBUG] Image Async detected. Polling...');
+            setGenerationId(resultData.generationId);
+            let isCompleted = false;
+            let attempts = 0;
+            const maxAttempts = 60;
+            while (!isCompleted && attempts < maxAttempts) {
+              attempts++;
+              await new Promise(resolve => setTimeout(resolve, 5000));
+              try {
+                const updatedGen = await AiService.getConversation(resultData.generationId.toString());
+                if (updatedGen?.imageUrl?.startsWith('http')) {
+                  setImageUrl(updatedGen.imageUrl);
+                  setResult(updatedGen.imageUrl);
+                  isCompleted = true;
+                } else if (updatedGen?.result?.startsWith('ERROR')) {
+                  throw new Error(updatedGen.result);
+                }
+              } catch (pollError) {
+                console.warn('Image poll error:', pollError);
+              }
+            }
             if (!isCompleted) {
               throw new Error('Délai de génération dépassé. Veuillez vérifier votre historique dans quelques instants.');
             }
