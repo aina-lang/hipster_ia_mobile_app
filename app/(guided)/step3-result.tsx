@@ -111,6 +111,8 @@ export default function Step3ResultScreen() {
   const [seed, setSeed] = useState<number | undefined>();
   const [localQuery, setLocalQuery] = useState('');
   const [regenMode, setRegenMode] = useState<'text' | 'image' | 'both'>('text');
+  const [streamStep, setStreamStep] = useState<number>(0);
+  const [isStreaming, setIsStreaming] = useState(false);
 
   // ... (existing code)
 
@@ -570,6 +572,8 @@ export default function Step3ResultScreen() {
           if (resultData.isAsync) {
             console.log('[DEBUG] Async generation detected. Starting polling for ID:', resultData.generationId);
             setGenerationId(resultData.generationId);
+            setIsStreaming(true);
+            setStreamStep(0);
 
             let isCompleted = false;
             let attempts = 0;
@@ -584,11 +588,25 @@ export default function Step3ResultScreen() {
 
               try {
                 const updatedGen = await AiService.getConversation(resultData.generationId.toString());
+
+                // Track streaming progress
+                if (updatedGen && updatedGen.attributes && updatedGen.attributes.partialCount !== undefined) {
+                  setStreamStep(updatedGen.attributes.partialCount);
+                }
+
                 if (updatedGen && updatedGen.imageUrl && updatedGen.imageUrl.startsWith('http')) {
-                  console.log('[DEBUG] Polling SUCCESS - Image ready:', updatedGen.imageUrl);
                   setImageUrl(updatedGen.imageUrl);
                   setResult(updatedGen.imageUrl);
-                  isCompleted = true;
+
+                  // Final check against db record
+                  const isFinal = updatedGen.result !== 'PENDING' && !updatedGen.result.includes('ERROR');
+                  if (isFinal) {
+                    console.log('[DEBUG] Polling SUCCESS - Final Image ready');
+                    isCompleted = true;
+                    setIsStreaming(false);
+                  } else {
+                    console.log('[DEBUG] Streaming - Partial Image updated');
+                  }
                 } else if (updatedGen && updatedGen.result && updatedGen.result.startsWith('ERROR')) {
                   throw new Error(updatedGen.result);
                 }
@@ -964,12 +982,17 @@ export default function Step3ResultScreen() {
 
                 {/* Image Section */}
                 <View style={[styles.socialImageSection, { aspectRatio: 0.8 }]}>
-                  {loading || (regenMode === 'image' && imageUrl === '') ? (
+                  {(loading && !imageUrl) || (regenMode === 'image' && imageUrl === '') ? (
                     <View style={styles.imagePlaceholder}>
                       <LucideImage size={48} color="rgba(255,255,255,0.2)" />
                       <Text selectable={true} style={styles.placeholderText}>
-                        Génération du visuel...
+                        {isStreaming ? "Affinement du brouillon..." : "Génération du visuel..."}
                       </Text>
+                      {isStreaming && streamStep > 0 && (
+                        <Text style={[styles.placeholderText, { fontSize: 12, marginTop: 4, color: colors.primary.main }]}>
+                          Étape {streamStep}/3
+                        </Text>
+                      )}
                     </View>
                   ) : (
                     <Image
@@ -1010,8 +1033,13 @@ export default function Step3ResultScreen() {
                   <View style={styles.imagePlaceholder}>
                     <LucideImage size={48} color="rgba(255,255,255,0.2)" />
                     <Text selectable={true} style={styles.placeholderText}>
-                      Génération de l'image...
+                      {isStreaming ? "Affinement du brouillon..." : "Génération de l'image..."}
                     </Text>
+                    {isStreaming && streamStep > 0 && (
+                      <Text style={[styles.placeholderText, { fontSize: 12, marginTop: 4, color: colors.primary.main }]}>
+                        Étape {streamStep}/3
+                      </Text>
+                    )}
                   </View>
                 ) : (
                   <Image
