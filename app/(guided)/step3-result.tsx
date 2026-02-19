@@ -1006,7 +1006,7 @@ export default function Step3ResultScreen() {
             {/* 🖼️ IMAGE CATEGORY (Full Visual focus) */}
             {selectedCategory === 'Image' && (
               <View style={styles.imageSection}>
-                {loading || (regenMode === 'image' && imageUrl === '') ? (
+                {(loading && !imageUrl) || (regenMode === 'image' && imageUrl === '') ? (
                   <View style={styles.imagePlaceholder}>
                     <LucideImage size={48} color="rgba(255,255,255,0.2)" />
                     <Text selectable={true} style={styles.placeholderText}>
