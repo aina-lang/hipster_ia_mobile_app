@@ -365,7 +365,7 @@ export default function Step2PersonalizeScreen() {
       scrollViewRef={scrollRef}
       footer={null}
     >
-      <View style={{ paddingHorizontal: 20 }}>
+      <View style={{ paddingHorizontal: 20, overflow: 'visible' }}>
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Personnalisez votre création</Text>
@@ -379,7 +379,7 @@ export default function Step2PersonalizeScreen() {
 
         {/* CONDITIONAL FLOW: Visual Layout */}
         {(selectedCategory === 'Image' || selectedCategory === 'Social') && (
-          <View style={{ marginBottom: 32 }}>
+          <View style={{ marginBottom: 32, overflow: 'visible' }}>
 
             {/* 1. REFERENCE IMAGE (Now at the top) */}
             <View style={{ marginTop: 32 }}>
@@ -412,7 +412,7 @@ export default function Step2PersonalizeScreen() {
 
             {/* 2. VISUAL STYLE (Hidden if image is uploaded) */}
             {!uploadedImage && (
-              <View style={{ marginTop: 32 }}>
+              <View style={{ marginTop: 32, overflow: 'visible' }}>
                 <Text style={styles.sectionTitle}>Choisissez le style artistique</Text>
 
                 <Animated.FlatList
@@ -424,8 +424,9 @@ export default function Step2PersonalizeScreen() {
                   decelerationRate="fast"
                   contentContainerStyle={{
                     paddingHorizontal: SPACING,
-                    paddingVertical: 20
+                    paddingVertical: 80, // Even more space to be 100% sure
                   }}
+                  style={{ overflow: 'visible' }} // Don't clip animations
                   onScroll={Animated.event(
                     [{ nativeEvent: { contentOffset: { x: scrollX } } }],
                     { useNativeDriver: true }
