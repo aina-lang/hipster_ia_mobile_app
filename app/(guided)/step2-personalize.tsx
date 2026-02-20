@@ -369,21 +369,15 @@ export default function Step2PersonalizeScreen() {
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Personnalisez votre création</Text>
-          <View style={styles.breadcrumb}>
-            <Text style={styles.breadcrumbJob}>{selectedJob}</Text>
-            <ChevronRight size={14} color={colors.text.primary} />
-            <Text style={styles.breadcrumbJob}>{selectedFunction?.split('(')[0]}</Text>
-          </View>
         </View>
-
 
         {/* CONDITIONAL FLOW: Visual Layout */}
         {(selectedCategory === 'Image' || selectedCategory === 'Social') && (
           <View style={{ marginBottom: 32, overflow: 'visible' }}>
 
             {/* 1. REFERENCE IMAGE (Now at the top) */}
-            <View style={{ marginTop: 32 }}>
-              <Text style={styles.sectionTitle}>Image de référence (Optionnel)</Text>
+            <View style={{ marginTop: 20 }}>
+              <Text style={styles.sectionTitle}>Image de référence</Text>
               {uploadedImage ? (
                 <View style={styles.imagePreviewContainer}>
                   <Image source={{ uri: uploadedImage }} style={styles.imagePreview} />
@@ -412,8 +406,8 @@ export default function Step2PersonalizeScreen() {
 
             {/* 2. VISUAL STYLE (Hidden if image is uploaded) */}
             {!uploadedImage && (
-              <View style={{ marginTop: 32, overflow: 'visible' }}>
-                <Text style={styles.sectionTitle}>Choisissez le style artistique</Text>
+              <View style={{ marginTop: 24, overflow: 'visible' }}>
+                <Text style={styles.sectionTitle}>Style artistique</Text>
 
                 <Animated.FlatList
                   data={VISUAL_STYLES}
@@ -424,7 +418,7 @@ export default function Step2PersonalizeScreen() {
                   decelerationRate="fast"
                   contentContainerStyle={{
                     paddingHorizontal: SPACING,
-                    paddingVertical: 80, // Even more space to be 100% sure
+                    paddingVertical: 50, // Reduced from 80 for a tighter look
                   }}
                   style={{ overflow: 'visible' }} // Don't clip animations
                   onScroll={Animated.event(
@@ -487,15 +481,12 @@ export default function Step2PersonalizeScreen() {
 
                           <View style={styles.styleCardContent}>
                             <Text style={styles.styleCardLabel}>{item.label}</Text>
-                            <Text style={styles.styleCardDescription} numberOfLines={2}>
-                              {item.description}
-                            </Text>
                           </View>
 
                           {isSelected && (
                             <BlurView
-                              intensity={20}
-                              tint="light"
+                              intensity={80}
+                              tint="dark"
                               style={StyleSheet.absoluteFill}
                             >
                               <View style={styles.selectedOverlayContent}>
@@ -669,7 +660,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.1)',
-    minHeight: 150,
+    minHeight: 120,
     padding: 16,
     position: 'relative',
     marginBottom: 24,
