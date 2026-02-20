@@ -119,8 +119,8 @@ function CustomDrawerContent(props: any) {
 
   const userName = user?.name || 'Utilisateur';
 
-  const userAvatar = user?.avatarUrl
-    ? `https://hipster-api.fr${user.avatarUrl}`
+  const userAvatar = (user?.logoUrl || user?.avatarUrl)
+    ? `https://hipster-api.fr${user.logoUrl || user.avatarUrl}`
     : `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=random`;
 
   console.log(userAvatar);

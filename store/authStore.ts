@@ -175,10 +175,11 @@ export const useAuthStore = create<AuthState>()(
           const res = data.data;
           const avatarUrl = res.avatarUrl;
 
-          // Update local state if needed
-          const currentUser = get().user;
-          if (currentUser && avatarUrl) {
-            set({ user: { ...currentUser, avatarUrl } });
+          // Update local state with functional update to avoid race conditions
+          if (avatarUrl) {
+            set((state) => ({
+              user: state.user ? { ...state.user, avatarUrl } : null,
+            }));
           }
 
           set({ isLoading: false });
@@ -204,7 +205,7 @@ export const useAuthStore = create<AuthState>()(
             type,
           } as any);
 
-          const { data } = await api.post(`/profiles/${profileId}/ai-logo`, formData, {
+          const { data } = await api.post(`/profiles/ai/${profileId}/logo`, formData, {
             headers: {
               'Content-Type': 'multipart/form-data',
             },
@@ -213,10 +214,11 @@ export const useAuthStore = create<AuthState>()(
           const res = data.data;
           const logoUrl = res.logoUrl;
 
-          // Update local state if needed
-          const currentUser = get().user;
-          if (currentUser && logoUrl) {
-            set({ user: { ...currentUser, logoUrl } });
+          // Update local state with functional update to avoid race conditions
+          if (logoUrl) {
+            set((state) => ({
+              user: state.user ? { ...state.user, logoUrl, avatarUrl: logoUrl } : null,
+            }));
           }
 
           set({ isLoading: false });
@@ -243,13 +245,10 @@ export const useAuthStore = create<AuthState>()(
           const updatedData = response.data.data;
           console.log('[AuthStore] AI profile updated successfully:', updatedData);
 
-          set({
-            user: {
-              ...currentUser,
-              ...updatedData,
-            },
+          set((state) => ({
+            user: state.user ? { ...state.user, ...updatedData } : null,
             isLoading: false,
-          });
+          }));
         } catch (error: any) {
           console.error('[AuthStore] Failed to update AI Profile:', error);
           const message = extractErrorMessage(

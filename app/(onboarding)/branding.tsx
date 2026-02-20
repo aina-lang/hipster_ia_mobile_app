@@ -17,11 +17,11 @@ export default function BrandingScreen() {
     const { finishOnboarding } = useAuthStore();
     const {
         brandingColor, setBrandingData,
-        logoUri, avatarUri
+        logoUri
     } = useOnboardingStore();
     const { user } = useAuthStore();
 
-    const initialImage = user?.avatarUrl || user?.logoUrl || avatarUri || logoUri;
+    const initialImage = user?.logoUrl || user?.avatarUrl || logoUri;
 
     const [selectedColor, setSelectedColor] = useState(user?.brandingColor || brandingColor || '#FF0000');
     const [localImage, setLocalImage] = useState(initialImage);
@@ -74,27 +74,23 @@ export default function BrandingScreen() {
         try {
             setBrandingData({
                 brandingColor: selectedColor,
-                logoUri: localImage,
-                avatarUri: localImage
+                logoUri: localImage
             });
 
             const authStore = useAuthStore.getState();
             const profileId = authStore.user?.id;
 
-            // 1. Sync color
-            console.log('[Branding] Syncing color:', selectedColor);
+            // 1. Sync color and status
+            console.log('[Branding] Syncing color and completion:', selectedColor);
             await authStore.updateAiProfile({
                 brandingColor: selectedColor,
+                isSetupComplete: true,
             });
 
             // 2. Upload image if changed
-            if (localImage && (localImage !== initialImage)) {
-                console.log('[Branding] Uploading image (avatar & logo):', localImage);
-                // We upload to both since they are the same
-                await Promise.all([
-                    authStore.uploadAvatar(localImage),
-                    profileId ? authStore.uploadLogo(profileId, localImage) : Promise.resolve()
-                ]);
+            if (localImage && (localImage !== initialImage) && profileId) {
+                console.log('[Branding] Uploading image:', localImage);
+                await authStore.uploadLogo(profileId, localImage);
             }
 
             await authStore.finishOnboarding();

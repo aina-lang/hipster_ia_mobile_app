@@ -12,12 +12,7 @@ interface OnboardingState {
   // Step 2: Branding
   brandingColor: string;
   logoUri: string | null;
-  avatarUri: string | null;
-  setBrandingData: (data: {
-    brandingColor: string;
-    logoUri?: string | null;
-    avatarUri?: string | null;
-  }) => void;
+  setBrandingData: (data: { brandingColor: string; logoUri?: string | null }) => void;
 
   // Step 3: Job
   job: string | null;
@@ -35,7 +30,6 @@ export const useOnboardingStore = create<OnboardingState>()(
 
       brandingColor: '#000000',
       logoUri: null,
-      avatarUri: null,
       setBrandingData: (data) => set((state) => ({ ...state, ...data })),
 
       job: null,
@@ -46,7 +40,6 @@ export const useOnboardingStore = create<OnboardingState>()(
           selectedPlan: 'curieux',
           brandingColor: '#000000',
           logoUri: null,
-          avatarUri: null,
           job: null,
         }),
     }),
