@@ -565,9 +565,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   choiceButtonSelected: {
-    borderColor: colors.blue[400],
-    backgroundColor: colors.blue[600],
-    shadowColor: colors.blue[500],
+    borderColor: colors.neon.primary,
+    backgroundColor: colors.neon.primary,
+    shadowColor: colors.neon.primary,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.5,
     shadowRadius: 10,

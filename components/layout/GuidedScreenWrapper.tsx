@@ -49,7 +49,7 @@ export function GuidedScreenWrapper({ children, headerRight, onBack, footer, scr
 
   const headerBackgroundColor = scrollY.interpolate({
     inputRange: [0, 50],
-    outputRange: ['transparent', colors.background.dark],
+    outputRange: ['transparent', 'rgba(10, 10, 17, 0.95)'], // Match background: #0a0a11
     extrapolate: 'clamp',
   });
 
@@ -66,7 +66,7 @@ export function GuidedScreenWrapper({ children, headerRight, onBack, footer, scr
               borderBottomWidth: 1,
               borderBottomColor: scrollY.interpolate({
                 inputRange: [0, 50],
-                outputRange: ['transparent', 'rgba(255,255,255,0.05)'],
+                outputRange: ['transparent', 'rgba(50, 50, 60, 0.3)'], // Dark subtle border matching background
                 extrapolate: 'clamp',
               }),
             },
