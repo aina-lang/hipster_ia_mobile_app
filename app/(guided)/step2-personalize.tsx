@@ -295,7 +295,7 @@ export default function Step2PersonalizeScreen() {
 
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
+        allowsEditing: false,
         aspect: [1, 1],
         quality: 0.8,
       });
@@ -369,7 +369,13 @@ export default function Step2PersonalizeScreen() {
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Personnalisez votre création</Text>
+          <View style={styles.breadcrumb}>
+            <Text style={styles.breadcrumbJob}>{selectedJob}</Text>
+            <ChevronRight size={14} color={colors.text.primary} />
+            <Text style={styles.breadcrumbJob}>{selectedFunction?.split('(')[0]}</Text>
+          </View>
         </View>
+
 
         {/* CONDITIONAL FLOW: Visual Layout */}
         {(selectedCategory === 'Image' || selectedCategory === 'Social') && (
@@ -525,17 +531,10 @@ export default function Step2PersonalizeScreen() {
               value={localQuery}
               onChangeText={setLocalQuery}
             />
-
-            <TouchableOpacity style={styles.micButton} activeOpacity={0.7}>
-              <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
-                <Mic size={24} color={colors.primary.light} />
-              </Animated.View>
-            </TouchableOpacity>
           </View>
 
           <NeonButton
             title="Démarrer la création"
-            icon={<Sparkles size={20} color="white" />}
             onPress={handleCreate}
             variant="premium"
             size="lg"
