@@ -32,6 +32,7 @@ import {
   X,
   Globe,
   ChevronDown,
+  ArrowLeft,
 } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { GenericModal, ModalType } from '../../components/ui/GenericModal';
@@ -210,7 +211,7 @@ export default function ProfileScreen() {
           {/* Header */}
           <View style={styles.header}>
             <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-              <ChevronRight size={20} color={colors.text.primary} style={{ transform: [{ rotate: '180deg' }] }} />
+              <ArrowLeft size={24} color={colors.text.primary} />
             </TouchableOpacity>
             <View style={styles.headerTextContainer}>
               <Text style={styles.title}>Mon Profil Pro</Text>
@@ -547,16 +548,40 @@ function InputField({
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollContent: { padding: 20, paddingBottom: 80 },
-  header: { flexDirection: 'row', alignItems: 'center', marginBottom: 28, gap: 16 },
-  backButton: {
-    width: 44, height: 44,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    borderRadius: 12, justifyContent: 'center', alignItems: 'center',
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)',
+  header: {
+    alignItems: 'center',
+    marginBottom: 32,
+    marginTop: 10,
+    position: 'relative',
   },
-  headerTextContainer: { flex: 1 },
-  title: { fontSize: 28, fontWeight: '800', color: colors.text.primary, marginBottom: 2 },
-  subtitle: { fontSize: 14, color: colors.text.secondary },
+  backButton: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    width: 44,
+    height: 44,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  headerTextContainer: {
+    alignItems: 'center',
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: colors.text.primary,
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: colors.text.secondary,
+    textAlign: 'center',
+  },
   heroCard: {
     backgroundColor: 'rgba(255,255,255,0.10)', borderRadius: 28,
     borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)',
