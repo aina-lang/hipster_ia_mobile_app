@@ -592,8 +592,12 @@ export default function Step3ResultScreen() {
           }
         }
       } else if (selectedCategory === 'Image') {
-        const isFlyer = selectedFunction && (selectedFunction.includes('Flyers') || selectedFunction.includes('publicitaire'));
-        if (isFlyer) {
+        // Différencie Flyers/Affiches de Visuel publicitaire
+        const isFlyerExact = selectedFunction && selectedFunction.includes('Flyers');
+        const isVisuelPub = selectedFunction && selectedFunction.includes('Visuel');
+        
+        if (isFlyerExact) {
+          // Génère avec generateFlyer pour "Flyers / Affiches"
           const flyerResult = await AiService.generateFlyer(params, seed);
           if (flyerResult.isAsync) {
             console.log('[DEBUG] Flyer Async detected. Polling...');
@@ -626,36 +630,54 @@ export default function Step3ResultScreen() {
             setGenerationId(flyerResult.generationId);
             if (flyerResult.seed !== undefined) setSeed(flyerResult.seed);
           }
-        } else {
+        } else if (isVisuelPub) {
+          // Génère avec generateImage pour "Visuel publicitaire" - SAME CODE AS SOCIAL THAT WORKS
           const resultData = await AiService.generateImage(params, (selectedStyle as any) || 'realistic', seed);
-          if (resultData.isAsync) {
-            console.log('[DEBUG] Image Async detected. Polling...');
+          console.log('[DEBUG] Visuel Publicitaire Image Result:', JSON.stringify(resultData, null, 2));
+          
+          // Détecte si c'est asynchrone (URL null mais generationId présent)
+          const isAsync = !resultData.url && resultData.generationId;
+          console.log('[DEBUG] Visuel Publicitaire isAsync:', isAsync, 'generationId:', resultData.generationId);
+          
+          if (isAsync) {
+            console.log('[DEBUG] ⏳ Starting Visuel Publicitaire polling with generationId:', resultData.generationId);
             setGenerationId(resultData.generationId);
             let isCompleted = false;
             let attempts = 0;
-            const maxAttempts = 60;
+            const maxAttempts = 30;
+            let lastImageUrl = null;
+            
             while (!isCompleted && attempts < maxAttempts) {
               attempts++;
-              await new Promise(resolve => setTimeout(resolve, 5000));
+              console.log(`[DEBUG] 🔄 Visuel Publicitaire Poll attempt ${attempts}/${maxAttempts}`);
+              await new Promise(resolve => setTimeout(resolve, 2000));
               try {
                 const updatedGen = await AiService.getConversation(resultData.generationId.toString());
-                if (updatedGen?.imageUrl?.startsWith('http')) {
-                  setImageUrl(updatedGen.imageUrl);
-                  setResult(updatedGen.imageUrl);
+                console.log('[DEBUG] Visuel Publicitaire Poll response:', JSON.stringify(updatedGen, null, 2));
+                const imageUrl = updatedGen?.imageUrl || updatedGen?.url || updatedGen?.image;
+                console.log('[DEBUG] Extracted imageUrl:', imageUrl);
+                
+                if (imageUrl && typeof imageUrl === 'string' && imageUrl.startsWith('http')) {
+                  console.log('[DEBUG] ✅ Visuel Publicitaire image found:', imageUrl);
+                  setImageUrl(imageUrl);
+                  setResult(imageUrl);
                   isCompleted = true;
                 } else if (updatedGen?.result?.startsWith('ERROR')) {
                   throw new Error(updatedGen.result);
                 }
               } catch (pollError) {
-                console.warn('Image poll error:', pollError);
+                console.warn('[DEBUG] Visuel Publicitaire poll error:', pollError);
               }
             }
+            
             if (!isCompleted) {
-              throw new Error('Délai de génération dépassé. Veuillez vérifier votre historique dans quelques instants.');
+              console.error('[DEBUG] ❌ Visuel Publicitaire polling timed out');
+              throw new Error('Image generation timed out');
             }
           } else {
-            setResult(resultData.url);
-            setImageUrl(resultData.url);
+            const imageUrl = resultData.url || resultData.image || resultData.imageUrl;
+            setResult(imageUrl || '');
+            setImageUrl(imageUrl || '');
             setGenerationId(resultData.generationId);
             if (resultData.seed !== undefined) setSeed(resultData.seed);
           }
@@ -736,33 +758,45 @@ export default function Step3ResultScreen() {
           console.log('[DEBUG] Visuel Image isAsync:', isAsync, 'generationId:', resultData.generationId, 'url:', resultData.url);
           
           if (isAsync) {
-            console.log('[DEBUG] Visuel Image Async detected. Polling...');
+            console.log('[DEBUG] ⏳ Starting Visuel Image polling with generationId:', resultData.generationId);
             setGenerationId(resultData.generationId);
             let isCompleted = false;
             let attempts = 0;
-            const maxAttempts = 60;
+            const maxAttempts = 30; // 1 min timeout
+            let lastImageUrl = null;
+            
             while (!isCompleted && attempts < maxAttempts) {
               attempts++;
+              console.log(`[DEBUG] 🔄 Visuel Image Poll attempt ${attempts}/${maxAttempts}`);
               await new Promise(resolve => setTimeout(resolve, 2000));
               try {
+                console.log('[DEBUG] 📡 Fetching conversation with ID:', resultData.generationId);
                 const updatedGen = await AiService.getConversation(resultData.generationId.toString());
-                console.log('[DEBUG] Visuel Image Poll attempt', attempts, ':', JSON.stringify(updatedGen, null, 2));
+                console.log('[DEBUG] Visuel Image Poll attempt', attempts, 'response:', JSON.stringify(updatedGen, null, 2));
                 // Check for imageUrl (backend field), url, or image
                 const imageUrl = updatedGen?.imageUrl || updatedGen?.url || updatedGen?.image;
+                console.log('[DEBUG] Extracted imageUrl:', imageUrl);
+                
                 if (imageUrl && typeof imageUrl === 'string' && imageUrl.startsWith('http')) {
+                  console.log('[DEBUG] ✅ Visuel Image found:', imageUrl);
                   setImageUrl(imageUrl);
                   setResult(imageUrl);
                   isCompleted = true;
-                  console.log('[DEBUG] ✅ Visuel Image found:', imageUrl);
                 } else if (updatedGen?.result?.startsWith('ERROR')) {
+                  console.error('[DEBUG] Generation error:', updatedGen.result);
                   throw new Error(updatedGen.result);
+                } else {
+                  lastImageUrl = imageUrl;
                 }
               } catch (pollError) {
-                console.warn('Visuel Image poll error:', pollError);
+                console.warn('[DEBUG] ⚠️ Visuel Image poll error on attempt', attempts, ':', pollError);
               }
             }
+            
             if (!isCompleted) {
-              throw new Error('Délai de génération dépassé. Veuillez vérifier votre historique dans quelques instants.');
+              console.error('[DEBUG] ❌ Visuel Image polling timed out after', maxAttempts, 'attempts. LastImageUrl:', lastImageUrl);
+              showModal('error', 'Génération échouée', 'L\'API de génération d\'images n\'a pas pu créer votre image. Vérifiez vos paramètres et réessayez.');
+              throw new Error('Image generation timed out');
             }
           } else {
             const imageUrl = resultData.url || resultData.image || resultData.imageUrl;
@@ -1125,11 +1159,17 @@ export default function Step3ResultScreen() {
                   </View>
 
                   <View style={[styles.socialImageSection, { aspectRatio: 0.8 }]}>
-                    <Image
-                      source={{ uri: imageUrl || '' }}
-                      style={styles.generatedImage}
-                      resizeMode="cover"
-                    />
+                    {imageUrl ? (
+                      <Image
+                        source={{ uri: imageUrl }}
+                        style={styles.generatedImage}
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <View style={[styles.generatedImage, { justifyContent: 'center', alignItems: 'center' }]}>
+                        <Text style={{ color: '#999', fontSize: 14 }}>Image en cours de génération...</Text>
+                      </View>
+                    )}
                   </View>
 
                   <View style={styles.socialCaptionSection}>
@@ -1143,11 +1183,17 @@ export default function Step3ResultScreen() {
               {/* 🖼️ IMAGE CATEGORY (Full Visual focus) */}
               {selectedCategory === 'Image' && (
                 <View style={styles.imageSection}>
-                  <Image
-                    source={{ uri: imageUrl || result || '' }}
-                    style={styles.generatedImage}
-                    resizeMode="contain"
-                  />
+                  {imageUrl ? (
+                    <Image
+                      source={{ uri: imageUrl }}
+                      style={styles.generatedImage}
+                      resizeMode="contain"
+                    />
+                  ) : (
+                    <View style={[styles.generatedImage, { justifyContent: 'center', alignItems: 'center', backgroundColor: '#f5f5f5', borderRadius: 8 }]}>
+                      <Text style={{ color: '#999', fontSize: 14 }}>Image en cours de génération...</Text>
+                    </View>
+                  )}
                 </View>
               )}
 
@@ -1257,10 +1303,18 @@ export default function Step3ResultScreen() {
               {/* ✍️ TEXT CATEGORY (Clean Reading focus) */}
               {selectedCategory === 'Texte' && (
                 <View style={styles.textSection}>
-                  <View>
-                    {/* Display image if generated */}
-                    {imageUrl && renderFlyerImage()}
+                  {/* Display image exactly like Social does - SAME CODE THAT WORKS */}
+                  {imageUrl && (
+                    <View style={[styles.socialImageSection, { aspectRatio: 0.8, marginBottom: 20 }]}>
+                      <Image
+                        source={{ uri: imageUrl }}
+                        style={styles.generatedImage}
+                        resizeMode="cover"
+                      />
+                    </View>
+                  )}
 
+                  <View>
                     <View style={{ marginTop: 12 }}>
                       {(() => {
                         const data = getParsedData(result);
