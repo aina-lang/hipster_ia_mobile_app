@@ -750,7 +750,7 @@ export default function HomeScreen() {
                 <View className="mt-5 items-center">
                   <Text className="mb-2 text-lg text-slate-400">
                     {getGreetingByTime()}{' '}
-                    {user?.email?.split('@')[0] || 'Utilisateur'}
+                    {user?.name || 'Utilisateur'}
                   </Text>
                   <Text className="text-center text-2xl font-bold leading-9 text-slate-200">
                     {user?.job ? `Prêt pour votre prochaine création en tant que ${user.job.toLowerCase()} ?` : 'Que créons-nous aujourd\'hui ?'}
