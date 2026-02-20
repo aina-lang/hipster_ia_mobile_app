@@ -606,7 +606,45 @@ export default function HomeScreen() {
 
       // Format image base64 for React Native
       let mediaUrl: string | undefined;
-      if (response.type === 'image' && response.imageBase64) {
+      
+      // Check if image generation is async (url is null but generationId exists)
+      const isImageAsync = response.type === 'image' && !response.imageBase64 && !response.mediaUrl && response.generationId;
+      console.log('[DEBUG] Free Mode - isImageAsync:', isImageAsync, 'generationId:', response.generationId);
+      
+      if (isImageAsync) {
+        // Implement polling like in guided mode
+        console.log('[DEBUG] ⏳ Starting Free Mode polling with generationId:', response.generationId);
+        let isCompleted = false;
+        let attempts = 0;
+        const maxAttempts = 30; // 60 seconds with 2s intervals
+        
+        while (!isCompleted && attempts < maxAttempts) {
+          attempts++;
+          console.log(`[DEBUG] 🔄 Free Mode Poll attempt ${attempts}/${maxAttempts}`);
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          try {
+            const updatedGen = await AiService.getConversation(response.generationId.toString());
+            console.log('[DEBUG] Free Mode Poll response:', JSON.stringify(updatedGen, null, 2));
+            const imageUrl = updatedGen?.imageUrl || updatedGen?.url || updatedGen?.image;
+            console.log('[DEBUG] Extracted imageUrl:', imageUrl);
+            
+            if (imageUrl && typeof imageUrl === 'string' && imageUrl.startsWith('http')) {
+              console.log('[DEBUG] ✅ Free Mode image found:', imageUrl);
+              mediaUrl = imageUrl;
+              isCompleted = true;
+            } else if (updatedGen?.result?.startsWith('ERROR')) {
+              throw new Error(updatedGen.result);
+            }
+          } catch (pollError) {
+            console.warn('[DEBUG] ⚠️ Free Mode poll error on attempt', attempts, ':', pollError);
+          }
+        }
+        
+        if (!isCompleted) {
+          console.error('[DEBUG] ❌ Free Mode polling timed out');
+          throw new Error('Image generation timed out');
+        }
+      } else if (response.type === 'image' && response.imageBase64) {
         mediaUrl = `data:image/png;base64,${response.imageBase64}`;
       } else {
         mediaUrl = response.mediaUrl;
