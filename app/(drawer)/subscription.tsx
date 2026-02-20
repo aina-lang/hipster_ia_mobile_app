@@ -302,12 +302,6 @@ export default function SubscriptionScreen() {
                       <View
                         style={[
                           styles.iconContainer,
-                          {
-                            backgroundColor:
-                              selectedPlan === plan.id
-                                ? 'rgba(255,255,255,0.1)'
-                                : 'rgba(255,255,255,0.05)',
-                          },
                         ]}>
                         {PlanIcon && (
                           <PlanIcon
@@ -450,7 +444,6 @@ const styles = StyleSheet.create({
   },
   selectedPlanCard: {
     borderColor: '#94a3b8',
-    backgroundColor: colors.primary.main + '05',
     borderWidth: 2,
   },
   popularBadge: {

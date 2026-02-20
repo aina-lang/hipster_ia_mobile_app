@@ -95,10 +95,10 @@ export default function VerifyEmailScreen() {
       // Allow navigation after success
       allowNavRef.current = true;
 
-      // 2. Proceed to SETUP (Job, Branding, etc.)
-      // Payment will happen at the end of setup.
+      // 2. Proceed to BRANDING (Color, Logo, etc.)
+      // Job selection is skipped as it is now part of the guided creation flow.
       router.push({
-        pathname: '/(onboarding)/setup',
+        pathname: '/(onboarding)/branding',
         params: { userId, planId }
       });
 

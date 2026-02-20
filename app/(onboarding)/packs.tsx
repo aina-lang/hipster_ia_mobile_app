@@ -248,7 +248,7 @@ export default function PacksScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: 80,
+    paddingTop: 100,
   },
   header: {
     alignItems: 'center',
@@ -311,7 +311,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   iconContainerActive: {
-    backgroundColor: 'rgba(255,255,255,0.1)',
   },
   planName: {
     fontSize: 16,

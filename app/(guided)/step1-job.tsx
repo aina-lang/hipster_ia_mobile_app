@@ -223,8 +223,7 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
   },
   textInputActive: {
-    borderColor: colors.primary.main,
-    backgroundColor: colors.primary.main + '0D',
+    borderColor: '#94a3b8',
   },
   confirmButton: {
     height: 56,
@@ -235,7 +234,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   confirmButtonActive: {
-    backgroundColor: colors.primary.main,
+    backgroundColor: '#94a3b8',
   },
   breadcrumb: {
     flexDirection: 'row',

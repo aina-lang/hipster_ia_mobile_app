@@ -315,17 +315,6 @@ export default function Step3PersonalizeScreen() {
   // Image picker for visual flow
   const pickImage = async () => {
     try {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-      if (status !== 'granted') {
-        showModal(
-          'Permission requise',
-          'Nous avons besoin de votre permission pour accéder à vos photos.',
-          'warning'
-        );
-        return;
-      }
-
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: false,
@@ -675,8 +664,7 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
   },
   textInputActive: {
-    borderColor: colors.primary.main,
-    backgroundColor: colors.primary.main + '0D',
+    borderColor: '#94a3b8',
   },
   // Conditional flow styles
   sectionTitle: {
@@ -720,11 +708,11 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: colors.primary.main + '20',
+    backgroundColor: 'rgba(148, 163, 184, 0.1)',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: colors.primary.main + '40',
+    borderColor: 'rgba(148, 163, 184, 0.2)',
   },
   uploadButton: {
     width: '100%',
@@ -742,7 +730,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: colors.primary.main + '20',
+    backgroundColor: 'rgba(148, 163, 184, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 4,
@@ -788,7 +776,7 @@ const styles = StyleSheet.create({
   changeImageText: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.primary.main,
+    color: '#94a3b8',
   },
   changeImageOverlay: {
     position: 'absolute',
@@ -826,8 +814,7 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
   },
   customIntentionInputActive: {
-    borderColor: colors.primary.main,
-    backgroundColor: colors.primary.main + '0D',
+    borderColor: '#94a3b8',
   },
   styleCard: {
     borderRadius: 16,

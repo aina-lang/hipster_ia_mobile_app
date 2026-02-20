@@ -172,7 +172,7 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingTop: 80,
+    paddingTop: 100,
   },
   title: {
     fontSize: 32,

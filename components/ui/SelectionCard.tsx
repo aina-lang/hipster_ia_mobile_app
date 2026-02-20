@@ -29,22 +29,18 @@ export const SelectionCard: React.FC<SelectionCardProps> = ({
       style={[
         styles.container,
         fullWidth && styles.fullWidth,
+        selected && styles.selectedContainer,
         disabled && styles.disabled
       ]}
       activeOpacity={0.9}
       disabled={disabled}>
-      {selected ? (
-        <LinearGradient
-          colors={[colors.primary.main + '22', colors.primary.main + '08']}
-          style={[StyleSheet.absoluteFill, styles.gradientOverlay]}
-        />
-      ) : null}
+      {/* Selection indicator removed as per user request (only icon/text change) */}
 
       <View style={[styles.inner, selected && styles.innerSelected]}>
         <View style={styles.header}>
           {Icon && (
             <View style={[styles.iconContainer, selected && styles.selectedIconContainer]}>
-              <Icon size={24} color={selected ? colors.text.primary : colors.text.secondary} />
+              <Icon size={24} color={selected ? '#f1f5f9' : colors.text.secondary} />
             </View>
           )}
           <Text style={[styles.label, selected && styles.selectedLabel]}>{label}</Text>
@@ -94,15 +90,14 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   selectedContainer: {
-    backgroundColor: 'rgba(15,23,42,1)', // Fully opaque or same as card
-    borderColor: colors.primary.main,
+    borderColor: '#94a3b8',
     borderWidth: 2,
-    // stronger elevation when selected
-    shadowColor: colors.primary.main,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.18,
-    shadowRadius: 12,
-    elevation: 8,
+    // subtle shadow for depth
+    // shadowColor: '#FFFFFF',
+    // shadowOffset: { width: 0, height: 2 },
+    // shadowOpacity: 0.1,
+    // shadowRadius: 4,
+    // elevation: 2,
   },
   innerSelected: {
     transform: [{ scale: 1.02 }],
@@ -119,7 +114,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   selectedIconContainer: {
-    backgroundColor: colors.primary.main, // Solid background for icon when selected
+    // Icon background remains static as per user request
   },
   label: {
     color: colors.text.secondary,

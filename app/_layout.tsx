@@ -26,6 +26,7 @@ import { StripeProvider } from '@stripe/stripe-react-native';
 import { LoadingTransition } from '../components/ui/LoadingTransition';
 import * as MediaLibrary from 'expo-media-library';
 import * as Notifications from 'expo-notifications';
+import * as ImagePicker from 'expo-image-picker';
 import { Audio } from 'expo-av';
 import { Platform } from 'react-native';
 import * as Sharing from 'expo-sharing';
@@ -43,6 +44,8 @@ export default function RootLayout() {
         await MediaLibrary.requestPermissionsAsync();
         await Notifications.requestPermissionsAsync();
         await Audio.requestPermissionsAsync();
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+        await ImagePicker.requestCameraPermissionsAsync();
 
         if (Platform.OS === 'android') {
           await Notifications.setNotificationChannelAsync('default', {
@@ -82,25 +85,27 @@ export default function RootLayout() {
       let targetRoute: string | null = null;
 
       if (isAuthenticated) {
-        // Redirection based on onboarding and subscription status
-        const planType = user?.planType;
-        const subStatus = user?.subscriptionStatus;
-        const isPaidPlan = planType && planType !== 'curieux';
-        const isSubscriptionActive = subStatus === 'active';
-        const isPaidPlanButInactive = isPaidPlan && !isSubscriptionActive;
-
-        if (!hasFinishedOnboarding) {
-          if (!inOnboardingGroup) {
-            targetRoute = '/(onboarding)/setup';
+        // 1. Check if email is verified
+        if (user && !user.isEmailVerified) {
+          if (!segments.includes('verify-email')) {
+            targetRoute = '/(auth)/verify-email';
           }
-        } else {
-          // If onboarding finished (regardless of plan/subscription status)
+        }
+        // 2. Check if onboarding (branding) is complete
+        else if (!hasFinishedOnboarding) {
+          if (!segments.includes('branding')) {
+            targetRoute = '/(onboarding)/branding';
+          }
+        }
+        // 3. Normal app access
+        else {
           if (inAuthGroup || inOnboardingGroup || !segments[0]) {
             targetRoute = '/(drawer)';
           }
         }
       } else {
-        // If not authenticated
+        // If not authenticated, always land on Welcome 
+        // (Login/Register are accessible from there)
         if (!inAuthGroup && !inOnboardingGroup) {
           targetRoute = '/(onboarding)/welcome';
         }

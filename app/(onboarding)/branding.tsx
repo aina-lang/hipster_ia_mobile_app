@@ -31,11 +31,6 @@ export default function BrandingScreen() {
 
     const pickImage = async (type: 'logo' | 'avatar') => {
         if (localLoading) return;
-        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (status !== 'granted') {
-            alert('Besoin de la permission pour accéder à la galerie.');
-            return;
-        }
 
         const result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: ['images'],
@@ -95,7 +90,7 @@ export default function BrandingScreen() {
 
     return (
         <BackgroundGradientOnboarding darkOverlay={true}>
-            <StepIndicator currentStep={2} totalSteps={2} />
+            {/* StepIndicator removed as this is now the final onboarding step */}
 
             <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
                 <View style={styles.container}>
@@ -191,10 +186,10 @@ const styles = StyleSheet.create({
         paddingHorizontal: 24,
     },
     scrollContent: {
+        paddingTop: 100,
         paddingBottom: 120
     },
     content: {
-        paddingTop: 20,
         gap: 24
     },
     title: {

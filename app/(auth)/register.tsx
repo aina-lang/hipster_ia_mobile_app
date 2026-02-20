@@ -43,7 +43,7 @@ export default function RegisterScreen() {
   const [modalTitle, setModalTitle] = useState('');
   const [modalMessage, setModalMessage] = useState('');
 
-  const { aiRegister, updateAiProfile, uploadAvatar,  isLoading, error, clearError, user } = useAuthStore();
+  const { aiRegister, updateAiProfile, uploadAvatar, isLoading, error, clearError, user } = useAuthStore();
   const [localLoading, setLocalLoading] = useState(false);
 
   const showModal = (type: any, title: string, message: string = '') => {
@@ -224,7 +224,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   scrollContent: {
-    paddingTop: 120,
+    paddingTop: 100,
   },
   content: {
     paddingTop: 0,
