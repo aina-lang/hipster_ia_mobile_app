@@ -214,6 +214,11 @@ export default function Step2PersonalizeScreen() {
   const [localQuery, setLocalQuery] = useState(userQuery || '');
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
+  // Animation variables for Visual Styles
+  const scrollX = useRef(new Animated.Value(0)).current;
+  const ITEM_WIDTH = 240;
+  const SPACING = 20;
+
   useEffect(() => {
     const animation = Animated.loop(
       Animated.sequence([
@@ -360,25 +365,19 @@ export default function Step2PersonalizeScreen() {
       scrollViewRef={scrollRef}
       footer={null}
     >
-      <View style={{ paddingHorizontal: 20 }}>
+      <View style={{ paddingHorizontal: 20, overflow: 'visible' }}>
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Personnalisez votre création</Text>
-          <View style={styles.breadcrumb}>
-            <Text style={styles.breadcrumbJob}>{selectedJob}</Text>
-            <ChevronRight size={14} color={colors.text.primary} />
-            <Text style={styles.breadcrumbJob}>{selectedFunction?.split('(')[0]}</Text>
-          </View>
         </View>
-
 
         {/* CONDITIONAL FLOW: Visual Layout */}
         {(selectedCategory === 'Image' || selectedCategory === 'Social') && (
-          <View style={{ marginBottom: 32 }}>
+          <View style={{ marginBottom: 32, overflow: 'visible' }}>
 
             {/* 1. REFERENCE IMAGE (Now at the top) */}
-            <View style={{ marginTop: 32 }}>
-              <Text style={styles.sectionTitle}>Image de référence (Optionnel)</Text>
+            <View style={{ marginTop: 20 }}>
+              <Text style={styles.sectionTitle}>Image de référence</Text>
               {uploadedImage ? (
                 <View style={styles.imagePreviewContainer}>
                   <Image source={{ uri: uploadedImage }} style={styles.imagePreview} />
@@ -407,58 +406,101 @@ export default function Step2PersonalizeScreen() {
 
             {/* 2. VISUAL STYLE (Hidden if image is uploaded) */}
             {!uploadedImage && (
-              <View style={{ marginTop: 32 }}>
-                <Text style={styles.sectionTitle}>Choisissez le style artistique</Text>
-                <ScrollView
+              <View style={{ marginTop: 24, overflow: 'visible' }}>
+                <Text style={styles.sectionTitle}>Style artistique</Text>
+
+                <Animated.FlatList
+                  data={VISUAL_STYLES}
                   horizontal
+                  keyExtractor={(item) => item.label}
                   showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={{ gap: 16, marginTop: 16, paddingRight: 40 }}
-                >
-                  {VISUAL_STYLES.map((style) => {
-                    const isSelected = selectedStyle === style.label;
+                  snapToInterval={ITEM_WIDTH + SPACING}
+                  decelerationRate="fast"
+                  contentContainerStyle={{
+                    paddingHorizontal: SPACING,
+                    paddingVertical: 50, // Reduced from 80 for a tighter look
+                  }}
+                  style={{ overflow: 'visible' }} // Don't clip animations
+                  onScroll={Animated.event(
+                    [{ nativeEvent: { contentOffset: { x: scrollX } } }],
+                    { useNativeDriver: true }
+                  )}
+                  renderItem={({ item, index }) => {
+                    const inputRange = [
+                      (index - 1) * (ITEM_WIDTH + SPACING),
+                      index * (ITEM_WIDTH + SPACING),
+                      (index + 1) * (ITEM_WIDTH + SPACING)
+                    ];
+
+                    const scale = scrollX.interpolate({
+                      inputRange,
+                      outputRange: [0.8, 1.25, 0.8],
+                      extrapolate: "clamp",
+                    });
+
+                    const translateY = scrollX.interpolate({
+                      inputRange,
+                      outputRange: [15, -15, 15],
+                      extrapolate: "clamp"
+                    });
+
+                    const opacity = scrollX.interpolate({
+                      inputRange,
+                      outputRange: [0.7, 1, 0.7],
+                      extrapolate: "clamp"
+                    });
+
+                    const isSelected = selectedStyle === item.label;
+
                     return (
-                      <TouchableOpacity
-                        key={style.label}
-                        style={[styles.styleCard, { width: 160 }]}
-                        onPress={() => {
-                          setStyle(style.label as any);
+                      <Animated.View
+                        style={{
+                          width: ITEM_WIDTH,
+                          marginHorizontal: SPACING / 2,
+                          transform: [{ scale }, { translateY }],
+                          opacity,
                         }}
-                        activeOpacity={0.9}
                       >
-                        <Image
-                          source={
-                            typeof style.image === 'string'
-                              ? { uri: style.image }
-                              : style.image
-                          }
-                          style={styles.styleCardImage}
-                          resizeMode='cover'
-                        />
+                        <TouchableOpacity
+                          key={item.label}
+                          style={styles.styleCard}
+                          onPress={() => {
+                            setStyle(item.label as any);
+                          }}
+                          activeOpacity={0.9}
+                        >
+                          <Image
+                            source={
+                              typeof item.image === 'string'
+                                ? { uri: item.image }
+                                : item.image
+                            }
+                            style={styles.styleCardImage}
+                            resizeMode='cover'
+                          />
 
-                        <View style={styles.styleCardContent}>
-                          <Text style={styles.styleCardLabel}>{style.label}</Text>
-                          <Text style={styles.styleCardDescription} numberOfLines={2}>
-                            {style.description}
-                          </Text>
-                        </View>
+                          <View style={styles.styleCardContent}>
+                            <Text style={styles.styleCardLabel}>{item.label}</Text>
+                          </View>
 
-                        {isSelected && (
-                          <BlurView
-                            intensity={20}
-                            tint="light"
-                            style={StyleSheet.absoluteFill}
-                          >
-                            <View style={styles.selectedOverlayContent}>
-                              <View style={styles.styleCardCheck}>
-                                <View style={styles.styleCardCheckInner} />
+                          {isSelected && (
+                            <BlurView
+                              intensity={80}
+                              tint="dark"
+                              style={StyleSheet.absoluteFill}
+                            >
+                              <View style={styles.selectedOverlayContent}>
+                                <View style={styles.styleCardCheck}>
+                                  <View style={styles.styleCardCheckInner} />
+                                </View>
                               </View>
-                            </View>
-                          </BlurView>
-                        )}
-                      </TouchableOpacity>
+                            </BlurView>
+                          )}
+                        </TouchableOpacity>
+                      </Animated.View>
                     );
-                  })}
-                </ScrollView>
+                  }}
+                />
               </View>
             )}
           </View>
@@ -468,11 +510,11 @@ export default function Step2PersonalizeScreen() {
         <View style={{ marginTop: 20, marginBottom: 40 }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
             <Text style={styles.sectionTitle}>
-          Précisez votre besoin
+              Précisez votre besoin
             </Text>
           </View>
 
-        
+
 
           <View style={styles.promptContainer}>
             <TextInput
@@ -618,7 +660,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.1)',
-    minHeight: 150,
+    minHeight: 120,
     padding: 16,
     position: 'relative',
     marginBottom: 24,
@@ -760,9 +802,8 @@ const styles = StyleSheet.create({
   },
   styleCardImage: {
     width: '100%',
-    height: undefined,     // ← IMPORTANT
-    aspectRatio: 1,        // ← mets l’aspect réel (voir plus bas)
-
+    height: undefined,
+    aspectRatio: 1.1, // Wider rectangle
   },
 
   styleCardOverlay: {
