@@ -21,12 +21,10 @@ export default function BrandingScreen() {
     } = useOnboardingStore();
     const { user } = useAuthStore();
 
-    const initialLogo = user?.logoUrl || logoUri;
-    const initialAvatar = user?.avatarUrl || avatarUri;
+    const initialImage = user?.avatarUrl || user?.logoUrl || avatarUri || logoUri;
 
     const [selectedColor, setSelectedColor] = useState(user?.brandingColor || brandingColor || '#FF0000');
-    const [localLogo, setLocalLogo] = useState(initialLogo);
-    const [localAvatar, setLocalAvatar] = useState(initialAvatar);
+    const [localImage, setLocalImage] = useState(initialImage);
     const [localLoading, setLocalLoading] = useState(false);
     const [tempHex, setTempHex] = useState(selectedColor.toUpperCase());
 
@@ -55,7 +53,7 @@ export default function BrandingScreen() {
         }
     };
 
-    const pickImage = async (type: 'logo' | 'avatar') => {
+    const pickImage = async () => {
         if (localLoading) return;
 
         const result = await ImagePicker.launchImageLibraryAsync({
@@ -66,9 +64,8 @@ export default function BrandingScreen() {
         });
 
         if (!result.canceled) {
-            console.log(`[Branding] Picked ${type}:`, result.assets[0].uri);
-            if (type === 'logo') setLocalLogo(result.assets[0].uri);
-            else setLocalAvatar(result.assets[0].uri);
+            console.log(`[Branding] Picked image:`, result.assets[0].uri);
+            setLocalImage(result.assets[0].uri);
         }
     };
 
@@ -77,8 +74,8 @@ export default function BrandingScreen() {
         try {
             setBrandingData({
                 brandingColor: selectedColor,
-                logoUri: localLogo,
-                avatarUri: localAvatar
+                logoUri: localImage,
+                avatarUri: localImage
             });
 
             const authStore = useAuthStore.getState();
@@ -90,14 +87,14 @@ export default function BrandingScreen() {
                 brandingColor: selectedColor,
             });
 
-            // 2. Upload images if changed
-            if (localAvatar && localAvatar !== initialAvatar) {
-                console.log('[Branding] Uploading avatar:', localAvatar);
-                await authStore.uploadAvatar(localAvatar);
-            }
-            if (localLogo && localLogo !== initialLogo && profileId) {
-                console.log('[Branding] Uploading logo:', localLogo);
-                await authStore.uploadLogo(profileId, localLogo);
+            // 2. Upload image if changed
+            if (localImage && (localImage !== initialImage)) {
+                console.log('[Branding] Uploading image (avatar & logo):', localImage);
+                // We upload to both since they are the same
+                await Promise.all([
+                    authStore.uploadAvatar(localImage),
+                    profileId ? authStore.uploadLogo(profileId, localImage) : Promise.resolve()
+                ]);
             }
 
             await authStore.finishOnboarding();
@@ -179,19 +176,20 @@ export default function BrandingScreen() {
                         <View style={styles.section}>
                             <View style={styles.sectionHeader}>
                                 <User size={16} color={colors.text.secondary} />
-                                <Text style={styles.sectionTitleText}>Avatar / Logo</Text>
+                                <Text style={styles.sectionTitleText}>Photo de profil / Logo</Text>
                             </View>
                             <TouchableOpacity
                                 style={[styles.uploadBox, localLoading && { opacity: 0.6 }]}
-                                onPress={() => !localLoading && pickImage('avatar')}
+                                onPress={() => !localLoading && pickImage()}
                                 disabled={localLoading}
                             >
-                                {localAvatar ? (
-                                    <Image source={{ uri: localAvatar }} style={styles.uploadedImage} />
+                                {localImage && localImage.trim() !== '' ? (
+                                    <Image source={{ uri: localImage }} style={styles.uploadedImage} />
                                 ) : (
                                     <View style={styles.uploadPlaceholder}>
-                                        <Upload size={24} color={colors.text.muted} />
+                                        <Upload size={24} color={colors.text.secondary} />
                                         <Text style={styles.uploadText}>Choisir une image</Text>
+                                        <Text style={styles.uploadHint}>PNG, JPG, JPEG • Max 5Mo</Text>
                                     </View>
                                 )}
                             </TouchableOpacity>
@@ -317,11 +315,18 @@ const styles = StyleSheet.create({
     },
     uploadPlaceholder: {
         alignItems: 'center',
+        zIndex: 99999,
         gap: 8
     },
     uploadText: {
-        color: colors.text.muted,
-        fontSize: 14
+        color: colors.text.primary,
+        fontSize: 14,
+        fontWeight: '600'
+    },
+    uploadHint: {
+        color: colors.text.secondary,
+        fontSize: 12,
+        marginTop: 2
     },
     uploadedImage: {
         width: '100%',
