@@ -57,6 +57,16 @@ interface User {
   audioUsed?: number;
   type?: 'ai' | 'standard';
   name?: string;
+  professionalEmail?: string;
+  professionalAddress?: string;
+  city?: string;
+  postalCode?: string;
+  country?: string;
+  professionalPhone?: string;
+  professionalPhone2?: string;
+  siret?: string;
+  vatNumber?: string;
+  websiteUrl?: string;
 }
 
 interface AuthState {
