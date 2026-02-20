@@ -117,7 +117,7 @@ function CustomDrawerContent(props: any) {
    * ============================ */
 
 
-  const userName = user?.name|| 'Utilisateur';
+  const userName = user?.name || 'Utilisateur';
 
   const userAvatar = user?.avatarUrl
     ? `https://hipster-api.fr${user.avatarUrl}`
@@ -126,8 +126,8 @@ function CustomDrawerContent(props: any) {
   console.log(userAvatar);
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#11111a" }}>
-      <DrawerContentScrollView {...props} contentContainerStyle={{ paddingTop: 0, backgroundColor: "#11111a" }}>
+    <View style={{ flex: 1, backgroundColor: "#0d0d0d" }}>
+      <DrawerContentScrollView {...props} contentContainerStyle={{ paddingTop: 0, backgroundColor: "#0d0d0d" }}>
         {/* ============================
             HEADER
         ============================ */}
@@ -298,9 +298,9 @@ export default function DrawerLayout() {
       drawerContent={(props) => <CustomDrawerContent {...props} />}
       screenOptions={{
         headerShown: false,
-        drawerContentContainerStyle: { backgroundColor: '#11111a' },
+        drawerContentContainerStyle: { backgroundColor: '#0d0d0d' },
         drawerStyle: {
-          backgroundColor: '#11111a',
+          backgroundColor: '#0d0d0d',
           borderRightWidth: 1,
           borderRightColor: 'rgba(255,255,255,0.08)',
           width: '80%',
@@ -371,7 +371,7 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 17,
     fontWeight: '700',
-    color: '#fff',
+    color: colors.text.primary,
   },
   userRole: {
     fontSize: 13,
@@ -424,7 +424,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.08)',
   },
   newChatText: {
-    color: '#fff',
+    color: colors.text.primary,
     fontSize: 15,
     fontWeight: '600',
   },

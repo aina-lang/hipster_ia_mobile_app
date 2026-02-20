@@ -127,7 +127,7 @@ export default function VerifyEmailScreen() {
 
   return (
     <>
-      <BackgroundGradientOnboarding blurIntensity={80}>
+      <BackgroundGradientOnboarding darkOverlay={true}>
 
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}

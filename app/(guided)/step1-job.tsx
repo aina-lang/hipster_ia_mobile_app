@@ -67,8 +67,7 @@ const UNIVERSAL_FUNCTIONS: JobFunction[] = [
 
 export default function Step1JobScreen() {
   const router = useRouter();
-  const { setJob, selectedJob, setFunction, selectedFunction } = useCreationStore();
-  const [stage, setStage] = useState<'job' | 'function'>('job');
+  const { setJob, selectedJob } = useCreationStore();
   const [customJob, setCustomJob] = useState('');
 
   const isCustomSelected = selectedJob === 'Autre';
@@ -77,7 +76,7 @@ export default function Step1JobScreen() {
     setJob(job);
     if (job !== 'Autre') {
       setTimeout(() => {
-        setStage('function');
+        router.push('/(guided)/step2-type');
       }, 300);
     }
   };
@@ -86,31 +85,20 @@ export default function Step1JobScreen() {
     if (customJob.trim()) {
       setJob(customJob.trim());
       setTimeout(() => {
-        setStage('function');
+        router.push('/(guided)/step2-type');
       }, 300);
     }
   };
 
-  const handleSelectFunction = (fn: JobFunction) => {
-    setFunction(fn.label, fn.category);
-    setTimeout(() => {
-      router.push('/(guided)/step2-personalize');
-    }, 300);
-  };
-
-  const currentFunctions = UNIVERSAL_FUNCTIONS;
-
   return (
     <GuidedScreenWrapper
       onBack={
-        stage === 'function'
-          ? () => setStage('job')
-          : isCustomSelected
-            ? () => {
-              // @ts-ignore
-              setJob(null);
-            }
-            : undefined
+        isCustomSelected
+          ? () => {
+            // @ts-ignore
+            setJob(null);
+          }
+          : undefined
       }>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -118,95 +106,54 @@ export default function Step1JobScreen() {
         <View style={{ paddingHorizontal: 20, paddingBottom: 40 }}>
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.title}>
-              {stage === 'job' ? 'Quel est votre métier ?' : 'Que souhaitez-vous produire ?'}
-            </Text>
-            {stage === 'job' ? (
-              <Text style={styles.subtitle}>Nous personnalisons l'expérience pour vous.</Text>
-            ) : (
-              <View style={styles.breadcrumb}>
-                <Text style={styles.breadcrumbJob}>{selectedJob}</Text>
-                <ChevronRight size={14} color={colors.text.muted} />
-                <Text style={styles.breadcrumbCanal}>Canal</Text>
-              </View>
-            )}
+            <Text style={styles.title}>Quel est votre métier ?</Text>
+            <Text style={styles.subtitle}>Nous personnalisons l'expérience pour vous.</Text>
           </View>
 
-          {/* Animation - Outside conditional to prevent unmounting/flickering
-          <View style={styles.animationContainer}>
-            <DeerAnimation size={120} progress={stage === 'job' ? 20 : 40} />
-          </View> */}
-
-          {/* Content */}
-          {stage === 'job' ? (
-            <>
-              {/* Grid */}
-              <View style={styles.grid}>
-                {JOBS.map((job) => (
-                  <View key={job.label} style={styles.gridItem}>
-                    <SelectionCard
-                      label={job.label}
-                      icon={job.icon}
-                      selected={selectedJob === job.label}
-                      onPress={() => {
-                        if (job.label !== 'Autre') {
-                          setCustomJob('');
-                        }
-                        handleSelectJob(job.label);
-                      }}
-                    />
-                  </View>
-                ))}
+          {/* Grid */}
+          <View style={styles.grid}>
+            {JOBS.map((job) => (
+              <View key={job.label} style={styles.gridItem}>
+                <SelectionCard
+                  label={job.label}
+                  icon={job.icon}
+                  selected={selectedJob === job.label}
+                  onPress={() => {
+                    if (job.label !== 'Autre') {
+                      setCustomJob('');
+                    }
+                    handleSelectJob(job.label);
+                  }}
+                />
               </View>
+            ))}
+          </View>
 
-              {/* Custom Input (Only appears when 'Autre' is selected) */}
-              {isCustomSelected && (
-                <View style={styles.customInputSection}>
-                  <View style={styles.divider} />
-                  <Text style={styles.customInputLabel}>Saisissez votre secteur d'activité :</Text>
-                  <View style={styles.inputRow}>
-                    <TextInput
-                      style={[styles.textInput, customJob.trim() ? styles.textInputActive : null]}
-                      placeholder="Ex: Boulanger, Plombier..."
-                      placeholderTextColor="rgba(255, 255, 255, 0.3)"
-                      value={customJob}
-                      onChangeText={setCustomJob}
-                      autoFocus
-                    />
-                    <TouchableOpacity
-                      style={[
-                        styles.confirmButton,
-                        customJob.trim() ? styles.confirmButtonActive : null,
-                      ]}
-                      onPress={handleConfirmCustomJob}
-                      disabled={!customJob.trim()}>
-                      <ArrowRight size={24} color="white" />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              )}
-            </>
-          ) : (
-            <>
-              {/* LISTE */}
-              <View style={styles.functionsList}>
-                {currentFunctions.map((fn, index) => (
-                  <SelectionCard
-                    key={index}
-                    label={fn.label}
-                    icon={fn.icon}
-                    selected={selectedFunction === fn.label}
-                    onPress={() => handleSelectFunction(fn)}
-                    fullWidth
-                  />
-                ))}
+          {/* Custom Input (Only appears when 'Autre' is selected) */}
+          {isCustomSelected && (
+            <View style={styles.customInputSection}>
+              <View style={styles.divider} />
+              <Text style={styles.customInputLabel}>Saisissez votre secteur d'activité :</Text>
+              <View style={styles.inputRow}>
+                <TextInput
+                  style={[styles.textInput, customJob.trim() ? styles.textInputActive : null]}
+                  placeholder="Ex: Boulanger, Plombier..."
+                  placeholderTextColor="rgba(255, 255, 255, 0.3)"
+                  value={customJob}
+                  onChangeText={setCustomJob}
+                  autoFocus
+                />
+                <TouchableOpacity
+                  style={[
+                    styles.confirmButton,
+                    customJob.trim() ? styles.confirmButtonActive : null,
+                  ]}
+                  onPress={handleConfirmCustomJob}
+                  disabled={!customJob.trim()}>
+                  <ArrowRight size={24} color="white" />
+                </TouchableOpacity>
               </View>
-
-              {/* Back Button */}
-              <TouchableOpacity onPress={() => setStage('job')} style={styles.backToJobButton}>
-                <Text style={styles.backToJobText}>← Retour au choix du métier</Text>
-              </TouchableOpacity>
-            </>
+            </View>
           )}
         </View>
       </KeyboardAvoidingView>
@@ -223,13 +170,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#FFFFFF',
+    color: colors.text.primary,
     textAlign: 'center',
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.7)',
+    color: colors.text.secondary,
     textAlign: 'center',
   },
   animationContainer: {
@@ -255,7 +202,7 @@ const styles = StyleSheet.create({
   customInputLabel: {
     fontSize: 14,
     fontWeight: '500',
-    color: 'rgba(255, 255, 255, 0.5)',
+    color: colors.text.muted,
     textAlign: 'center',
     marginBottom: 16,
   },
@@ -273,7 +220,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.05)',
     paddingHorizontal: 20,
     fontSize: 18,
-    color: '#FFFFFF',
+    color: colors.text.primary,
   },
   textInputActive: {
     borderColor: colors.primary.main,
@@ -298,7 +245,7 @@ const styles = StyleSheet.create({
   breadcrumbJob: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: colors.text.primary,
   },
   breadcrumbCanal: {
     fontSize: 14,

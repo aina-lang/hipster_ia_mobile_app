@@ -71,7 +71,7 @@ const MODEL_IMAGES: Record<string, string> = {
     'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=400&auto=format&fit=crop',
 };
 
-export default function Step3ResultScreen() {
+export default function Step4ResultScreen() {
   const router = useRouter();
   const {
     userQuery,
@@ -245,9 +245,9 @@ export default function Step3ResultScreen() {
         </View>
         <View style={styles.imageWrapper}>
           {imageUrl && imageUrl.trim() ? (
-            <Image 
-              source={{ uri: imageUrl }} 
-              style={styles.flyerImage} 
+            <Image
+              source={{ uri: imageUrl }}
+              style={styles.flyerImage}
               resizeMode="contain"
               onError={(e) => console.error('[Image Error]', e.nativeEvent.error)}
             />
@@ -595,7 +595,7 @@ export default function Step3ResultScreen() {
         // Différencie Flyers/Affiches de Visuel publicitaire
         const isFlyerExact = selectedFunction && selectedFunction.includes('Flyers');
         const isVisuelPub = selectedFunction && selectedFunction.includes('Visuel');
-        
+
         if (isFlyerExact) {
           // Génère avec generateFlyer pour "Flyers / Affiches"
           const flyerResult = await AiService.generateFlyer(params, seed);
@@ -634,11 +634,11 @@ export default function Step3ResultScreen() {
           // Génère avec generateImage pour "Visuel publicitaire" - SAME CODE AS SOCIAL THAT WORKS
           const resultData = await AiService.generateImage(params, (selectedStyle as any) || 'realistic', seed);
           console.log('[DEBUG] Visuel Publicitaire Image Result:', JSON.stringify(resultData, null, 2));
-          
+
           // Détecte si c'est asynchrone (URL null mais generationId présent)
           const isAsync = !resultData.url && resultData.generationId;
           console.log('[DEBUG] Visuel Publicitaire isAsync:', isAsync, 'generationId:', resultData.generationId);
-          
+
           if (isAsync) {
             console.log('[DEBUG] ⏳ Starting Visuel Publicitaire polling with generationId:', resultData.generationId);
             setGenerationId(resultData.generationId);
@@ -646,7 +646,7 @@ export default function Step3ResultScreen() {
             let attempts = 0;
             const maxAttempts = 30;
             let lastImageUrl = null;
-            
+
             while (!isCompleted && attempts < maxAttempts) {
               attempts++;
               console.log(`[DEBUG] 🔄 Visuel Publicitaire Poll attempt ${attempts}/${maxAttempts}`);
@@ -656,7 +656,7 @@ export default function Step3ResultScreen() {
                 console.log('[DEBUG] Visuel Publicitaire Poll response:', JSON.stringify(updatedGen, null, 2));
                 const imageUrl = updatedGen?.imageUrl || updatedGen?.url || updatedGen?.image;
                 console.log('[DEBUG] Extracted imageUrl:', imageUrl);
-                
+
                 if (imageUrl && typeof imageUrl === 'string' && imageUrl.startsWith('http')) {
                   console.log('[DEBUG] ✅ Visuel Publicitaire image found:', imageUrl);
                   setImageUrl(imageUrl);
@@ -669,7 +669,7 @@ export default function Step3ResultScreen() {
                 console.warn('[DEBUG] Visuel Publicitaire poll error:', pollError);
               }
             }
-            
+
             if (!isCompleted) {
               console.error('[DEBUG] ❌ Visuel Publicitaire polling timed out');
               throw new Error('Image generation timed out');
@@ -690,17 +690,17 @@ export default function Step3ResultScreen() {
         // Améliore la détection pour différencier correctement les types
         const isFlyerExact = selectedFunction && selectedFunction.includes('Flyers');
         const isVisuel = selectedFunction && selectedFunction.includes('Visuel');
-        
+
         console.log('[DEBUG] Texte category - selectedFunction:', selectedFunction, 'isFlyerExact:', isFlyerExact, 'isVisuel:', isVisuel);
-        
+
         if (isFlyerExact) {
           const flyerResult = await AiService.generateFlyer(params, seed);
           console.log('[DEBUG] Flyer Result:', JSON.stringify(flyerResult, null, 2));
-          
+
           // Détecte si c'est asynchrone (URL null mais generationId présent)
           const isAsync = !flyerResult.url && flyerResult.generationId;
           console.log('[DEBUG] Flyer isAsync:', isAsync, 'generationId:', flyerResult.generationId, 'url:', flyerResult.url);
-          
+
           if (isAsync) {
             console.log('[DEBUG] ⏳ Starting Flyer polling with generationId:', flyerResult.generationId);
             setGenerationId(flyerResult.generationId);
@@ -708,7 +708,7 @@ export default function Step3ResultScreen() {
             let attempts = 0;
             const maxAttempts = 30; // Timeout plus rapide: 1 min au lieu de 3 min
             let lastImageUrl = null;
-            
+
             while (!isCompleted && attempts < maxAttempts) {
               attempts++;
               console.log(`[DEBUG] 🔄 Flyer Poll attempt ${attempts}/${maxAttempts}`);
@@ -720,7 +720,7 @@ export default function Step3ResultScreen() {
                 // Check for imageUrl (backend field), url, or image
                 const imageUrl = updatedGen?.imageUrl || updatedGen?.url || updatedGen?.image;
                 console.log('[DEBUG] Extracted imageUrl:', imageUrl);
-                
+
                 if (imageUrl && typeof imageUrl === 'string' && imageUrl.startsWith('http')) {
                   console.log('[DEBUG] ✅ Flyer image found:', imageUrl);
                   setImageUrl(imageUrl);
@@ -736,7 +736,7 @@ export default function Step3ResultScreen() {
                 console.warn('[DEBUG] ⚠️ Flyer poll error on attempt', attempts, ':', pollError);
               }
             }
-            
+
             if (!isCompleted) {
               console.error('[DEBUG] ❌ Flyer polling timed out after', maxAttempts, 'attempts. LastImageUrl:', lastImageUrl);
               showModal('error', 'Génération échouée', 'L\'API de génération d\'images n\'a pas pu créer votre image. Vérifiez vos paramètres et réessayez.');
@@ -752,11 +752,11 @@ export default function Step3ResultScreen() {
           // Génère une image pour "Visuel publicitaire"
           const resultData = await AiService.generateImage(params, (selectedStyle as any) || 'realistic', seed);
           console.log('[DEBUG] Visuel Image Result:', JSON.stringify(resultData, null, 2));
-          
+
           // Détecte si c'est asynchrone (URL null mais generationId présent)
           const isAsync = !resultData.url && resultData.generationId;
           console.log('[DEBUG] Visuel Image isAsync:', isAsync, 'generationId:', resultData.generationId, 'url:', resultData.url);
-          
+
           if (isAsync) {
             console.log('[DEBUG] ⏳ Starting Visuel Image polling with generationId:', resultData.generationId);
             setGenerationId(resultData.generationId);
@@ -764,7 +764,7 @@ export default function Step3ResultScreen() {
             let attempts = 0;
             const maxAttempts = 30; // 1 min timeout
             let lastImageUrl = null;
-            
+
             while (!isCompleted && attempts < maxAttempts) {
               attempts++;
               console.log(`[DEBUG] 🔄 Visuel Image Poll attempt ${attempts}/${maxAttempts}`);
@@ -776,7 +776,7 @@ export default function Step3ResultScreen() {
                 // Check for imageUrl (backend field), url, or image
                 const imageUrl = updatedGen?.imageUrl || updatedGen?.url || updatedGen?.image;
                 console.log('[DEBUG] Extracted imageUrl:', imageUrl);
-                
+
                 if (imageUrl && typeof imageUrl === 'string' && imageUrl.startsWith('http')) {
                   console.log('[DEBUG] ✅ Visuel Image found:', imageUrl);
                   setImageUrl(imageUrl);
@@ -792,7 +792,7 @@ export default function Step3ResultScreen() {
                 console.warn('[DEBUG] ⚠️ Visuel Image poll error on attempt', attempts, ':', pollError);
               }
             }
-            
+
             if (!isCompleted) {
               console.error('[DEBUG] ❌ Visuel Image polling timed out after', maxAttempts, 'attempts. LastImageUrl:', lastImageUrl);
               showModal('error', 'Génération échouée', 'L\'API de génération d\'images n\'a pas pu créer votre image. Vérifiez vos paramètres et réessayez.');
@@ -849,7 +849,7 @@ export default function Step3ResultScreen() {
           console.warn('[PERMISSION] MediaLibrary not available in Expo Go:', mediaError);
           // Continue anyway - it's not critical for the feature
         }
-        
+
         try {
           await Notifications.requestPermissionsAsync();
         } catch (notifError) {
@@ -1122,14 +1122,30 @@ export default function Step3ResultScreen() {
           {/* Header simplifié */}
           <View style={styles.header}>
             {loading ? (
-              <View style={styles.loadingHeader}>
-                <DeerAnimation size={60} progress={50} />
-                <Text selectable={true} style={styles.loadingTitle}>
-                  Création en cours...
-                </Text>
-                <Text selectable={true} style={styles.loadingSubtitle}>
-                  Hipster•IA travaille pour vous
-                </Text>
+              <View style={styles.skeletonWrapper}>
+                {/* Bloc image skeleton */}
+                <Animated.View
+                  style={[styles.skeletonImage, { opacity: pulseAnim }]}
+                />
+
+                {/* Bloc titre skeleton */}
+                <Animated.View
+                  style={[styles.skeletonTitle, { opacity: pulseAnim }]}
+                />
+
+                {/* Lignes de texte skeleton */}
+                <Animated.View
+                  style={[styles.skeletonLine, { opacity: pulseAnim, width: '90%' }]}
+                />
+                <Animated.View
+                  style={[styles.skeletonLine, { opacity: pulseAnim, width: '75%' }]}
+                />
+                <Animated.View
+                  style={[styles.skeletonLine, { opacity: pulseAnim, width: '60%' }]}
+                />
+
+                {/* Label discret */}
+                <Text style={styles.skeletonLabel}>Hipster•IA génère votre contenu...</Text>
               </View>
             ) : (
               <>
@@ -1554,6 +1570,36 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.text.secondary,
   },
+  skeletonWrapper: {
+    width: '100%',
+    paddingHorizontal: 4,
+    gap: 12,
+  },
+  skeletonImage: {
+    width: '100%',
+    height: 220,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+  },
+  skeletonTitle: {
+    width: '55%',
+    height: 20,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    alignSelf: 'center',
+  },
+  skeletonLine: {
+    height: 14,
+    borderRadius: 6,
+    backgroundColor: 'rgba(255,255,255,0.07)',
+  },
+  skeletonLabel: {
+    marginTop: 8,
+    textAlign: 'center',
+    fontSize: 13,
+    color: colors.text.muted,
+    letterSpacing: 0.3,
+  },
   successIcon: {
     width: 64,
     height: 64,
@@ -1623,11 +1669,11 @@ const styles = StyleSheet.create({
   socialUser: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#FFF',
+    color: colors.text.primary,
   },
   socialTime: {
     fontSize: 11,
-    color: 'rgba(255,255,255,0.4)',
+    color: colors.text.secondary,
   },
   socialImageSection: {
     width: '100%',
@@ -1640,7 +1686,7 @@ const styles = StyleSheet.create({
   socialCaptionText: {
     fontSize: 14,
     lineHeight: 20,
-    color: '#EEE',
+    color: colors.text.primary,
   },
   documentSection: {
     padding: 24,
@@ -1739,18 +1785,13 @@ const styles = StyleSheet.create({
   exportButtonTextPrimary: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#000',
+    color: colors.background.primary,
   },
   textSection: {
     padding: 24,
   },
   textPlaceholder: {
     gap: 12,
-  },
-  skeletonLine: {
-    height: 14,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 7,
   },
   structuredContent: {
     gap: 20,
@@ -1989,7 +2030,7 @@ const styles = StyleSheet.create({
   posterTitle: {
     fontSize: 28,
     fontWeight: '900',
-    color: '#FFF',
+    color: colors.text.primary,
     textAlign: 'center',
     marginBottom: 12,
     lineHeight: 34,
@@ -2005,7 +2046,7 @@ const styles = StyleSheet.create({
   posterBody: {
     fontSize: 16,
     lineHeight: 24,
-    color: '#DDD',
+    color: colors.text.secondary,
     textAlign: 'center',
     marginBottom: 24,
   },
@@ -2019,16 +2060,24 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   posterOfferText: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: 15,
+    fontWeight: '600',
     color: colors.primary.main,
     textAlign: 'center',
+    lineHeight: 22,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: colors.text.secondary,
+    textAlign: 'center',
+    lineHeight: 24,
   },
   posterInfo: {
-    padding: 16,
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 12,
-    marginBottom: 20,
+    position: 'relative',
+    marginBottom: 15,
+    padding: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 10,
   },
   posterInfoText: {
     fontSize: 14,

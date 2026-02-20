@@ -155,7 +155,7 @@ export function NeonButton({
               height: 120,
               borderRadius: 100,
               backgroundColor: 'rgba(255,255,255,0.005)',
-              shadowColor: '#ffffff',
+              shadowColor: colors.text.primary,
 
               shadowOffset: {
                 width: 0,

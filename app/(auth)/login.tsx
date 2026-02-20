@@ -79,7 +79,7 @@ export default function LoginScreen() {
   };
 
   return (
-    <BackgroundGradientOnboarding blurIntensity={90}>
+    <BackgroundGradientOnboarding darkOverlay={true}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.container}>

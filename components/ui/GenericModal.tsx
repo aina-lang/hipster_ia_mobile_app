@@ -220,14 +220,14 @@ const styles = StyleSheet.create({
   },
   container: {
     width: width * 0.85,
-    backgroundColor: colors.background.secondary,
+    backgroundColor: 'rgba(13, 13, 13, 0.97)',
     borderRadius: 24,
     padding: 24,
     alignItems: 'center',
     borderWidth: 1,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.5,
+    shadowRadius: 20,
     elevation: 10,
   },
   closeButton: {
@@ -273,7 +273,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
   },
   confirmButtonText: {
-    color: '#fff',
+    color: colors.text.primary,
     fontSize: 16,
     fontWeight: '600',
   },

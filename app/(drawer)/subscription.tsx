@@ -305,14 +305,14 @@ export default function SubscriptionScreen() {
                           {
                             backgroundColor:
                               selectedPlan === plan.id
-                                ? colors.primary.main + '22'
+                                ? 'rgba(255,255,255,0.1)'
                                 : 'rgba(255,255,255,0.05)',
                           },
                         ]}>
                         {PlanIcon && (
                           <PlanIcon
                             size={24}
-                            color={selectedPlan === plan.id ? colors.primary.main : colors.text.muted}
+                            color={selectedPlan === plan.id ? '#f1f5f9' : colors.text.muted}
                           />
                         )}
                       </View>
@@ -449,7 +449,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   selectedPlanCard: {
-    borderColor: colors.primary.main,
+    borderColor: '#94a3b8',
     backgroundColor: colors.primary.main + '05',
     borderWidth: 2,
   },
@@ -457,7 +457,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     right: 0,
-    backgroundColor: colors.primary.main,
+    backgroundColor: '#f1f5f9',
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderBottomLeftRadius: 12,

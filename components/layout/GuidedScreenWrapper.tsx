@@ -1,13 +1,19 @@
 import React, { useRef } from 'react';
-import { View, StyleSheet, TouchableOpacity, Animated, Text, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import {
+  View,
+  StyleSheet,
+  TouchableOpacity,
+  Animated,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+} from 'react-native';
 import { useRouter, useSegments } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArrowLeft } from 'lucide-react-native';
 import { colors } from '../../theme/colors';
-import { BackgroundGradient } from '../ui/BackgroundGradient';
 import { StepIndicator } from '../ui/StepIndicator';
 import { useCreationStore } from '../../store/creationStore';
-import { WORKFLOWS } from '../../constants/workflows';
 import { BackgroundGradientOnboarding } from 'components/ui/BackgroundGradientOnboarding';
 
 interface GuidedScreenWrapperProps {
@@ -18,67 +24,68 @@ interface GuidedScreenWrapperProps {
   scrollViewRef?: React.RefObject<ScrollView | null>;
 }
 
-export function GuidedScreenWrapper({ children, headerRight, onBack, footer, scrollViewRef }: GuidedScreenWrapperProps) {
+export function GuidedScreenWrapper({
+  children,
+  headerRight,
+  onBack,
+  footer,
+  scrollViewRef,
+}: GuidedScreenWrapperProps) {
   const router = useRouter();
   const segments = useSegments();
   const insets = useSafeAreaInsets();
   const scrollY = useRef(new Animated.Value(0)).current;
 
-  const { selectedJob, selectedFunction } = useCreationStore();
-
-  // Determine current step and total steps based on route and workflow
   const currentRoute = segments[segments.length - 1];
   const totalSteps = 3;
 
   let currentStep = 1;
-  if (currentRoute === 'step1-job') {
-    currentStep = 1;
-  } else if (currentRoute === 'step2-personalize') {
-    currentStep = 2;
-  } else if (currentRoute === 'step3-prompt') {
-    currentStep = 3;
-  } else if (currentRoute === 'step4-result') {
-    currentStep = 3; // Keep result as step 3 visually or hide it
-  }
+  if (currentRoute === 'step1-job') currentStep = 1;
+  else if (currentRoute === 'step2-type') currentStep = 2;
+  else if (currentRoute === 'step3-personalize') currentStep = 3;
+  else if (currentRoute === 'step4-result') currentStep = 3;
 
-  const headerOpacity = scrollY.interpolate({
-    inputRange: [0, 50],
-    outputRange: [0, 0.95], // Fades to 95% opacity
-    extrapolate: 'clamp',
-  });
 
-  const headerBackgroundColor = scrollY.interpolate({
+  const darkOverlay = scrollY.interpolate({
     inputRange: [0, 50],
-    outputRange: ['transparent', 'rgba(10, 10, 17, 0.95)'], // Match background: #0a0a11
+    outputRange: ['rgba(13, 13, 13, 0)', 'rgba(13, 13, 13, 1)'],
     extrapolate: 'clamp',
   });
 
   return (
     <BackgroundGradientOnboarding blurIntensity={80} darkOverlay={true}>
       <View style={{ flex: 1 }}>
-        {/* Absolute Header */}
+        {/* HEADER */}
         <Animated.View
           style={[
             styles.header,
             {
               paddingTop: insets.top - 15,
-              backgroundColor: headerBackgroundColor,
-              borderBottomWidth: 1,
-              borderBottomColor: scrollY.interpolate({
-                inputRange: [0, 50],
-                outputRange: ['transparent', 'rgba(50, 50, 60, 0.3)'], // Dark subtle border matching background
-                extrapolate: 'clamp',
-              }),
             },
-          ]}>
+          ]}
+        >
+          <Animated.View
+            style={[
+              StyleSheet.absoluteFill,
+              {
+                backgroundColor: darkOverlay,
+              },
+            ]}
+          />
+
+
           <View
             style={styles.headerContent}
-            className="flex flex-row items-center justify-between px-5 ">
-            <TouchableOpacity onPress={onBack || (() => router.back())} style={styles.backButton}>
+            className="flex flex-row items-center justify-between px-5"
+          >
+            <TouchableOpacity
+              onPress={onBack || (() => router.back())}
+              style={styles.backButton}
+            >
               <ArrowLeft size={24} color={colors.text.primary} />
             </TouchableOpacity>
 
-            <View className="-top-2  h-full pt-0">
+            <View className="-top-2 h-full pt-0">
               <StepIndicator currentStep={currentStep} totalSteps={totalSteps} />
             </View>
 
@@ -90,24 +97,24 @@ export function GuidedScreenWrapper({ children, headerRight, onBack, footer, scr
           </View>
         </Animated.View>
 
-        {/* contentContainerStyle needs paddingBottom for safe area and paddingTop for header space */}
-        {/* contentContainerStyle needs paddingBottom for safe area and paddingTop for header space */}
+        {/* CONTENT */}
         {footer ? (
           <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : undefined}
             style={{ flex: 1 }}
           >
             <Animated.ScrollView
-              ref={scrollViewRef as any} // Animated.ScrollView ref type mismatch workaround
+              ref={scrollViewRef as any}
               onScroll={Animated.event(
                 [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-                { useNativeDriver: false } // backgroundColor interpolation requires false
+                { useNativeDriver: false }
               )}
               scrollEventThrottle={16}
               contentContainerStyle={{
-                paddingTop: insets.top + 150, // Space for the header
+                paddingTop: insets.top + 150,
                 paddingBottom: insets.bottom + 20,
-              }}>
+              }}
+            >
               {children}
             </Animated.ScrollView>
             {footer}
@@ -117,13 +124,14 @@ export function GuidedScreenWrapper({ children, headerRight, onBack, footer, scr
             ref={scrollViewRef as any}
             onScroll={Animated.event(
               [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-              { useNativeDriver: false } // backgroundColor interpolation requires false
+              { useNativeDriver: false }
             )}
             scrollEventThrottle={16}
             contentContainerStyle={{
-              paddingTop: insets.top + 150, // Space for the header
+              paddingTop: insets.top + 150,
               paddingBottom: insets.bottom + 20,
-            }}>
+            }}
+          >
             {children}
           </Animated.ScrollView>
         )}
@@ -144,10 +152,7 @@ const styles = StyleSheet.create({
   backButton: {
     padding: 8,
     borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-  },
-  indicatorContainer: {
-    backgroundColor: 'red',
+    backgroundColor: 'rgba(255,255,255,0.05)',
   },
   headerRight: {
     minWidth: 40,

@@ -94,7 +94,7 @@ export default function BrandingScreen() {
     };
 
     return (
-        <BackgroundGradientOnboarding blurIntensity={90}>
+        <BackgroundGradientOnboarding darkOverlay={true}>
             <StepIndicator currentStep={2} totalSteps={2} />
 
             <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>

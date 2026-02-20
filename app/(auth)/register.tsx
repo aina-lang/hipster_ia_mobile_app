@@ -43,7 +43,7 @@ export default function RegisterScreen() {
   const [modalTitle, setModalTitle] = useState('');
   const [modalMessage, setModalMessage] = useState('');
 
-  const { aiRegister, updateAiProfile, uploadAvatar, uploadLogo, isLoading, error, clearError, user } = useAuthStore();
+  const { aiRegister, updateAiProfile, uploadAvatar,  isLoading, error, clearError, user } = useAuthStore();
   const [localLoading, setLocalLoading] = useState(false);
 
   const showModal = (type: any, title: string, message: string = '') => {
@@ -107,7 +107,7 @@ export default function RegisterScreen() {
   };
 
   return (
-    <BackgroundGradientOnboarding blurIntensity={90}>
+    <BackgroundGradientOnboarding darkOverlay={true}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.container}>

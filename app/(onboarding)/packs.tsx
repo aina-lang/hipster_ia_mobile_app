@@ -10,7 +10,7 @@ import {
   Platform,
   ActivityIndicator,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { useOnboardingStore } from '../../store/onboardingStore';
 import { colors } from '../../theme/colors';
 import {
@@ -80,6 +80,13 @@ export default function PacksScreen() {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const { selectedPlan, setPlan } = useOnboardingStore();
+
+  useFocusEffect(
+    React.useCallback(() => {
+      setSubmitting(false);
+    }, [])
+  );
 
   useEffect(() => {
     fetchPlans();
@@ -110,8 +117,6 @@ export default function PacksScreen() {
     }
   };
 
-  const { selectedPlan, setPlan } = useOnboardingStore();
-
   const handleContinue = () => {
     setSubmitting(true);
     // Navigate to registration
@@ -119,7 +124,7 @@ export default function PacksScreen() {
   };
 
   return (
-    <BackgroundGradientOnboarding>
+    <BackgroundGradientOnboarding darkOverlay={true}>
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
@@ -168,7 +173,7 @@ export default function PacksScreen() {
                         size={28}
                         color={
                           selectedPlan === plan.id
-                            ? colors.primary.main
+                            ? '#f1f5f9'
                             : colors.text.muted
                         }
                       />
@@ -274,14 +279,14 @@ const styles = StyleSheet.create({
     overflow: "hidden"
   },
   selectedPlanCard: {
-    borderColor: colors.primary.main,
+    borderColor: '#94a3b8',
     borderWidth: 2,
   },
   popularBadge: {
     position: 'absolute',
     top: 0,
     right: 0,
-    backgroundColor: colors.primary.main,
+    backgroundColor: '#f1f5f9',
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderBottomLeftRadius: 12,
@@ -289,7 +294,7 @@ const styles = StyleSheet.create({
   popularBadgeText: {
     fontSize: 10,
     fontWeight: '800',
-    color: colors.text.primary,
+    color: '#0f172a',
   },
   planHeader: {
     flexDirection: 'row',
@@ -306,7 +311,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   iconContainerActive: {
-    backgroundColor: colors.primary.main + '22',
+    backgroundColor: 'rgba(255,255,255,0.1)',
   },
   planName: {
     fontSize: 16,

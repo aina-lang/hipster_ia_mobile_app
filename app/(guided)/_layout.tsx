@@ -11,8 +11,9 @@ export default function GuidedLayout() {
           contentStyle: { backgroundColor: colors.background.dark },
         }}>
         <Stack.Screen name="step1-job" />
-        <Stack.Screen name="step2-personalize" />
-        <Stack.Screen name="step3-result" />
+        <Stack.Screen name="step2-type" />
+        <Stack.Screen name="step3-personalize" />
+        <Stack.Screen name="step4-result" />
       </Stack>
     </View>
   );

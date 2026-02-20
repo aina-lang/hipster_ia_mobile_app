@@ -52,7 +52,7 @@ export default function SetupScreen() {
   const isValid = (localJob === 'Autre' ? localOtherJob.length > 0 : !!localJob);
 
   return (
-    <BackgroundGradientOnboarding blurIntensity={90}>
+    <BackgroundGradientOnboarding darkOverlay={true}>
       <StepIndicator currentStep={1} totalSteps={2} />
 
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>

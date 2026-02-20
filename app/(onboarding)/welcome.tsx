@@ -47,7 +47,7 @@ export default function WelcomeScreen() {
   });
 
   return (
-    <BackgroundGradientOnboarding>
+    <BackgroundGradientOnboarding darkOverlay={true}>
       <View style={styles.container}>
         <View style={styles.content}>
           <Animated.View

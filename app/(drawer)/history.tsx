@@ -131,12 +131,12 @@ export default function HistoryScreen() {
         </View>
         <View className="flex-1">
           <View className="mb-1 flex-row items-center justify-between">
-            <Text className="mr-2 flex-1 text-base font-semibold text-white" numberOfLines={1}>
+            <Text className="mr-2 flex-1 text-base font-semibold text-slate-200" numberOfLines={1}>
               {item.title}
             </Text>
-            <Text className="text-xs text-white/60">{item.date}</Text>
+            <Text className="text-xs text-slate-400">{item.date}</Text>
           </View>
-          <Text className="text-sm leading-5 text-white/60" numberOfLines={2}>
+          <Text className="text-sm leading-5 text-slate-400" numberOfLines={2}>
             {item.preview}
           </Text>
         </View>
@@ -164,8 +164,8 @@ export default function HistoryScreen() {
               <ChevronRight size={24} color={colors.text.primary} className="rotate-180" />
             </TouchableOpacity>
             <View>
-              <Text className="mb-1 text-2xl font-bold text-white">Historique</Text>
-              <Text className="text-base text-white/60">vos créations</Text>
+              <Text className="mb-1 text-2xl font-bold text-slate-200">Historique</Text>
+              <Text className="text-base text-slate-400">vos créations</Text>
             </View>
           </View>
           {history.length > 0 && (
@@ -198,7 +198,7 @@ export default function HistoryScreen() {
                 }
                 onPress={() => setActiveFilter(item.value)}>
                 <Text
-                  className={`text-sm font-semibold ${activeFilter === item.value ? 'text-white' : 'text-white/60'
+                  className={`text-sm font-semibold ${activeFilter === item.value ? 'text-slate-200' : 'text-slate-400'
                     }`}>
                   {item.label}
                 </Text>
@@ -226,7 +226,7 @@ export default function HistoryScreen() {
             ) : (
               <View className="items-center justify-center gap-4 pt-16">
                 <Search size={48} color={colors.text.muted} />
-                <Text className="text-base text-white/60">Aucun résultat trouvé</Text>
+                <Text className="text-base text-slate-400">Aucun résultat trouvé</Text>
               </View>
             )
           }

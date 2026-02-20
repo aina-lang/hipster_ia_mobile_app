@@ -12,7 +12,6 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Image,
-  Alert,
   ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -62,6 +61,7 @@ import illus3 from "../../assets/illus3.jpeg"
 import illus4 from "../../assets/illus4.jpeg"
 import { api } from '../../api/client';
 import { useEffect, useRef, useState } from 'react';
+import { GenericModal, ModalType } from '../../components/ui/GenericModal';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -194,7 +194,7 @@ const VISUAL_STYLES = [
 
 // Visual style options
 
-export default function Step2PersonalizeScreen() {
+export default function Step3PersonalizeScreen() {
   const router = useRouter();
   const {
     selectedJob,
@@ -214,24 +214,56 @@ export default function Step2PersonalizeScreen() {
   const [localQuery, setLocalQuery] = useState(userQuery || '');
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
+  // Skeleton loading state
+  const [isLoading, setIsLoading] = useState(true);
+  const skeletonOpacity = useRef(new Animated.Value(1)).current;
+  const contentOpacity = useRef(new Animated.Value(0)).current;
+  const skeletonPulse = useRef(new Animated.Value(0.4)).current;
+
+  // Modal state
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalType, setModalType] = useState<ModalType>('info');
+  const [modalTitle, setModalTitle] = useState('');
+  const [modalMessage, setModalMessage] = useState('');
+
+  const showModal = (title: string, message: string, type: ModalType = 'info') => {
+    setModalTitle(title);
+    setModalMessage(message);
+    setModalType(type);
+    setModalVisible(true);
+  };
+
   // Animation variables for Visual Styles
   const scrollX = useRef(new Animated.Value(0)).current;
   const ITEM_WIDTH = 240;
   const SPACING = 20;
 
+  // Skeleton pulse loop
+  useEffect(() => {
+    const pulse = Animated.loop(
+      Animated.sequence([
+        Animated.timing(skeletonPulse, { toValue: 1, duration: 700, useNativeDriver: true }),
+        Animated.timing(skeletonPulse, { toValue: 0.4, duration: 700, useNativeDriver: true }),
+      ])
+    );
+    pulse.start();
+
+    // After 600ms hide skeleton and show real content
+    const timer = setTimeout(() => {
+      Animated.parallel([
+        Animated.timing(skeletonOpacity, { toValue: 0, duration: 300, useNativeDriver: true }),
+        Animated.timing(contentOpacity, { toValue: 1, duration: 400, useNativeDriver: true }),
+      ]).start(() => setIsLoading(false));
+    }, 700);
+
+    return () => { pulse.stop(); clearTimeout(timer); };
+  }, []);
+
   useEffect(() => {
     const animation = Animated.loop(
       Animated.sequence([
-        Animated.timing(pulseAnim, {
-          toValue: 1.1,
-          duration: 1500,
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulseAnim, {
-          toValue: 1,
-          duration: 1500,
-          useNativeDriver: true,
-        }),
+        Animated.timing(pulseAnim, { toValue: 1.1, duration: 1500, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1, duration: 1500, useNativeDriver: true }),
       ])
     );
     animation.start();
@@ -286,9 +318,10 @@ export default function Step2PersonalizeScreen() {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
       if (status !== 'granted') {
-        Alert.alert(
+        showModal(
           'Permission requise',
-          'Nous avons besoin de votre permission pour accéder à vos photos.'
+          'Nous avons besoin de votre permission pour accéder à vos photos.',
+          'warning'
         );
         return;
       }
@@ -308,9 +341,10 @@ export default function Step2PersonalizeScreen() {
         );
 
         if (!hasValidExtension) {
-          Alert.alert(
+          showModal(
             'Format non supporté',
-            'Veuillez sélectionner une image au format JPEG, PNG ou WebP.'
+            'Veuillez sélectionner une image au format JPEG, PNG ou WebP.',
+            'error'
           );
           return;
         }
@@ -318,7 +352,7 @@ export default function Step2PersonalizeScreen() {
       }
     } catch (error) {
       console.error('Error picking image:', error);
-      Alert.alert('Erreur', 'Impossible de sélectionner l\'image');
+      showModal('Erreur', 'Impossible de sélectionner l\'image', 'error');
     }
   };
 
@@ -337,7 +371,7 @@ export default function Step2PersonalizeScreen() {
       }
     } catch (error) {
       console.error('Refine error:', error);
-      Alert.alert('Erreur', 'Impossible d\'améliorer le texte.');
+      showModal('Erreur', 'Impossible d\'améliorer le texte.', 'error');
     } finally {
       setRefining(false);
     }
@@ -348,14 +382,14 @@ export default function Step2PersonalizeScreen() {
     if (selectedCategory === 'Image' || selectedCategory === 'Social') {
       // Visual flow: require style only if NO image is uploaded
       if (!uploadedImage && !selectedStyle) {
-        Alert.alert('Style requis', 'Veuillez choisir un style artistique.');
+        showModal('Style requis', 'Veuillez choisir un style artistique.', 'warning');
         return;
       }
     }
 
     // All validations passed, save query and go to result
     setQuery(localQuery);
-    router.push('/(guided)/step3-result');
+    router.push('/(guided)/step4-result');
   };
 
   const insets = useSafeAreaInsets();
@@ -513,7 +547,7 @@ export default function Step2PersonalizeScreen() {
         )}
 
         {/* Prompt Section */}
-        <View style={{ marginTop: 20, marginBottom: 40 }}>
+        <View style={{ marginBottom: 40 }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
             <Text style={styles.sectionTitle}>
               Précisez votre besoin
@@ -542,6 +576,14 @@ export default function Step2PersonalizeScreen() {
           />
         </View>
       </View>
+
+      <GenericModal
+        visible={modalVisible}
+        type={modalType}
+        title={modalTitle}
+        message={modalMessage}
+        onClose={() => setModalVisible(false)}
+      />
     </GuidedScreenWrapper>
   );
 }
@@ -549,14 +591,14 @@ export default function Step2PersonalizeScreen() {
 const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
-    marginTop: 32,
+
     marginBottom: 20,
     paddingHorizontal: 10,
   },
   headerTitle: {
     fontSize: 26,
     fontWeight: 'bold',
-    color: '#FFFFFF',
+    color: colors.text.primary,
     textAlign: 'center',
     marginBottom: 6,
   },
@@ -568,7 +610,7 @@ const styles = StyleSheet.create({
   breadcrumbJob: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: colors.text.primary,
   },
   breadcrumbFunction: {
     fontSize: 14,
@@ -585,7 +627,7 @@ const styles = StyleSheet.create({
   questionLabel: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: colors.text.primary,
     marginBottom: 12,
   },
   choicesGrid: {
@@ -617,10 +659,10 @@ const styles = StyleSheet.create({
   choiceText: {
     fontSize: 14,
     fontWeight: '700',
-    color: 'rgba(255, 255, 255, 0.7)',
+    color: colors.text.secondary,
   },
   choiceTextSelected: {
-    color: '#FFFFFF',
+    color: colors.text.primary,
   },
   textInput: {
     borderRadius: 16,
@@ -630,7 +672,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingVertical: 16,
     fontSize: 16,
-    color: '#FFFFFF',
+    color: colors.text.primary,
   },
   textInputActive: {
     borderColor: colors.primary.main,
@@ -640,12 +682,12 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: colors.text.primary,
     marginBottom: 4,
   },
   sectionSubtitle: {
     fontSize: 14,
-    color: 'rgba(255,255,255,0.5)',
+    color: colors.text.secondary,
     marginBottom: 20,
     lineHeight: 20,
   },
@@ -667,7 +709,7 @@ const styles = StyleSheet.create({
   promptInput: {
     flex: 1,
     fontSize: 16,
-    color: '#FFFFFF',
+    color: colors.text.primary,
     textAlignVertical: 'top',
     paddingTop: 0,
   },
@@ -708,11 +750,11 @@ const styles = StyleSheet.create({
   uploadText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: colors.text.primary,
   },
   uploadHint: {
     fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.4)',
+    color: colors.text.muted,
   },
   imagePreviewContainer: {
     width: '100%',
@@ -820,7 +862,7 @@ const styles = StyleSheet.create({
   styleCardLabel: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: colors.text.primary,
     marginBottom: 4,
   },
   styleCardDescription: {

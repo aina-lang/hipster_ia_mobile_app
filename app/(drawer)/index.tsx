@@ -606,18 +606,18 @@ export default function HomeScreen() {
 
       // Format image base64 for React Native
       let mediaUrl: string | undefined;
-      
+
       // Check if image generation is async (url is null but generationId exists)
       const isImageAsync = response.type === 'image' && !response.imageBase64 && !response.mediaUrl && response.generationId;
       console.log('[DEBUG] Free Mode - isImageAsync:', isImageAsync, 'generationId:', response.generationId);
-      
+
       if (isImageAsync) {
         // Implement polling like in guided mode
         console.log('[DEBUG] ⏳ Starting Free Mode polling with generationId:', response.generationId);
         let isCompleted = false;
         let attempts = 0;
         const maxAttempts = 30; // 60 seconds with 2s intervals
-        
+
         while (!isCompleted && attempts < maxAttempts) {
           attempts++;
           console.log(`[DEBUG] 🔄 Free Mode Poll attempt ${attempts}/${maxAttempts}`);
@@ -627,7 +627,7 @@ export default function HomeScreen() {
             console.log('[DEBUG] Free Mode Poll response:', JSON.stringify(updatedGen, null, 2));
             const imageUrl = updatedGen?.imageUrl || updatedGen?.url || updatedGen?.image;
             console.log('[DEBUG] Extracted imageUrl:', imageUrl);
-            
+
             if (imageUrl && typeof imageUrl === 'string' && imageUrl.startsWith('http')) {
               console.log('[DEBUG] ✅ Free Mode image found:', imageUrl);
               mediaUrl = imageUrl;
@@ -639,7 +639,7 @@ export default function HomeScreen() {
             console.warn('[DEBUG] ⚠️ Free Mode poll error on attempt', attempts, ':', pollError);
           }
         }
-        
+
         if (!isCompleted) {
           console.error('[DEBUG] ❌ Free Mode polling timed out');
           throw new Error('Image generation timed out');
@@ -707,7 +707,7 @@ export default function HomeScreen() {
   };
 
   return (
-    <BackgroundGradientOnboarding blurIntensity={90}>
+    <BackgroundGradientOnboarding darkOverlay={true}>
       <View className="flex-1" >
         <KeyboardAvoidingView
           className="flex-1"
@@ -728,7 +728,7 @@ export default function HomeScreen() {
               className="flex-row items-center gap-2 rounded-xl bg-white/5 py-2 px-3 border border-white/10"
               onPress={resetChat}>
               <Plus size={18} color={colors.primary.main} />
-              <Text className="text-white font-medium text-sm">Nouveau</Text>
+              <Text className="text-slate-200 font-medium text-sm">Nouveau</Text>
             </TouchableOpacity> */}
 
               {hasMessages && (
@@ -748,11 +748,11 @@ export default function HomeScreen() {
             {!hasMessages ? (
               <>
                 <View className="mt-5 items-center">
-                  <Text className="mb-2 text-lg text-white/60">
+                  <Text className="mb-2 text-lg text-slate-400">
                     {getGreetingByTime()}{' '}
                     {user?.email?.split('@')[0] || 'Utilisateur'}
                   </Text>
-                  <Text className="text-center text-2xl font-bold leading-9 text-white">
+                  <Text className="text-center text-2xl font-bold leading-9 text-slate-200">
                     {user?.job ? `Prêt pour votre prochaine création en tant que ${user.job.toLowerCase()} ?` : 'Que créons-nous aujourd\'hui ?'}
                   </Text>
                 </View>
@@ -783,8 +783,8 @@ export default function HomeScreen() {
                     <Compass size={32} color={colors.primary.main} />
                   </View>
                   <View className="flex-1">
-                    <Text className="mb-1 text-lg font-bold text-white">Mode Guidé</Text>
-                    <Text className="text-sm leading-5 text-white/60">
+                    <Text className="mb-1 text-lg font-bold text-slate-200">Mode Guidé</Text>
+                    <Text className="text-sm leading-5 text-slate-400">
                       Laissez-vous accompagner étape par étape pour une création professionnelle.
                     </Text>
                   </View>
@@ -792,7 +792,7 @@ export default function HomeScreen() {
 
                 <View className="my-5 mb-0 flex-row items-center gap-4 opacity-40">
                   <View className="h-px flex-1 bg-white/20" />
-                  <Text className="text-xs font-semibold tracking-wider text-white/60">
+                  <Text className="text-xs font-semibold tracking-wider text-slate-400">
                     OU MODE LIBRE
                   </Text>
                   <View className="h-px flex-1 bg-white/20" />
@@ -803,7 +803,7 @@ export default function HomeScreen() {
                 {isLoadingConversation ? (
                   <View className="items-center justify-center py-10">
                     <ActivityIndicator size="large" color={colors.primary.main} />
-                    <Text className="mt-4 text-white/60">Chargement de la conversation...</Text>
+                    <Text className="mt-4 text-slate-400">Chargement de la conversation...</Text>
                   </View>
                 ) : (
                   <>
@@ -831,11 +831,11 @@ export default function HomeScreen() {
                         )}
 
                         {msg.sender === 'user' ? (
-                          msg.text ? <Text className="text-base leading-6 text-white">{msg.text}</Text> : null
+                          msg.text ? <Text className="text-base leading-6 text-slate-200">{msg.text}</Text> : null
                         ) : msg.isTyping ? (
                           <TypingMessage text={msg.text} onComplete={() => completeTyping(msg.id)} />
                         ) : (
-                          msg.text ? <Text className="text-base leading-6 text-white">{msg.text}</Text> : null
+                          msg.text ? <Text className="text-base leading-6 text-slate-200">{msg.text}</Text> : null
                         )}
 
                         {msg.sender === 'ai' && !msg.isTyping && (!msg.type || msg.type === 'text') && msg.text && (
@@ -862,15 +862,10 @@ export default function HomeScreen() {
             <View className="h-32" />
           </ScrollView>
 
-          {/* Usage Bar */}
-          {/* {hasMessages && <UsageBar />} */}
-
-          {/* Input */}
           <View
-            className="px-5 pb-3 border-t border-white/5"
+            className="px-5 pb-3 "
             style={{
               paddingBottom: (Platform.OS === 'ios' ? insets.bottom : 0) + 12,
-              backgroundColor: '#020617', // Consistent footer background
             }}
           >
             {/* Limit warnings */}
@@ -892,7 +887,7 @@ export default function HomeScreen() {
                 </Text>
               )} */}
                 {isPackCurieux && !isFullyExhausted && (
-                  <Text className="text-xs text-white/40 text-center mb-2">
+                  <Text className="text-xs text-slate-500 text-center mb-2">
                     Aujourd'hui: {textRemaining} textes et {imagesRemaining} images restants
                   </Text>
                 )}

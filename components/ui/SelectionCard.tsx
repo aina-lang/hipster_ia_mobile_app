@@ -44,7 +44,7 @@ export const SelectionCard: React.FC<SelectionCardProps> = ({
         <View style={styles.header}>
           {Icon && (
             <View style={[styles.iconContainer, selected && styles.selectedIconContainer]}>
-              <Icon size={24} color={selected ? '#FFFFFF' : colors.text.secondary} />
+              <Icon size={24} color={selected ? colors.text.primary : colors.text.secondary} />
             </View>
           )}
           <Text style={[styles.label, selected && styles.selectedLabel]}>{label}</Text>
@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   selectedLabel: {
-    color: '#FFFFFF',
+    color: colors.text.primary,
     fontWeight: '700',
   },
   disabled: {
