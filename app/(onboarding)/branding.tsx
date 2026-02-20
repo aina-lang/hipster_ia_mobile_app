@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, Text, TouchableOpacity, ScrollView, Image, Platform } from 'react-native';
+import { View, StyleSheet, Text, TouchableOpacity, ScrollView, Image, Platform, TextInput } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import Animated, { FadeInRight, FadeInDown, runOnJS } from 'react-native-reanimated';
@@ -28,6 +28,32 @@ export default function BrandingScreen() {
     const [localLogo, setLocalLogo] = useState(initialLogo);
     const [localAvatar, setLocalAvatar] = useState(initialAvatar);
     const [localLoading, setLocalLoading] = useState(false);
+    const [tempHex, setTempHex] = useState(selectedColor.toUpperCase());
+
+    const handleHexChange = (text: string) => {
+        const sanitized = text.toUpperCase().replace(/[^0-9A-F#]/g, '');
+        setTempHex(sanitized);
+
+        if (/^#([0-9A-F]{3,4}|[0-9A-F]{6}|[0-9A-F]{8})$/i.test(sanitized)) {
+            setSelectedColor(sanitized);
+        }
+    };
+
+    const handleHexBlur = () => {
+        // Ensure it starts with #
+        let formatted = tempHex;
+        if (formatted.length > 0 && !formatted.startsWith('#')) {
+            formatted = '#' + formatted;
+        }
+
+        if (/^#([0-9A-F]{3,4}|[0-9A-F]{6}|[0-9A-F]{8})$/i.test(formatted)) {
+            setSelectedColor(formatted);
+            setTempHex(formatted);
+        } else {
+            // Reset to current selected color if invalid
+            setTempHex(selectedColor.toUpperCase());
+        }
+    };
 
     const pickImage = async (type: 'logo' | 'avatar') => {
         if (localLoading) return;
@@ -86,6 +112,7 @@ export default function BrandingScreen() {
     const onColorChange = ({ hex }: { hex: string }) => {
         'worklet';
         runOnJS(setSelectedColor)(hex);
+        runOnJS(setTempHex)(hex.toUpperCase());
     };
 
     return (
@@ -110,7 +137,7 @@ export default function BrandingScreen() {
                             <View style={styles.pickerWrapper}>
                                 <ColorPicker
                                     value={selectedColor}
-                                    onComplete={onColorChange}
+                                    onChange={onColorChange}
                                     style={styles.colorPicker}
                                 >
                                     <View style={styles.panelContainer}>
@@ -124,7 +151,18 @@ export default function BrandingScreen() {
 
                                     <View style={styles.pickerFooter}>
                                         <Preview style={styles.preview} hideText />
-                                        <Text style={styles.hexText}>{selectedColor.toUpperCase()}</Text>
+                                        <TextInput
+                                            style={styles.hexInput}
+                                            value={tempHex}
+                                            onChangeText={handleHexChange}
+                                            onBlur={handleHexBlur}
+                                            placeholder="#000000FF"
+                                            placeholderTextColor="rgba(255,255,255,0.3)"
+                                            maxLength={9}
+                                            autoCapitalize="characters"
+                                            spellCheck={false}
+                                            autoCorrect={false}
+                                        />
                                     </View>
                                 </ColorPicker>
                                 {localLoading && (
@@ -254,11 +292,17 @@ const styles = StyleSheet.create({
         borderWidth: 2,
         borderColor: 'rgba(255,255,255,0.2)',
     },
-    hexText: {
+    hexInput: {
         color: '#FFFFFF',
         fontSize: 16,
         fontWeight: '700',
         letterSpacing: 1,
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        paddingHorizontal: 12,
+        paddingVertical: 4,
+        borderRadius: 8,
+        minWidth: 100,
+        textAlign: 'center',
     },
     uploadBox: {
         height: 120,

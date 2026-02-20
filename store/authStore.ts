@@ -35,6 +35,8 @@ interface User {
   id: number;
   email: string;
   avatarUrl?: string; // Keep avatar if still used elsewhere
+  logoUrl?: string;
+  brandingColor?: string;
   isEmailVerified: boolean;
   isSetupComplete?: boolean;
   job?: string;
@@ -79,6 +81,7 @@ interface AuthState {
   changePassword: (data: any) => Promise<void>;
   finishOnboarding: () => void;
   uploadAvatar: (imageUri: string) => Promise<string>;
+  uploadLogo: (profileId: number, imageUri: string) => Promise<string>;
   aiRefreshUser: () => Promise<void>;
 }
 
@@ -182,6 +185,44 @@ export const useAuthStore = create<AuthState>()(
           return avatarUrl;
         } catch (error: any) {
           const message = extractErrorMessage(error, "Erreur lors de l'upload de l'avatar.");
+          set({ error: message, isLoading: false });
+          throw error;
+        }
+      },
+
+      uploadLogo: async (profileId: number, imageUri: string): Promise<string> => {
+        set({ isLoading: true, error: null });
+        try {
+          const formData = new FormData();
+          const filename = imageUri.split('/').pop() || 'logo.jpg';
+          const match = /\.(\w+)$/.exec(filename);
+          const type = match ? `image/${match[1]}` : `image`;
+
+          formData.append('file', {
+            uri: imageUri,
+            name: filename,
+            type,
+          } as any);
+
+          const { data } = await api.post(`/profiles/${profileId}/ai-logo`, formData, {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+            },
+          });
+
+          const res = data.data;
+          const logoUrl = res.logoUrl;
+
+          // Update local state if needed
+          const currentUser = get().user;
+          if (currentUser && logoUrl) {
+            set({ user: { ...currentUser, logoUrl } });
+          }
+
+          set({ isLoading: false });
+          return logoUrl;
+        } catch (error: any) {
+          const message = extractErrorMessage(error, "Erreur lors de l'upload du logo.");
           set({ error: message, isLoading: false });
           throw error;
         }
