@@ -16,7 +16,7 @@ import Animated, {
 
 interface JobTypeCardProps {
     label: string;
-    image: string;
+    image: any;
     icon: LucideIcon;
     selected: boolean;
     onPress: () => void;
@@ -46,7 +46,7 @@ export const JobTypeCard: React.FC<JobTypeCardProps> = ({
             onPress={onPress}
             onPressIn={handlePressIn}
             onPressOut={handlePressOut}
-            // style={[styles.wrapper, animatedStyle]}
+            style={[styles.wrapper, animatedStyle]}
             activeOpacity={0.9}
         >
             {/* ── Couches de glow EXTÉRIEURES — avant le container clippé ── */}
@@ -70,18 +70,16 @@ export const JobTypeCard: React.FC<JobTypeCardProps> = ({
             ]}>
                 {/* Image de fond */}
                 <Image
-                    source={{ uri: image }}
-                    style={StyleSheet.absoluteFill}
+                    source={typeof image === 'string' ? { uri: image } : image}
+                    style={styles.backgroundImage}
                     resizeMode="cover"
                 />
 
-                {/* Overlay gradient pour lisibilité — retiré si sélectionné pour un look plus clean */}
-                {!selected && (
-                    <LinearGradient
-                        colors={['transparent', 'rgba(0,0,0,0.45)', 'rgba(0,0,0,0.88)']}
-                        style={StyleSheet.absoluteFill}
-                    />
-                )}
+                {/* Overlay gradient pour lisibilité */}
+                <LinearGradient
+                    colors={['transparent', 'rgba(0,0,0,0.45)', 'rgba(0,0,0,0.88)']}
+                    style={StyleSheet.absoluteFill}
+                />
 
                 {/* Si sélectionné : reflet neon bleu en haut de la bordure */}
                 {selected && (
@@ -115,12 +113,13 @@ export const JobTypeCard: React.FC<JobTypeCardProps> = ({
 const styles = StyleSheet.create({
     // Wrapper externe — overflow visible pour le glow, pas de background
     wrapper: {
-        marginBottom: 14,
+        marginBottom: 20,
         position: 'relative',
     },
 
     // Container principal — overflow hidden pour clipper image + overlay
     container: {
+        width: '100%',
         height: 110,
         borderRadius: 20,
         overflow: 'hidden',
@@ -128,6 +127,14 @@ const styles = StyleSheet.create({
         justifyContent: 'flex-end',
         borderWidth: 1.5,
         borderColor: 'rgba(255,255,255,0.08)',
+    },
+
+    backgroundImage: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
     },
 
     containerSelected: {

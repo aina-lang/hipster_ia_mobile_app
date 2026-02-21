@@ -20,49 +20,49 @@ import {
     ChevronRight,
 } from 'lucide-react-native';
 
+import socialImg from '../../assets/social.jpeg';
+import flyerImg from '../../assets/flyer.jpeg';
+import apercuImg from '../../assets/apercu.jpeg';
+import webImg from '../../assets/site-web.jpeg';
+import emailImg from '../../assets/illus3.jpeg';
+
 interface JobFunction {
     label: string;
     category: CreationCategory;
     icon: any;
-    image: string;
+    image: any;
 }
 
 const UNIVERSAL_FUNCTIONS: JobFunction[] = [
     {
-        label: 'Visuel publicitaire',
-        category: 'Image',
-        icon: Palette,
-        image: 'https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?q=80&w=600&auto=format&fit=crop'
-    },
-    {
         label: 'Contenu réseaux',
         category: 'Social',
         icon: Smartphone,
-        image: 'https://images.unsplash.com/photo-1611162616305-c69b3fa7fbe0?q=80&w=600&auto=format&fit=crop'
+        image: socialImg
     },
     {
         label: 'Flyers',
         category: 'Image',
         icon: FileText,
-        image: 'https://images.unsplash.com/photo-1626785774573-4b799315345d?q=80&w=600&auto=format&fit=crop'
+        image: flyerImg
     },
     {
         label: 'Aperçu avant impression',
         category: 'Image',
         icon: Ticket,
-        image: 'https://images.unsplash.com/photo-1561070791-2526d30994b5?q=80&w=600&auto=format&fit=crop'
+        image: apercuImg
     },
     {
         label: 'Page web / SEO',
         category: 'Texte',
         icon: Globe,
-        image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=600&auto=format&fit=crop'
+        image: webImg
     },
     {
         label: 'Email marketing',
         category: 'Texte',
         icon: Mail,
-        image: 'https://images.unsplash.com/photo-1563986768609-322da13575f3?q=80&w=600&auto=format&fit=crop'
+        image: emailImg
     },
 ];
 
