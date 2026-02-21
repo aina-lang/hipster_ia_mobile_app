@@ -17,6 +17,8 @@ import {
     Video,
     Music,
     Smartphone,
+    FileText,
+    Ticket,
     ChevronRight,
 } from 'lucide-react-native';
 
@@ -29,10 +31,12 @@ interface JobFunction {
 const UNIVERSAL_FUNCTIONS: JobFunction[] = [
     { label: 'Visuel publicitaire', category: 'Image', icon: Palette },
     { label: 'Contenu réseaux', category: 'Social', icon: Smartphone },
+    { label: 'Flyers', category: 'Image', icon: FileText },
+    { label: 'Aperçu avant impression', category: 'Image', icon: Ticket },
     { label: 'Page web / SEO', category: 'Texte', icon: Globe },
     { label: 'Email marketing', category: 'Texte', icon: Mail },
-    { label: 'Vidéo publicitaire', category: 'Video', icon: Video },
-    { label: 'Voix-off / Son', category: 'Audio', icon: Music },
+    // { label: 'Vidéo publicitaire', category: 'Video', icon: Video },
+    // { label: 'Voix-off / Son', category: 'Audio', icon: Music },
 ];
 
 export default function Step2TypeScreen() {

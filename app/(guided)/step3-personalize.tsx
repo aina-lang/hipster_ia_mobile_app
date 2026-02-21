@@ -447,7 +447,7 @@ export default function Step3PersonalizeScreen() {
                   decelerationRate="fast"
                   contentContainerStyle={{
                     paddingHorizontal: SPACING,
-                    paddingVertical: 50, // Reduced from 80 for a tighter look
+                    paddingVertical: 50,
                   }}
                   style={{ overflow: 'visible' }} // Don't clip animations
                   onScroll={Animated.event(

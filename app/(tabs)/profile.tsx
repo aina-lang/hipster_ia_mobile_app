@@ -1,16 +1,16 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { BackgroundGradient } from '../../components/ui/BackgroundGradient';
+import { BackgroundGradientOnboarding } from '../../components/ui/BackgroundGradientOnboarding';
 import { colors } from '../../theme/colors';
 
 export default function ProfileScreen() {
   return (
-    <BackgroundGradient>
+    <BackgroundGradientOnboarding darkOverlay={true} blurIntensity={80}>
       <View style={styles.container}>
         <Text style={styles.title}>Mon Profil</Text>
         <Text style={styles.subtitle}>Gérez vos paramètres et votre compte.</Text>
       </View>
-    </BackgroundGradient>
+    </BackgroundGradientOnboarding>
   );
 }
 
