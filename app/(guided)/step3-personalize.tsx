@@ -505,7 +505,7 @@ export default function Step3PersonalizeScreen() {
                                 : item.image
                             }
                             style={styles.styleCardImage}
-                            resizeMode='cover'
+                            resizeMode='contain'
                           />
 
                           <View style={styles.styleCardContent}>
@@ -831,13 +831,14 @@ const styles = StyleSheet.create({
   styleCardImage: {
     width: '100%',
     height: undefined,
-    aspectRatio: 1.1, // Wider rectangle
+    aspectRatio: 1.1, 
   },
 
   styleCardOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0,0,0,0.2)',
   },
+
   styleCardContent: {
     position: 'absolute',
     bottom: 0,
@@ -846,17 +847,20 @@ const styles = StyleSheet.create({
     padding: 12,
     backgroundColor: 'rgba(0,0,0,0.6)',
   },
+
   styleCardLabel: {
     fontSize: 14,
     fontWeight: '700',
     color: colors.text.primary,
     marginBottom: 4,
   },
+
   styleCardDescription: {
     fontSize: 11,
     color: 'rgba(255, 255, 255, 0.8)',
     lineHeight: 14,
   },
+
   styleCardCheck: {
     width: 40,
     height: 40,
@@ -867,6 +871,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.5)',
   },
+  
   styleCardCheckInner: {
     width: 14,
     height: 9,
