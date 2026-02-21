@@ -9,22 +9,29 @@ interface BackgroundGradientProps {
   children?: React.ReactNode;
   blurIntensity?: number;
   darkOverlay?: boolean;
+  imageSource?: 'default' | 'splash';
 }
 
-export function BackgroundGradientOnboarding({ children, blurIntensity = 0, darkOverlay = false }: BackgroundGradientProps) {
+export function BackgroundGradientOnboarding({ children, blurIntensity = 0, darkOverlay = false, imageSource = 'default' }: BackgroundGradientProps) {
+  const bgImage = imageSource === 'splash' 
+    ? require('../../assets/splashImage.jpeg')
+    : require('../../assets/bg-onboarding.png');
+
+  const isLightBackground = imageSource === 'default';
+
   return (
     <View style={styles.container}>
       <Image
-        source={require('../../assets/bg-onboarding.png')}
+        source={bgImage}
         style={[styles.image, { width, height }]}
         resizeMode="contain"
       />
-      <View style={[StyleSheet.absoluteFill, styles.overlay]} />
+      <View style={[StyleSheet.absoluteFill, isLightBackground ? styles.lightOverlay : styles.overlay]} />
       {blurIntensity > 0 && (
         <BlurView intensity={blurIntensity} style={StyleSheet.absoluteFill} tint="dark" />
       )}
       {/* Dark overlay to focus on content */}
-      {darkOverlay && <View style={[StyleSheet.absoluteFill, styles.darkOverlay]} />}
+      {darkOverlay && !isLightBackground && <View style={[StyleSheet.absoluteFill, styles.darkOverlay]} />}
       {children}
     </View>
   );
@@ -43,10 +50,14 @@ const styles = StyleSheet.create({
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    // backgroundColor: 'rgba(2, 6, 23, 0.4)',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  lightOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0)',
   },
   darkOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    backgroundColor: 'rgba(0, 0, 0, 0.80)',
   },
 });
