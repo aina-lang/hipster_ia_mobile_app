@@ -7,15 +7,13 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { colors } from '../../theme/colors';
-import { SelectionCard } from '../../components/ui/SelectionCard';
+import { JobTypeCard } from '../../components/ui/JobTypeCard';
 import { useCreationStore, CreationCategory } from '../../store/creationStore';
 import { GuidedScreenWrapper } from '../../components/layout/GuidedScreenWrapper';
 import {
     Palette,
     Globe,
     Mail,
-    Video,
-    Music,
     Smartphone,
     FileText,
     Ticket,
@@ -26,17 +24,46 @@ interface JobFunction {
     label: string;
     category: CreationCategory;
     icon: any;
+    image: string;
 }
 
 const UNIVERSAL_FUNCTIONS: JobFunction[] = [
-    { label: 'Visuel publicitaire', category: 'Image', icon: Palette },
-    { label: 'Contenu réseaux', category: 'Social', icon: Smartphone },
-    { label: 'Flyers', category: 'Image', icon: FileText },
-    { label: 'Aperçu avant impression', category: 'Image', icon: Ticket },
-    { label: 'Page web / SEO', category: 'Texte', icon: Globe },
-    { label: 'Email marketing', category: 'Texte', icon: Mail },
-    // { label: 'Vidéo publicitaire', category: 'Video', icon: Video },
-    // { label: 'Voix-off / Son', category: 'Audio', icon: Music },
+    {
+        label: 'Visuel publicitaire',
+        category: 'Image',
+        icon: Palette,
+        image: 'https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?q=80&w=600&auto=format&fit=crop'
+    },
+    {
+        label: 'Contenu réseaux',
+        category: 'Social',
+        icon: Smartphone,
+        image: 'https://images.unsplash.com/photo-1611162616305-c69b3fa7fbe0?q=80&w=600&auto=format&fit=crop'
+    },
+    {
+        label: 'Flyers',
+        category: 'Image',
+        icon: FileText,
+        image: 'https://images.unsplash.com/photo-1626785774573-4b799315345d?q=80&w=600&auto=format&fit=crop'
+    },
+    {
+        label: 'Aperçu avant impression',
+        category: 'Image',
+        icon: Ticket,
+        image: 'https://images.unsplash.com/photo-1561070791-2526d30994b5?q=80&w=600&auto=format&fit=crop'
+    },
+    {
+        label: 'Page web / SEO',
+        category: 'Texte',
+        icon: Globe,
+        image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=600&auto=format&fit=crop'
+    },
+    {
+        label: 'Email marketing',
+        category: 'Texte',
+        icon: Mail,
+        image: 'https://images.unsplash.com/photo-1563986768609-322da13575f3?q=80&w=600&auto=format&fit=crop'
+    },
 ];
 
 export default function Step2TypeScreen() {
@@ -52,7 +79,7 @@ export default function Step2TypeScreen() {
 
     return (
         <GuidedScreenWrapper>
-            <View style={{ paddingHorizontal: 20, }}>
+            <View style={{ paddingHorizontal: 20, paddingBottom: 40 }}>
                 {/* Header */}
                 <View style={styles.header}>
                     <Text style={styles.title}>Que souhaitez-vous produire ?</Text>
@@ -66,13 +93,13 @@ export default function Step2TypeScreen() {
                 {/* LISTE */}
                 <View style={styles.functionsList}>
                     {UNIVERSAL_FUNCTIONS.map((fn, index) => (
-                        <SelectionCard
+                        <JobTypeCard
                             key={index}
                             label={fn.label}
                             icon={fn.icon}
+                            image={fn.image}
                             selected={selectedFunction === fn.label}
                             onPress={() => handleSelectFunction(fn)}
-                            fullWidth
                         />
                     ))}
                 </View>
