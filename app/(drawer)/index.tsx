@@ -47,6 +47,7 @@ import {
   Lock,
   ChevronRight,
   ExternalLink,
+  MessageSquare,
 } from 'lucide-react-native';
 import { useStripe } from '@stripe/stripe-react-native';
 import { BackgroundGradient } from '../../components/ui/BackgroundGradient';
@@ -723,6 +724,18 @@ export default function HomeScreen() {
               <Menu size={24} color={colors.text.primary} />
             </TouchableOpacity>
 
+            {/* Credit Dashboard */}
+            <View className="flex-row items-center gap-3">
+              <View className="flex-row items-center gap-2 bg-white/10 px-3 py-1.5 rounded-xl border border-white/10">
+                <ImageIcon size={14} color="#1e9bff" />
+                <Text className="text-white text-xs font-black">{imagesRemaining} restants</Text>
+              </View>
+              {/* <View className="flex-row items-center gap-2 bg-white/10 px-3 py-1.5 rounded-xl border border-white/10">
+                <MessageSquare size={14} color="#10b981" />
+                <Text className="text-white text-xs font-black">{textRemaining}</Text>
+              </View> */}
+            </View>
+
             <View className="flex-row items-center gap-2">
               {/* <TouchableOpacity
               className="flex-row items-center gap-2 rounded-xl bg-white/5 py-2 px-3 border border-white/10"
@@ -871,26 +884,7 @@ export default function HomeScreen() {
             {/* Limit warnings */}
             {isPackCurieux && (
               <View className="mb-3 px-1">
-                {/* {isTextExhausted && !isImagesExhausted && (
-                <Text className="text-xs text-orange-400 font-medium text-center">
-                  Limite de textes atteinte aujourd'hui. Vous pouvez encore générer des images !
-                </Text>
-                )}
-              {!isTextExhausted && isImagesExhausted && (
-                <Text className="text-xs text-orange-400 font-medium text-center">
-                  Limite d'images atteinte aujourd'hui. Vous pouvez encore générer des textes !
-                </Text>
-              )}
-              {isFullyExhausted && (
-                <Text className="text-xs text-red-400 font-bold text-center">
-                  Limite quotidienne atteinte (2 textes, 2 images). Revenez demain !
-                </Text>
-              )} */}
-                {isPackCurieux && !isFullyExhausted && (
-                  <Text className="text-xs text-slate-500 text-center mb-2">
-                    Aujourd'hui: {textRemaining} textes et {imagesRemaining} images restants
-                  </Text>
-                )}
+                {/* Credits visible at top header */}
               </View>
             )}
 
