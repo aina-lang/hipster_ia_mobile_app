@@ -47,8 +47,8 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   activeDot: {
-    backgroundColor: colors.neon.primary,
-    width: 28, 
+    backgroundColor: '#ffffff',
+    width: 28,
     height: 8,
     borderRadius: 100,
   },

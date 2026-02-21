@@ -49,7 +49,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                 multiline
                 maxLength={maxLength}
                 placeholderTextColor="transparent"
-                className="mb-3 max-h-[100px] min-h-[24px] text-base text-slate-200"
+                className="mb-3 max-h-[100px] min-h-[24px] text-base text-slate-300"
                 editable={!isDisabled}
             />
 

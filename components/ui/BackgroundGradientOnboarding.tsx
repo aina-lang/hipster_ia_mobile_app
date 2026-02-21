@@ -13,7 +13,7 @@ interface BackgroundGradientProps {
 }
 
 export function BackgroundGradientOnboarding({ children, blurIntensity = 0, darkOverlay = false, imageSource = 'default' }: BackgroundGradientProps) {
-  const bgImage = imageSource === 'splash' 
+  const bgImage = imageSource === 'splash'
     ? require('../../assets/splashImage.jpeg')
     : require('../../assets/bg-onboarding.png');
 
@@ -31,7 +31,7 @@ export function BackgroundGradientOnboarding({ children, blurIntensity = 0, dark
         <BlurView intensity={blurIntensity} style={StyleSheet.absoluteFill} tint="dark" />
       )}
       {/* Dark overlay to focus on content */}
-      {darkOverlay && !isLightBackground && <View style={[StyleSheet.absoluteFill, styles.darkOverlay]} />}
+      {darkOverlay && <View style={[StyleSheet.absoluteFill, styles.darkOverlay]} />}
       {children}
     </View>
   );

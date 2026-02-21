@@ -707,7 +707,7 @@ export default function HomeScreen() {
   };
 
   return (
-    <BackgroundGradientOnboarding darkOverlay={true}>
+    <BackgroundGradientOnboarding darkOverlay={true} blurIntensity={2}>
       <View className="flex-1" >
         <KeyboardAvoidingView
           className="flex-1"
@@ -748,11 +748,11 @@ export default function HomeScreen() {
             {!hasMessages ? (
               <>
                 <View className="mt-5 items-center">
-                  <Text className="mb-2 text-lg text-slate-400">
+                  <Text className="mb-2 text-lg text-slate-500">
                     {getGreetingByTime()}{' '}
                     {user?.name || 'Utilisateur'}
                   </Text>
-                  <Text className="text-center text-2xl font-bold leading-9 text-slate-200">
+                  <Text className="text-center text-2xl font-bold leading-9 text-slate-300">
                     {user?.job ? `Prêt pour votre prochaine création en tant que ${user.job.toLowerCase()} ?` : 'Que créons-nous aujourd\'hui ?'}
                   </Text>
                 </View>
@@ -780,22 +780,22 @@ export default function HomeScreen() {
                   activeOpacity={0.8}
                   style={{ opacity: isFullyExhausted ? 0.5 : 1 }}>
                   <View className="w-15 h-15 items-center justify-center rounded-lg">
-                    <Compass size={32} color={colors.primary.main} />
+                    <Compass size={32} color={colors.text.primary} />
                   </View>
                   <View className="flex-1">
-                    <Text className="mb-1 text-lg font-bold text-slate-200">Mode Guidé</Text>
-                    <Text className="text-sm leading-5 text-slate-400">
+                    <Text className="mb-1 text-lg font-bold text-slate-300">Mode Guidé</Text>
+                    <Text className="text-sm leading-5 text-slate-500">
                       Laissez-vous accompagner étape par étape pour une création professionnelle.
                     </Text>
                   </View>
                 </TouchableOpacity>
 
                 <View className="my-5 mb-0 flex-row items-center gap-4 opacity-40">
-                  <View className="h-px flex-1 bg-white/20" />
-                  <Text className="text-xs font-semibold tracking-wider text-slate-400">
+                  <View className="h-px flex-1 bg-white/10" />
+                  <Text className="text-xs font-semibold tracking-wider text-slate-500">
                     OU MODE LIBRE
                   </Text>
-                  <View className="h-px flex-1 bg-white/20" />
+                  <View className="h-px flex-1 bg-white/10" />
                 </View>
               </>
             ) : (
@@ -831,11 +831,11 @@ export default function HomeScreen() {
                         )}
 
                         {msg.sender === 'user' ? (
-                          msg.text ? <Text className="text-base leading-6 text-slate-200">{msg.text}</Text> : null
+                          msg.text ? <Text className="text-base leading-6 text-slate-300">{msg.text}</Text> : null
                         ) : msg.isTyping ? (
                           <TypingMessage text={msg.text} onComplete={() => completeTyping(msg.id)} />
                         ) : (
-                          msg.text ? <Text className="text-base leading-6 text-slate-200">{msg.text}</Text> : null
+                          msg.text ? <Text className="text-base leading-6 text-slate-300">{msg.text}</Text> : null
                         )}
 
                         {msg.sender === 'ai' && !msg.isTyping && (!msg.type || msg.type === 'text') && msg.text && (

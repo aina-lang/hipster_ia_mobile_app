@@ -22,7 +22,7 @@ export const TypingMessage = ({ text, onComplete }: TypingMessageProps) => {
         } else if (onComplete) onComplete();
     }, [currentIndex, text]);
 
-    return <Text className="text-base leading-6 text-white">{displayedText}</Text>;
+    return <Text className="text-base leading-6 text-slate-300">{displayedText}</Text>;
 };
 
 interface TypingPlaceholderProps {

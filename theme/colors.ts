@@ -1,80 +1,99 @@
-// Pure Black & White Theme — No colors besides #000000 / #FFFFFF and grayscale
+// ══════════════════════════════════════════════════════════════
+// HIPSTER IA — Neon Dark Theme
+// Deep black backgrounds + Tailwind Blue neon primary + Electric accents
+// ══════════════════════════════════════════════════════════════
 
-const bw = {
-  white: '#efefef',
-  black: '#000000',
-  gray100: '#F5F5F5',
-  gray200: '#E5E5E5',
-  gray300: '#D4D4D4',
-  gray400: '#A3A3A3',
-  gray500: '#737373',
-  gray600: '#525252',
-  gray700: '#404040',
-  gray800: '#262626',
-  gray900: '#171717',
-  gray950: '#0A0A0A',
+// Tailwind CSS exact blue scale
+const blue = {
+  50: '#eff6ff',
+  100: '#dbeafe',
+  200: '#bfdbfe',
+  300: '#93c5fd',
+  400: '#60a5fa', // ← Tailwind blue-400  (neon glow)
+  500: '#3b82f6', // ← Tailwind blue-500  (primary CTA)
+  600: '#2563eb',
+  700: '#1d4ed8',
+  800: '#1e40af',
+  900: '#1e3a8a',
+  950: '#172554',
+};
+
+// Electric violet for secondary highlights
+const violet = {
+  400: '#a78bfa', // violet-400
+  500: '#8b5cf6', // violet-500
+  600: '#7c3aed',
+  700: '#6d28d9',
+};
+
+// Neon pink / rose for alerts & destructive
+const rose = {
+  400: '#fb7185', // rose-400
+  500: '#f43f5e', // rose-500
 };
 
 export const colors = {
-  // Expose scale
-  bw,
+  blue,
+  violet,
+  rose,
 
-  // Background Colors
+  // Background — pure deep black
   background: {
-    primary: bw.black,
-    secondary: bw.gray900,
-    tertiary: bw.gray800,
-    premium: bw.gray950,
-    dark: bw.gray950,
+    primary: '#050508',
+    secondary: '#09090f',
+    tertiary: '#0e0e18',
+    premium: '#030308',
+    dark: '#030308',
   },
 
-  // Primary Theme Colors
+  // Primary — Tailwind Blue 500 with neon glow from 400
   primary: {
-    main: bw.white,
-    light: bw.gray200,
-    dark: bw.gray900,
-    glow: bw.white,
+    main: blue[500], // #3b82f6 — vibrant neon blue
+    light: blue[400], // #60a5fa — glow / hover
+    dark: blue[700], // for dark accents
+    glow: blue[400], // used for shadow / glow effects
   },
 
-  // Neon style (converted to BW palette)
+  // Neon accents
   neon: {
-    primary: bw.white,
-    accent: bw.gray300,
+    primary: blue[500], // main neon blue
+    accent: violet[500], // electric violet secondary
+    pink: rose[500], // neon rose for alerts
   },
 
-  // Text Colors
+  // Text — soft off-white, easy on the eyes against deep black
   text: {
-    primary: bw.white,
-    secondary: bw.gray400,
-    muted: bw.gray500,
-    accent: bw.white,
+    primary: '#e2e8f0', // slate-200 — slightly warm, NOT pure white
+    secondary: '#8892a4', // muted blue-gray
+    muted: '#4b5568', // darker secondary
+    accent: blue[400], // neon blue for links / highlights
   },
 
-  // Gradient Colors
+  // Gradients
   gradient: {
-    primary: [bw.gray700, bw.gray900] as const,
-    hero: [bw.white, bw.gray100] as const,
-    glass: ['rgba(255,255,255,0.9)', 'rgba(255,255,255,0.7)'] as const,
-    card: [bw.gray900, bw.gray950] as const,
-    dark: [bw.gray800, bw.gray900] as const,
-    premiumButton: [bw.white, 'rgba(255, 255, 255, 0.2)'] as const,
+    primary: [blue[600], violet[600]] as const, // blue → violet
+    hero: ['#e2e8f0', '#c0c8d8'] as const,
+    glass: ['rgba(59, 130, 246, 0.08)', 'rgba(139, 92, 246, 0.06)'] as const,
+    card: ['rgba(9, 9, 15, 0.95)', 'rgba(5, 5, 8, 0.98)'] as const,
+    dark: ['#09090f', '#050508'] as const,
+    premiumButton: [blue[500], violet[500]] as const, // blue → violet CTA
   },
 
-  // Status Colors (functional UI — converted to grayscale equivalents)
+  // Status Colors
   status: {
-    success: bw.gray300,
-    warning: bw.gray400,
-    error: bw.gray500,
-    info: bw.gray600,
+    success: '#10b981', // emerald-500
+    warning: '#f59e0b', // amber-500
+    error: rose[500], // neon rose
+    info: blue[400],
   },
 
-  // Border & Overlay
-  border: bw.gray700,
-  overlay: 'rgba(0, 0, 0, 0.5)',
+  // Border & Overlay — subtle neon blue glow
+  border: 'rgba(59, 130, 246, 0.18)',
+  overlay: 'rgba(0, 0, 0, 0.7)',
 };
 
-// Glass-morphism effect
+// Glass-morphism — dark tinted with neon blue micro-tint
 export const glass = {
-  background: 'rgba(255, 255, 255, 0.1)',
-  border: 'rgba(255, 255, 255, 0.2)',
+  background: 'rgba(59, 130, 246, 0.05)',
+  border: 'rgba(59, 130, 246, 0.18)',
 };
