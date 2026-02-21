@@ -726,10 +726,10 @@ export default function HomeScreen() {
 
             {/* Credit Dashboard */}
             <View className="flex-row items-center gap-3">
-              <View className="flex-row items-center gap-2 bg-white/10 px-3 py-1.5 rounded-xl border border-white/10">
+              {/* <View className="flex-row items-center gap-2 bg-white/10 px-3 py-1.5 rounded-xl border border-white/10">
                 <ImageIcon size={14} color="#1e9bff" />
                 <Text className="text-white text-xs font-black">{imagesRemaining} restants</Text>
-              </View>
+              </View> */}
               {/* <View className="flex-row items-center gap-2 bg-white/10 px-3 py-1.5 rounded-xl border border-white/10">
                 <MessageSquare size={14} color="#10b981" />
                 <Text className="text-white text-xs font-black">{textRemaining}</Text>
