@@ -76,50 +76,50 @@ export default function RootLayout() {
     return () => subscription.remove();
   }, []);
 
-  useEffect(() => {
-    if (!isHydrated) return;
+  // useEffect(() => {
+  //   if (!isHydrated) return;
 
-    const timeout = setTimeout(() => {
-      const inAuthGroup = segments.some(s => s.includes('(auth)')) || segments.includes('login') || segments.includes('register') || segments.includes('verify-email');
-      const inOnboardingGroup = segments.some(s => s.includes('(onboarding)')) || segments.includes('setup') || segments.includes('branding') || segments.includes('packs') || segments.includes('welcome') || segments.includes('payment');
-      let targetRoute: string | null = null;
+  //   const timeout = setTimeout(() => {
+  //     const inAuthGroup = segments.some(s => s.includes('(auth)')) || segments.includes('login') || segments.includes('register') || segments.includes('verify-email');
+  //     const inOnboardingGroup = segments.some(s => s.includes('(onboarding)')) || segments.includes('setup') || segments.includes('branding') || segments.includes('packs') || segments.includes('welcome') || segments.includes('payment');
+  //     let targetRoute: string | null = null;
 
-      if (isAuthenticated) {
-        // 1. Check if email is verified
-        if (user && !user.isEmailVerified) {
-          if (!segments.includes('verify-email')) {
-            targetRoute = '/(auth)/verify-email';
-          }
-        }
-        // 2. Check if onboarding (branding) is complete
-        else if (!hasFinishedOnboarding) {
-          if (!segments.includes('branding')) {
-            targetRoute = '/(onboarding)/branding';
-          }
-        }
-        // 3. Normal app access
-        else {
-          if (inAuthGroup || inOnboardingGroup || !segments[0]) {
-            targetRoute = '/(drawer)';
-          }
-        }
-      } else {
-        // If not authenticated, always land on Welcome 
-        // (Login/Register are accessible from there)
-        if (!inAuthGroup && !inOnboardingGroup) {
-          targetRoute = '/(onboarding)/welcome';
-        }
-      }
+  //     if (isAuthenticated) {
+  //       // 1. Check if email is verified
+  //       if (user && !user.isEmailVerified) {
+  //         if (!segments.includes('verify-email')) {
+  //           targetRoute = '/(auth)/verify-email';
+  //         }
+  //       }
+  //       // 2. Check if onboarding (branding) is complete
+  //       else if (!hasFinishedOnboarding) {
+  //         if (!segments.includes('branding')) {
+  //           targetRoute = '/(onboarding)/branding';
+  //         }
+  //       }
+  //       // 3. Normal app access
+  //       else {
+  //         if (inAuthGroup || inOnboardingGroup || !segments[0]) {
+  //           targetRoute = '/(drawer)';
+  //         }
+  //       }
+  //     } else {
+  //       // If not authenticated, always land on Welcome 
+  //       // (Login/Register are accessible from there)
+  //       if (!inAuthGroup && !inOnboardingGroup) {
+  //         targetRoute = '/(onboarding)/welcome';
+  //       }
+  //     }
 
-      if (targetRoute && targetRoute !== '/' + segments.join('/')) {
-        router.replace(targetRoute as any);
-      } else {
-        setIsRouting(false);
-      }
-    }, 1);
+  //     if (targetRoute && targetRoute !== '/' + segments.join('/')) {
+  //       router.replace(targetRoute as any);
+  //     } else {
+  //       setIsRouting(false);
+  //     }
+  //   }, 2500);
 
-    return () => clearTimeout(timeout);
-  }, [isAuthenticated, hasFinishedOnboarding, isHydrated, segments]);
+  //   return () => clearTimeout(timeout);
+  // }, [isAuthenticated, hasFinishedOnboarding, isHydrated, segments]);
 
   if (!isHydrated || isRouting) {
     return <LoadingTransition />;
