@@ -9,6 +9,7 @@ import {
   Modal,
   Image,
 } from 'react-native';
+import { BlurView } from 'expo-blur';
 import { useRouter } from 'expo-router';
 import { colors } from '../../theme/colors';
 import { BackgroundGradient } from '../../components/ui/BackgroundGradient';
@@ -222,7 +223,7 @@ export default function ProfileScreen() {
   };
 
   return (
-    <BackgroundGradientOnboarding darkOverlay={true} >
+    <BackgroundGradientOnboarding darkOverlay={true} blurIntensity={90} imageSource="splash">
       <SafeAreaView style={styles.container}>
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
 
@@ -239,6 +240,8 @@ export default function ProfileScreen() {
 
           {/* Hero Identity Card */}
           <View style={styles.heroCard}>
+            <BlurView intensity={80} style={StyleSheet.absoluteFill} tint="dark" />
+            <View style={[StyleSheet.absoluteFill, styles.heroOverlay]} />
             <View style={styles.heroAccent} />
             <View style={styles.heroAvatarWrapper}>
               <View style={styles.heroAvatarRing}>
@@ -262,7 +265,7 @@ export default function ProfileScreen() {
             <View style={styles.heroPlanBadge}>
               <Text style={styles.heroPlanBadgeStar}>★</Text>
               <Text style={styles.heroPlanText}>
-                {user?.planType === 'studio' || user?.planType === 'agence' ? 'Hipster Premium' : 'Hipster Gratuit'}
+                {user?.planType === 'studio' || user?.planType === 'agence' ? ' Hipster•IA premium' : 'Hipster Gratuit'}
               </Text>
             </View>
 
@@ -610,14 +613,19 @@ const styles = StyleSheet.create({
   },
   heroCard: {
     backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 28,
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)',
-    alignItems: 'center', paddingVertical: 40, paddingHorizontal: 24, marginBottom: 24, overflow: 'hidden',
+    borderWidth: 2, borderColor: colors.primary.main + '35',
+    alignItems: 'center', paddingVertical: 36, paddingHorizontal: 24, marginBottom: 28, overflow: 'hidden',
+    borderTopWidth: 3, borderTopColor: colors.primary.main + '60',
+    position: 'relative',
+  },
+  heroOverlay: {
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
   },
   heroAccent: {
     position: 'absolute', top: -80, left: -80, width: 220, height: 220,
-    borderRadius: 110, backgroundColor: colors.primary.main, opacity: 0.06,
+    borderRadius: 110, backgroundColor: colors.primary.main, opacity: 0.06, zIndex: 1,
   },
-  heroAvatarWrapper: { position: 'relative', marginBottom: 20 },
+  heroAvatarWrapper: { position: 'relative', marginBottom: 20, zIndex: 2 },
   heroAvatarRing: {
     width: 128, height: 128, borderRadius: 64, padding: 4,
     backgroundColor: 'transparent', borderWidth: 3, borderColor: '#60a5fa',
@@ -638,16 +646,16 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary.main, justifyContent: 'center', alignItems: 'center',
     borderWidth: 3, borderColor: colors.background.primary,
   },
-  heroName: { fontSize: 28, fontWeight: '800', color: colors.text.primary, marginBottom: 18, textAlign: 'center', letterSpacing: -0.5 },
+  heroName: { fontSize: 28, fontWeight: '800', color: colors.text.primary, marginBottom: 18, textAlign: 'center', letterSpacing: -0.5, zIndex: 2, position: 'relative' },
   heroEmail: { fontSize: 13, color: colors.text.secondary, marginBottom: 16, textAlign: 'center', lineHeight: 20 },
   heroPlanBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 18, paddingVertical: 10,
     backgroundColor: colors.neon.accent + '20', borderRadius: 24, borderWidth: 1.5, borderColor: colors.neon.accent + '50',
-    marginBottom: 20,
+    marginBottom: 20, zIndex: 2, position: 'relative',
   },
   heroPlanBadgeStar: { fontSize: 16, color: colors.neon.accent, fontWeight: '800' },
   heroPlanText: { fontSize: 12, fontWeight: '700', color: colors.neon.accent, letterSpacing: 0.3 },
-  profileProgressSection: { width: '100%', gap: 8 },
+  profileProgressSection: { width: '100%', gap: 8, zIndex: 2, position: 'relative' },
   profileProgressLabel: { fontSize: 12, fontWeight: '700', color: colors.text.secondary, textAlign: 'center', letterSpacing: 0.4, textTransform: 'uppercase' },
   progressBar: {
     width: '100%', height: 6, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 3, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)',

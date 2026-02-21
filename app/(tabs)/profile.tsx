@@ -5,7 +5,7 @@ import { colors } from '../../theme/colors';
 
 export default function ProfileScreen() {
   return (
-    <BackgroundGradientOnboarding darkOverlay={true} blurIntensity={80}>
+    <BackgroundGradientOnboarding darkOverlay={true} blurIntensity={90} imageSource="splash">
       <View style={styles.container}>
         <Text style={styles.title}>Mon Profil</Text>
         <Text style={styles.subtitle}>Gérez vos paramètres et votre compte.</Text>
