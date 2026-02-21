@@ -88,6 +88,24 @@ export default function ProfileScreen() {
     return phone.trim();
   };
 
+  const calculateProfileCompletion = () => {
+    const fields = [
+      name,
+      professionalEmail,
+      professionalAddress,
+      city,
+      postalCode,
+      country,
+      professionalPhone,
+      websiteUrl,
+      user?.email,
+    ];
+
+    const completedFields = fields.filter(field => field && field.trim().length > 0).length;
+    const total = fields.length;
+    return Math.round((completedFields / total) * 100);
+  };
+
   useEffect(() => {
     if (user) {
       setName(user.name || '');
@@ -211,7 +229,7 @@ export default function ProfileScreen() {
           {/* Header */}
           <View style={styles.header}>
             <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-              <ArrowLeft size={24} color={colors.text.primary} />
+              <ArrowLeft size={22} color={colors.text.primary} />
             </TouchableOpacity>
             <View style={styles.headerTextContainer}>
               <Text style={styles.title}>Mon Profil Pro</Text>
@@ -224,8 +242,8 @@ export default function ProfileScreen() {
             <View style={styles.heroAccent} />
             <View style={styles.heroAvatarWrapper}>
               <View style={styles.heroAvatarRing}>
-                {user?.logoUrl || user?.avatarUrl ? (
-                  <Image source={{ uri: `https://hipster-api.fr${user.logoUrl || user.avatarUrl}` }} style={styles.heroAvatar} />
+                {user?.avatarUrl || user?.logoUrl ? (
+                  <Image source={{ uri: `https://hipster-api.fr${user.avatarUrl || user.logoUrl}` }} style={styles.heroAvatar} />
                 ) : (
                   <View style={styles.heroAvatarPlaceholder}>
                     <Briefcase size={52} color={colors.primary.main} />
@@ -240,13 +258,19 @@ export default function ProfileScreen() {
             </View>
 
             <Text style={styles.heroName}>{user?.name || 'Nom / Entreprise'}</Text>
-            <Text style={styles.heroEmail}>{user?.email || ''}</Text>
 
             <View style={styles.heroPlanBadge}>
-              <Sparkles size={12} color={colors.primary.main} />
+              <Text style={styles.heroPlanBadgeStar}>★</Text>
               <Text style={styles.heroPlanText}>
                 {user?.planType === 'studio' || user?.planType === 'agence' ? 'Hipster Premium' : 'Hipster Gratuit'}
               </Text>
+            </View>
+
+            <View style={styles.profileProgressSection}>
+              <Text style={styles.profileProgressLabel}>Profil complété à {calculateProfileCompletion()}%</Text>
+              <View style={styles.progressBar}>
+                <View style={[styles.progressFill, { width: `${calculateProfileCompletion()}%` }]} />
+              </View>
             </View>
           </View>
 
@@ -448,12 +472,12 @@ export default function ProfileScreen() {
           {/* Security & Logout */}
           <View style={styles.securitySection}>
             <TouchableOpacity style={styles.menuItem} onPress={() => setShowPasswordModal(true)}>
-              <Lock size={18} color={colors.text.muted} />
+              <Lock size={20} color={colors.text.muted} />
               <Text style={styles.menuItemText}>Modifier le mot de passe</Text>
-              <ChevronRight size={18} color={colors.text.muted} />
+              <ChevronRight size={20} color={colors.text.muted} />
             </TouchableOpacity>
             <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-              <LogOut size={18} color={colors.status.error} />
+              <LogOut size={20} color={colors.status.error} />
               <Text style={styles.logoutText}>Se déconnecter</Text>
             </TouchableOpacity>
           </View>
@@ -547,136 +571,152 @@ function InputField({
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  scrollContent: { padding: 20, paddingBottom: 80 },
+  scrollContent: { padding: 16, paddingBottom: 100 },
   header: {
     alignItems: 'center',
-    marginBottom: 32,
-    marginTop: 10,
+    marginBottom: 40,
+    marginTop: 8,
     position: 'relative',
   },
   backButton: {
     position: 'absolute',
     left: 0,
-    top: 0,
+    top: -4,
     width: 44,
     height: 44,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: 'rgba(255,255,255,0.08)',
     borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: 'rgba(255,255,255,0.15)',
   },
   headerTextContainer: {
     alignItems: 'center',
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontSize: 28,
+    fontWeight: '800',
     color: colors.text.primary,
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: 10,
+    letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 15,
     color: colors.text.secondary,
     textAlign: 'center',
+    lineHeight: 22,
   },
   heroCard: {
-    backgroundColor: 'rgba(255,255,255,0.10)', borderRadius: 28,
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)',
-    alignItems: 'center', paddingVertical: 36, paddingHorizontal: 24, marginBottom: 20, overflow: 'hidden',
+    backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 28,
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)',
+    alignItems: 'center', paddingVertical: 40, paddingHorizontal: 24, marginBottom: 24, overflow: 'hidden',
   },
   heroAccent: {
-    position: 'absolute', top: -60, left: -60, width: 200, height: 200,
-    borderRadius: 100, backgroundColor: colors.primary.main, opacity: 0.08,
+    position: 'absolute', top: -80, left: -80, width: 220, height: 220,
+    borderRadius: 110, backgroundColor: colors.primary.main, opacity: 0.06,
   },
-  heroAvatarWrapper: { position: 'relative', marginBottom: 16 },
+  heroAvatarWrapper: { position: 'relative', marginBottom: 20 },
   heroAvatarRing: {
-    width: 120, height: 120, borderRadius: 60, padding: 4,
-    backgroundColor: colors.primary.main + '30', borderWidth: 2, borderColor: colors.primary.main, overflow: 'hidden',
+    width: 128, height: 128, borderRadius: 64, padding: 4,
+    backgroundColor: 'transparent', borderWidth: 3, borderColor: '#60a5fa',
+    overflow: 'hidden',
+    shadowColor: '#60a5fa',
+    shadowOpacity: 0.8,
+    shadowOffset: { width: 0, height: 0 },
+    shadowRadius: 16,
+    elevation: 20,
   },
-  heroAvatar: { width: '100%', height: '100%', borderRadius: 56 },
+  heroAvatar: { width: '100%', height: '100%', borderRadius: 60 },
   heroAvatarPlaceholder: {
-    width: '100%', height: '100%', borderRadius: 56,
-    backgroundColor: 'rgba(255,255,255,0.06)', justifyContent: 'center', alignItems: 'center',
+    width: '100%', height: '100%', borderRadius: 60,
+    backgroundColor: 'rgba(96, 165, 250, 0.15)', justifyContent: 'center', alignItems: 'center',
   },
   heroCameraButton: {
-    position: 'absolute', bottom: 2, right: 2, width: 34, height: 34, borderRadius: 17,
+    position: 'absolute', bottom: 4, right: 4, width: 38, height: 38, borderRadius: 19,
     backgroundColor: colors.primary.main, justifyContent: 'center', alignItems: 'center',
-    borderWidth: 3, borderColor: '#0a0a0a',
+    borderWidth: 3, borderColor: colors.background.primary,
   },
-  heroName: { fontSize: 24, fontWeight: '800', color: colors.text.primary, marginBottom: 4, textAlign: 'center' },
-  heroEmail: { fontSize: 14, color: colors.text.secondary, marginBottom: 14, textAlign: 'center' },
+  heroName: { fontSize: 28, fontWeight: '800', color: colors.text.primary, marginBottom: 18, textAlign: 'center', letterSpacing: -0.5 },
+  heroEmail: { fontSize: 13, color: colors.text.secondary, marginBottom: 16, textAlign: 'center', lineHeight: 20 },
   heroPlanBadge: {
-    flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 6,
-    backgroundColor: colors.primary.main + '25', borderRadius: 20, borderWidth: 1, borderColor: colors.primary.main + '50',
+    flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 18, paddingVertical: 10,
+    backgroundColor: colors.neon.accent + '20', borderRadius: 24, borderWidth: 1.5, borderColor: colors.neon.accent + '50',
+    marginBottom: 20,
   },
-  heroPlanText: { fontSize: 12, fontWeight: '700', color: colors.primary.main },
+  heroPlanBadgeStar: { fontSize: 16, color: colors.neon.accent, fontWeight: '800' },
+  heroPlanText: { fontSize: 12, fontWeight: '700', color: colors.neon.accent, letterSpacing: 0.3 },
+  profileProgressSection: { width: '100%', gap: 8 },
+  profileProgressLabel: { fontSize: 12, fontWeight: '700', color: colors.text.secondary, textAlign: 'center', letterSpacing: 0.4, textTransform: 'uppercase' },
+  progressBar: {
+    width: '100%', height: 6, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 3, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
+  },
+  progressFill: { height: '100%', backgroundColor: colors.neon.accent, borderRadius: 3 },
   mainCard: {
-    backgroundColor: 'rgba(255,255,255,0.09)', borderRadius: 24,
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)', padding: 20, marginBottom: 20,
+    backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 24,
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.13)', padding: 24, marginBottom: 24,
   },
-  form: { gap: 14, marginBottom: 20 },
-  inputRow: { flexDirection: 'row', gap: 12 },
-  inputGroup: { gap: 7 },
-  label: { fontSize: 12, color: colors.text.secondary, fontWeight: '600', marginLeft: 2, letterSpacing: 0.3 },
+  form: { gap: 18, marginBottom: 24 },
+  inputRow: { flexDirection: 'row', gap: 14 },
+  inputGroup: { gap: 9 },
+  label: { fontSize: 11, color: colors.text.secondary, fontWeight: '700', marginLeft: 2, letterSpacing: 0.4, textTransform: 'uppercase' },
   inputContainer: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.06)',
-    borderRadius: 13, paddingHorizontal: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)', height: 50,
+    borderRadius: 14, paddingHorizontal: 16, paddingVertical: 0, borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', height: 52,
   },
-  activeInput: { borderColor: colors.primary.main + '70', backgroundColor: 'rgba(255,255,255,0.09)' },
-  dimmedInput: { opacity: 0.6 },
-  input: { flex: 1, color: colors.text.primary, fontSize: 15, marginLeft: 10 },
-  editActions: { flexDirection: 'row', gap: 12 },
+  activeInput: { borderColor: colors.primary.main + '60', backgroundColor: 'rgba(255,255,255,0.10)' },
+  dimmedInput: { opacity: 0.55, backgroundColor: 'rgba(255,255,255,0.04)' },
+  input: { flex: 1, color: colors.text.primary, fontSize: 15, marginLeft: 12, fontWeight: '500' },
+  editActions: { flexDirection: 'row', gap: 14 },
   cancelButton: {
-    flex: 1, paddingVertical: 14, borderRadius: 13, backgroundColor: 'rgba(255,255,255,0.07)',
-    alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)',
+    flex: 1, paddingVertical: 16, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.08)',
+    alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)',
   },
-  cancelButtonText: { color: colors.text.secondary, fontSize: 15, fontWeight: '600' },
-  saveButton: { flex: 1, paddingVertical: 14, borderRadius: 13, backgroundColor: colors.primary.main, alignItems: 'center' },
-  saveButtonText: { color: '#000', fontSize: 15, fontWeight: '700' },
-  editButton: { alignItems: 'center', paddingVertical: 14, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.07)' },
-  editButtonText: { color: colors.primary.main, fontSize: 15, fontWeight: '700' },
+  cancelButtonText: { color: colors.text.secondary, fontSize: 15, fontWeight: '700' },
+  saveButton: { flex: 1, paddingVertical: 16, borderRadius: 14, backgroundColor: colors.primary.main, alignItems: 'center' },
+  saveButtonText: { color: '#000', fontSize: 15, fontWeight: '800' },
+  editButton: { alignItems: 'center', paddingVertical: 18, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.08)' },
+  editButtonText: { color: colors.primary.main, fontSize: 16, fontWeight: '700', letterSpacing: -0.2 },
   inlinePrefix: {
-    flexDirection: 'row', alignItems: 'center', paddingRight: 10,
-    borderRightWidth: 1, borderRightColor: 'rgba(255,255,255,0.12)', marginRight: 6, gap: 4,
+    flexDirection: 'row', alignItems: 'center', paddingRight: 12,
+    borderRightWidth: 1, borderRightColor: 'rgba(255,255,255,0.14)', marginRight: 8, gap: 5,
   },
-  prefixFlag: { fontSize: 16 },
-  prefixCode: { fontSize: 13, color: colors.text.secondary, fontWeight: '600' },
+  prefixFlag: { fontSize: 18, fontWeight: '600' },
+  prefixCode: { fontSize: 12, color: colors.text.secondary, fontWeight: '700' },
   planCard: {
-    backgroundColor: 'rgba(255,255,255,0.09)', borderRadius: 24, padding: 20,
-    borderWidth: 1.5, borderColor: colors.primary.main + '50', marginBottom: 20,
+    backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 24, padding: 24,
+    borderWidth: 1.5, borderColor: colors.primary.main + '45', marginBottom: 24,
   },
-  planHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 },
-  planName: { fontSize: 20, fontWeight: '800', color: colors.text.primary, marginBottom: 4 },
-  planDescription: { fontSize: 13, color: colors.text.secondary },
-  planBadge: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.1)' },
-  planBadgeActive: { backgroundColor: colors.primary.main + '30' },
-  planBadgeText: { fontSize: 11, fontWeight: '800', color: colors.text.primary, textTransform: 'uppercase', letterSpacing: 0.5 },
+  planHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 18 },
+  planName: { fontSize: 22, fontWeight: '800', color: colors.text.primary, marginBottom: 5, letterSpacing: -0.3 },
+  planDescription: { fontSize: 13, color: colors.text.secondary, fontWeight: '500' },
+  planBadge: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 9, backgroundColor: 'rgba(255,255,255,0.12)' },
+  planBadgeActive: { backgroundColor: colors.primary.main + '25' },
+  planBadgeText: { fontSize: 10, fontWeight: '800', color: colors.text.primary, textTransform: 'uppercase', letterSpacing: 0.6 },
   upgradeButton: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14, borderRadius: 13,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, paddingVertical: 16, borderRadius: 14,
     backgroundColor: colors.primary.main,
   },
-  upgradeButtonText: { color: '#000', fontSize: 15, fontWeight: '700' },
-  securitySection: { gap: 12 },
+  upgradeButtonText: { color: '#000', fontSize: 15, fontWeight: '800' },
+  securitySection: { gap: 14 },
   menuItem: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.09)',
-    padding: 16, borderRadius: 16, gap: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)',
+    flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.08)',
+    padding: 18, borderRadius: 16, gap: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.13)',
   },
-  menuItemText: { flex: 1, fontSize: 15, color: colors.text.primary, fontWeight: '500' },
+  menuItemText: { flex: 1, fontSize: 15, color: colors.text.primary, fontWeight: '600' },
   logoutButton: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, padding: 16, borderRadius: 16,
-    backgroundColor: 'rgba(255,59,48,0.10)', borderWidth: 1, borderColor: 'rgba(255,59,48,0.3)',
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 11, padding: 18, borderRadius: 16,
+    backgroundColor: 'rgba(255,59,48,0.12)', borderWidth: 1, borderColor: 'rgba(255,59,48,0.35)',
   },
-  logoutText: { color: colors.status.error, fontSize: 15, fontWeight: '700' },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.92)', justifyContent: 'center', alignItems: 'center', padding: 20 },
+  logoutText: { color: colors.status.error, fontSize: 15, fontWeight: '800' },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.95)', justifyContent: 'center', alignItems: 'center', padding: 20 },
   modalContent: {
-    width: '100%', maxWidth: 400, backgroundColor: '#1a1a1a', borderRadius: 24, padding: 24,
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)',
+    width: '100%', maxWidth: 420, backgroundColor: colors.background.secondary, borderRadius: 24, padding: 28,
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.13)',
   },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },
-  modalTitle: { fontSize: 20, fontWeight: '700', color: colors.text.primary },
-  modalBody: { gap: 16, marginBottom: 24 },
-  modalActions: { flexDirection: 'row', gap: 12 },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 },
+  modalTitle: { fontSize: 22, fontWeight: '800', color: colors.text.primary, letterSpacing: -0.3 },
+  modalBody: { gap: 18, marginBottom: 28 },
+  modalActions: { flexDirection: 'row', gap: 14 },
 });
