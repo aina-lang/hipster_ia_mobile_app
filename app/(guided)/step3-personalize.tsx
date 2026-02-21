@@ -1,4 +1,3 @@
-
 import {
   View,
   Text,
@@ -10,50 +9,24 @@ import {
   Animated,
   Dimensions,
   StyleSheet,
-  KeyboardAvoidingView,
   Image,
-  ActivityIndicator,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { colors } from '../../theme/colors';
-import { DeerAnimation } from '../../components/ui/DeerAnimation';
 import { useCreationStore } from '../../store/creationStore';
-import { WORKFLOWS, WorkflowQuestion } from '../../constants/workflows';
 import { GuidedScreenWrapper } from '../../components/layout/GuidedScreenWrapper';
-import { SelectionCard } from '../../components/ui/SelectionCard';
 import { NeonButton } from '../../components/ui/NeonButton';
 import { BlurView } from 'expo-blur';
-import { ChatInput } from '../../components/ChatInput';
 import {
   Sparkles,
   ChevronRight,
-  Mic,
-  Image as LucideImage,
-  Paperclip,
   Moon,
   Sun,
   Upload,
   X,
-  TrendingUp,
   Gem,
-  BookOpen,
-  Target,
-  GraduationCap,
-  Megaphone,
-  Gift,
-  RotateCcw,
-  Handshake,
-  Newspaper,
   Zap,
-  Trophy,
-  Building2,
-  ShoppingBag,
-  Calendar,
-  Mail,
-  Heart,
-  Plus,
 } from 'lucide-react-native';
 
 import illus2 from "../../assets/illus2.jpeg"
@@ -65,134 +38,11 @@ import { GenericModal, ModalType } from '../../components/ui/GenericModal';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-// Visual style options
-// Visual style options
 const VISUAL_STYLES = [
-  // Custom Styles
-  {
-    label: 'Premium',
-    icon: Moon,
-    description: 'Noir & blanc haut de gamme.\nContrasté, intemporel, effet luxe.',
-    image: illus2,
-  },
-  {
-    label: 'Hero Studio',
-    icon: Sun,
-    description: 'Produit mis en scène comme une icône.\nLumière maîtrisée, impact fort.',
-    image: illus3,
-  },
-  {
-    label: 'Minimal Studio',
-    icon: Sun,
-    description: 'Fond clair, composition épurée.\nModerne, haut de gamme, ultra lisible.',
-    image: illus4,
-  },
-  // Stability AI Presets
-  {
-    label: '3D Model',
-    icon: Gem,
-    description: 'Rendu 3D net et moderne.\nVolume parfait, textures lisses.',
-    image: illus4,
-  },
-  {
-    label: 'Analog Film',
-    icon: Sparkles,
-    description: 'Grain argentique, couleurs rétro.\nAuthentique, nostalgique, chaleureux.',
-    image: illus3,
-  },
-  {
-    label: 'Anime',
-    icon: Sparkles,
-    description: 'Style animation japonaise vibrant.\nTraits dynamiques, couleurs vives.',
-    image: illus2,
-  },
-  {
-    label: 'Cinematic',
-    icon: Moon,
-    description: 'Ambiance film, lumière dramatique.\nProfondeur de champ, rendu cinéma.',
-    image: illus2,
-  },
-  {
-    label: 'Comic Book',
-    icon: Zap,
-    description: 'Style bande dessinée américaine.\nTraits noirs, couleurs aplat, dynamique.',
-    image: illus2,
-  },
-  {
-    label: 'Digital Art',
-    icon: Zap,
-    description: 'Art numérique créatif et poli.\nModerne, expressif, détaillé.',
-    image: illus4,
-  },
-  {
-    label: 'Enhance',
-    icon: Sparkles,
-    description: 'Amélioration créative et magique.\nDétails boostés, rendu supérieur.',
-    image: illus3,
-  },
-  {
-    label: 'Fantasy Art',
-    icon: Sparkles,
-    description: 'Magie et imaginaire fantastique.\nOnirique, épique, surnaturel.',
-    image: illus2,
-  },
-  {
-    label: 'Isometric',
-    icon: Gem,
-    description: 'Vue 3D isométrique technique.\nParfait pour architecture/objets.',
-    image: illus4,
-  },
-  {
-    label: 'Line Art',
-    icon: Sun,
-    description: 'Dessin au trait pur et simple.\nMinimaliste, élégant, sans couleur.',
-    image: illus4,
-  },
-  {
-    label: 'Low Poly',
-    icon: Gem,
-    description: 'Style géométrique facetté.\nModerne, abstrait, ludique.',
-    image: illus4,
-  },
-  {
-    label: 'Modeling Compound',
-    icon: Gem,
-    description: 'Style pâte à modeler / clay.\nTexture douce, ludique, tactile.',
-    image: illus4,
-  },
-  {
-    label: 'Neon Punk',
-    icon: Zap,
-    description: 'Esthétique cyberpunk urbaine et néon.\nContrastes forts, futuriste.',
-    image: illus2,
-  },
-  {
-    label: 'Origami',
-    icon: Sun,
-    description: 'Art du pliage de papier.\nGéométrique, délicat, texturé.',
-    image: illus4,
-  },
-  {
-    label: 'Photographic',
-    icon: Sparkles,
-    description: 'Rendu photo-réaliste impeccable.\nLumière naturelle, détails fins.',
-    image: illus3,
-  },
-  {
-    label: 'Pixel Art',
-    icon: Zap, // Using Zap as a proxy for digital/pixel
-    description: 'Style rétro 8-bit / 16-bit.\nNostalgique, numérique, carré.',
-    image: illus2,
-  },
-  {
-    label: 'Tile Texture',
-    icon: Gem,
-    description: 'Texture répétable sans raccord.\nIdéal pour fonds et motifs.',
-    image: illus4,
-  },
+  { label: 'Premium', icon: Moon, description: 'Noir & blanc haut de gamme.\nContrasté, intemporel, effet luxe.', image: illus2 },
+  { label: 'Hero Studio', icon: Sun, description: 'Produit mis en scène comme une icône.\nLumière maîtrisée, impact fort.', image: illus3 },
+  { label: 'Minimal Studio', icon: Sun, description: 'Fond clair, composition épurée.\nModerne, haut de gamme, ultra lisible.', image: illus4 },
 ];
-
-// Visual style options
 
 export default function Step3PersonalizeScreen() {
   const router = useRouter();
@@ -208,19 +58,12 @@ export default function Step3PersonalizeScreen() {
     setUploadedImage,
   } = useCreationStore();
 
-  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
-  const keyboardHeight = useRef(new Animated.Value(0)).current;
   const scrollRef = useRef<ScrollView>(null);
   const [localQuery, setLocalQuery] = useState(userQuery || '');
-  const pulseAnim = useRef(new Animated.Value(1)).current;
-
-  // Skeleton loading state
-  const [isLoading, setIsLoading] = useState(true);
   const skeletonOpacity = useRef(new Animated.Value(1)).current;
   const contentOpacity = useRef(new Animated.Value(0)).current;
   const skeletonPulse = useRef(new Animated.Value(0.4)).current;
 
-  // Modal state
   const [modalVisible, setModalVisible] = useState(false);
   const [modalType, setModalType] = useState<ModalType>('info');
   const [modalTitle, setModalTitle] = useState('');
@@ -233,12 +76,11 @@ export default function Step3PersonalizeScreen() {
     setModalVisible(true);
   };
 
-  // Animation variables for Visual Styles
+  const flatListRef = useRef<any>(null);
   const scrollX = useRef(new Animated.Value(0)).current;
   const ITEM_WIDTH = 240;
   const SPACING = 20;
 
-  // Skeleton pulse loop
   useEffect(() => {
     const pulse = Animated.loop(
       Animated.sequence([
@@ -247,148 +89,60 @@ export default function Step3PersonalizeScreen() {
       ])
     );
     pulse.start();
-
-    // After 600ms hide skeleton and show real content
     const timer = setTimeout(() => {
       Animated.parallel([
         Animated.timing(skeletonOpacity, { toValue: 0, duration: 300, useNativeDriver: true }),
         Animated.timing(contentOpacity, { toValue: 1, duration: 400, useNativeDriver: true }),
-      ]).start(() => setIsLoading(false));
+      ]).start();
     }, 700);
-
     return () => { pulse.stop(); clearTimeout(timer); };
   }, []);
 
-  useEffect(() => {
-    const animation = Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulseAnim, { toValue: 1.1, duration: 1500, useNativeDriver: true }),
-        Animated.timing(pulseAnim, { toValue: 1, duration: 1500, useNativeDriver: true }),
-      ])
-    );
-    animation.start();
-    return () => animation.stop();
-  }, []);
-
-
-
-  // No longer using dynamic questions
-
-  useEffect(() => {
-    const showSubscription = Keyboard.addListener(
-      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
-      (e) => {
-        setIsKeyboardVisible(true);
-        Animated.timing(keyboardHeight, {
-          toValue: e.endCoordinates.height - 40,
-          duration: Platform.OS === 'ios' ? 250 : 200,
-          useNativeDriver: false,
-        }).start();
-
-        // scroll to bottom when keyboard opens
-        setTimeout(() => {
-          scrollRef.current?.scrollToEnd({ animated: true });
-        }, 100);
-      }
-    );
-
-    const hideSubscription = Keyboard.addListener(
-      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
-      () => {
-        setIsKeyboardVisible(false);
-        Animated.timing(keyboardHeight, {
-          toValue: 0,
-          duration: Platform.OS === 'ios' ? 250 : 200,
-          useNativeDriver: false,
-        }).start();
-      }
-    );
-
-    return () => {
-      showSubscription.remove();
-      hideSubscription.remove();
-    };
-  }, []);
-
-  // No longer using intentions
-
-  // Image picker for visual flow
   const pickImage = async () => {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: false,
-        aspect: [1, 1],
         quality: 0.8,
       });
-
       if (!result.canceled && result.assets[0]) {
         const uri = result.assets[0].uri.toLowerCase();
         const allowedExtensions = ['.jpg', '.jpeg', '.png', '.webp'];
-        const hasValidExtension = allowedExtensions.some((ext) =>
-          uri.endsWith(ext)
-        );
-
-        if (!hasValidExtension) {
-          showModal(
-            'Format non supporté',
-            'Veuillez sélectionner une image au format JPEG, PNG ou WebP.',
-            'error'
-          );
+        if (!allowedExtensions.some((ext) => uri.endsWith(ext))) {
+          showModal('Format non supporté', 'Veuillez sélectionner une image au format JPEG, PNG ou WebP.', 'error');
           return;
         }
         setUploadedImage(result.assets[0].uri);
       }
     } catch (error) {
-      console.error('Error picking image:', error);
-      showModal('Erreur', 'Impossible de sélectionner l\'image', 'error');
-    }
-  };
-
-  // No longer rendering questions
-
-  const [refining, setRefining] = useState(false);
-
-  // Magic Refine Handler
-  const handleRefine = async () => {
-    if (!localQuery.trim()) return;
-    setRefining(true);
-    try {
-      const response = await api.post('/ai/refine-text', { text: localQuery });
-      if (response.data && response.data.refined) {
-        setLocalQuery(response.data.refined);
-      }
-    } catch (error) {
-      console.error('Refine error:', error);
-      showModal('Erreur', 'Impossible d\'améliorer le texte.', 'error');
-    } finally {
-      setRefining(false);
+      showModal('Erreur', "Impossible de sélectionner l'image", 'error');
     }
   };
 
   const handleCreate = () => {
-    // Validate based on category
     if (selectedCategory === 'Image' || selectedCategory === 'Social') {
-      // Visual flow: require style only if NO image is uploaded
       if (!uploadedImage && !selectedStyle) {
         showModal('Style requis', 'Veuillez choisir un style artistique.', 'warning');
         return;
       }
     }
-
-    // All validations passed, save query and go to result
     setQuery(localQuery);
     router.push('/(guided)/step4-result');
   };
 
-  const insets = useSafeAreaInsets();
+  const handleSelectStyle = (style: string, index: number) => {
+    setStyle(style as any);
+    flatListRef.current?.scrollToIndex({
+      index,
+      animated: true,
+      viewPosition: 0.5,
+    });
+  };
 
   return (
-    <GuidedScreenWrapper
-      scrollViewRef={scrollRef}
-      footer={null}
-    >
+    <GuidedScreenWrapper scrollViewRef={scrollRef} footer={null}>
       <View style={{ paddingHorizontal: 20, overflow: 'visible' }}>
+
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Personnalisez votre création</Text>
@@ -399,21 +153,17 @@ export default function Step3PersonalizeScreen() {
           </View>
         </View>
 
-
         {/* CONDITIONAL FLOW: Visual Layout */}
         {(selectedCategory === 'Image' || selectedCategory === 'Social') && (
           <View style={{ marginBottom: 32, overflow: 'visible' }}>
 
-            {/* 1. REFERENCE IMAGE (Now at the top) */}
+            {/* 1. REFERENCE IMAGE */}
             <View style={{ marginTop: 20 }}>
               <Text style={styles.sectionTitle}>Image de référence</Text>
               {uploadedImage ? (
                 <View style={styles.imagePreviewContainer}>
                   <Image source={{ uri: uploadedImage }} style={styles.imagePreview} />
-                  <TouchableOpacity
-                    style={styles.removeImageButton}
-                    onPress={() => setUploadedImage(null)}
-                  >
+                  <TouchableOpacity style={styles.removeImageButton} onPress={() => setUploadedImage(null)}>
                     <X size={20} color="white" />
                   </TouchableOpacity>
                   <BlurView intensity={30} tint="dark" style={styles.changeImageOverlay}>
@@ -433,7 +183,7 @@ export default function Step3PersonalizeScreen() {
               )}
             </View>
 
-            {/* 2. VISUAL STYLE (Hidden if image is uploaded) */}
+            {/* 2. VISUAL STYLE */}
             {!uploadedImage && (
               <View style={{ marginTop: 24, overflow: 'visible' }}>
                 <Text style={styles.sectionTitle}>Style artistique</Text>
@@ -449,34 +199,40 @@ export default function Step3PersonalizeScreen() {
                     paddingHorizontal: SPACING,
                     paddingVertical: 50,
                   }}
-                  style={{ overflow: 'visible' }} // Don't clip animations
+                  style={{ overflow: 'visible' }}
                   onScroll={Animated.event(
                     [{ nativeEvent: { contentOffset: { x: scrollX } } }],
                     { useNativeDriver: true }
                   )}
+                  ref={flatListRef}
+                  getItemLayout={(data, index) => ({
+                    length: ITEM_WIDTH + SPACING,
+                    offset: (ITEM_WIDTH + SPACING) * index,
+                    index,
+                  })}
                   renderItem={({ item, index }) => {
                     const inputRange = [
                       (index - 1) * (ITEM_WIDTH + SPACING),
                       index * (ITEM_WIDTH + SPACING),
-                      (index + 1) * (ITEM_WIDTH + SPACING)
+                      (index + 1) * (ITEM_WIDTH + SPACING),
                     ];
 
                     const scale = scrollX.interpolate({
                       inputRange,
                       outputRange: [0.8, 1.25, 0.8],
-                      extrapolate: "clamp",
+                      extrapolate: 'clamp',
                     });
 
                     const translateY = scrollX.interpolate({
                       inputRange,
                       outputRange: [15, -15, 15],
-                      extrapolate: "clamp"
+                      extrapolate: 'clamp',
                     });
 
                     const opacity = scrollX.interpolate({
                       inputRange,
                       outputRange: [0.7, 1, 0.7],
-                      extrapolate: "clamp"
+                      extrapolate: 'clamp',
                     });
 
                     const isSelected = selectedStyle === item.label;
@@ -488,36 +244,45 @@ export default function Step3PersonalizeScreen() {
                           marginHorizontal: SPACING / 2,
                           transform: [{ scale }, { translateY }],
                           opacity,
+                          // overflow visible so glow can escape
+                          position: 'relative',
                         }}
                       >
+                        {/* ── Neon glow layers — outside the clipped card ── */}
+                        {isSelected && (
+                          <>
+                            <View style={styles.cardBloomFar} pointerEvents="none" />
+                            <View style={styles.cardBloomMid} pointerEvents="none" />
+                            <View style={styles.cardBorderGlow} pointerEvents="none" />
+                            <View style={styles.cardFloorGlow} pointerEvents="none" />
+                          </>
+                        )}
+
+                        {/* ── Card body — clipped ── */}
                         <TouchableOpacity
-                          key={item.label}
-                          style={styles.styleCard}
-                          onPress={() => {
-                            setStyle(item.label as any);
-                          }}
+                          style={[styles.styleCard, isSelected && styles.styleCardSelected]}
+                          onPress={() => handleSelectStyle(item.label, index)}
                           activeOpacity={0.9}
                         >
                           <Image
-                            source={
-                              typeof item.image === 'string'
-                                ? { uri: item.image }
-                                : item.image
-                            }
+                            source={typeof item.image === 'string' ? { uri: item.image } : item.image}
                             style={styles.styleCardImage}
-                            resizeMode='cover'
+                            resizeMode="cover"
                           />
 
-                          <View style={styles.styleCardContent}>
-                            <Text style={styles.styleCardLabel}>{item.label}</Text>
+                          {/* Top neon reflection when selected */}
+                          {isSelected && (
+                            <View style={styles.styleCardTopReflection} pointerEvents="none" />
+                          )}
+
+                          <View style={[styles.styleCardContent, isSelected && { backgroundColor: 'transparent' }]}>
+                            <Text style={[styles.styleCardLabel, isSelected && styles.styleCardLabelSelected]}>
+                              {item.label}
+                            </Text>
                           </View>
 
                           {isSelected && (
-                            <BlurView
-                              intensity={80}
-                              tint="dark"
-                              style={StyleSheet.absoluteFill}
-                            >
+                            <BlurView intensity={80} tint="dark" style={StyleSheet.absoluteFill}>
                               <View style={styles.selectedOverlayContent}>
                                 <View style={styles.styleCardCheck}>
                                   <View style={styles.styleCardCheckInner} />
@@ -536,14 +301,9 @@ export default function Step3PersonalizeScreen() {
         )}
 
         {/* Prompt Section */}
-        <View style={{ marginBottom: 40 }}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Text style={styles.sectionTitle}>
-              Précisez votre besoin
-            </Text>
-          </View>
-
-
+        {/* Extra top padding so NeonButton glow isn't clipped by parent */}
+        <View style={{ marginBottom: 60, overflow: 'visible' }}>
+          <Text style={styles.sectionTitle}>Précisez votre besoin</Text>
 
           <View style={styles.promptContainer}>
             <TextInput
@@ -556,13 +316,16 @@ export default function Step3PersonalizeScreen() {
             />
           </View>
 
-          <NeonButton
-            title="Démarrer la création"
-            onPress={handleCreate}
-            variant="premium"
-            size="lg"
-            style={{ width: '100%' }}
-          />
+          {/* Wrapper with vertical padding so neon floor glow isn't clipped */}
+          <View style={{ paddingBottom: 40, overflow: 'visible' }}>
+            <NeonButton
+              title="Démarrer la création"
+              onPress={handleCreate}
+              variant="premium"
+              size="lg"
+              style={{ width: '100%' }}
+            />
+          </View>
         </View>
       </View>
 
@@ -580,7 +343,6 @@ export default function Step3PersonalizeScreen() {
 const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
-
     marginBottom: 20,
     paddingHorizontal: 10,
   },
@@ -601,88 +363,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.text.primary,
   },
-  breadcrumbFunction: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text.muted,
-  },
-  animationContainer: {
-    alignItems: 'center',
-    marginBottom: 32,
-  },
-  questionContainer: {
-    marginBottom: 28,
-  },
-  questionLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text.primary,
-    marginBottom: 12,
-  },
-  choicesGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  choiceButton: {
-    minWidth: '30%',
-    maxWidth: '48%',
-    borderRadius: 16,
-    borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  choiceButtonSelected: {
-    borderColor: colors.neon.primary,
-    backgroundColor: colors.neon.primary,
-    shadowColor: colors.neon.primary,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 10,
-    elevation: 8,
-  },
-  choiceText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: colors.text.secondary,
-  },
-  choiceTextSelected: {
-    color: colors.text.primary,
-  },
-  textInput: {
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    paddingHorizontal: 18,
-    paddingVertical: 16,
-    fontSize: 16,
-    color: colors.text.primary,
-  },
-  textInputActive: {
-    borderColor: '#94a3b8',
-  },
-  // Conditional flow styles
   sectionTitle: {
     fontSize: 20,
     fontWeight: '700',
     color: colors.text.primary,
     marginBottom: 4,
-  },
-  sectionSubtitle: {
-    fontSize: 14,
-    color: colors.text.secondary,
-    marginBottom: 20,
-    lineHeight: 20,
-  },
-  cardDescription: {
-    fontSize: 14,
-    color: colors.text.muted,
-    marginTop: 4,
   },
   promptContainer: {
     backgroundColor: 'rgba(255, 255, 255, 0.05)',
@@ -691,7 +376,6 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.1)',
     minHeight: 120,
     padding: 16,
-    position: 'relative',
     marginBottom: 24,
   },
   promptInput: {
@@ -700,19 +384,6 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     textAlignVertical: 'top',
     paddingTop: 0,
-  },
-  micButton: {
-    position: 'absolute',
-    bottom: 12,
-    right: 12,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(148, 163, 184, 0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(148, 163, 184, 0.2)',
   },
   uploadButton: {
     width: '100%',
@@ -787,54 +458,37 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  customIntentionSection: {
-    marginTop: 16,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    marginBottom: 16,
-  },
-  customIntentionLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: 'rgba(255, 255, 255, 0.7)',
-    marginBottom: 12,
-  },
-  customIntentionInput: {
-    minHeight: 80,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    paddingHorizontal: 18,
-    paddingVertical: 16,
-    fontSize: 16,
-    color: '#FFFFFF',
-    textAlignVertical: 'top',
-  },
-  customIntentionInputActive: {
-    borderColor: '#94a3b8',
-  },
+
+  // ── Style Card ──────────────────────────────────────────────────────────────
+
+  // Card body — overflow hidden pour clipper image et overlay
   styleCard: {
     borderRadius: 16,
     overflow: 'hidden',
-    position: 'relative',
     backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    height: 140, // Fixed height for a clean row
+    height: 140,
+    borderWidth: 1.5,
+    borderColor: 'transparent',
   },
 
   styleCardSelected: {
-    // Removed border
+    borderWidth: 2,
+    borderColor: '#1e9bff',
   },
+
   styleCardImage: {
     width: '100%',
     height: '100%',
   },
 
-  styleCardOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.2)',
+  // Reflet lumineux bleu en haut de la carte sélectionnée
+  styleCardTopReflection: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '40%',
+    backgroundColor: 'rgba(80, 170, 255, 0.15)',
   },
 
   styleCardContent: {
@@ -853,10 +507,9 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
 
-  styleCardDescription: {
-    fontSize: 11,
-    color: 'rgba(255, 255, 255, 0.8)',
-    lineHeight: 14,
+  styleCardLabelSelected: {
+    color: '#ffffff',
+    fontWeight: '800',
   },
 
   styleCardCheck: {
@@ -878,10 +531,64 @@ const styles = StyleSheet.create({
     borderColor: '#FFFFFF',
     transform: [{ rotate: '-45deg' }, { translateY: -2 }],
   },
+
   selectedOverlayContent: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(30, 100, 255, 0.08)',
+  },
+
+  // ── Neon glow layers pour styleCard (dans l'Animated.View, hors du card clippé) ──
+
+  cardBorderGlow: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+    borderRadius: 16,
+    backgroundColor: 'transparent',
+    shadowColor: '#1a8fff',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 1,
+    shadowRadius: 24,
+    elevation: 14,
+  },
+
+  cardBloomMid: {
+    position: 'absolute',
+    top: -4, left: -4, right: -4, bottom: -4,
+    borderRadius: 20,
+    backgroundColor: 'transparent',
+    shadowColor: '#0f60e0',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 20,
+    elevation: 8,
+  },
+
+  cardBloomFar: {
+    position: 'absolute',
+    top: -8, left: -8, right: -8, bottom: -8,
+    borderRadius: 24,
+    backgroundColor: 'transparent',
+    shadowColor: '#0840bb',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.3,
+    shadowRadius: 28,
+    elevation: 4,
+  },
+
+  cardFloorGlow: {
+    position: 'absolute',
+    bottom: -28,
+    alignSelf: 'center',
+    width: 160,
+    height: 36,
+    borderRadius: 50,
+    backgroundColor: 'transparent',
+    shadowColor: '#1a6fff',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.75,
+    shadowRadius: 22,
+    elevation: 18,
   },
 });
