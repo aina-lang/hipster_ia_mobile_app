@@ -1,79 +1,80 @@
-// Unified Blue Color Scheme - Based on #203c8e
-// Removing all other colors (Violet, Cyan, Pink) for a focused brand identity.
+// Pure Black & White Theme — No colors besides #000000 / #FFFFFF and grayscale
 
-const blue = {
-  50: '#eef2ff', // Très clair, presque blanc bleuté
-  100: '#dce6ff',
-  200: '#b9ceff',
-  300: '#8aadff',
-  400: '#5c88ff',
-  500: '#3a65f0',
-  600: '#2d52c8', // Entre 500 et 700
-  700: '#203c8e', // ← TA COULEUR DE MARQUE
-  800: '#162a66',
-  900: '#0d1a40',
-  950: '#070e24',
+const bw = {
+  white: '#efefef',
+  black: '#000000',
+  gray100: '#F5F5F5',
+  gray200: '#E5E5E5',
+  gray300: '#D4D4D4',
+  gray400: '#A3A3A3',
+  gray500: '#737373',
+  gray600: '#525252',
+  gray700: '#404040',
+  gray800: '#262626',
+  gray900: '#171717',
+  gray950: '#0A0A0A',
 };
 
 export const colors = {
-  blue, // Expose full scale for direct use if needed
+  // Expose scale
+  bw,
 
   // Background Colors
   background: {
-    primary: '#000000', // Pure black
-    secondary: blue[900], // Dark blue
-    tertiary: blue[800], // Deep blue
-    premium: blue[950], // Deepest midnight blue
-    dark: blue[950], // Default dark background
+    primary: bw.black,
+    secondary: bw.gray900,
+    tertiary: bw.gray800,
+    premium: bw.gray950,
+    dark: bw.gray950,
   },
 
-  // Primary Theme Colors (Unifying everything to blue)
+  // Primary Theme Colors
   primary: {
-    main: blue[700],
-    light: blue[400],
-    dark: blue[900],
-    glow: blue[700],
+    main: bw.white,
+    light: bw.gray200,
+    dark: bw.gray900,
+    glow: bw.white,
   },
 
-  // Neon style mapping
+  // Neon style (converted to BW palette)
   neon: {
-    primary: blue[700],
-    accent: blue[400],
+    primary: bw.white,
+    accent: bw.gray300,
   },
 
   // Text Colors
   text: {
-    primary: '#e2e8f0', // Soft Slate-200 instead of bright white
-    secondary: '#94a3b8', // Muted slate gray
-    muted: '#64748b', // Muted slate
-    accent: '#60a5fa', // Accent blue
+    primary: bw.white,
+    secondary: bw.gray400,
+    muted: bw.gray500,
+    accent: bw.white,
   },
 
   // Gradient Colors
   gradient: {
-    primary: [blue[600], blue[800]] as const, // Blue theme gradient
-    hero: ['#FFFFFF', '#F5F5F5'] as const,
-    glass: ['rgba(255, 255, 255, 0.9)', 'rgba(255, 255, 255, 0.7)'] as const,
-    card: [blue[900], blue[950]] as const,
-    dark: ['#141414', '#0A0A0A'] as const,
-    premiumButton: [blue[700], 'rgba(44, 67, 134, 0.2)'] as const, // The glassy #203c8e mix
+    primary: [bw.gray700, bw.gray900] as const,
+    hero: [bw.white, bw.gray100] as const,
+    glass: ['rgba(255,255,255,0.9)', 'rgba(255,255,255,0.7)'] as const,
+    card: [bw.gray900, bw.gray950] as const,
+    dark: [bw.gray800, bw.gray900] as const,
+    premiumButton: [bw.white, 'rgba(255, 255, 255, 0.2)'] as const,
   },
 
-  // Status Colors (Kept for functional UI but aligned if possible)
+  // Status Colors (functional UI — converted to grayscale equivalents)
   status: {
-    success: '#10B981',
-    warning: '#F59E0B',
-    error: '#EF4444',
-    info: blue[600],
+    success: bw.gray300,
+    warning: bw.gray400,
+    error: bw.gray500,
+    info: bw.gray600,
   },
 
   // Border & Overlay
-  border: blue[800], // Dark themed border
+  border: bw.gray700,
   overlay: 'rgba(0, 0, 0, 0.5)',
 };
 
 // Glass-morphism effect
 export const glass = {
-  background: 'rgba(30, 41, 59, 0.6)', // Slate-800 based opacity
-  border: 'rgba(255, 255, 255, 0.1)',
+  background: 'rgba(255, 255, 255, 0.1)',
+  border: 'rgba(255, 255, 255, 0.2)',
 };
