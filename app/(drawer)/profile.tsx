@@ -41,6 +41,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { CountryPicker } from '../../components/ui/CountryPicker';
 import { getCountryByName, Country } from '../../api/countries';
 import { BackgroundGradientOnboarding } from 'components/ui/BackgroundGradientOnboarding';
+import { NeonButton } from '../../components/ui/NeonButton';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -466,10 +467,13 @@ export default function ProfileScreen() {
                 </Text>
               </View>
             </View>
-            <TouchableOpacity style={styles.upgradeButton} onPress={() => router.push('/(drawer)/subscription')}>
-              <Sparkles size={18} color="#000" />
-              <Text style={styles.upgradeButtonText}>Gérer l'abonnement</Text>
-            </TouchableOpacity>
+            <NeonButton
+              title="Gérer l'abonnement"
+              onPress={() => router.push('/(drawer)/subscription')}
+              variant="premium"
+              icon={<Sparkles size={18} color="#ffffff" />}
+              size="md"
+            />
           </View>
 
           {/* Security & Logout */}
@@ -532,7 +536,7 @@ export default function ProfileScreen() {
         message={modalConfig.message}
         onClose={() => setModalVisible(false)}
       />
-    </BackgroundGradientOnboarding>
+    </BackgroundGradientOnboarding >
   );
 }
 
