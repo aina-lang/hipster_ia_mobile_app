@@ -457,6 +457,8 @@ export default function HomeScreen() {
                     sender: (msg.role === 'user' ? 'user' : 'ai') as 'user' | 'ai',
                     timestamp: new Date(),
                     isTyping: false,
+                    type: msg.type || 'text',
+                    mediaUrl: msg.url || msg.mediaUrl,
                   };
                   uiMessages.push(uiMsg);
                 }

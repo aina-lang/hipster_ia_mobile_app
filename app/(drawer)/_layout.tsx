@@ -105,11 +105,23 @@ function CustomDrawerContent(props: any) {
     }
 
     // Priority 2: Use prompt (main source for new data)
-    const text = (item.prompt || item.result || '').trim();
+    let textToProcess = (item.prompt || item.result || '').trim();
 
-    if (text && text.length > 0) {
+    // JSON Handling for unified chat
+    if (textToProcess.startsWith('[') || textToProcess.startsWith('{')) {
+      try {
+        const parsed = JSON.parse(textToProcess);
+        if (Array.isArray(parsed)) {
+          const firstUser = parsed.find((m: any) => m.role === 'user');
+          if (firstUser) textToProcess = firstUser.content;
+          else if (parsed.length > 0) textToProcess = parsed[0].content;
+        }
+      } catch (e) { /* fallback */ }
+    }
+
+    if (textToProcess && textToProcess.length > 0) {
       // Extract meaningful phrase - respect original case and language
-      const cleaned = text.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
+      const cleaned = textToProcess.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
       const maxLength = 50;
       if (cleaned.length > maxLength) {
         return cleaned.substring(0, maxLength).trim() + '...';
