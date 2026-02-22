@@ -632,9 +632,9 @@ const styles = StyleSheet.create({
   heroAvatarWrapper: { position: 'relative', marginBottom: 20, zIndex: 2 },
   heroAvatarRing: {
     width: 128, height: 128, borderRadius: 64, padding: 4,
-    backgroundColor: 'transparent', borderWidth: 3, borderColor: '#60a5fa',
+    backgroundColor: 'transparent', borderWidth: 3, borderColor: colors.primary.light,
     overflow: 'hidden',
-    shadowColor: '#60a5fa',
+    shadowColor: colors.primary.main,
     shadowOpacity: 0.8,
     shadowOffset: { width: 0, height: 0 },
     shadowRadius: 16,
@@ -643,7 +643,7 @@ const styles = StyleSheet.create({
   heroAvatar: { width: '100%', height: '100%', borderRadius: 60 },
   heroAvatarPlaceholder: {
     width: '100%', height: '100%', borderRadius: 60,
-    backgroundColor: 'rgba(96, 165, 250, 0.15)', justifyContent: 'center', alignItems: 'center',
+    backgroundColor: colors.primary.main + '15', justifyContent: 'center', alignItems: 'center',
   },
   heroCameraButton: {
     position: 'absolute', bottom: 4, right: 4, width: 38, height: 38, borderRadius: 19,
@@ -654,17 +654,17 @@ const styles = StyleSheet.create({
   heroEmail: { fontSize: 13, color: colors.text.secondary, marginBottom: 16, textAlign: 'center', lineHeight: 20 },
   heroPlanBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 18, paddingVertical: 10,
-    backgroundColor: colors.neon.accent + '20', borderRadius: 24, borderWidth: 1.5, borderColor: colors.neon.accent + '50',
+    backgroundColor: colors.primary.main + '15', borderRadius: 24, borderWidth: 1.5, borderColor: colors.primary.main + '40',
     marginBottom: 20, zIndex: 2, position: 'relative',
   },
-  heroPlanBadgeStar: { fontSize: 16, color: colors.neon.accent, fontWeight: '800' },
-  heroPlanText: { fontSize: 12, fontWeight: '700', color: colors.neon.accent, letterSpacing: 0.3 },
+  heroPlanBadgeStar: { fontSize: 16, color: colors.primary.light, fontWeight: '800' },
+  heroPlanText: { fontSize: 12, fontWeight: '700', color: colors.primary.light, letterSpacing: 0.3 },
   profileProgressSection: { width: '100%', gap: 8, zIndex: 2, position: 'relative' },
   profileProgressLabel: { fontSize: 12, fontWeight: '700', color: colors.text.secondary, textAlign: 'center', letterSpacing: 0.4, textTransform: 'uppercase' },
   progressBar: {
     width: '100%', height: 6, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 3, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
   },
-  progressFill: { height: '100%', backgroundColor: colors.neon.accent, borderRadius: 3 },
+  progressFill: { height: '100%', backgroundColor: colors.primary.main, borderRadius: 3 },
   mainCard: {
     backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 24,
     borderWidth: 1, borderColor: 'rgba(255,255,255,0.13)', padding: 24, marginBottom: 24,

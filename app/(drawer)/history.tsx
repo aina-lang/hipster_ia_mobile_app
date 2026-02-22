@@ -1,6 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
-import { BackgroundGradient } from '../../components/ui/BackgroundGradient';
+import {
+  View,
+  Text,
+  FlatList,
+  TouchableOpacity,
+  Image,
+  ActivityIndicator,
+  StyleSheet,
+  Platform,
+} from 'react-native';
+import { BlurView } from 'expo-blur';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   FileText,
@@ -9,6 +18,8 @@ import {
   ChevronRight,
   Search,
   MessageSquare,
+  ArrowLeft,
+  Trash2,
 } from 'lucide-react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { AiService } from '../../api/ai.service';
@@ -17,6 +28,8 @@ import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/fr';
 import { colors } from '../../theme/colors';
+import { GenericModal } from '../../components/ui/GenericModal';
+import { BackgroundGradientOnboarding } from '../../components/ui/BackgroundGradientOnboarding';
 
 dayjs.extend(relativeTime);
 dayjs.locale('fr');
@@ -40,9 +53,6 @@ const FILTERS: { label: string; value: HistoryType | 'all' }[] = [
   { label: 'Chats', value: 'chat' },
 ];
 
-import { GenericModal } from '../../components/ui/GenericModal';
-import { Trash2 } from 'lucide-react-native';
-
 export default function HistoryScreen() {
   const router = useRouter();
   const [activeFilter, setActiveFilter] = useState<HistoryType | 'all'>('all');
@@ -56,16 +66,11 @@ export default function HistoryScreen() {
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
 
   const generateTitle = (item: any): string => {
-    // Priority 1: explicit title (if exists and not "Sans titre")
     if (item.title && item.title.trim() && item.title !== 'Sans titre') {
       return item.title;
     }
-
-    // Priority 2: Use prompt (main source for new data)
     const text = (item.prompt || item.result || '').trim();
-    
     if (text && text.length > 0) {
-      // Extract meaningful phrase - respect original case and language
       const cleaned = text.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
       const maxLength = 50;
       if (cleaned.length > maxLength) {
@@ -73,61 +78,14 @@ export default function HistoryScreen() {
       }
       return cleaned;
     }
-
-    // Priority 3: Fallback to attributes for old data without prompt
-    let attrs = item.attributes;
-    if (typeof attrs === 'string') {
-      try {
-        attrs = JSON.parse(attrs);
-      } catch (e) {
-        attrs = {};
-      }
-    }
-
-    // Try to construct a title from attributes
-    const funcLabel = attrs?.function?.split('(')?.[0]?.trim() || '';
-    const jobLabel = attrs?.job?.trim() || '';
-    const style = attrs?.selectedStyle?.trim() || '';
-    const userQuery = attrs?.userQuery?.trim() || '';
-
-    if (userQuery) {
-      const cleaned = userQuery.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
-      const maxLength = 50;
-      if (cleaned.length > maxLength) {
-        return cleaned.substring(0, maxLength).trim() + '...';
-      }
-      return cleaned;
-    }
-
-    if (funcLabel) {
-      if (style) {
-        return `${funcLabel} • ${style}`;
-      }
-      if (jobLabel) {
-        return `${jobLabel} • ${funcLabel}`;
-      }
-      return funcLabel;
-    }
-
-    if (jobLabel && style) {
-      return `${jobLabel} • ${style}`;
-    }
-
-    if (style) {
-      return style;
-    }
-
     return 'Sans titre';
   };
 
   const generatePreview = (item: any): string => {
-    // Check if result contains error
     const result = item.result || '';
     if (typeof result === 'string' && (result.includes('ERROR') || result.includes('error'))) {
       return '';
     }
-
-    // For text items with valid result, use that
     if (item.type === 'text' && result && result.length > 0 && !result.includes('ERROR')) {
       const cleaned = result.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
       const maxLength = 120;
@@ -136,32 +94,6 @@ export default function HistoryScreen() {
       }
       return cleaned;
     }
-
-    // For image/other types, use style or other attributes
-    let attrs = item.attributes;
-    if (typeof attrs === 'string') {
-      try {
-        attrs = JSON.parse(attrs);
-      } catch (e) {
-        attrs = {};
-      }
-    }
-
-    const style = attrs?.style?.trim() || '';
-    const jobLabel = attrs?.job?.trim() || '';
-
-    if (style && jobLabel) {
-      return `${jobLabel} • ${style}`;
-    }
-
-    if (style) {
-      return style;
-    }
-
-    if (jobLabel) {
-      return jobLabel;
-    }
-
     return '';
   };
 
@@ -170,10 +102,6 @@ export default function HistoryScreen() {
       setLoading(true);
       setError(null);
       const data = await AiService.getHistory();
-      console.log('[HISTORY_SCREEN] Raw data from API:', JSON.stringify(data, null, 2));
-      console.log('[HISTORY_SCREEN] Data is array?', Array.isArray(data));
-      console.log('[HISTORY_SCREEN] Data length:', data?.length);
-      
       if (data && Array.isArray(data)) {
         const mappedData: HistoryItem[] = data.map((item: any) => ({
           id: item.id.toString(),
@@ -183,14 +111,10 @@ export default function HistoryScreen() {
           preview: generatePreview(item),
           imageUrl: item.imageUrl,
         }));
-        console.log('[HISTORY_SCREEN] Mapped', mappedData.length, 'items');
         setHistory(mappedData);
-      } else {
-        console.warn('[HISTORY_SCREEN] Data is not an array:', typeof data, data);
       }
     } catch (err: any) {
-      console.error('Error fetching history:', err);
-      const errorMsg = err?.response?.data?.message || err?.message || 'Une erreur est survenue lors du chargement de l\'historique';
+      const errorMsg = err?.response?.data?.message || err?.message || 'Une erreur est survenue';
       setError(errorMsg);
       setHistory([]);
     } finally {
@@ -233,95 +157,95 @@ export default function HistoryScreen() {
   const getIcon = (type: HistoryType) => {
     switch (type) {
       case 'text':
-        return <FileText size={24} color={colors.primary.main} />;
+        return <FileText size={22} color="#1e9bff" />;
       case 'image':
-        return <ImageIcon size={24} color={colors.primary.light} />;
+        return <ImageIcon size={22} color="#10b981" />;
       case 'document':
-        return <FileSpreadsheet size={24} color={colors.text.accent} />;
+        return <FileSpreadsheet size={22} color="#f59e0b" />;
       case 'chat':
-        return <MessageSquare size={24} color={colors.text.primary} />;
+        return <MessageSquare size={22} color="#8b5cf6" />;
     }
   };
 
   const renderItem = ({ item }: { item: HistoryItem }) => (
-    <View className="flex-row items-stretch gap-2">
+    <View style={styles.itemWrapper}>
       <TouchableOpacity
-        className="flex-1 flex-row items-center gap-4 rounded-xl border border-white/5 bg-white/5 p-4"
-        onPress={() => router.push({ pathname: '/(drawer)', params: { chatId: item.id } })}>
-        <View className="bg-white/3 h-12 w-12 items-center justify-center rounded-lg">
+        style={styles.itemCard}
+        onPress={() => router.push({ pathname: '/(drawer)', params: { chatId: item.id } })}
+        activeOpacity={0.7}
+      >
+        <BlurView intensity={20} style={StyleSheet.absoluteFill} tint="light" />
+        <View style={styles.iconContainer}>
           {getIcon(item.type)}
         </View>
-        <View className="flex-1">
-          <View className="mb-1 flex-row items-center justify-between">
-            <Text className="mr-2 flex-1 text-base font-semibold text-slate-200" numberOfLines={1}>
-              {item.title}
-            </Text>
-            <Text className="text-xs text-slate-400">{item.date}</Text>
+        <View style={styles.itemContent}>
+          <View style={styles.itemHeader}>
+            <Text style={styles.itemTitle} numberOfLines={1}>{item.title}</Text>
+            <Text style={styles.itemDate}>{item.date}</Text>
           </View>
-          <Text className="text-sm leading-5 text-slate-400" numberOfLines={2}>
-            {item.preview}
+          <Text style={styles.itemPreview} numberOfLines={2}>
+            {item.preview || 'Aucun aperçu disponible'}
           </Text>
         </View>
-        <ChevronRight size={20} color={colors.text.muted} />
+        <ChevronRight size={18} color={colors.text.muted} />
       </TouchableOpacity>
 
       <TouchableOpacity
-        className="h-14 w-14 items-center justify-center rounded-xl bg-red-500/10"
+        style={styles.deleteButton}
         onPress={() => {
           setItemToDelete(item.id);
           setShowDeleteModal(true);
         }}>
-        <Trash2 size={20} color={colors.status.error} />
+        <Trash2 size={18} color={colors.status.error} />
       </TouchableOpacity>
     </View>
   );
 
   return (
-    <BackgroundGradient>
-      <SafeAreaView className="flex-1">
+    <BackgroundGradientOnboarding darkOverlay={true} blurIntensity={90} imageSource="splash">
+      <SafeAreaView style={styles.container}>
         {/* Header */}
-        <View className="flex-row items-center justify-between px-5 pb-2 pt-5">
-          <View className="flex-row items-center gap-4">
-            <TouchableOpacity className="rounded-xl bg-white/10 p-2" onPress={() => router.back()}>
-              <ChevronRight size={24} color={colors.text.primary} className="rotate-180" />
-            </TouchableOpacity>
-            <View>
-              <Text className="mb-1 text-2xl font-bold text-slate-200">Historique</Text>
-              <Text className="text-base text-slate-400">vos créations</Text>
-            </View>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <ArrowLeft size={22} color={colors.text.primary} />
+          </TouchableOpacity>
+          <View style={styles.headerTextContainer}>
+            <Text style={styles.title}>Historique</Text>
+            <Text style={styles.subtitle}>Retrouvez toutes vos créations</Text>
           </View>
           {history.length > 0 && (
             <TouchableOpacity
-              className="rounded-lg bg-red-500/10 px-3 py-2"
+              style={styles.clearButton}
               onPress={() => setShowClearModal(true)}>
-              <Text className="text-sm font-semibold text-red-400">Tout effacer</Text>
+              <Trash2 size={16} color={colors.status.error} />
+              <Text style={styles.clearButtonText}>Effacer</Text>
             </TouchableOpacity>
           )}
         </View>
 
         {/* Filters */}
-        <View className="mb-2 mt-4">
+        <View style={styles.filtersWrapper}>
           <FlatList
             horizontal
             data={FILTERS}
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ paddingHorizontal: 20, gap: 12, paddingBottom: 10 }}
+            contentContainerStyle={styles.filtersContent}
             keyExtractor={(item) => item.value}
             renderItem={({ item }) => (
               <TouchableOpacity
-                className="rounded-full border px-4 py-2"
-                style={
-                  activeFilter === item.value
-                    ? { backgroundColor: colors.primary.main, borderColor: colors.primary.main }
-                    : {
-                      backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                      borderColor: 'rgba(255, 255, 255, 0.1)',
-                    }
-                }
-                onPress={() => setActiveFilter(item.value)}>
+                onPress={() => setActiveFilter(item.value)}
+                style={[
+                  styles.filterChip,
+                  activeFilter === item.value && styles.activeFilterChip
+                ]}>
+                {activeFilter === item.value && (
+                  <BlurView intensity={30} style={StyleSheet.absoluteFill} tint="light" />
+                )}
                 <Text
-                  className={`text-sm font-semibold ${activeFilter === item.value ? 'text-slate-200' : 'text-slate-400'
-                    }`}>
+                  style={[
+                    styles.filterText,
+                    activeFilter === item.value && styles.activeFilterText
+                  ]}>
                   {item.label}
                 </Text>
               </TouchableOpacity>
@@ -329,48 +253,38 @@ export default function HistoryScreen() {
           />
         </View>
 
-        {/* History List Container - Must have flex: 1 */}
+        {/* List */}
         <View style={{ flex: 1 }}>
           <FlatList
             data={filteredData}
             keyExtractor={(item) => item.id}
             renderItem={renderItem}
-            contentContainerStyle={{ padding: 20, gap: 16, paddingBottom: 40 }}
+            contentContainerStyle={styles.listContent}
             showsVerticalScrollIndicator={false}
-            scrollEnabled={true}
-            nestedScrollEnabled={true}
             onRefresh={fetchHistory}
             refreshing={loading}
             ListEmptyComponent={
               loading ? (
-                <ActivityIndicator
-                  size="large"
-                  color={colors.primary.main}
-                  style={{ marginTop: 40 }}
-                />
+                <View style={styles.emptyContainer}>
+                  <ActivityIndicator size="large" color="#1e9bff" />
+                </View>
               ) : error ? (
-                <View className="items-center justify-center gap-4 pt-16">
-                  <View className="rounded-lg bg-red-500/10 p-4">
-                    <Text className="text-base font-semibold text-red-400 mb-2">Erreur</Text>
-                    <Text className="text-sm text-red-300">{error}</Text>
-                  </View>
-                  <TouchableOpacity
-                    className="rounded-lg bg-slate-700 px-4 py-2"
-                    onPress={fetchHistory}>
-                    <Text className="text-sm font-semibold text-slate-200">Réessayer</Text>
+                <View style={styles.emptyContainer}>
+                  <Text style={styles.errorText}>{error}</Text>
+                  <TouchableOpacity style={styles.retryButton} onPress={fetchHistory}>
+                    <Text style={styles.retryText}>Réessayer</Text>
                   </TouchableOpacity>
                 </View>
               ) : (
-                <View className="items-center justify-center gap-4 pt-16">
+                <View style={styles.emptyContainer}>
                   <Search size={48} color={colors.text.muted} />
-                  <Text className="text-base text-slate-400">Aucun résultat trouvé</Text>
+                  <Text style={styles.emptyText}>Aucun résultat trouvé</Text>
                 </View>
               )
             }
           />
         </View>
 
-        {/* Modals */}
         <GenericModal
           visible={showDeleteModal}
           type="warning"
@@ -386,13 +300,188 @@ export default function HistoryScreen() {
           visible={showClearModal}
           type="warning"
           title="Tout effacer"
-          message="Attention, cette action est irréversible. Voulez-vous vraiment supprimer tout votre historique ?"
+          message="Cette action est irréversible. Voulez-vous vraiment supprimer tout votre historique ?"
           confirmText="Tout supprimer"
           cancelText="Annuler"
           onClose={() => setShowClearModal(false)}
           onConfirm={handleClearHistory}
         />
       </SafeAreaView>
-    </BackgroundGradient>
+    </BackgroundGradientOnboarding>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: 'transparent',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    marginBottom: 8,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  headerTextContainer: {
+    flex: 1,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: colors.text.primary,
+    letterSpacing: -0.5,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: colors.text.muted,
+    marginTop: 2,
+  },
+  clearButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.2)',
+  },
+  clearButtonText: {
+    color: '#ef4444',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  filtersWrapper: {
+    marginBottom: 16,
+  },
+  filtersContent: {
+    paddingHorizontal: 20,
+    gap: 10,
+    paddingBottom: 4,
+  },
+  filterChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    overflow: 'hidden',
+  },
+  activeFilterChip: {
+    backgroundColor: 'rgba(30, 155, 255, 0.15)',
+    borderColor: 'rgba(30, 155, 255, 0.4)',
+  },
+  filterText: {
+    color: colors.text.muted,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  activeFilterText: {
+    color: '#1e9bff',
+  },
+  listContent: {
+    padding: 20,
+    gap: 12,
+    paddingBottom: 40,
+  },
+  itemWrapper: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    gap: 10,
+  },
+  itemCard: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: 'rgba(255, 255, 255, 0.02)',
+    overflow: 'hidden',
+  },
+  iconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+  },
+  itemContent: {
+    flex: 1,
+  },
+  itemHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  itemTitle: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.text.primary,
+    marginRight: 8,
+  },
+  itemDate: {
+    fontSize: 11,
+    color: colors.text.muted,
+  },
+  itemPreview: {
+    fontSize: 13,
+    color: colors.text.muted,
+    lineHeight: 18,
+  },
+  deleteButton: {
+    width: 52,
+    borderRadius: 16,
+    backgroundColor: 'rgba(239, 68, 68, 0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 60,
+    gap: 16,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: colors.text.muted,
+    fontWeight: '500',
+  },
+  errorText: {
+    color: colors.status.error,
+    textAlign: 'center',
+    paddingHorizontal: 20,
+  },
+  retryButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 12,
+  },
+  retryText: {
+    color: colors.text.primary,
+    fontWeight: '600',
+  },
+});
+
