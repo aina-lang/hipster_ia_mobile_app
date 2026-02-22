@@ -18,12 +18,12 @@
 import React, { useEffect } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useAuthStore } from '../store/authStore';
 import '../global.css';
 import { StripeProvider } from '@stripe/stripe-react-native';
 import { LoadingTransition } from '../components/ui/LoadingTransition';
+import { StyledStatusBar } from '../components/ui/StyledStatusBar';
 import * as MediaLibrary from 'expo-media-library';
 import * as Notifications from 'expo-notifications';
 import * as ImagePicker from 'expo-image-picker';
@@ -138,7 +138,7 @@ export default function RootLayout() {
             <Stack.Screen name="(guided)" />
           </Stack>
 
-          <StatusBar style="light" />
+          <StyledStatusBar theme="dark" translucent={true} />
         </StripeProvider>
       </GestureHandlerRootView>
     </SafeAreaProvider>
