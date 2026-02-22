@@ -105,7 +105,7 @@ function CustomDrawerContent(props: any) {
 
     // Priority 2: Use prompt (main source for new data)
     const text = (item.prompt || item.result || '').trim();
-    
+
     if (text && text.length > 0) {
       // Extract meaningful phrase - respect original case and language
       const cleaned = text.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
@@ -215,13 +215,11 @@ function CustomDrawerContent(props: any) {
         ============================ */}
         <View style={styles.headerContainer}>
           {/* USER */}
-          <View style={styles.userRow}>
+          <View style={styles.userColumn}>
             <Image source={{ uri: userAvatar }} style={styles.avatar} />
-            <View>
-              <Text style={styles.userName}>{userName}</Text>
-              {/* <Text style={styles.userRole}>
-                {user?.type === 'ai' ? 'Compte AI' : (user?.aiProfile?.profileType === 'entreprise' ? 'Entreprise' : 'Particulier')}
-              </Text> */}
+            <View style={styles.userInfo}>
+              <Text style={styles.userName} numberOfLines={1}>{userName}</Text>
+              <Text style={styles.userEmail} numberOfLines={1}>{user?.email}</Text>
             </View>
           </View>
 
@@ -449,24 +447,30 @@ const styles = StyleSheet.create({
   headerContainer: {
     paddingHorizontal: 20,
     paddingVertical: 35,
-    marginTop: 60,
-  },
-  userRow: {
-    flexDirection: 'row',
+    marginTop: 40,
     alignItems: 'center',
-    gap: 14,
+  },
+  userColumn: {
+    alignItems: 'center',
+    gap: 12,
+  },
+  userInfo: {
+    alignItems: 'center',
+    marginTop: 8,
   },
   avatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 180,
+    height: 180,
+    borderRadius: 140,
+    borderWidth: 2,
+    borderColor: colors.primary.main,
   },
   userName: {
     fontSize: 17,
     fontWeight: '700',
     color: colors.text.primary,
   },
-  userRole: {
+  userEmail: {
     fontSize: 13,
     color: colors.text.muted,
     marginTop: 2,

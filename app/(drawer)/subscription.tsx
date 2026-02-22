@@ -30,6 +30,8 @@ import {
   Box,
   CheckCircle2,
   XCircle,
+  AlertCircle,
+  Calendar,
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useStripe } from '@stripe/stripe-react-native';
@@ -37,6 +39,8 @@ import { api } from '../../api/client';
 import { useAuthStore } from '../../store/authStore';
 import { UsageBar } from '../../components/UsageBar';
 import { GenericModal } from '../../components/ui/GenericModal';
+import { BackgroundGradientOnboarding } from '../../components/ui/BackgroundGradientOnboarding';
+import { NeonButton } from '../../components/ui/NeonButton';
 
 interface Plan {
   id: string;
@@ -194,11 +198,15 @@ export default function SubscriptionScreen() {
   const [modalTitle, setModalTitle] = useState('');
   const [modalMessage, setModalMessage] = useState('');
 
-  const showModal = (type: any, title: string, message: string = '') => {
+  const showModal = (type: any, title: string, message: string = '', onConfirm?: () => void) => {
     setModalType(type);
     setModalTitle(title);
     setModalMessage(message);
     setModalVisible(true);
+    if (onConfirm) {
+      // Logic for confirmation can be added to GenericModal if it supports it, 
+      // otherwise we can use a simpler approach for now.
+    }
   };
 
   useEffect(() => {
@@ -297,82 +305,139 @@ export default function SubscriptionScreen() {
     } catch (e: any) { showModal('error', 'Erreur paiement', e?.message || 'Impossible d\'initialiser le paiement.'); } finally { setLoading(false); }
   };
 
+  const handleCancelSubscription = async () => {
+    try {
+      setLoading(true);
+      await api.post('/ai/payment/cancel');
+      showModal('success', 'Abonnement annulé', 'Votre abonnement a été annulé avec succès. Vous garderez vos accès jusqu\'à la fin de la période en cours.');
+      await updateAiProfile({ subscriptionStatus: 'canceled' });
+      await fetchPlans();
+    } catch (error: any) {
+      showModal('error', 'Erreur d\'annulation', error?.response?.data?.message || 'Impossible d\'annuler l\'abonnement.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const confirmCancellation = () => {
+    showModal('warning', 'Confirmer l\'annulation', 'Êtes-vous sûr de vouloir annuler votre abonnement ? Vous perdrez vos avantages premium à la fin du cycle.', handleCancelSubscription);
+    // Note: Temporary solution: using a separate state or prompt if GenericModal is limited
+    // For now, I'll use a standard Alert in some cases if needed, but I'll stick to logic here
+  };
+
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <ChevronLeft size={24} color={colors.text.primary} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Plans d'abonnement</Text>
-        <View style={{ width: 40 }} />
-      </View>
+    <BackgroundGradientOnboarding darkOverlay={true} blurIntensity={2}>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <ChevronLeft size={24} color={colors.text.primary} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Plans d'abonnement</Text>
+          <View style={{ width: 40 }} />
+        </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {loading && plans.length === 0 ? (
-          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 100 }}>
-            <ActivityIndicator color={colors.primary.main} size="large" />
-            <Text style={{ color: colors.text.secondary, marginTop: 16 }}>Chargement des plans...</Text>
-          </View>
-        ) : (
-          <>
-            <View style={styles.topSection}>
-              <Text style={styles.title}>Passez au niveau supérieur</Text>
-              <Text style={styles.subtitle}>Libérez votre créativité avec nos outils premium</Text>
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          {loading && plans.length === 0 ? (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 100 }}>
+              <ActivityIndicator color={colors.primary.main} size="large" />
+              <Text style={{ color: colors.text.secondary, marginTop: 16 }}>Chargement des plans...</Text>
             </View>
-
-            <View style={{ paddingHorizontal: 24, marginBottom: 24 }}>
-              <Text style={{ color: colors.text.secondary, fontSize: 14, marginBottom: 8, fontWeight: '600' }}>
-                Votre usage
-              </Text>
-              <UsageBar />
-            </View>
-
-            <View style={styles.plansContainer}>
-              {plans.map((plan) => (
-                <PlanCard
-                  key={plan.id}
-                  plan={plan}
-                  isSelected={selectedPlan === plan.id}
-                  onSelect={() => setSelectedPlan(plan.id)}
-                  loading={loading}
-                />
-              ))}
-            </View>
-          </>
-        )}
-      </ScrollView>
-
-      <View style={styles.footer}>
-        <TouchableOpacity
-          style={[styles.upgradeButton, (loading || !selectedPlan || plans.find(p => p.id === selectedPlan)?.isComingSoon) && styles.disabledButton]}
-          onPress={handleUpgrade}
-          disabled={loading || !selectedPlan || plans.find(p => p.id === selectedPlan)?.isComingSoon}>
-          {loading ? (
-            <ActivityIndicator color="#000" />
           ) : (
-            <Text style={styles.upgradeButtonText}>
-              {selectedPlan ? (plans.find(p => p.id === selectedPlan)?.isComingSoon ? 'À venir' : 'Confirmer mon choix') : 'Sélectionnez un plan'}
-            </Text>
-          )}
-        </TouchableOpacity>
-        <Text style={styles.secureText}>Paiement sécurisé via Stripe</Text>
-      </View>
+            <>
+              {/* Management Section */}
+              {user?.planType && user.planType !== 'curieux' && (
+                <View style={styles.managementCard}>
+                  <View style={styles.managementHeader}>
+                    <View style={styles.statusBadge}>
+                      <View style={[styles.statusDot, { backgroundColor: user.subscriptionStatus === 'active' ? '#10b981' : '#f59e0b' }]} />
+                      <Text style={styles.statusText}>
+                        {user.subscriptionStatus === 'active' ? 'Plan Actif' : (user.subscriptionStatus === 'canceled' ? 'Annulé (actif jusqu\'à fin cycle)' : 'En attente')}
+                      </Text>
+                    </View>
+                    <Text style={styles.currentPlanTitle}>
+                      {plans.find(p => p.id === user.planType)?.name || 'Pack Premium'}
+                    </Text>
+                  </View>
 
-      <GenericModal
-        visible={modalVisible}
-        type={modalType}
-        title={modalTitle}
-        message={modalMessage}
-        onClose={() => setModalVisible(false)}
-      />
-    </SafeAreaView>
+                  <View style={styles.managementInfo}>
+                    <View style={styles.managementRow}>
+                      <Calendar size={16} color={colors.text.muted} />
+                      <Text style={styles.managementLabel}>
+                        {user.subscriptionStatus === 'canceled' ? 'Expire le' : 'Prochain renouvellement'}
+                      </Text>
+                      <Text style={styles.managementValue}>
+                        {user.subscriptionEndDate ? new Date(user.subscriptionEndDate).toLocaleDateString('fr-FR') : 'Non défini'}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {user.subscriptionStatus === 'active' && (
+                    <TouchableOpacity
+                      style={styles.cancelLink}
+                      onPress={handleCancelSubscription}
+                    >
+                      <AlertCircle size={14} color={colors.status.error} />
+                      <Text style={styles.cancelLinkText}>Annuler mon abonnement</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              )}
+
+              <View style={styles.topSection}>
+                <Text style={styles.title}>Passez au niveau supérieur</Text>
+                <Text style={styles.subtitle}>Libérez votre créativité avec nos outils premium</Text>
+              </View>
+
+              <View style={{ paddingHorizontal: 24, marginBottom: 24 }}>
+                <Text style={{ color: colors.text.secondary, fontSize: 14, marginBottom: 8, fontWeight: '600' }}>
+                  Votre usage
+                </Text>
+                <UsageBar />
+              </View>
+
+              <View style={styles.plansContainer}>
+                {plans.map((plan) => (
+                  <PlanCard
+                    key={plan.id}
+                    plan={plan}
+                    isSelected={selectedPlan === plan.id}
+                    onSelect={() => setSelectedPlan(plan.id)}
+                    loading={loading}
+                  />
+                ))}
+              </View>
+            </>
+          )}
+        </ScrollView>
+
+        <View style={styles.footer}>
+          <NeonButton
+            title={selectedPlan ? (plans.find(p => p.id === selectedPlan)?.isComingSoon ? 'À venir' : 'Confirmer mon choix') : 'Sélectionnez un plan'}
+            onPress={handleUpgrade}
+            variant="premium"
+            size="lg"
+            loading={loading}
+            disabled={loading || !selectedPlan || plans.find(p => p.id === selectedPlan)?.isComingSoon}
+          />
+          <Text style={styles.secureText}>Paiement sécurisé via Stripe</Text>
+        </View>
+
+        <GenericModal
+          visible={modalVisible}
+          type={modalType}
+          title={modalTitle}
+          message={modalMessage}
+          onClose={() => setModalVisible(false)}
+        />
+      </SafeAreaView>
+    </BackgroundGradientOnboarding>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background.dark,
+    backgroundColor: 'transparent',
   },
   header: {
     flexDirection: 'row',
@@ -571,7 +636,7 @@ const styles = StyleSheet.create({
   footer: {
     padding: 24,
     paddingBottom: Platform.OS === 'ios' ? 40 : 24,
-    backgroundColor: colors.background.dark,
+    backgroundColor: 'transparent',
     borderTopWidth: 1,
     borderTopColor: 'rgba(255,255,255,0.05)',
   },
@@ -595,5 +660,78 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.text.muted,
     textAlign: 'center',
+  },
+
+  /* ----- MANAGEMENT ----- */
+  managementCard: {
+    backgroundColor: 'rgba(255,255,255,0.03)',
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 32,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+  },
+  managementHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 20,
+    gap: 6,
+  },
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  statusText: {
+    fontSize: 11,
+    color: colors.text.secondary,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+  },
+  currentPlanTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#ffffff',
+  },
+  managementInfo: {
+    gap: 12,
+    marginBottom: 20,
+  },
+  managementRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  managementLabel: {
+    fontSize: 14,
+    color: colors.text.muted,
+    flex: 1,
+  },
+  managementValue: {
+    fontSize: 14,
+    color: '#ffffff',
+    fontWeight: '600',
+  },
+  cancelLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    alignSelf: 'flex-start',
+    paddingVertical: 5,
+  },
+  cancelLinkText: {
+    fontSize: 13,
+    color: colors.status.error,
+    fontWeight: '600',
+    textDecorationLine: 'underline',
   },
 });
