@@ -96,8 +96,7 @@ export default function VerifyEmailScreen() {
       allowNavRef.current = true;
 
       // 2. Proceed to BRANDING (Color, Logo, etc.)
-      // Job selection is skipped as it is now part of the guided creation flow.
-      router.push({
+      router.replace({
         pathname: '/(onboarding)/branding',
         params: { userId, planId }
       });

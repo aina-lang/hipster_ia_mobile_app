@@ -92,7 +92,7 @@ export default function RootLayout() {
           }
         }
         // 2. Check if onboarding (branding) is complete
-        else if (!hasFinishedOnboarding) {
+        else if (user && !user.isSetupComplete) {
           if (!segments.includes('branding')) {
             targetRoute = '/(onboarding)/branding';
           }

@@ -68,12 +68,16 @@ export default function RegisterScreen() {
     showModal('loading', 'Création du compte...', 'Veuillez patienter');
 
     try {
-      // 1. Register User with Plan
+      // 1. Register User with Plan and Branding
+      const { brandingColor, logoUri, job } = useOnboardingStore.getState();
       const response = await aiRegister({
         name: fullName,
         email,
         password,
-        planId: selectedPlan || 'curieux'
+        planId: selectedPlan || 'curieux',
+        brandingColor,
+        logoUrl: logoUri, // mapped for backend
+        job,
       });
 
       // Handle both wrapped and unwrapped response formats

@@ -38,7 +38,7 @@ interface User {
   logoUrl?: string;
   brandingColor?: string;
   isEmailVerified: boolean;
-  isSetupComplete?: boolean;
+  isSetupComplete: boolean;
   job?: string;
   subscriptionStartDate?: string;
   subscriptionEndDate?: string;

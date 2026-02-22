@@ -11,6 +11,9 @@ import { NeonButton } from '../../components/ui/NeonButton';
 import { colors } from '../../theme/colors';
 import { useOnboardingStore } from '../../store/onboardingStore';
 import { useAuthStore } from '../../store/authStore';
+import { BackHandler } from 'react-native';
+import { useNavigation } from 'expo-router';
+import { GenericModal } from '../../components/ui/GenericModal';
 
 export default function BrandingScreen() {
     const router = useRouter();
@@ -27,6 +30,46 @@ export default function BrandingScreen() {
     const [localImage, setLocalImage] = useState(initialImage);
     const [localLoading, setLocalLoading] = useState(false);
     const [tempHex, setTempHex] = useState(selectedColor.toUpperCase());
+
+    // Modal State
+    const [modalVisible, setModalVisible] = useState(false);
+    const [modalType, setModalType] = useState<any>('info');
+    const [modalTitle, setModalTitle] = useState('');
+    const [modalMessage, setModalMessage] = useState('');
+
+    const navigation = useNavigation();
+
+    const showModal = (type: any, title: string, message: string = '') => {
+        setModalType(type);
+        setModalTitle(title);
+        setModalMessage(message);
+        setModalVisible(true);
+    };
+
+    // 1. Block back navigation on Android hardware button
+    React.useEffect(() => {
+        const onBackPress = () => {
+            if (user && !user.isSetupComplete) {
+                showModal('warning', 'Configuration requise', 'Veuillez finaliser votre profil pour continuer.');
+                return true; // Block event
+            }
+            return false; // Allow event
+        };
+
+        const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+        return () => subscription.remove();
+    }, [user]);
+
+    // 2. Block back navigation from UI (swipe, button, etc.)
+    React.useEffect(() => {
+        const unsubscribe = navigation.addListener('beforeRemove', (e) => {
+            if (user && user.isSetupComplete) return;
+
+            e.preventDefault();
+            showModal('warning', 'Configuration requise', 'Veuillez finaliser votre profil pour continuer.');
+        });
+        return unsubscribe;
+    }, [navigation, user]);
 
     const handleHexChange = (text: string) => {
         const sanitized = text.toUpperCase().replace(/[^0-9A-F#]/g, '');
@@ -94,7 +137,7 @@ export default function BrandingScreen() {
             }
 
             await authStore.finishOnboarding();
-            router.push('/(drawer)');
+            router.replace('/(drawer)');
         } catch (e) {
             console.error('Failed to sync branding data', e);
         } finally {
@@ -208,6 +251,13 @@ export default function BrandingScreen() {
                     />
                 </Animated.View>
             </View>
+            <GenericModal
+                visible={modalVisible}
+                type={modalType}
+                title={modalTitle}
+                message={modalMessage}
+                onClose={() => setModalVisible(false)}
+            />
         </BackgroundGradientOnboarding>
     );
 }
