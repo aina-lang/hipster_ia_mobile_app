@@ -20,6 +20,8 @@ import {
     ChevronRight,
 } from 'lucide-react-native';
 
+const ordiBlancImage = require('../../assets/ordi_blanc_bg.jpeg');
+
 import socialImg from '../../assets/social.jpeg';
 import flyerImg from '../../assets/flyer.jpeg';
 import apercuImg from '../../assets/apercu.jpeg';
@@ -56,7 +58,7 @@ const UNIVERSAL_FUNCTIONS: JobFunction[] = [
         label: 'Page web / SEO',
         category: 'Texte',
         icon: Globe,
-        image: webImg
+        image: ordiBlancImage
     },
     {
         label: 'Email marketing',

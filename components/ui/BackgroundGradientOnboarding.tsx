@@ -13,8 +13,8 @@ interface BackgroundGradientProps {
 }
 
 export function BackgroundGradientOnboarding({ children, blurIntensity = 0, darkOverlay = false, imageSource = 'default' }: BackgroundGradientProps) {
-  const bgImage = imageSource === 'splash'
-    ? require('../../assets/splashImage.jpeg')
+  const bgImage = imageSource === 'splash' 
+    ? require('../../assets/splashNew.jpeg')
     : require('../../assets/bg-onboarding.png');
 
   const isLightBackground = imageSource === 'default';
