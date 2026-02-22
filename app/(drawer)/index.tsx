@@ -780,15 +780,7 @@ export default function HomeScreen() {
                     }
 
                     useCreationStore.getState().reset();
-                    // If user already has a non-free plan, go straight to guided flow
-                    const userPlan = user?.planType;
-                    if (userPlan && userPlan !== 'curieux') {
-                      router.push('/(guided)/step1-job');
-                      return;
-                    }
-
-                    // Otherwise, ask to choose a plan first
-                    router.push('/(drawer)/subscription');
+                    router.push('/(guided)/step1-job');
                   }}
                   activeOpacity={0.8}
                   style={{ opacity: isFullyExhausted ? 0.5 : 1 }}>
