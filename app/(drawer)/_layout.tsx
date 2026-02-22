@@ -46,8 +46,11 @@ function CustomDrawerContent(props: any) {
   const router = useRouter();
 
   const [history, setHistory] = useState<any[]>([]);
+  const [allHistory, setAllHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [displayedCount, setDisplayedCount] = useState(20);
 
   // Delete Logic
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -63,10 +66,10 @@ function CustomDrawerContent(props: any) {
     if (itemToDelete) {
       try {
         await AiService.deleteGeneration(itemToDelete);
+        setAllHistory((prev) => prev.filter((i) => i.id !== itemToDelete));
         setHistory((prev) => prev.filter((i) => i.id !== itemToDelete));
       } catch (e) {
         console.error('Failed to delete item', e);
-        // We could move alerts to a proper toast later, but for now ensure feedback
         alert("Erreur lors de la suppression. Veuillez réessayer.");
       } finally {
         setShowDeleteModal(false);
@@ -75,35 +78,107 @@ function CustomDrawerContent(props: any) {
     }
   };
 
+  const loadMore = () => {
+    setLoadingMore(true);
+    setTimeout(() => {
+      setDisplayedCount((prev) => Math.min(prev + 15, allHistory.length));
+      setLoadingMore(false);
+    }, 300);
+  };
+
   /** ============================
    *   FETCH HISTORY
    * ============================ */
   const isDrawerOpen = useDrawerStatus() === 'open';
 
-  /** ============================
-   *   FETCH HISTORY
-   * ============================ */
   useEffect(() => {
     if (user?.type === 'ai' && isDrawerOpen) {
       loadHistory();
     }
   }, [user, isDrawerOpen]);
 
+  const generateTitle = (item: any): string => {
+    // Priority 1: explicit title (if exists and not "Sans titre")
+    if (item.title && item.title.trim() && item.title !== 'Sans titre') {
+      return item.title;
+    }
+
+    // Priority 2: Use prompt (main source for new data)
+    const text = (item.prompt || item.result || '').trim();
+    
+    if (text && text.length > 0) {
+      // Extract meaningful phrase - respect original case and language
+      const cleaned = text.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
+      const maxLength = 50;
+      if (cleaned.length > maxLength) {
+        return cleaned.substring(0, maxLength).trim() + '...';
+      }
+      return cleaned;
+    }
+
+    // Priority 3: Fallback to attributes for old data without prompt
+    let attrs = item.attributes;
+    if (typeof attrs === 'string') {
+      try {
+        attrs = JSON.parse(attrs);
+      } catch (e) {
+        attrs = {};
+      }
+    }
+
+    // Try to construct a title from attributes
+    const funcLabel = attrs?.function?.split('(')?.[0]?.trim() || '';
+    const jobLabel = attrs?.job?.trim() || '';
+    const style = attrs?.selectedStyle?.trim() || '';
+    const userQuery = attrs?.userQuery?.trim() || '';
+
+    if (userQuery) {
+      const cleaned = userQuery.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
+      const maxLength = 50;
+      if (cleaned.length > maxLength) {
+        return cleaned.substring(0, maxLength).trim() + '...';
+      }
+      return cleaned;
+    }
+
+    if (funcLabel) {
+      if (style) {
+        return `${funcLabel} • ${style}`;
+      }
+      if (jobLabel) {
+        return `${jobLabel} • ${funcLabel}`;
+      }
+      return funcLabel;
+    }
+
+    if (jobLabel && style) {
+      return `${jobLabel} • ${style}`;
+    }
+
+    if (style) {
+      return style;
+    }
+
+    return 'Sans titre';
+  };
+
   const loadHistory = async () => {
     try {
       setLoading(true);
       const data = await AiService.getHistory();
       if (data && Array.isArray(data)) {
-        const mappedData: HistoryItem[] = data.slice(0, 10).map((item: any) => ({
+        const mappedData: HistoryItem[] = data.map((item: any) => ({
           id: item.id.toString(),
           type: item.type,
-          title: item.title || 'Sans titre',
+          title: generateTitle(item),
           date: dayjs(item.createdAt).fromNow(),
           preview: item.result || item.prompt,
           imageUrl: item.imageUrl,
           attributes: item.attributes,
         }));
-        setHistory(mappedData);
+        setAllHistory(mappedData);
+        setHistory(mappedData.slice(0, 20));
+        setDisplayedCount(20);
       }
     } catch (err) {
       console.error('Failed to fetch drawer history', err);
@@ -111,6 +186,13 @@ function CustomDrawerContent(props: any) {
       setLoading(false);
     }
   };
+
+  // Update displayed history when displayedCount changes
+  useEffect(() => {
+    if (allHistory.length > 0) {
+      setHistory(allHistory.slice(0, displayedCount));
+    }
+  }, [displayedCount, allHistory]);
 
   /** ============================
    *   USER SAFE DATA
@@ -235,7 +317,7 @@ function CustomDrawerContent(props: any) {
                             {label}
                           </Text>
                           <Text numberOfLines={1} style={styles.historyItemSubtext}>
-                            {(item.preview || '').replace(/\s+/g, ' ')}
+                            {item.date}
                           </Text>
                         </View>
                       </TouchableOpacity>
@@ -251,6 +333,17 @@ function CustomDrawerContent(props: any) {
                     </View>
                   );
                 })}
+
+                {displayedCount < allHistory.length && (
+                  <TouchableOpacity
+                    style={styles.loadMoreButton}
+                    onPress={loadMore}
+                    disabled={loadingMore}>
+                    <Text style={styles.loadMoreText}>
+                      {loadingMore ? 'Chargement...' : 'Charger plus'}
+                    </Text>
+                  </TouchableOpacity>
+                )}
 
                 {!history.length && <Text style={styles.emptyHistory}>Aucun historique récent</Text>}
               </View>
@@ -489,6 +582,21 @@ const styles = StyleSheet.create({
     color: colors.text.muted,
     fontSize: 12,
     marginTop: 2,
+  },
+  loadMoreButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    marginVertical: 10,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.05)',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.05)',
+  },
+  loadMoreText: {
+    color: colors.primary.main,
+    fontWeight: '600',
+    fontSize: 13,
   },
   logoutButton: {
     flexDirection: 'row',
