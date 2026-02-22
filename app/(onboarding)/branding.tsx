@@ -130,8 +130,10 @@ export default function BrandingScreen() {
                 isSetupComplete: true,
             });
 
-            // 2. Upload image if changed
-            if (localImage && (localImage !== initialImage) && profileId) {
+            // 2. Upload image if changed or if it's a local file URI (which means it's not yet on server)
+            const isLocalUri = localImage && (localImage.startsWith('file://') || localImage.startsWith('content://') || localImage.includes('/cache/'));
+
+            if (localImage && (localImage !== initialImage || isLocalUri) && profileId) {
                 console.log('[Branding] Uploading image:', localImage);
                 await authStore.uploadLogo(profileId, localImage);
             }
