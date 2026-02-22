@@ -14,40 +14,57 @@ import Animated, {
 
 const splashImage = require('../../assets/splashNew.jpeg');
 
-const NEON_BLUE = '#1e9bff';
-const NEON_GLOW = '#1a8fff';
+// Enhanced neon colors for the deer
+const NEON_BLUE = '#00d4ff';
+const NEON_GLOW = '#0099ff';
+const NEON_LIGHT = '#66e5ff';
 
 export const LoadingTransition = () => {
   // Image landing scale (starts zoomed in, eases to normal)
-  const imageScale = useSharedValue(1.18);
-  // Opacity flicker for the glow pulse
-  const glowOpacity = useSharedValue(0.6);
+  const imageScale = useSharedValue(1.15);
+  // Glow bloom intensity
+  const glowOpacity = useSharedValue(0.4);
   // Scale for the title
-  const titleScale = useSharedValue(0.85);
+  const titleScale = useSharedValue(0.8);
   // Sub-title fade in
   const subOpacity = useSharedValue(0);
+  // Particle twinkle effect
+  const particleOpacity = useSharedValue(0);
 
   useEffect(() => {
-    // ── Image landing (zoom-out from 1.18 to 1.0) ──
-    imageScale.value = withTiming(1, {
-      duration: 2200,
+    // ── Image landing (subtle zoom-out from 1.15 to 1.0) ──
+    imageScale.value = withTiming(1.02, {
+      duration: 2500,
       easing: Easing.out(Easing.cubic),
     });
 
-    // Title scale in (delayed slightly)
+    // Title scale in (bouncy entrance with enhanced glow)
     titleScale.value = withDelay(
-      300,
-      withTiming(1, { duration: 800, easing: Easing.out(Easing.back(1.3)) })
+      400,
+      withTiming(1, { duration: 900, easing: Easing.out(Easing.back(1.4)) })
     );
 
-    // Sub-line fade in after 800ms
-    subOpacity.value = withDelay(800, withTiming(1, { duration: 700 }));
+    // Sub-line fade in after 900ms
+    subOpacity.value = withDelay(900, withTiming(1, { duration: 800 }));
 
-    // Continuous neon pulse
+    // Particle twinkle effect
+    particleOpacity.value = withDelay(
+      500,
+      withRepeat(
+        withSequence(
+          withTiming(0.8, { duration: 800, easing: Easing.inOut(Easing.sin) }),
+          withTiming(0.3, { duration: 800, easing: Easing.inOut(Easing.sin) }),
+        ),
+        -1,
+        true
+      )
+    );
+
+    // Enhanced neon pulse for the glow
     glowOpacity.value = withRepeat(
       withSequence(
-        withTiming(1, { duration: 900, easing: Easing.inOut(Easing.sin) }),
-        withTiming(0.5, { duration: 900, easing: Easing.inOut(Easing.sin) }),
+        withTiming(1, { duration: 1000, easing: Easing.inOut(Easing.sin) }),
+        withTiming(0.6, { duration: 1000, easing: Easing.inOut(Easing.sin) }),
       ),
       -1,
       true
@@ -60,10 +77,17 @@ export const LoadingTransition = () => {
 
   const titleStyle = useAnimatedStyle(() => ({
     transform: [{ scale: titleScale.value }],
-    opacity: glowOpacity.value,
   }));
 
   const subStyle = useAnimatedStyle(() => ({
+    opacity: subOpacity.value,
+  }));
+
+  const bloomStyle = useAnimatedStyle(() => ({
+    opacity: glowOpacity.value,
+  }));
+
+  const separatorStyle = useAnimatedStyle(() => ({
     opacity: subOpacity.value,
   }));
 
@@ -86,17 +110,23 @@ export const LoadingTransition = () => {
 
       {/* Foreground content */}
       <View style={styles.center}>
-        {/* Glow bloom behind title */}
-        <Animated.View style={[styles.bloom, titleStyle]} />
+        {/* Large glow bloom behind title */}
+        <Animated.View style={[styles.bloom, bloomStyle]} />
 
-        {/* Main neon title */}
+        {/* Secondary bloom for enhanced glow */}
+        <Animated.View style={[styles.bloomSecondary, bloomStyle]} />
+
+        {/* Main neon title with intense glow */}
         <Animated.Text style={[styles.title, titleStyle]}>
           HIPSTER-IA
         </Animated.Text>
 
-        {/* Sub line */}
+        {/* Separator line */}
+        <Animated.View style={[styles.separator, separatorStyle]} />
+
+        {/* Sub line without neon effect */}
         <Animated.Text style={[styles.sub, subStyle]}>
-          Créez. Brillez. Maintenant.
+          Créer avec l'IA, perfectionnez avec l'agence
         </Animated.Text>
       </View>
     </Animated.View>
@@ -113,41 +143,62 @@ const styles = StyleSheet.create({
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(5, 8, 22, 0.72)',
+    backgroundColor: 'rgba(5, 8, 22, 0.20)',
   },
   center: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 300,
+    marginTop: 350,
   },
   bloom: {
     position: 'absolute',
-    width: 320,
-    height: 120,
-    borderRadius: 80,
+    width: 1,
+    height: 1,
+    borderRadius: 1,
     backgroundColor: 'transparent',
     shadowColor: NEON_GLOW,
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 1,
-    shadowRadius: 60,
-    elevation: 30,
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    elevation: 0,
+  },
+  bloomSecondary: {
+    position: 'absolute',
+    width: 1,
+    height: 1,
+    borderRadius: 1,
+    backgroundColor: 'transparent',
+    shadowColor: NEON_LIGHT,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    elevation: 0,
   },
   title: {
-    fontSize: 40,
+    fontSize: 28,
     fontWeight: '900',
-    letterSpacing: 8,
+    letterSpacing: 6,
     color: '#ffffff',
     textShadowColor: NEON_BLUE,
     textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 24,
+    textShadowRadius: 20,
+  },
+  separator: {
+    marginTop: 12,
+    width: 60,
+    height: 2,
+    backgroundColor: '#ffffff',
+    opacity: 0.8,
   },
   sub: {
-    marginTop: 16,
-    fontSize: 14,
-    fontWeight: '500',
-    letterSpacing: 3,
-    color: 'rgba(180, 210, 255, 0.7)',
-    textTransform: 'uppercase',
+    marginTop: 12,
+    fontSize: 11,
+    fontWeight: '400',
+    letterSpacing: 1,
+    color: 'rgba(180, 210, 255, 0.6)',
+    textTransform: 'lowercase',
+    textAlign: 'center',
+    paddingHorizontal: 20,
   },
 });
