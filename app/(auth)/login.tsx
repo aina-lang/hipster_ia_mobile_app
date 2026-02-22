@@ -140,7 +140,7 @@ export default function LoginScreen() {
               size="lg"
               variant="premium"
               loading={isLoading}
-              disabled={isLoading} // Explicit disable
+              disabled={isLoading}
               style={styles.loginButton}
             />
 
@@ -256,7 +256,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   footerLink: {
-    color: colors.primary.main,
+    color: colors.text.secondary,
     fontSize: 14,
     fontWeight: '600',
   },

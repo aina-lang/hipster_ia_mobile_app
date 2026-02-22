@@ -205,6 +205,12 @@ export default function RegisterScreen() {
           disabled={localLoading}
           style={styles.registerButton}
         />
+        <View style={styles.loginRow}>
+          <Text style={styles.loginRowText}>Déjà un compte ? </Text>
+          <TouchableOpacity onPress={() => router.push('/(auth)/login')}>
+            <Text style={styles.loginRowLink}>Se connecter</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <GenericModal
@@ -281,6 +287,7 @@ const styles = StyleSheet.create({
   },
   registerButton: {
     width: '100%',
+    marginBottom: 16,
   },
   footer: {
     position: 'absolute',
@@ -288,5 +295,19 @@ const styles = StyleSheet.create({
     left: 24,
     right: 24,
     zIndex: 10,
+  },
+  loginRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 4,
+  },
+  loginRowText: {
+    color: colors.text.secondary,
+    fontSize: 14,
+  },
+  loginRowLink: {
+    color: colors.text.secondary,
+    fontSize: 14,
+    fontWeight: '600',
   },
 });
