@@ -20,6 +20,8 @@ import {
     ChevronRight,
 } from 'lucide-react-native';
 
+const ordiBlancImage = require('../../assets/ordi_blanc_bg.pngpg');
+
 import socialImg from '../../assets/social.jpeg';
 import flyerImg from '../../assets/flyer.jpeg';
 import apercuImg from '../../assets/apercu.jpeg';
@@ -63,11 +65,7 @@ const UNIVERSAL_FUNCTIONS: JobFunction[] = [
         category: 'Texte',
         icon: Mail,
         image: emailImg
-    },
-];
-
-export default function Step2TypeScreen() {
-    const router = useRouter();
+st router = useRouter();
     const { selectedJob, setFunction, selectedFunction } = useCreationStore();
 
     const handleSelectFunction = (fn: JobFunction) => {
