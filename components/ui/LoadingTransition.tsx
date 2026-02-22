@@ -12,7 +12,7 @@ import Animated, {
   Easing,
 } from 'react-native-reanimated';
 
-const splashImage = require('../../assets/splashImage.jpeg');
+const splashImage = require('../../assets/splashNew.jpeg');
 
 const NEON_BLUE = '#1e9bff';
 const NEON_GLOW = '#1a8fff';
