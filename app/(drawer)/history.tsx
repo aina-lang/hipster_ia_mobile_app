@@ -213,14 +213,16 @@ export default function HistoryScreen() {
             <Text style={styles.title}>Historique</Text>
             <Text style={styles.subtitle}>Retrouvez toutes vos créations</Text>
           </View>
-          {history.length > 0 && (
-            <TouchableOpacity
-              style={styles.clearButton}
-              onPress={() => setShowClearModal(true)}>
-              <Trash2 size={16} color={colors.status.error} />
-              <Text style={styles.clearButtonText}>Effacer</Text>
-            </TouchableOpacity>
-          )}
+          <View style={styles.headerRight}>
+            {history.length > 0 && (
+              <TouchableOpacity
+                style={styles.clearButton}
+                onPress={() => setShowClearModal(true)}>
+                <Trash2 size={16} color={colors.status.error} />
+                <Text style={styles.clearButtonText}>Effacer</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
 
         {/* Filters */}
@@ -319,7 +321,6 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
     paddingHorizontal: 20,
     paddingVertical: 12,
     marginBottom: 8,
@@ -336,6 +337,11 @@ const styles = StyleSheet.create({
   },
   headerTextContainer: {
     flex: 1,
+    alignItems: 'center',
+  },
+  headerRight: {
+    minWidth: 40,
+    alignItems: 'flex-end',
   },
   title: {
     fontSize: 24,
@@ -484,4 +490,8 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
+
+
+
+
 
