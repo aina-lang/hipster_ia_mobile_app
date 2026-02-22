@@ -76,7 +76,6 @@ export default function RegisterScreen() {
         password,
         planId: selectedPlan || 'curieux',
         brandingColor,
-        logoUrl: logoUri, // mapped for backend
         job,
       });
 

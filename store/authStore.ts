@@ -182,8 +182,7 @@ export const useAuthStore = create<AuthState>()(
 
           // The typical backend response for uploadAvatar returns the user or just the path
           // Based on my recent update to UsersController.uploadMyAvatar, it returns the user object (via update)
-          const res = data.data;
-          const avatarUrl = res.avatarUrl;
+          const avatarUrl = data?.data?.avatarUrl || data?.avatarUrl;
 
           // Update local state with functional update to avoid race conditions
           if (avatarUrl) {
@@ -221,8 +220,7 @@ export const useAuthStore = create<AuthState>()(
             },
           });
 
-          const res = data.data;
-          const logoUrl = res.logoUrl;
+          const logoUrl = data?.data?.logoUrl || data?.logoUrl;
 
           // Update local state with functional update to avoid race conditions
           if (logoUrl) {
