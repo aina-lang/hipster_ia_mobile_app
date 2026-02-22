@@ -21,7 +21,7 @@ const NEON_LIGHT = '#66e5ff';
 
 export const LoadingTransition = () => {
   // Image landing scale (starts zoomed in, eases to normal)
-  const imageScale = useSharedValue(1.15);
+  const imageScale = useSharedValue(1.2);
   // Glow bloom intensity
   const glowOpacity = useSharedValue(0.4);
   // Scale for the title
@@ -32,8 +32,8 @@ export const LoadingTransition = () => {
   const particleOpacity = useSharedValue(0);
 
   useEffect(() => {
-    // ── Image landing (subtle zoom-out from 1.15 to 1.0) ──
-    imageScale.value = withTiming(1.02, {
+    // ── Image landing (subtle zoom-out from 1.2 to 1.0) ──
+    imageScale.value = withTiming(1.0, {
       duration: 2500,
       easing: Easing.out(Easing.cubic),
     });
@@ -102,7 +102,7 @@ export const LoadingTransition = () => {
         <Animated.Image
           source={splashImage}
           style={[styles.bgImage, imageStyle]}
-          resizeMode="contain"
+          resizeMode="cover"
         />
         {/* Dark overlay */}
         <View style={styles.overlay} />
@@ -124,9 +124,14 @@ export const LoadingTransition = () => {
         {/* Separator line */}
         <Animated.View style={[styles.separator, separatorStyle]} />
 
-        {/* Sub line without neon effect */}
-        <Animated.Text style={[styles.sub, subStyle]}>
-          Créer avec l'IA, perfectionnez avec l'agence
+        {/* First line - emphasized */}
+        <Animated.Text style={[styles.subFirst, subStyle]}>
+          Créer avec l'IA,
+        </Animated.Text>
+
+        {/* Second line */}
+        <Animated.Text style={[styles.subSecond, subStyle]}>
+          perfectionner avec l'agence
         </Animated.Text>
       </View>
     </Animated.View>
@@ -143,13 +148,12 @@ const styles = StyleSheet.create({
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(5, 8, 22, 0.20)',
   },
   center: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 350,
+    marginTop: 400,
   },
   bloom: {
     position: 'absolute',
@@ -176,13 +180,13 @@ const styles = StyleSheet.create({
     elevation: 0,
   },
   title: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: '900',
-    letterSpacing: 6,
+    letterSpacing: 8,
     color: '#ffffff',
     textShadowColor: NEON_BLUE,
     textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 20,
+    textShadowRadius: 24,
   },
   separator: {
     marginTop: 12,
@@ -193,10 +197,29 @@ const styles = StyleSheet.create({
   },
   sub: {
     marginTop: 12,
+    fontSize: 13,
+    fontWeight: '500',
+    letterSpacing: 1.5,
+    color: '#ffffff',
+    textAlign: 'center',
+    paddingHorizontal: 20,
+    textTransform: 'uppercase',
+  },
+  subFirst: {
+    marginTop: 12,
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 1,
+    color: '#ffffff',
+    textAlign: 'center',
+    paddingHorizontal: 30,
+  },
+  subSecond: {
+    marginTop: 4,
     fontSize: 11,
     fontWeight: '400',
     letterSpacing: 1,
-    color: 'rgba(180, 210, 255, 0.6)',
+    color: '#ffffff',
     textTransform: 'lowercase',
     textAlign: 'center',
     paddingHorizontal: 20,
