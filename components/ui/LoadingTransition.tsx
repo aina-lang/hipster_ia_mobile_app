@@ -105,7 +105,7 @@ export const LoadingTransition = () => {
           resizeMode="cover"
         />
         {/* Dark overlay */}
-        <View style={styles.overlay} />
+        {/* <View style={styles.overlay} /> */}
       </View>
 
       {/* Foreground content */}
