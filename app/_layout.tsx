@@ -30,6 +30,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { Audio } from 'expo-av';
 import { Platform } from 'react-native';
 import * as Sharing from 'expo-sharing';
+import { StatusBar } from 'expo-status-bar';
 
 export default function RootLayout() {
   const { user, isAuthenticated, hasFinishedOnboarding, isHydrated } = useAuthStore();
@@ -127,6 +128,7 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
+      <StatusBar style="light"  translucent/>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <StripeProvider
           publishableKey="pk_test_51SCdnjFhrfQ5vRxFnG03V2aEFEsGvoTSbhEa1CyB2J07h6W8VVtNbirPeJtT9yOnLw3EPFlfPqARXKBBRAXdFz1G00xhCi28vk"
