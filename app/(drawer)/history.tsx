@@ -48,29 +48,151 @@ export default function HistoryScreen() {
   const [activeFilter, setActiveFilter] = useState<HistoryType | 'all'>('all');
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Delete states
   const [showClearModal, setShowClearModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
 
+  const generateTitle = (item: any): string => {
+    // Priority 1: explicit title (if exists and not "Sans titre")
+    if (item.title && item.title.trim() && item.title !== 'Sans titre') {
+      return item.title;
+    }
+
+    // Priority 2: Use prompt (main source for new data)
+    const text = (item.prompt || item.result || '').trim();
+    
+    if (text && text.length > 0) {
+      // Extract meaningful phrase - respect original case and language
+      const cleaned = text.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
+      const maxLength = 50;
+      if (cleaned.length > maxLength) {
+        return cleaned.substring(0, maxLength).trim() + '...';
+      }
+      return cleaned;
+    }
+
+    // Priority 3: Fallback to attributes for old data without prompt
+    let attrs = item.attributes;
+    if (typeof attrs === 'string') {
+      try {
+        attrs = JSON.parse(attrs);
+      } catch (e) {
+        attrs = {};
+      }
+    }
+
+    // Try to construct a title from attributes
+    const funcLabel = attrs?.function?.split('(')?.[0]?.trim() || '';
+    const jobLabel = attrs?.job?.trim() || '';
+    const style = attrs?.selectedStyle?.trim() || '';
+    const userQuery = attrs?.userQuery?.trim() || '';
+
+    if (userQuery) {
+      const cleaned = userQuery.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
+      const maxLength = 50;
+      if (cleaned.length > maxLength) {
+        return cleaned.substring(0, maxLength).trim() + '...';
+      }
+      return cleaned;
+    }
+
+    if (funcLabel) {
+      if (style) {
+        return `${funcLabel} • ${style}`;
+      }
+      if (jobLabel) {
+        return `${jobLabel} • ${funcLabel}`;
+      }
+      return funcLabel;
+    }
+
+    if (jobLabel && style) {
+      return `${jobLabel} • ${style}`;
+    }
+
+    if (style) {
+      return style;
+    }
+
+    return 'Sans titre';
+  };
+
+  const generatePreview = (item: any): string => {
+    // Check if result contains error
+    const result = item.result || '';
+    if (typeof result === 'string' && (result.includes('ERROR') || result.includes('error'))) {
+      return '';
+    }
+
+    // For text items with valid result, use that
+    if (item.type === 'text' && result && result.length > 0 && !result.includes('ERROR')) {
+      const cleaned = result.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
+      const maxLength = 120;
+      if (cleaned.length > maxLength) {
+        return cleaned.substring(0, maxLength).trim() + '...';
+      }
+      return cleaned;
+    }
+
+    // For image/other types, use style or other attributes
+    let attrs = item.attributes;
+    if (typeof attrs === 'string') {
+      try {
+        attrs = JSON.parse(attrs);
+      } catch (e) {
+        attrs = {};
+      }
+    }
+
+    const style = attrs?.style?.trim() || '';
+    const jobLabel = attrs?.job?.trim() || '';
+
+    if (style && jobLabel) {
+      return `${jobLabel} • ${style}`;
+    }
+
+    if (style) {
+      return style;
+    }
+
+    if (jobLabel) {
+      return jobLabel;
+    }
+
+    return '';
+  };
+
   const fetchHistory = async () => {
     try {
       setLoading(true);
+      setError(null);
       const data = await AiService.getHistory();
+      console.log('[HISTORY_SCREEN] Raw data from API:', JSON.stringify(data, null, 2));
+      console.log('[HISTORY_SCREEN] Data is array?', Array.isArray(data));
+      console.log('[HISTORY_SCREEN] Data length:', data?.length);
+      
       if (data && Array.isArray(data)) {
         const mappedData: HistoryItem[] = data.map((item: any) => ({
           id: item.id.toString(),
           type: item.type,
-          title: item.title || 'Sans titre',
+          title: generateTitle(item),
           date: dayjs(item.createdAt).fromNow(),
-          preview: item.result || item.prompt,
+          preview: generatePreview(item),
           imageUrl: item.imageUrl,
         }));
+        console.log('[HISTORY_SCREEN] Mapped', mappedData.length, 'items');
         setHistory(mappedData);
+      } else {
+        console.warn('[HISTORY_SCREEN] Data is not an array:', typeof data, data);
       }
-    } catch (error) {
-      console.error('Error fetching history:', error);
+    } catch (err: any) {
+      console.error('Error fetching history:', err);
+      const errorMsg = err?.response?.data?.message || err?.message || 'Une erreur est survenue lors du chargement de l\'historique';
+      setError(errorMsg);
+      setHistory([]);
     } finally {
       setLoading(false);
     }
@@ -122,7 +244,7 @@ export default function HistoryScreen() {
   };
 
   const renderItem = ({ item }: { item: HistoryItem }) => (
-    <View className="flex-row items-center gap-2">
+    <View className="flex-row items-stretch gap-2">
       <TouchableOpacity
         className="flex-1 flex-row items-center gap-4 rounded-xl border border-white/5 bg-white/5 p-4"
         onPress={() => router.push({ pathname: '/(drawer)', params: { chatId: item.id } })}>
@@ -144,7 +266,7 @@ export default function HistoryScreen() {
       </TouchableOpacity>
 
       <TouchableOpacity
-        className="ml-1 h-full items-center justify-center rounded-xl bg-red-500/10 p-3"
+        className="h-14 w-14 items-center justify-center rounded-xl bg-red-500/10"
         onPress={() => {
           setItemToDelete(item.id);
           setShowDeleteModal(true);
@@ -207,30 +329,46 @@ export default function HistoryScreen() {
           />
         </View>
 
-        {/* History List */}
-        <FlatList
-          data={filteredData}
-          keyExtractor={(item) => item.id}
-          renderItem={renderItem}
-          contentContainerStyle={{ padding: 20, gap: 16, paddingBottom: 40 }}
-          showsVerticalScrollIndicator={false}
-          onRefresh={fetchHistory}
-          refreshing={loading}
-          ListEmptyComponent={
-            loading ? (
-              <ActivityIndicator
-                size="large"
-                color={colors.primary.main}
-                style={{ marginTop: 40 }}
-              />
-            ) : (
-              <View className="items-center justify-center gap-4 pt-16">
-                <Search size={48} color={colors.text.muted} />
-                <Text className="text-base text-slate-400">Aucun résultat trouvé</Text>
-              </View>
-            )
-          }
-        />
+        {/* History List Container - Must have flex: 1 */}
+        <View style={{ flex: 1 }}>
+          <FlatList
+            data={filteredData}
+            keyExtractor={(item) => item.id}
+            renderItem={renderItem}
+            contentContainerStyle={{ padding: 20, gap: 16, paddingBottom: 40 }}
+            showsVerticalScrollIndicator={false}
+            scrollEnabled={true}
+            nestedScrollEnabled={true}
+            onRefresh={fetchHistory}
+            refreshing={loading}
+            ListEmptyComponent={
+              loading ? (
+                <ActivityIndicator
+                  size="large"
+                  color={colors.primary.main}
+                  style={{ marginTop: 40 }}
+                />
+              ) : error ? (
+                <View className="items-center justify-center gap-4 pt-16">
+                  <View className="rounded-lg bg-red-500/10 p-4">
+                    <Text className="text-base font-semibold text-red-400 mb-2">Erreur</Text>
+                    <Text className="text-sm text-red-300">{error}</Text>
+                  </View>
+                  <TouchableOpacity
+                    className="rounded-lg bg-slate-700 px-4 py-2"
+                    onPress={fetchHistory}>
+                    <Text className="text-sm font-semibold text-slate-200">Réessayer</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <View className="items-center justify-center gap-4 pt-16">
+                  <Search size={48} color={colors.text.muted} />
+                  <Text className="text-base text-slate-400">Aucun résultat trouvé</Text>
+                </View>
+              )
+            }
+          />
+        </View>
 
         {/* Modals */}
         <GenericModal

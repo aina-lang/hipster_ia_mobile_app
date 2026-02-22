@@ -51,6 +51,7 @@ function CustomDrawerContent(props: any) {
   const [loadingMore, setLoadingMore] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [displayedCount, setDisplayedCount] = useState(20);
+  const [historyError, setHistoryError] = useState<string | null>(null);
 
   // Delete Logic
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -165,7 +166,9 @@ function CustomDrawerContent(props: any) {
   const loadHistory = async () => {
     try {
       setLoading(true);
+      setHistoryError(null);
       const data = await AiService.getHistory();
+      console.log('[DRAWER] History loaded:', data?.length, 'items');
       if (data && Array.isArray(data)) {
         const mappedData: HistoryItem[] = data.map((item: any) => ({
           id: item.id.toString(),
@@ -179,9 +182,14 @@ function CustomDrawerContent(props: any) {
         setAllHistory(mappedData);
         setHistory(mappedData.slice(0, 20));
         setDisplayedCount(20);
+        console.log('[DRAWER] Displayed:', mappedData.slice(0, 20).length, 'items');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to fetch drawer history', err);
+      const errorMsg = err?.response?.data?.message || err?.message || 'Impossible de charger l\'historique';
+      setHistoryError(errorMsg);
+      setAllHistory([]);
+      setHistory([]);
     } finally {
       setLoading(false);
     }
@@ -268,8 +276,14 @@ function CustomDrawerContent(props: any) {
 
             {loading ? (
               <ActivityIndicator size="small" color={colors.text.muted} style={{ marginTop: 20 }} />
+            ) : historyError ? (
+              <View style={{ marginTop: 20, padding: 12, backgroundColor: 'rgba(239, 68, 68, 0.1)', borderRadius: 8, borderLeftWidth: 3, borderLeftColor: colors.status.error }}>
+                <Text style={{ fontSize: 12, color: colors.status.error, fontWeight: '500' }}>
+                  {historyError}
+                </Text>
+              </View>
             ) : (
-              <View style={{ marginTop: 10 }}>
+              <View style={{ marginTop: 10, width: '100%' }}>
                 {history.map((item, index) => {
                   const attr = item.attributes || {};
 
