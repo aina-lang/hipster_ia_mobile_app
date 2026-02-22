@@ -95,6 +95,7 @@ export default function HomeScreen() {
   const [modalType, setModalType] = useState<ModalType>('info');
   const [modalTitle, setModalTitle] = useState('');
   const [modalMessage, setModalMessage] = useState('');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const [isPaymentLoading, setIsPaymentLoading] = useState(false);
   const { initPaymentSheet, presentPaymentSheet } = useStripe();
@@ -688,9 +689,30 @@ export default function HomeScreen() {
     // implement clipboard logic
   };
 
+  const handleDeleteConfirm = async () => {
+    setShowDeleteConfirm(false);
+    if (!conversationId) {
+      resetChat();
+      return;
+    }
+
+    try {
+      setIsGenerating(true);
+      await AiService.deleteGeneration(conversationId);
+      resetChat();
+      router.setParams({ chatId: undefined });
+    } catch (error) {
+      console.error('Delete conversation error:', error);
+      showModal('error', 'Erreur', 'Impossible de supprimer la conversation.');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   const resetChat = () => {
     clearChatStore();
     setInputValue('');
+    setConversationId(null);
     console.log('[DEBUG] Starting new conversation');
   };
 
@@ -745,7 +767,7 @@ export default function HomeScreen() {
             </TouchableOpacity> */}
 
               {hasMessages && (
-                <TouchableOpacity className="rounded-lg bg-white/5 p-2" onPress={resetChat}>
+                <TouchableOpacity className="rounded-lg bg-white/5 p-2" onPress={() => setShowDeleteConfirm(true)}>
                   <Trash2 size={20} color={colors.text.muted} />
                 </TouchableOpacity>
               )}
@@ -909,6 +931,17 @@ export default function HomeScreen() {
         title={modalTitle}
         message={modalMessage}
         onClose={() => setModalVisible(false)}
+      />
+
+      <GenericModal
+        visible={showDeleteConfirm}
+        type="warning"
+        title="Supprimer la conversation"
+        message="Voulez-vous vraiment supprimer définitivement cette discussion ?"
+        confirmText="Supprimer"
+        cancelText="Annuler"
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={handleDeleteConfirm}
       />
     </BackgroundGradientOnboarding>
   );
