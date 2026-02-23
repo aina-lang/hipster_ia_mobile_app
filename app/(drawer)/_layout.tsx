@@ -10,20 +10,21 @@ import {
   History as HistoryIcon,
   User,
   Sparkles,
-  FileText,
-  Image as ImageIcon,
-  MessageCircle, // Social
-  Mail, // Email
-  Megaphone, // Ad
-  Video, // Video
-  Briefcase, // Job fallback
-  LayoutTemplate, // Flyer/Poster
+  MessageCircle,
+  Plus,
+  LogOut,
+  Trash2,
+  Zap,
+  Layout,
+  Cpu,
 } from 'lucide-react-native';
 import { useAuthStore } from '../../store/authStore';
 import { AiService } from '../../api/ai.service';
 import { GenericModal } from '../../components/ui/GenericModal';
-import { LogOut, Trash2, Plus } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 import { useRouter } from 'expo-router';
+import { NeonButton } from '../../components/ui/NeonButton';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/fr';
@@ -38,8 +39,55 @@ interface HistoryItem {
   date: string;
   preview: string;
   imageUrl?: string;
-  attributes?: any; // Keep attributes for smart label logic
+  attributes?: any;
 }
+
+const CreditsDisplay = ({ user }: { user: any }) => {
+  if (user?.type !== 'ai') return null;
+
+  const imageLimit = user.imagesLimit || 0;
+  const imageUsed = user.imagesUsed || 0;
+  const imageRemaining = Math.max(0, imageLimit - imageUsed);
+
+  const textLimit = user.promptsLimit || 0;
+  const textUsed = user.promptsUsed || 0;
+  const textRemaining = Math.max(0, textLimit - textUsed);
+
+  return (
+    <View style={styles.creditsContainer}>
+      <BlurView intensity={15} tint="light" style={styles.creditsBlur}>
+        <LinearGradient
+          colors={['rgba(59, 130, 246, 0.1)', 'rgba(139, 92, 246, 0.05)']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.creditsGradient}
+        >
+          <View style={styles.creditItem}>
+            <View style={styles.creditIconBadge}>
+              <Zap size={14} color={colors.primary.main} />
+            </View>
+            <View>
+              <Text style={styles.creditValue}>{textRemaining}</Text>
+              <Text style={styles.creditLabel}>Textes</Text>
+            </View>
+          </View>
+
+          <View style={styles.creditDivider} />
+
+          <View style={styles.creditItem}>
+            <View style={[styles.creditIconBadge, { backgroundColor: 'rgba(139, 92, 246, 0.1)' }]}>
+              <Layout size={14} color={colors.violet[500]} />
+            </View>
+            <View>
+              <Text style={styles.creditValue}>{imageRemaining}</Text>
+              <Text style={styles.creditLabel}>Images</Text>
+            </View>
+          </View>
+        </LinearGradient>
+      </BlurView>
+    </View>
+  );
+};
 
 function CustomDrawerContent(props: any) {
   const { user, logout } = useAuthStore();
@@ -231,21 +279,29 @@ function CustomDrawerContent(props: any) {
   console.log(userAvatar);
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#0d0d0d" }}>
-      <DrawerContentScrollView {...props} contentContainerStyle={{ paddingTop: 0, backgroundColor: "#0d0d0d" }}>
+    <View style={{ flex: 1, backgroundColor: colors.background.primary }}>
+      <DrawerContentScrollView {...props} contentContainerStyle={{ paddingTop: 0, backgroundColor: colors.background.primary }}>
         {/* ============================
             HEADER
         ============================ */}
-        <View style={styles.headerContainer}>
-          {/* USER */}
-          <View style={styles.userColumn}>
-            <Image source={{ uri: userAvatar }} style={styles.avatar} />
+        <View style={styles.headerWrapper}>
+          <LinearGradient
+            colors={['rgba(59, 130, 246, 0.15)', 'transparent']}
+            style={styles.headerGradient}
+          />
+          <View style={styles.headerContainer}>
+            <View style={styles.avatarWrapper}>
+              <View style={styles.avatarGlow} />
+              <Image source={{ uri: userAvatar }} style={styles.avatar} />
+              <View style={styles.statusBadge} />
+            </View>
             <View style={styles.userInfo}>
               <Text style={styles.userName} numberOfLines={1}>{userName}</Text>
               <Text style={styles.userEmail} numberOfLines={1}>{user?.email}</Text>
             </View>
           </View>
 
+          <CreditsDisplay user={user} />
         </View>
 
         <View style={styles.separator} />
@@ -256,18 +312,19 @@ function CustomDrawerContent(props: any) {
         <View style={styles.menuContainer}>
           <DrawerItemList {...props} />
 
-          <TouchableOpacity
-            style={styles.newChatButton}
+          <NeonButton
+            title="Nouvelle discussion"
+            icon={Plus}
+            variant="premium"
             onPress={() => {
               props.navigation.closeDrawer();
               router.push({
                 pathname: '/(drawer)',
                 params: { reset: 'true' }
               });
-            }}>
-            <Plus size={20} color={colors.primary.main} />
-            <Text style={styles.newChatText}>Nouvelle discussion</Text>
-          </TouchableOpacity>
+            }}
+            style={styles.newChatNeonButton}
+          />
         </View>
 
         <View style={styles.separator} />
@@ -453,31 +510,66 @@ export default function DrawerLayout() {
 
 const styles = StyleSheet.create({
   /* ----- HEADER ----- */
+  headerWrapper: {
+    paddingBottom: 10,
+    overflow: 'hidden',
+  },
+  headerGradient: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 300,
+  },
   headerContainer: {
     paddingHorizontal: 20,
-    paddingVertical: 35,
-    marginTop: 40,
+    paddingTop: 60,
+    paddingBottom: 20,
     alignItems: 'center',
   },
-  userColumn: {
-    alignItems: 'center',
-    gap: 12,
+  avatarWrapper: {
+    position: 'relative',
+    padding: 3,
+  },
+  avatarGlow: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: 170,
+    backgroundColor: colors.primary.main,
+    opacity: 0.2,
+    transform: [{ scale: 1.1 }],
+  },
+  avatar: {
+    width: 190,
+    height: 190,
+    borderRadius: 145,
+    borderWidth: 2,
+    borderColor: colors.primary.main,
+    backgroundColor: colors.background.tertiary,
+  },
+  statusBadge: {
+    position: 'absolute',
+    bottom: 10,
+    right: 15,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: colors.status.success,
+    borderWidth: 3,
+    borderColor: colors.background.primary,
   },
   userInfo: {
     alignItems: 'center',
-    marginTop: 8,
-  },
-  avatar: {
-    width: 180,
-    height: 180,
-    borderRadius: 140,
-    borderWidth: 2,
-    borderColor: colors.primary.main,
+    marginTop: 12,
   },
   userName: {
-    fontSize: 17,
-    fontWeight: '700',
+    fontSize: 18,
+    fontWeight: '800',
     color: colors.text.primary,
+    letterSpacing: -0.5,
   },
   userEmail: {
     fontSize: 13,
@@ -485,141 +577,159 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
 
-  /* ----- COMPANY ----- */
-  companyRow: {
+  /* ----- CREDITS ----- */
+  creditsContainer: {
+    paddingHorizontal: 15,
+    marginBottom: 10,
+  },
+  creditsBlur: {
+    borderRadius: 20,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(59, 130, 246, 0.2)',
+  },
+  creditsGradient: {
+    flexDirection: 'row',
+    padding: 12,
+    alignItems: 'center',
+    justifyContent: 'space-around',
+  },
+  creditItem: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    marginTop: 20,
-    paddingTop: 15,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.05)',
   },
-  logoContainer: {
-    width: 30,
-    height: 30,
-    borderRadius: 6,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+  creditIconBadge: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: 'rgba(59, 130, 246, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  companyLogo: {
-    width: '100%',
-    height: '100%',
+  creditValue: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: colors.text.primary,
   },
-  companyName: {
-    fontSize: 15,
-    color: colors.text.secondary,
-    fontWeight: '500',
+  creditLabel: {
+    fontSize: 10,
+    color: colors.text.muted,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    marginTop: -2,
+  },
+  creditDivider: {
+    width: 1,
+    height: 30,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
   },
 
   /* ----- MENU ----- */
   menuContainer: {
     paddingVertical: 10,
+    gap: 5,
   },
-  newChatButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    marginHorizontal: 10,
+  newChatNeonButton: {
+    marginHorizontal: 15,
     marginTop: 10,
-    padding: 12,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.03)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
-  },
-  newChatText: {
-    color: colors.text.primary,
-    fontSize: 15,
-    fontWeight: '600',
   },
 
   separator: {
     height: 1,
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    marginVertical: 5,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    marginVertical: 8,
+    marginHorizontal: 20,
   },
 
   /* ----- HISTORY ----- */
   historySection: {
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
     paddingBottom: 40,
   },
   historyHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: 15,
   },
   historyTitle: {
-    color: colors.text.secondary,
-    fontWeight: '700',
-    letterSpacing: 0.8,
-    fontSize: 13,
+    color: colors.text.muted,
+    fontWeight: '800',
+    letterSpacing: 1.5,
+    fontSize: 11,
     textTransform: 'uppercase',
   },
   historySeeAll: {
     color: colors.primary.main,
-    fontWeight: '500',
+    fontWeight: '700',
     fontSize: 12,
   },
   historyRowContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.04)',
-    paddingRight: 10,
+    marginBottom: 8,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.02)',
+    paddingRight: 5,
   },
   deleteMiniButton: {
     padding: 10,
+    opacity: 0.5,
   },
   historyItem: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    paddingVertical: 12,
+    padding: 12,
   },
   historyItemText: {
     color: colors.text.primary,
-    fontSize: 14,
-    flex: 1,
-  },
-  emptyHistory: {
-    marginTop: 15,
-    color: colors.text.muted,
     fontSize: 13,
-    fontStyle: 'italic',
+    fontWeight: '600',
+    flex: 1,
   },
   historyItemSubtext: {
     color: colors.text.muted,
-    fontSize: 12,
+    fontSize: 11,
     marginTop: 2,
+  },
+  emptyHistory: {
+    marginTop: 20,
+    color: colors.text.muted,
+    fontSize: 13,
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
   loadMoreButton: {
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 12,
-    marginVertical: 10,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.05)',
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    marginTop: 10,
   },
   loadMoreText: {
-    color: colors.primary.main,
-    fontWeight: '600',
-    fontSize: 13,
+    color: colors.text.muted,
+    fontWeight: '700',
+    fontSize: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   logoutButton: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    paddingVertical: 12,
+    paddingVertical: 15,
+    justifyContent: 'center',
+    backgroundColor: 'rgba(239, 68, 68, 0.05)',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.1)',
   },
   logoutText: {
-    color: colors.status.error,
+    color: colors.rose[400],
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: '700',
   },
 });
