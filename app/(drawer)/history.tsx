@@ -78,9 +78,23 @@ export default function HistoryScreen() {
     if (item.title && item.title.trim() && item.title !== 'Sans titre') {
       return item.title;
     }
-    const text = (item.prompt || item.result || '').trim();
-    if (text && text.length > 0) {
-      const cleaned = text.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
+
+    let textToProcess = (item.prompt || item.result || '').trim();
+
+    // JSON Handling for unified chat
+    if (textToProcess.startsWith('[') || textToProcess.startsWith('{')) {
+      try {
+        const parsed = JSON.parse(textToProcess);
+        if (Array.isArray(parsed)) {
+          const firstUser = parsed.find(m => m.role === 'user');
+          if (firstUser) textToProcess = firstUser.content;
+          else if (parsed.length > 0) textToProcess = parsed[0].content;
+        }
+      } catch (e) { /* fallback to raw */ }
+    }
+
+    if (textToProcess && textToProcess.length > 0) {
+      const cleaned = textToProcess.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
       const maxLength = 50;
       if (cleaned.length > maxLength) {
         return cleaned.substring(0, maxLength).trim() + '...';
@@ -91,11 +105,26 @@ export default function HistoryScreen() {
   };
 
   const generatePreview = (item: any): string => {
-    const result = item.result || '';
+    let result = (item.result || item.prompt || '').trim();
+
     if (typeof result === 'string' && (result.includes('ERROR') || result.includes('error'))) {
       return '';
     }
-    if (item.type === 'text' && result && result.length > 0 && !result.includes('ERROR')) {
+
+    // JSON Handling for unified chat
+    if (result.startsWith('[') || result.startsWith('{')) {
+      try {
+        const parsed = JSON.parse(result);
+        if (Array.isArray(parsed)) {
+          // Get last assistant message
+          const lastAI = [...parsed].reverse().find(m => m.role === 'assistant');
+          if (lastAI) result = lastAI.content;
+          else if (parsed.length > 0) result = parsed[parsed.length - 1].content;
+        }
+      } catch (e) { /* fallback to raw */ }
+    }
+
+    if (result && result.length > 0) {
       const cleaned = result.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
       const maxLength = 120;
       if (cleaned.length > maxLength) {
@@ -175,7 +204,15 @@ export default function HistoryScreen() {
       >
         <BlurView intensity={20} style={StyleSheet.absoluteFill} tint="light" />
         <View style={styles.iconContainer}>
-          {getIcon()}
+          {item.imageUrl ? (
+            <Image
+              source={{ uri: item.imageUrl.startsWith('http') ? item.imageUrl : `https://hipster-api.fr/${item.imageUrl}` }}
+              style={styles.thumbnail}
+              resizeMode="cover"
+            />
+          ) : (
+            getIcon(item.type)
+          )}
         </View>
         <View style={styles.itemContent}>
           <View style={styles.itemHeader}>
@@ -427,6 +464,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 14,
+  },
+  thumbnail: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 12,
   },
   itemContent: {
     flex: 1,
