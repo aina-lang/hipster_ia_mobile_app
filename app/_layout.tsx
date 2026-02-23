@@ -115,7 +115,7 @@ export default function RootLayout() {
       if (targetRoute && targetRoute !== '/' + segments.join('/')) {
         router.replace(targetRoute as any);
       }
-      
+
       setIsRouting(false);
     }, 2500); // Réduit de 5000 à 2500ms
 
@@ -128,7 +128,6 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <StatusBar style="light"  translucent/>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <StripeProvider
           publishableKey="pk_test_51SCdnjFhrfQ5vRxFnG03V2aEFEsGvoTSbhEa1CyB2J07h6W8VVtNbirPeJtT9yOnLw3EPFlfPqARXKBBRAXdFz1G00xhCi28vk"

@@ -177,14 +177,18 @@ export default function HistoryScreen() {
   };
 
   const handleDeleteItem = async () => {
+    console.log('[HistoryScreen] handleDeleteItem triggered. itemToDelete:', itemToDelete);
     if (itemToDelete) {
       try {
-        await AiService.deleteGeneration(itemToDelete);
+        console.log('[HistoryScreen] Calling AiService.deleteGeneration with ID:', itemToDelete);
+        const result = await AiService.deleteGeneration(itemToDelete);
+        console.log('[HistoryScreen] Deletion result from API:', result);
         setHistory((prev) => prev.filter((i) => i.id !== itemToDelete));
         setItemToDelete(null);
         setShowDeleteModal(false);
       } catch (error) {
-        console.error('Failed to delete item', error);
+        console.error('[HistoryScreen] Failed to delete item', error);
+        alert("Erreur lors de la suppression. Veuillez réessayer.");
       }
     }
   };
@@ -195,47 +199,54 @@ export default function HistoryScreen() {
     return <MessageSquare size={22} color="#8b5cf6" />;
   };
 
-  const renderItem = ({ item }: { item: any }) => (
-    <View style={styles.itemWrapper}>
-      <TouchableOpacity
-        style={styles.itemCard}
-        onPress={() => router.push({ pathname: '/(drawer)', params: { conversationId: item.id } })}
-        activeOpacity={0.7}
-      >
-        <BlurView intensity={20} style={StyleSheet.absoluteFill} tint="light" />
-        <View style={styles.iconContainer}>
-          {item.imageUrl ? (
-            <Image
-              source={{ uri: item.imageUrl.startsWith('http') ? item.imageUrl : `https://hipster-api.fr/${item.imageUrl}` }}
-              style={styles.thumbnail}
-              resizeMode="cover"
-            />
-          ) : (
-            getIcon(item.type)
-          )}
-        </View>
-        <View style={styles.itemContent}>
-          <View style={styles.itemHeader}>
-            <Text style={styles.itemTitle} numberOfLines={1}>{item.title}</Text>
-            <Text style={styles.itemDate}>{item.date}</Text>
+  const renderItem = ({ item }: { item: any }) => {
+    // console.log('[HistoryScreen] Rendering item:', item.id, item.title);
+    return (
+      <View style={styles.itemWrapper}>
+        <TouchableOpacity
+          style={styles.itemCard}
+          onPress={() => {
+            console.log('[HistoryScreen] Navigating to conversation:', item.id);
+            router.push({ pathname: '/(drawer)', params: { conversationId: item.id } });
+          }}
+          activeOpacity={0.7}
+        >
+          <BlurView intensity={20} style={StyleSheet.absoluteFill} tint="light" />
+          <View style={styles.iconContainer}>
+            {item.imageUrl ? (
+              <Image
+                source={{ uri: item.imageUrl.startsWith('http') ? item.imageUrl : `https://hipster-api.fr/${item.imageUrl}` }}
+                style={styles.thumbnail}
+                resizeMode="cover"
+              />
+            ) : (
+              getIcon()
+            )}
           </View>
-          <Text style={styles.itemPreview} numberOfLines={2}>
-            {item.preview || 'Conversation'}
-          </Text>
-        </View>
-        <ChevronRight size={18} color={colors.text.muted} />
-      </TouchableOpacity>
+          <View style={styles.itemContent}>
+            <View style={styles.itemHeader}>
+              <Text style={styles.itemTitle} numberOfLines={1}>{item.title}</Text>
+              <Text style={styles.itemDate}>{item.date}</Text>
+            </View>
+            <Text style={styles.itemPreview} numberOfLines={2}>
+              {item.preview || 'Conversation'}
+            </Text>
+          </View>
+          <ChevronRight size={18} color={colors.text.muted} />
+        </TouchableOpacity>
 
-      <TouchableOpacity
-        style={styles.deleteButton}
-        onPress={() => {
-          setItemToDelete(item.id);
-          setShowDeleteModal(true);
-        }}>
-        <Trash2 size={18} color={colors.status.error} />
-      </TouchableOpacity>
-    </View>
-  );
+        <TouchableOpacity
+          style={styles.deleteButton}
+          onPress={() => {
+            console.log('[HistoryScreen] User clicked delete icon for ID:', item.id);
+            setItemToDelete(item.id);
+            setShowDeleteModal(true);
+          }}>
+          <Trash2 size={18} color={colors.status.error} />
+        </TouchableOpacity>
+      </View>
+    );
+  };
 
   return (
     <BackgroundGradientOnboarding darkOverlay={true} blurIntensity={90} imageSource="splash">

@@ -698,19 +698,24 @@ export default function HomeScreen() {
   };
 
   const handleDeleteConfirm = async () => {
+    console.log('[HomeScreen] handleDeleteConfirm triggered. conversationId:', conversationId);
     setShowDeleteConfirm(false);
     if (!conversationId) {
+      console.warn('[HomeScreen] No conversationId to delete, just resetting local state.');
       resetChat();
       return;
     }
 
     try {
       setIsGenerating(true);
-      await AiService.deleteGeneration(conversationId);
+      console.log('[HomeScreen] Calling AiService.deleteGeneration with ID:', conversationId);
+      const result = await AiService.deleteGeneration(conversationId);
+      console.log('[HomeScreen] Deletion result from API:', result);
       resetChat();
       router.setParams({ chatId: undefined, conversationId: undefined });
+      showModal('success', 'Succès', 'Conversation supprimée avec succès.');
     } catch (error) {
-      console.error('Delete conversation error:', error);
+      console.error('[HomeScreen] Delete conversation error:', error);
       showModal('error', 'Erreur', 'Impossible de supprimer la conversation.');
     } finally {
       setIsGenerating(false);

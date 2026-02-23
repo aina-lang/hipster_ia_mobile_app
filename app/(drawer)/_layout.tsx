@@ -64,13 +64,16 @@ function CustomDrawerContent(props: any) {
   };
 
   const handleDeleteItem = async () => {
+    console.log('[Drawer] handleDeleteItem triggered. itemToDelete:', itemToDelete);
     if (itemToDelete) {
       try {
-        await AiService.deleteGeneration(itemToDelete);
+        console.log('[Drawer] Calling AiService.deleteGeneration with ID:', itemToDelete);
+        const result = await AiService.deleteGeneration(itemToDelete);
+        console.log('[Drawer] Deletion result from API:', result);
         setAllHistory((prev) => prev.filter((i) => i.id !== itemToDelete));
         setHistory((prev) => prev.filter((i) => i.id !== itemToDelete));
       } catch (e) {
-        console.error('Failed to delete item', e);
+        console.error('[Drawer] Failed to delete item', e);
         alert("Erreur lors de la suppression. Veuillez réessayer.");
       } finally {
         setShowDeleteModal(false);

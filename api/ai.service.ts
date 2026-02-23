@@ -254,23 +254,28 @@ export const AiService = {
   },
 
   deleteGeneration: async (id: string) => {
-    console.log('[AiService] Requesting deletion of item:', id);
+    console.log(`[AiService] DELETE_ITEM CALL -> /ai/history/${id}/delete`);
     try {
-      await api.post(`/ai/history/${id}/delete`);
-      console.log('[AiService] Item deleted successfully:', id);
-    } catch (error) {
-      console.error('[AiService] Delete item error:', error);
+      const response = await api.post(`/ai/history/${id}/delete`);
+      console.log(`[AiService] DELETE_ITEM SUCCESS -> ID: ${id}`, response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error(
+        `[AiService] DELETE_ITEM ERROR -> ID: ${id}`,
+        error?.response?.data || error.message
+      );
       throw error;
     }
   },
 
   clearHistory: async () => {
-    console.log('[AiService] Requesting clear all history');
+    console.log('[AiService] CLEAR_HISTORY CALL -> /ai/history/clear');
     try {
-      await api.post('/ai/history/clear');
-      console.log('[AiService] History cleared successfully');
-    } catch (error) {
-      console.error('[AiService] Clear history error:', error);
+      const response = await api.post('/ai/history/clear');
+      console.log('[AiService] CLEAR_HISTORY SUCCESS', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('[AiService] CLEAR_HISTORY ERROR', error?.response?.data || error.message);
       throw error;
     }
   },
