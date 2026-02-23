@@ -113,10 +113,10 @@ export default function RootLayout() {
 
       if (targetRoute && targetRoute !== '/' + segments.join('/')) {
         router.replace(targetRoute as any);
-      } else {
-        setIsRouting(false);
       }
-    }, 5000);
+      
+      setIsRouting(false);
+    }, 2500); // Réduit de 5000 à 2500ms
 
     return () => clearTimeout(timeout);
   }, [isAuthenticated, hasFinishedOnboarding, isHydrated, segments]);
@@ -138,7 +138,7 @@ export default function RootLayout() {
             <Stack.Screen name="(guided)" />
           </Stack>
 
-          <StyledStatusBar theme="dark" translucent={true} />
+          <StyledStatusBar theme="light" translucent={true} />
         </StripeProvider>
       </GestureHandlerRootView>
     </SafeAreaProvider>

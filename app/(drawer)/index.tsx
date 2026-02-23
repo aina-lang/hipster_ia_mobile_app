@@ -55,7 +55,7 @@ import { DeerAnimation } from '../../components/ui/DeerAnimation';
 import { UsageBar } from '../../components/UsageBar';
 import { useAuthStore } from '../../store/authStore';
 import { useCreationStore } from '../../store/creationStore';
-import { useChatStore, Message } from '../../store/chatStore';
+import { useChatStore, Message, generateConversationId } from '../../store/chatStore';
 import { AiService } from '../../api/ai.service';
 import { api } from '../../api/client';
 import { colors } from '../../theme/colors';
@@ -74,7 +74,8 @@ import { ChatInput } from '../../components/ChatInput';
 export default function HomeScreen() {
   const { user } = useAuthStore();
   const router = useRouter();
-  const { chatId, reset } = useGlobalSearchParams();
+  const { chatId, conversationId: paramConversationId, reset } = useGlobalSearchParams();
+  const idToLoad = (paramConversationId ?? chatId) as string | undefined;
   const navigation = useNavigation<DrawerNavigationProp<any>>();
   const scrollViewRef = useRef<ScrollView>(null);
   const insets = useSafeAreaInsets();
@@ -394,17 +395,17 @@ export default function HomeScreen() {
 
   useEffect(() => {
     const loadConversation = async () => {
-      if (chatId) {
+      if (idToLoad) {
         setIsLoadingConversation(true);
         try {
-          console.log('[DEBUG] Loading conversation:', chatId);
-          const conversation = await AiService.getConversation(chatId as string);
+          console.log('[DEBUG] Loading conversation:', idToLoad);
+          const conversation = await AiService.getConversation(idToLoad);
 
           if (conversation) {
             console.log(conversation);
 
-            // Set the conversation ID
-            setConversationId(chatId as string);
+            // Set the conversation ID for subsequent messages
+            setConversationId(idToLoad);
 
             // Parse the stored conversation history
             let storedMessages: any[] = [];
@@ -431,7 +432,7 @@ export default function HomeScreen() {
               // Old format: just show the prompt and result
               if (conversation.prompt) {
                 uiMessages.push({
-                  id: `${chatId}-user`,
+                  id: `${idToLoad}-user`,
                   text: conversation.prompt,
                   sender: 'user',
                   timestamp: new Date(conversation.createdAt),
@@ -440,7 +441,7 @@ export default function HomeScreen() {
               }
               if (conversation.result) {
                 uiMessages.push({
-                  id: `${chatId}-ai`,
+                  id: `${idToLoad}-ai`,
                   text: conversation.result,
                   sender: 'ai',
                   timestamp: new Date(conversation.createdAt),
@@ -452,7 +453,7 @@ export default function HomeScreen() {
               storedMessages.forEach((msg, index) => {
                 if (msg.role === 'user' || msg.role === 'assistant') {
                   const uiMsg: Message = {
-                    id: `${chatId}-${index}`,
+                    id: `${idToLoad}-${index}`,
                     text: msg.content,
                     sender: (msg.role === 'user' ? 'user' : 'ai') as 'user' | 'ai',
                     timestamp: new Date(),
@@ -471,7 +472,7 @@ export default function HomeScreen() {
                 if (!resultMatches) {
                   // Add the result as a new AI message
                   uiMessages.push({
-                    id: `${chatId}-result`,
+                    id: `${idToLoad}-result`,
                     text: conversation.result,
                     sender: 'ai',
                     timestamp: new Date(),
@@ -492,7 +493,7 @@ export default function HomeScreen() {
     };
 
     loadConversation();
-  }, [chatId]);
+  }, [idToLoad]);
 
   const placeholderText = 'Décrivez votre idée, ajoutez une image ou un audio...';
   const hasMessages = messages.length > 0;
@@ -566,15 +567,21 @@ export default function HomeScreen() {
 
       chatHistory.push({ role: 'user', content: userMsg.text });
 
+      // Modern apps pattern: stable conversationId from first message, never rely on backend returning it
+      const convIdToSend = conversationId || generateConversationId();
+      if (!conversationId) {
+        setConversationId(convIdToSend);
+      }
+
       console.log('[DEBUG] Free Mode Chat History:', JSON.stringify(chatHistory, null, 2));
-      console.log('[DEBUG] Conversation ID:', conversationId);
+      console.log('[DEBUG] Conversation ID:', convIdToSend);
 
       let response;
       // Real Backend Call
       if (currentImage) {
         const formData = new FormData();
         formData.append('messages', JSON.stringify(chatHistory));
-        if (conversationId) formData.append('conversationId', conversationId);
+        formData.append('conversationId', convIdToSend);
 
         const filename = currentImage.split('/').pop() || 'image.jpg';
         const match = /\.(\w+)$/.exec(filename);
@@ -592,15 +599,14 @@ export default function HomeScreen() {
         });
         response = res.data.data;
       } else {
-        response = await AiService.chat(chatHistory, conversationId);
+        response = await AiService.chat(chatHistory, convIdToSend);
       }
 
       console.log('[DEBUG] Response:', JSON.stringify(response, null, 2));
 
-      // Store conversation ID for subsequent messages
-      if (response.conversationId) {
+      // Keep conversationId stable (we set it before the call; backend echoes it back)
+      if (!conversationId && response.conversationId) {
         setConversationId(response.conversationId);
-        console.log('[DEBUG] Updated conversationId to:', response.conversationId);
       }
 
       // Handle nested response structure
@@ -700,7 +706,7 @@ export default function HomeScreen() {
       setIsGenerating(true);
       await AiService.deleteGeneration(conversationId);
       resetChat();
-      router.setParams({ chatId: undefined });
+      router.setParams({ chatId: undefined, conversationId: undefined });
     } catch (error) {
       console.error('Delete conversation error:', error);
       showModal('error', 'Erreur', 'Impossible de supprimer la conversation.');

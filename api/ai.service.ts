@@ -229,6 +229,18 @@ export const AiService = {
     }
   },
 
+  getGroupedConversations: async () => {
+    console.log('[AiService] Fetching grouped conversations...');
+    try {
+      const response = await api.get('/ai/conversations');
+      console.log('[AiService] Conversations fetched, count:', response.data.data?.length);
+      return response.data.data;
+    } catch (e: any) {
+      console.error('[AiService] Fetch conversations error:', e.message, e.response?.status);
+      throw e;
+    }
+  },
+
   getConversation: async (conversationId: string) => {
     console.log('[AiService] Fetching conversation:', conversationId);
     try {

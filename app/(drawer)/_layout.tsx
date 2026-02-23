@@ -167,22 +167,22 @@ function CustomDrawerContent(props: any) {
     try {
       setLoading(true);
       setHistoryError(null);
-      const data = await AiService.getHistory();
-      console.log('[DRAWER] History loaded:', data?.length, 'items');
+      const data = await AiService.getGroupedConversations();
+      console.log('[DRAWER] Conversations loaded:', data?.length, 'items');
       if (data && Array.isArray(data)) {
         const mappedData: HistoryItem[] = data.map((item: any) => ({
           id: item.id.toString(),
-          type: item.type,
-          title: generateTitle(item),
-          date: dayjs(item.createdAt).fromNow(),
-          preview: item.result || item.prompt,
+          type: 'chat',
+          title: item.title || 'Sans titre',
+          date: dayjs(item.date).fromNow(),
+          preview: `${item.count || item.items?.length || 1} message${(item.count || item.items?.length || 1) > 1 ? 's' : ''}`,
           imageUrl: item.imageUrl,
-          attributes: item.attributes,
+          attributes: item,
         }));
         setAllHistory(mappedData);
         setHistory(mappedData.slice(0, 20));
         setDisplayedCount(20);
-        console.log('[DRAWER] Displayed:', mappedData.slice(0, 20).length, 'items');
+        console.log('[DRAWER] Displayed:', mappedData.slice(0, 20).length, 'conversations');
       }
     } catch (err: any) {
       console.error('Failed to fetch drawer history', err);
@@ -285,31 +285,11 @@ function CustomDrawerContent(props: any) {
                 {history.map((item, index) => {
                   const attr = item.attributes || {};
 
-                  // Smart Label: "Immobilier • Post Insta"
-                  let label = item.title || 'Sans titre';
-                  if (attr.job && attr.function) {
-                    const cleanFunc = attr.function.split('(')[0].trim();
-                    label = `${attr.job} • ${cleanFunc}`;
-                  } else if (attr.function) {
-                    label = attr.function.split('(')[0].trim();
-                  }
+                  // For grouped conversations, the label is the title
+                  const label = item.title || 'Sans titre';
 
-                  // Smart Icon
-                  let IconComponent = FileText;
-                  if (item.type === 'image') IconComponent = ImageIcon;
-
-                  const funcLower = (attr.function || '').toLowerCase();
-                  const catLower = (attr.category || '').toLowerCase();
-
-                  if (funcLower.includes('social') || catLower.includes('social'))
-                    IconComponent = MessageCircle;
-                  else if (funcLower.includes('email') || catLower.includes('email'))
-                    IconComponent = Mail;
-                  else if (funcLower.includes('publicité') || catLower.includes('ad'))
-                    IconComponent = Megaphone;
-                  else if (funcLower.includes('vidéo') || catLower.includes('video'))
-                    IconComponent = Video;
-                  else if (funcLower.includes('flyer')) IconComponent = LayoutTemplate;
+                  // All items are now chats (conversations), so use MessageCircle icon
+                  const IconComponent = MessageCircle;
 
                   return (
                     <View key={item.id || index} style={styles.historyRowContainer}>
@@ -318,7 +298,7 @@ function CustomDrawerContent(props: any) {
                         onPress={() =>
                           router.push({
                             pathname: '/(drawer)',
-                            params: { chatId: item.id },
+                            params: { conversationId: item.id },
                           })
                         }>
                         <View style={{ width: 24, alignItems: 'center' }}>
@@ -329,7 +309,7 @@ function CustomDrawerContent(props: any) {
                             {label}
                           </Text>
                           <Text numberOfLines={1} style={styles.historyItemSubtext}>
-                            {item.date}
+                            {item.preview} • {item.date}
                           </Text>
                         </View>
                       </TouchableOpacity>

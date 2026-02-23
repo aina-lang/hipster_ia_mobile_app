@@ -45,6 +45,15 @@ interface HistoryItem {
   imageUrl?: string;
 }
 
+interface ConversationGroup {
+  id: string;
+  title: string;
+  date: string;
+  count: number;
+  preview: string;
+  imageUrl?: string;
+}
+
 const FILTERS: { label: string; value: HistoryType | 'all' }[] = [
   { label: 'Tout', value: 'all' },
   { label: 'Textes', value: 'text' },
@@ -101,17 +110,17 @@ export default function HistoryScreen() {
     try {
       setLoading(true);
       setError(null);
-      const data = await AiService.getHistory();
+      const data = await AiService.getGroupedConversations();
       if (data && Array.isArray(data)) {
-        const mappedData: HistoryItem[] = data.map((item: any) => ({
-          id: item.id.toString(),
-          type: item.type,
-          title: generateTitle(item),
-          date: dayjs(item.createdAt).fromNow(),
-          preview: generatePreview(item),
-          imageUrl: item.imageUrl,
+        const mappedData: ConversationGroup[] = data.map((item: any) => ({
+          id: item.id,
+          title: item.title || 'Sans titre',
+          date: dayjs(item.date || item.items?.[0]?.date).fromNow(),
+          count: item.count || item.items?.length || 1,
+          preview: `${item.count || item.items?.length || 1} message${(item.count || item.items?.length || 1) > 1 ? 's' : ''}`,
+          imageUrl: item.imageUrl || item.items?.[0]?.imageUrl,
         }));
-        setHistory(mappedData);
+        setHistory(mappedData as any);
       }
     } catch (err: any) {
       const errorMsg = err?.response?.data?.message || err?.message || 'Une erreur est survenue';
@@ -151,32 +160,22 @@ export default function HistoryScreen() {
     }
   };
 
-  const filteredData =
-    activeFilter === 'all' ? history : history.filter((item) => item.type === activeFilter);
+  const filteredData = history; // Show all conversations since they're already grouped
 
-  const getIcon = (type: HistoryType) => {
-    switch (type) {
-      case 'text':
-        return <FileText size={22} color="#1e9bff" />;
-      case 'image':
-        return <ImageIcon size={22} color="#10b981" />;
-      case 'document':
-        return <FileSpreadsheet size={22} color="#f59e0b" />;
-      case 'chat':
-        return <MessageSquare size={22} color="#8b5cf6" />;
-    }
+  const getIcon = () => {
+    return <MessageSquare size={22} color="#8b5cf6" />;
   };
 
-  const renderItem = ({ item }: { item: HistoryItem }) => (
+  const renderItem = ({ item }: { item: any }) => (
     <View style={styles.itemWrapper}>
       <TouchableOpacity
         style={styles.itemCard}
-        onPress={() => router.push({ pathname: '/(drawer)', params: { chatId: item.id } })}
+        onPress={() => router.push({ pathname: '/(drawer)', params: { conversationId: item.id } })}
         activeOpacity={0.7}
       >
         <BlurView intensity={20} style={StyleSheet.absoluteFill} tint="light" />
         <View style={styles.iconContainer}>
-          {getIcon(item.type)}
+          {getIcon()}
         </View>
         <View style={styles.itemContent}>
           <View style={styles.itemHeader}>
@@ -184,7 +183,7 @@ export default function HistoryScreen() {
             <Text style={styles.itemDate}>{item.date}</Text>
           </View>
           <Text style={styles.itemPreview} numberOfLines={2}>
-            {item.preview || 'Aucun aperçu disponible'}
+            {item.preview || 'Conversation'}
           </Text>
         </View>
         <ChevronRight size={18} color={colors.text.muted} />
@@ -225,8 +224,8 @@ export default function HistoryScreen() {
           </View>
         </View>
 
-        {/* Filters */}
-        <View style={styles.filtersWrapper}>
+        {/* Filters - Disabled for grouped conversations */}
+        {/* <View style={styles.filtersWrapper}>
           <FlatList
             horizontal
             data={FILTERS}
@@ -253,7 +252,7 @@ export default function HistoryScreen() {
               </TouchableOpacity>
             )}
           />
-        </View>
+        </View> */}
 
         {/* List */}
         <View style={{ flex: 1 }}>
