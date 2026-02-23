@@ -181,7 +181,7 @@ export const GenericModal: React.FC<GenericModalProps> = ({
 
           {/* Actions */}
           <View style={styles.actions}>
-            {type === 'confirmation' ? (
+            {onConfirm ? (
               <>
                 <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={onClose}>
                   <Text style={styles.cancelButtonText}>{cancelText}</Text>

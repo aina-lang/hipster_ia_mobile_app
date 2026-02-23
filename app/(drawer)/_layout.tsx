@@ -17,6 +17,7 @@ import {
   Zap,
   Layout,
   Cpu,
+  GalleryHorizontal,
 } from 'lucide-react-native';
 import { useAuthStore } from '../../store/authStore';
 import { AiService } from '../../api/ai.service';
@@ -25,6 +26,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { useRouter } from 'expo-router';
 import { NeonButton } from '../../components/ui/NeonButton';
+import { useChatStore } from '../../store/chatStore';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/fr';
@@ -120,6 +122,16 @@ function CustomDrawerContent(props: any) {
         console.log('[Drawer] Deletion result from API:', result);
         setAllHistory((prev) => prev.filter((i) => i.id !== itemToDelete));
         setHistory((prev) => prev.filter((i) => i.id !== itemToDelete));
+
+        // If the deleted conversation is the currently active one in the chat screen,
+        // navigate to index with reset=true to clear it
+        const activeConversationId = useChatStore.getState().conversationId;
+        console.log('[Drawer] Active conversationId in store:', activeConversationId, '| Deleted:', itemToDelete);
+        if (activeConversationId === itemToDelete) {
+          console.log('[Drawer] Deleted active conversation, resetting chat screen...');
+          props.navigation.closeDrawer();
+          router.push({ pathname: '/(drawer)', params: { reset: 'true' } });
+        }
       } catch (e) {
         console.error('[Drawer] Failed to delete item', e);
         alert("Erreur lors de la suppression. Veuillez réessayer.");
