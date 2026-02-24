@@ -45,50 +45,8 @@ interface HistoryItem {
 }
 
 const CreditsDisplay = ({ user }: { user: any }) => {
-  if (user?.type !== 'ai') return null;
-
-  const imageLimit = user.imagesLimit || 0;
-  const imageUsed = user.imagesUsed || 0;
-  const imageRemaining = Math.max(0, imageLimit - imageUsed);
-
-  const textLimit = user.promptsLimit || 0;
-  const textUsed = user.promptsUsed || 0;
-  const textRemaining = Math.max(0, textLimit - textUsed);
-
-  return (
-    <View style={styles.creditsContainer}>
-      <BlurView intensity={15} tint="light" style={styles.creditsBlur}>
-        <LinearGradient
-          colors={['rgba(59, 130, 246, 0.1)', 'rgba(139, 92, 246, 0.05)']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.creditsGradient}
-        >
-          <View style={styles.creditItem}>
-            <View style={styles.creditIconBadge}>
-              <Zap size={14} color={colors.primary.main} />
-            </View>
-            <View>
-              <Text style={styles.creditValue}>{textRemaining}</Text>
-              <Text style={styles.creditLabel}>Textes</Text>
-            </View>
-          </View>
-
-          <View style={styles.creditDivider} />
-
-          <View style={styles.creditItem}>
-            <View style={[styles.creditIconBadge, { backgroundColor: 'rgba(139, 92, 246, 0.1)' }]}>
-              <Layout size={14} color={colors.violet[500]} />
-            </View>
-            <View>
-              <Text style={styles.creditValue}>{imageRemaining}</Text>
-              <Text style={styles.creditLabel}>Images</Text>
-            </View>
-          </View>
-        </LinearGradient>
-      </BlurView>
-    </View>
-  );
+  // Credits display hidden in drawer
+  return null;
 };
 
 function CustomDrawerContent(props: any) {

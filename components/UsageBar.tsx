@@ -1,74 +1,33 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { colors } from '../theme/colors';
-import { api } from '../api/client';
-
-interface Credits {
-  promptsLimit: number;
-  imagesLimit: number;
-  videosLimit: number;
-  audioLimit: number;
-  planType?: string;
-}
+import { useUserCredits } from '../hooks/useUserCredits';
 
 interface UsageBarProps {
-  promptsUsed?: number;
-  imagesUsed?: number;
-  videosUsed?: number;
-  audioUsed?: number;
   onRefresh?: () => void;
 }
 
 export const UsageBar: React.FC<UsageBarProps> = ({
-  promptsUsed = 0,
-  imagesUsed = 0,
-  videosUsed = 0,
-  audioUsed = 0,
   onRefresh,
 }) => {
-  const [credits, setCredits] = useState<Credits | null>(null);
+  const { credits, loading, error } = useUserCredits();
   const [used, setUsed] = useState({
-    promptsUsed,
-    imagesUsed,
-    videosUsed,
-    audioUsed,
+    promptsUsed: 0,
+    imagesUsed: 0,
+    videosUsed: 0,
+    audioUsed: 0,
   });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchCredits();
-  }, []);
-
-  const fetchCredits = async () => {
-    try {
-      setLoading(true);
-      console.log('[UsageBar] Fetching credits from /ai/payment/credits...');
-      const resp = await api.get('/ai/payment/credits');
-      console.log('[UsageBar] Credits response:', resp.data);
-      // Backend wraps responses as { status, statusCode, message, data }
-      const data = resp.data?.data ?? resp.data;
-      setCredits({
-        promptsLimit: data.promptsLimit || 0,
-        imagesLimit: data.imagesLimit || 0,
-        videosLimit: data.videosLimit || 0,
-        audioLimit: data.audioLimit || 0,
-        planType: data.planType || 'curieux',
-      });
+    if (credits) {
       setUsed({
-        promptsUsed: data.promptsUsed || 0,
-        imagesUsed: data.imagesUsed || 0,
-        videosUsed: data.videosUsed || 0,
-        audioUsed: data.audioUsed || 0,
+        promptsUsed: credits.promptsUsed || 0,
+        imagesUsed: credits.imagesUsed || 0,
+        videosUsed: credits.videosUsed || 0,
+        audioUsed: credits.audioUsed || 0,
       });
-    } catch (error: any) {
-      console.error('[UsageBar] Error fetching credits:', error?.response?.status, error?.message);
-      console.error('[UsageBar] Full error:', error);
-      setError(error?.response?.data?.message || error?.message || 'Erreur lors du chargement des limites');
-    } finally {
-      setLoading(false);
     }
-  };
+  }, [credits]);
 
   useEffect(() => {
     if (onRefresh) {
@@ -134,7 +93,6 @@ export const UsageBar: React.FC<UsageBarProps> = ({
         <View style={styles.usageRow}>
           <View style={styles.labelContainer}>
             <Text style={styles.label}>{label}</Text>
-            <Text style={styles.count}>Illimité</Text>
           </View>
         </View>
       );
@@ -143,15 +101,11 @@ export const UsageBar: React.FC<UsageBarProps> = ({
     if (limit === 0) return null; // Don't show if not included in plan
 
     const percentage = Math.min((used / limit) * 100, 100);
-    const isAlmostFull = percentage > 90;
 
     return (
       <View style={styles.usageRow}>
         <View style={styles.labelContainer}>
           <Text style={styles.label}>{label}</Text>
-          <Text style={[styles.count, isAlmostFull && styles.countWarning]}>
-            {used}/{limit} utilisés {periodLabel}
-          </Text>
         </View>
         <View style={styles.barContainer}>
           <View
@@ -213,14 +167,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.text.primary,
     fontWeight: '500',
-  },
-  count: {
-    fontSize: 11,
-    color: colors.text.muted,
-    fontWeight: '500',
-  },
-  countWarning: {
-    color: '#ff3333',
   },
   barContainer: {
     height: 4,
