@@ -11,6 +11,7 @@ import Animated, {
   withDelay,
   Easing,
 } from 'react-native-reanimated';
+import { SplashParticles } from '../SplashParticles';
 
 const splashImage = require('../../assets/splashNew.jpeg');
 
@@ -97,6 +98,9 @@ export const LoadingTransition = () => {
       exiting={FadeOut.duration(400)}
       style={[StyleSheet.absoluteFill, { backgroundColor: '#000000' }]}
     >
+      {/* Particules animées néon */}
+      <SplashParticles />
+
       {/* Background with landing scale animation */}
       <View style={StyleSheet.absoluteFill}>
         <Animated.Image
