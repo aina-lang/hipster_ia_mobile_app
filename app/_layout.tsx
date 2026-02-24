@@ -143,7 +143,7 @@ export default function RootLayout() {
             <Stack.Screen name="(guided)" />
           </Stack>
 
-        <StyledStatusBar theme="auto" translucent={true} />
+        <StatusBar barStyle="light-content" translucent={true} backgroundColor="transparent" />
         </StripeProvider>
       </GestureHandlerRootView>
     </SafeAreaProvider>

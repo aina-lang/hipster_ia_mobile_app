@@ -17,7 +17,9 @@ export function StyledStatusBar({ theme = 'light', translucent = true }: StyledS
     if (theme === 'auto') {
       return colorScheme === 'dark' ? 'light' : 'dark';
     }
-    return theme as StatusBarStyle;
+    // theme='dark' (fond sombre) → style='light' (texte blanc)
+    // theme='light' (fond clair) → style='dark' (texte noir)
+    return theme === 'dark' ? 'light' : 'dark';
   };
 
   return (
