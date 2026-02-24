@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Dimensions, StyleSheet } from 'react-native';
+import { View, Dimensions } from 'react-native';
 import { Star } from 'lucide-react-native';
 import Animated, {
   useSharedValue,
@@ -12,8 +12,6 @@ import Animated, {
   Extrapolate,
 } from 'react-native-reanimated';
 
-const { width, height } = Dimensions.get('window');
-
 interface Particle {
   id: string;
   x: number;
@@ -25,13 +23,15 @@ interface Particle {
   glowColor: string;
 }
 
-// Couleurs néon modernes avec couleurs complémentaires pour le glow
+const { width, height } = Dimensions.get('window');
+
+// Palette néon premium orientée bleu avec variantes
 const NEON_COLORS = [
-  { main: '#00ffff', glow: '#00ffff' },      // Cyan
-  { main: '#00d4ff', glow: '#0099ff' },      // Cyan clair
-  { main: '#00ff88', glow: '#00ff88' },      // Néon vert
-  { main: '#ff00ff', glow: '#ff00ff' },      // Magenta
-  { main: '#6366ff', glow: '#4f46e5' },      // Indigo
+  { main: '#00d4ff', glow: '#0099ff' },      // Cyan bleu principal
+  { main: '#00ffff', glow: '#00d4ff' },      // Cyan pur
+  { main: '#66e5ff', glow: '#00d4ff' },      // Cyan clair
+  { main: '#0099ff', glow: '#0066ff' },      // Bleu profond
+  { main: '#00ff88', glow: '#00d4ff' },      // Vert néon (accent)
   { main: '#ffffff', glow: '#00d4ff' },      // Blanc avec glow cyan
 ];
 
@@ -44,7 +44,7 @@ const generateParticles = (count: number): Particle[] => {
       y: Math.random() * height * 1.5,
       size: Math.random() * 3 + 1.5, // 1.5-4.5px
       opacity: Math.random() * 0.4 + 0.3, // 0.3-0.7
-      duration: Math.random() * 2000 + 1000, // 1-3s
+      duration: Math.random() * 8000 + 12000, // 12-20s pour un mouvement lent et espace
       color: colorPair.main,
       glowColor: colorPair.glow,
     };
@@ -52,42 +52,110 @@ const generateParticles = (count: number): Particle[] => {
 };
 
 const StarParticle = ({ particle }: { particle: Particle }) => {
-  const animProgress = useSharedValue(0);
+  // Mouvements asynchronisés indépendants
+  const translateX = useSharedValue(0);
+  const translateY = useSharedValue(0);
+  const rotation = useSharedValue(0);
+  const scaleValue = useSharedValue(1);
+  const opacityValue = useSharedValue(particle.opacity);
+
+  const durationX = particle.duration * (1 + Math.random() * 0.8); // 12-36s
+  const durationY = particle.duration * (1.1 + Math.random() * 0.9); // 13-39s
+  const durationRotation = particle.duration * (1.3 + Math.random() * 0.7); // 15-40s
+  const durationScale = particle.duration * (0.8 + Math.random() * 0.4); // 9.6-24s
+
+  const rangeX = 80 + Math.random() * 80; // Déplacement horizontal 80-160px
+  const rangeY = 120 + Math.random() * 120; // Déplacement vertical 120-240px
 
   useEffect(() => {
-    // Animation de scintillement dramatique avec phases saccadées
-    animProgress.value = withRepeat(
+    // Mouvement horizontal asynchronisé - très lent et fluide
+    translateX.value = withRepeat(
       withSequence(
-        withTiming(1, { duration: particle.duration * 0.25 }),
-        withTiming(0.2, { duration: particle.duration * 0.15 }),
-        withTiming(0.7, { duration: particle.duration * 0.3 }),
-        withTiming(0.3, { duration: particle.duration * 0.3 }),
+        withTiming(rangeX, { 
+          duration: durationX * 0.5, 
+          easing: Easing.inOut(Easing.sin) 
+        }),
+        withTiming(-rangeX, { 
+          duration: durationX * 0.5, 
+          easing: Easing.inOut(Easing.sin) 
+        })
+      ),
+      -1,
+      true
+    );
+
+    // Mouvement vertical asynchronisé - très lent et organique
+    translateY.value = withRepeat(
+      withSequence(
+        withTiming(-rangeY, { 
+          duration: durationY * 0.4, 
+          easing: Easing.inOut(Easing.sin) 
+        }),
+        withTiming(rangeY, { 
+          duration: durationY * 0.3, 
+          easing: Easing.inOut(Easing.sin) 
+        }),
+        withTiming(-rangeY * 0.5, { 
+          duration: durationY * 0.3, 
+          easing: Easing.inOut(Easing.sin) 
+        })
+      ),
+      -1,
+      true
+    );
+
+    // Rotation fluide continue très lente
+    rotation.value = withRepeat(
+      withTiming(360, {
+        duration: durationRotation * 2, // Rotation très lente
+        easing: Easing.linear,
+      }),
+      -1,
+      false
+    );
+
+    // Pulsation d'échelle lente et douce
+    scaleValue.value = withRepeat(
+      withSequence(
+        withTiming(1.15, { 
+          duration: durationScale * 0.6, 
+          easing: Easing.inOut(Easing.sin) 
+        }),
+        withTiming(0.9, { 
+          duration: durationScale * 0.4, 
+          easing: Easing.inOut(Easing.sin) 
+        })
+      ),
+      -1,
+      true
+    );
+
+    // Scintillement d'opacité très lent et subtil
+    opacityValue.value = withRepeat(
+      withSequence(
+        withTiming(1, { 
+          duration: particle.duration * 0.5, 
+          easing: Easing.inOut(Easing.sin) 
+        }),
+        withTiming(particle.opacity * 0.5, { 
+          duration: particle.duration * 0.5, 
+          easing: Easing.inOut(Easing.sin) 
+        })
       ),
       -1,
       true
     );
   }, [particle.duration]);
 
-  const animatedStyle = useAnimatedStyle(() => {
-    const opacity = interpolate(
-      animProgress.value,
-      [0, 1],
-      [particle.opacity * 0.3, 1],
-      Extrapolate.CLAMP
-    );
-
-    const scale = interpolate(
-      animProgress.value,
-      [0, 1],
-      [0.6, 1.2],
-      Extrapolate.CLAMP
-    );
-
-    return {
-      opacity,
-      transform: [{ scale }],
-    };
-  });
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: opacityValue.value,
+    transform: [
+      { translateX: translateX.value },
+      { translateY: translateY.value },
+      { rotate: `${rotation.value}deg` },
+      { scale: scaleValue.value },
+    ],
+  }));
 
   return (
     <Animated.View
@@ -104,7 +172,7 @@ const StarParticle = ({ particle }: { particle: Particle }) => {
         animatedStyle,
       ]}
     >
-      {/* Shadow/Glow layer */}
+      {/* Shadow/Glow layer - crée l'effet néon */}
       <View
         style={{
           position: 'absolute',
@@ -116,7 +184,7 @@ const StarParticle = ({ particle }: { particle: Particle }) => {
         }}
       />
 
-      {/* Star icon */}
+      {/* Star icon brillant */}
       <Star
         size={particle.size}
         color={particle.color}
@@ -127,8 +195,8 @@ const StarParticle = ({ particle }: { particle: Particle }) => {
   );
 };
 
-export const SplashParticles = () => {
-  const [particles] = useState(() => generateParticles(80)); // 80 étoiles néon
+export const SplashParticles = ({ count = 80 }: { count?: number } = {}) => {
+  const [particles] = useState(() => generateParticles(count));
 
   return (
     <View
@@ -140,6 +208,7 @@ export const SplashParticles = () => {
         bottom: 0,
         overflow: 'hidden',
         zIndex: 1,
+        pointerEvents: 'none',
       }}
     >
       {particles.map((particle) => (
