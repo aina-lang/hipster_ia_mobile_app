@@ -163,15 +163,21 @@ export default function Step3PersonalizeScreen() {
                       return (
                         <TouchableOpacity
                           key={modelLabel}
-                          style={[styles.flyerCard, isSelected && styles.flyerCardSelected]}
+                          style={[styles.flyerCard, isSelected && styles.styleCardSelected,]}
                           onPress={() => setStyle(modelLabel)}
                         >
+                             {isSelected && (
+                          <>
+                            <View style={styles.cardBorderGlow} pointerEvents="none" />
+                            <View style={styles.cardBloom} pointerEvents="none" />
+                          </>
+                        )}
                           <Image source={modelImage} style={styles.flyerCardImage} />
-                          {isSelected && (
-                            <View style={styles.flyerCardBadge}>
-                              <Zap size={10} color="white" />
-                            </View>
-                          )}
+                        {isSelected && (
+                          <View style={styles.styleCardCheckBadge}>
+                            <Check size={10} color="white" strokeWidth={3} />
+                          </View>
+                        )}
                           <View style={styles.flyerCardOverlay}>
                             <Text style={styles.flyerCardCat}>{cat.label}</Text>
                             <Text style={styles.flyerCardName} numberOfLines={2}>
@@ -460,9 +466,9 @@ const styles = StyleSheet.create({
     height: 160,
     borderRadius: 14,
     overflow: 'hidden',
-    borderWidth: 2,
-    borderColor: 'transparent',
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: 'rgba(255,255,255,0.04)',
     position: 'relative',
   },
   flyerCardSelected: {
