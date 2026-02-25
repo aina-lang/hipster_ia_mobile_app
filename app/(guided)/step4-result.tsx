@@ -690,9 +690,45 @@ export default function Step4ResultScreen() {
           }
         }
       } else if (selectedCategory === 'Document') {
-        const resultData = await AiService.generateDocument('business', params);
-        setResult(resultData.content);
-        setGenerationId(resultData.generationId);
+        if (isFlyerExact) {
+          const flyerResult = await AiService.generateFlyer(params, seed);
+          console.log('[DEBUG] Document Flyer Result:', JSON.stringify(flyerResult, null, 2));
+
+          const isAsync = !flyerResult.url && flyerResult.generationId;
+          if (isAsync) {
+            setGenerationId(flyerResult.generationId);
+            let isCompleted = false;
+            let attempts = 0;
+            const maxAttempts = 30;
+            while (!isCompleted && attempts < maxAttempts) {
+              attempts++;
+              await new Promise(resolve => setTimeout(resolve, 2000));
+              try {
+                const updatedGen = await AiService.getConversation(flyerResult.generationId.toString());
+                const imageUrl = updatedGen?.imageUrl || updatedGen?.url || updatedGen?.image;
+                if (imageUrl && typeof imageUrl === 'string' && imageUrl.startsWith('http')) {
+                  setImageUrl(imageUrl);
+                  setResult(imageUrl);
+                  isCompleted = true;
+                } else if (updatedGen?.result?.startsWith('ERROR')) {
+                  throw new Error(updatedGen.result);
+                }
+              } catch (pollError) {
+                console.warn('[DEBUG] Document Flyer poll error:', pollError);
+              }
+            }
+            if (!isCompleted) throw new Error('Délai de génération dépassé.');
+          } else {
+            setImageUrl(flyerResult.url);
+            setResult(flyerResult.url);
+            setGenerationId(flyerResult.generationId);
+            if (flyerResult.seed !== undefined) setSeed(flyerResult.seed);
+          }
+        } else {
+          const resultData = await AiService.generateDocument('business', params);
+          setResult(resultData.content);
+          setGenerationId(resultData.generationId);
+        }
       } else if (selectedCategory === 'Texte') {
         // Améliore la détection pour différencier correctement les types
         const isFlyerExact = selectedFunction && selectedFunction.includes('Flyers');
