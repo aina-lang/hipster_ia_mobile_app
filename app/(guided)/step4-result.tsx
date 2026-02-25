@@ -588,6 +588,7 @@ export default function Step4ResultScreen() {
                 isCompleted = true;
                 console.log('[DEBUG] ✅ Social image found:', imageUrl);
               } else if (updatedGen?.result?.startsWith('ERROR')) {
+                isCompleted = true;
                 throw new Error(updatedGen.result);
               }
             } catch (pollError) {
@@ -622,6 +623,7 @@ export default function Step4ResultScreen() {
                   setResult(updatedGen.imageUrl);
                   isCompleted = true;
                 } else if (updatedGen?.result?.startsWith('ERROR')) {
+                  isCompleted = true;
                   throw new Error(updatedGen.result);
                 }
               } catch (pollError) {
@@ -670,6 +672,7 @@ export default function Step4ResultScreen() {
                   setResult(imageUrl);
                   isCompleted = true;
                 } else if (updatedGen?.result?.startsWith('ERROR')) {
+                  isCompleted = true;
                   throw new Error(updatedGen.result);
                 }
               } catch (pollError) {
@@ -711,6 +714,7 @@ export default function Step4ResultScreen() {
                   setResult(imageUrl);
                   isCompleted = true;
                 } else if (updatedGen?.result?.startsWith('ERROR')) {
+                  isCompleted = true;
                   throw new Error(updatedGen.result);
                 }
               } catch (pollError) {
@@ -771,6 +775,7 @@ export default function Step4ResultScreen() {
                   isCompleted = true;
                 } else if (updatedGen?.result?.startsWith('ERROR')) {
                   console.error('[DEBUG] Generation error:', updatedGen.result);
+                  isCompleted = true;
                   throw new Error(updatedGen.result);
                 } else {
                   lastImageUrl = imageUrl; // Track if it's stuck
@@ -827,6 +832,7 @@ export default function Step4ResultScreen() {
                   isCompleted = true;
                 } else if (updatedGen?.result?.startsWith('ERROR')) {
                   console.error('[DEBUG] Generation error:', updatedGen.result);
+                  isCompleted = true;
                   throw new Error(updatedGen.result);
                 } else {
                   lastImageUrl = imageUrl;
