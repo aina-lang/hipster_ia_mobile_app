@@ -32,11 +32,10 @@ import {
 import illus2 from "../../assets/illus2.jpeg"
 import illus3 from "../../assets/illus3.jpeg"
 import illus4 from "../../assets/illus4.jpeg"
-import { api } from '../../api/client';
+import { FLYER_CATEGORIES } from '../../constants/flyerModels';
 import { useEffect, useRef, useState } from 'react';
-import { GenericModal, ModalType } from '../../components/ui/GenericModal';
-
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+import { GenericModal, ModalType } from 'components/ui/GenericModal';
+const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const VISUAL_STYLES = [
   { label: 'Premium', icon: Moon, description: 'Noir & blanc haut de gamme.\nContrasté, intemporel, effet luxe.', image: illus2 },
@@ -60,6 +59,11 @@ export default function Step3PersonalizeScreen() {
 
   const scrollRef = useRef<ScrollView>(null);
   const [localQuery, setLocalQuery] = useState(userQuery || '');
+  const [activeFlyerCategory, setActiveFlyerCategory] = useState<string | null>(null);
+
+  const displayedCategories = FLYER_CATEGORIES;
+
+
   const skeletonOpacity = useRef(new Animated.Value(1)).current;
   const contentOpacity = useRef(new Animated.Value(0)).current;
   const skeletonPulse = useRef(new Animated.Value(0.4)).current;
@@ -120,9 +124,9 @@ export default function Step3PersonalizeScreen() {
   };
 
   const handleCreate = () => {
-    if (selectedCategory === 'Image' || selectedCategory === 'Social') {
+    if (selectedCategory === 'Image' || selectedCategory === 'Social' || selectedCategory === 'Document') {
       if (!uploadedImage && !selectedStyle) {
-        showModal('Style requis', 'Veuillez choisir un style artistique.', 'warning');
+        showModal('Choix requis', 'Veuillez choisir un modèle ou un style.', 'warning');
         return;
       }
     }
@@ -154,7 +158,7 @@ export default function Step3PersonalizeScreen() {
         </View>
 
         {/* CONDITIONAL FLOW: Visual Layout */}
-        {(selectedCategory === 'Image' || selectedCategory === 'Social') && (
+        {(selectedCategory === 'Image' || selectedCategory === 'Social' || selectedCategory === 'Document') && (
           <View style={{ marginBottom: 32, overflow: 'visible' }}>
 
             {/* 1. REFERENCE IMAGE */}
@@ -183,117 +187,182 @@ export default function Step3PersonalizeScreen() {
               )}
             </View>
 
-            {/* 2. VISUAL STYLE */}
+            {/* 2. VISUAL STYLE / FLYER MODELS */}
             <View style={{ marginTop: 24, overflow: 'visible' }}>
-              <Text style={styles.sectionTitle}>Style artistique</Text>
+              <Text style={styles.sectionTitle}>
+                {selectedCategory === 'Document' ? 'Modèle de flyer' : 'Style artistique'}
+              </Text>
 
-              <Animated.FlatList
-                data={VISUAL_STYLES}
-                horizontal
-                keyExtractor={(item) => item.label}
-                showsHorizontalScrollIndicator={false}
-                snapToInterval={ITEM_WIDTH + SPACING}
-                decelerationRate="fast"
-                contentContainerStyle={{
-                  paddingHorizontal: SPACING,
-                  paddingVertical: 50,
-                }}
-                style={{ overflow: 'visible' }}
-                onScroll={Animated.event(
-                  [{ nativeEvent: { contentOffset: { x: scrollX } } }],
-                  { useNativeDriver: true }
-                )}
-                ref={flatListRef}
-                getItemLayout={(data, index) => ({
-                  length: ITEM_WIDTH + SPACING,
-                  offset: (ITEM_WIDTH + SPACING) * index,
-                  index,
-                })}
-                renderItem={({ item, index }) => {
-                  const inputRange = [
-                    (index - 1) * (ITEM_WIDTH + SPACING),
-                    index * (ITEM_WIDTH + SPACING),
-                    (index + 1) * (ITEM_WIDTH + SPACING),
-                  ];
-
-                  const scale = scrollX.interpolate({
-                    inputRange,
-                    outputRange: [0.8, 1.25, 0.8],
-                    extrapolate: 'clamp',
-                  });
-
-                  const translateY = scrollX.interpolate({
-                    inputRange,
-                    outputRange: [15, -15, 15],
-                    extrapolate: 'clamp',
-                  });
-
-                  const opacity = scrollX.interpolate({
-                    inputRange,
-                    outputRange: [0.7, 1, 0.7],
-                    extrapolate: 'clamp',
-                  });
-
-                  const isSelected = selectedStyle === item.label;
-
-                  return (
-                    <Animated.View
-                      style={{
-                        width: ITEM_WIDTH,
-                        marginHorizontal: SPACING / 2,
-                        transform: [{ scale }, { translateY }],
-                        opacity,
-                        // overflow visible so glow can escape
-                        position: 'relative',
-                      }}
-                    >
-                      {/* ── Neon glow layers — outside the clipped card ── */}
-                      {isSelected && (
-                        <>
-                          <View style={styles.cardBloomFar} pointerEvents="none" />
-                          <View style={styles.cardBloomMid} pointerEvents="none" />
-                          <View style={styles.cardBorderGlow} pointerEvents="none" />
-                          <View style={styles.cardFloorGlow} pointerEvents="none" />
-                        </>
-                      )}
-
-                      {/* ── Card body — clipped ── */}
-                      <TouchableOpacity
-                        style={[styles.styleCard, isSelected && styles.styleCardSelected]}
-                        onPress={() => handleSelectStyle(item.label, index)}
-                        activeOpacity={0.9}
-                      >
-                        <Image
-                          source={typeof item.image === 'string' ? { uri: item.image } : item.image}
-                          style={styles.styleCardImage}
-                          resizeMode="cover"
-                        />
-
-                        {/* Top neon reflection when selected */}
-                        {isSelected && (
-                          <View style={styles.styleCardTopReflection} pointerEvents="none" />
-                        )}
-
-                        <View style={[styles.styleCardContent, isSelected && { backgroundColor: 'transparent' }]}>
-                          <Text style={[styles.styleCardLabel, isSelected && styles.styleCardLabelSelected]}>
-                            {item.label}
+              {selectedCategory === 'Document' ? (
+                /* FLYER MODELS SELECTION */
+                <View style={{ marginTop: 12 }}>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.categoryChipsContainer}
+                    style={styles.categoryChipsScroll}
+                  >
+                    {displayedCategories.map((cat) => {
+                      const isActive = activeFlyerCategory === cat.id;
+                      return (
+                        <TouchableOpacity
+                          key={cat.id}
+                          style={[styles.categoryChip, isActive && styles.categoryChipActive]}
+                          onPress={() => setActiveFlyerCategory(cat.id)}
+                        >
+                          <cat.icon size={18} color={isActive ? "white" : colors.text.muted} />
+                          <Text style={[styles.categoryChipText, isActive && styles.categoryChipTextActive]}>
+                            {cat.label}
                           </Text>
-                        </View>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </ScrollView>
 
-                        {isSelected && (
-                          <BlurView intensity={80} tint="dark" style={StyleSheet.absoluteFill}>
-                            <View style={styles.selectedOverlayContent}>
-                              <View style={styles.styleCardCheck}>
-                                <View style={styles.styleCardCheckInner} />
+                  {activeFlyerCategory ? (
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      style={styles.modelsScroll}
+                      contentContainerStyle={styles.modelsScrollContainer}
+                    >
+                      <View style={styles.modelsGrid}>
+                        {displayedCategories.find(c => c.id === activeFlyerCategory)?.models.map((model) => {
+                          const isSelected = selectedStyle === model;
+                          const catImage = displayedCategories.find(c => c.id === activeFlyerCategory)?.image;
+                          return (
+                            <TouchableOpacity
+                              key={model}
+                              style={[styles.modelCard, isSelected && styles.modelCardSelected]}
+                              onPress={() => setStyle(model)}
+                            >
+                              <Image source={catImage} style={styles.modelCardImage} />
+                              <View style={styles.modelCardOverlay}>
+                                <Text style={styles.modelCardName} numberOfLines={2}>{model}</Text>
+                                {isSelected && (
+                                  <View style={styles.modelCardActiveBadge}>
+                                    <Zap size={12} color="white" />
+                                  </View>
+                                )}
                               </View>
-                            </View>
-                          </BlurView>
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
+                    </ScrollView>
+                  ) : (
+                    <View style={styles.emptyModelsContainer}>
+                      <Sparkles size={32} color="rgba(255,255,255,0.1)" />
+                      <Text style={styles.emptyModelsText}>Sélectionnez une catégorie ci-dessus</Text>
+                    </View>
+                  )}
+                </View>
+              ) : (
+                /* STANDARD VISUAL STYLES CAROUSEL */
+                <Animated.FlatList
+                  data={VISUAL_STYLES}
+                  horizontal
+                  keyExtractor={(item) => item.label}
+                  showsHorizontalScrollIndicator={false}
+                  snapToInterval={ITEM_WIDTH + SPACING}
+                  decelerationRate="fast"
+                  contentContainerStyle={{
+                    paddingHorizontal: SPACING,
+                    paddingVertical: 50,
+                  }}
+                  style={{ overflow: 'visible' }}
+                  onScroll={Animated.event(
+                    [{ nativeEvent: { contentOffset: { x: scrollX } } }],
+                    { useNativeDriver: true }
+                  )}
+                  ref={flatListRef}
+                  getItemLayout={(data, index) => ({
+                    length: ITEM_WIDTH + SPACING,
+                    offset: (ITEM_WIDTH + SPACING) * index,
+                    index,
+                  })}
+                  renderItem={({ item, index }) => {
+                    const inputRange = [
+                      (index - 1) * (ITEM_WIDTH + SPACING),
+                      index * (ITEM_WIDTH + SPACING),
+                      (index + 1) * (ITEM_WIDTH + SPACING),
+                    ];
+
+                    const scale = scrollX.interpolate({
+                      inputRange,
+                      outputRange: [0.8, 1.25, 0.8],
+                      extrapolate: 'clamp',
+                    });
+
+                    const translateY = scrollX.interpolate({
+                      inputRange,
+                      outputRange: [15, -15, 15],
+                      extrapolate: 'clamp',
+                    });
+
+                    const opacity = scrollX.interpolate({
+                      inputRange,
+                      outputRange: [0.7, 1, 0.7],
+                      extrapolate: 'clamp',
+                    });
+
+                    const isSelected = selectedStyle === item.label;
+
+                    return (
+                      <Animated.View
+                        style={{
+                          width: ITEM_WIDTH,
+                          marginHorizontal: SPACING / 2,
+                          transform: [{ scale }, { translateY }],
+                          opacity,
+                          position: 'relative',
+                        }}
+                      >
+                        {isSelected && (
+                          <>
+                            <View style={styles.cardBloomFar} pointerEvents="none" />
+                            <View style={styles.cardBloomMid} pointerEvents="none" />
+                            <View style={styles.cardBorderGlow} pointerEvents="none" />
+                            <View style={styles.cardFloorGlow} pointerEvents="none" />
+                          </>
                         )}
-                      </TouchableOpacity>
-                    </Animated.View>
-                  );
-                }}
-              />
+
+                        <TouchableOpacity
+                          style={[styles.styleCard, isSelected && styles.styleCardSelected]}
+                          onPress={() => handleSelectStyle(item.label, index)}
+                          activeOpacity={0.9}
+                        >
+                          <Image
+                            source={typeof item.image === 'string' ? { uri: item.image } : item.image}
+                            style={styles.styleCardImage}
+                            resizeMode="cover"
+                          />
+
+                          {isSelected && (
+                            <View style={styles.styleCardTopReflection} pointerEvents="none" />
+                          )}
+
+                          <View style={[styles.styleCardContent, isSelected && { backgroundColor: 'transparent' }]}>
+                            <Text style={[styles.styleCardLabel, isSelected && styles.styleCardLabelSelected]}>
+                              {item.label}
+                            </Text>
+                          </View>
+
+                          {isSelected && (
+                            <BlurView intensity={80} tint="dark" style={StyleSheet.absoluteFill}>
+                              <View style={styles.selectedOverlayContent}>
+                                <View style={styles.styleCardCheck}>
+                                  <View style={styles.styleCardCheckInner} />
+                                </View>
+                              </View>
+                            </BlurView>
+                          )}
+                        </TouchableOpacity>
+                      </Animated.View>
+                    );
+                  }}
+                />
+              )}
             </View>
           </View>
         )}
@@ -588,5 +657,112 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.75,
     shadowRadius: 22,
     elevation: 18,
+  },
+  categoryChipsScroll: {
+    marginHorizontal: -20,
+    marginBottom: 20,
+  },
+  categoryChipsContainer: {
+    paddingHorizontal: 20,
+    gap: 10,
+  },
+  categoryChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  categoryChipActive: {
+    backgroundColor: colors.primary.main,
+    borderColor: colors.primary.main,
+  },
+  categoryChipText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text.muted,
+  },
+  categoryChipTextActive: {
+    color: 'white',
+  },
+  modelsScroll: {
+    marginHorizontal: -20,
+  },
+  modelsScrollContainer: {
+    paddingHorizontal: 20,
+  },
+  modelsGrid: {
+    flexDirection: 'column',
+    flexWrap: 'wrap',
+    height: 380, // Height for 2 rows of 180px cards + gap
+    gap: 12,
+    marginTop: 8,
+  },
+  modelCard: {
+    width: 156,
+    height: 180,
+    borderRadius: 16,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderWidth: 2,
+    borderColor: 'transparent',
+    position: 'relative',
+  },
+  modelCardSelected: {
+    borderColor: '#1e9bff',
+  },
+  modelCardImage: {
+    width: '100%',
+    height: '100%',
+    position: 'absolute',
+    opacity: 0.6,
+  },
+  modelCardOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    padding: 12,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+  },
+  modelCardName: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '700',
+    lineHeight: 18,
+  },
+  modelCardActiveBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#1e9bff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#1e9bff',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.5,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  emptyModelsContainer: {
+    height: 120,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.02)',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)',
+    borderStyle: 'dashed',
+    gap: 10,
+  },
+  emptyModelsText: {
+    color: colors.text.muted,
+    fontSize: 14,
+    fontWeight: '500',
   },
 });

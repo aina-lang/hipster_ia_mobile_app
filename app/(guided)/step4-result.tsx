@@ -540,13 +540,19 @@ export default function Step4ResultScreen() {
       // No longer converting to base64 here. AiService will handle the multipart upload if a URI is detected.
 
 
-      const params = {
-        job: selectedJob || 'Autre', // Safeguard against null job
-        function: selectedFunction, // e.g. "Flyers / Affiches"
+      const isFlyerExact = selectedFunction && selectedFunction.includes('Flyers');
+      const params: any = {
+        job: selectedJob || 'Autre',
+        function: selectedFunction,
         userQuery: overrideQuery || userQuery,
-        style: selectedStyle,
         reference_image: finalReferenceImage,
       };
+
+      if (isFlyerExact) {
+        params.model = selectedStyle;
+      } else {
+        params.style = selectedStyle;
+      }
 
       console.log('[DEBUG] Generating Content with params:', JSON.stringify(params, null, 2), 'Seed:', seed);
 

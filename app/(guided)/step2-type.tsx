@@ -44,7 +44,7 @@ const UNIVERSAL_FUNCTIONS: JobFunction[] = [
     },
     {
         label: 'Flyers',
-        category: 'Image',
+        category: 'Document',
         icon: FileText,
         image: flyerImg
     },
