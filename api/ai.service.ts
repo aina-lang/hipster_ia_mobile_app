@@ -89,14 +89,28 @@ export const AiService = {
         formData.append('seed', seed.toString());
       }
 
-      const response = await api.post('/ai/image', formData);
-      console.log('[AiService] generateImage (FormData) response:', response.data.data?.url);
-      return response.data.data;
+      try {
+        const response = await api.post('/ai/image', formData);
+        console.log('[AiService] generateImage (FormData) response:', response.data.data?.url);
+        return response.data.data;
+      } catch (error: any) {
+        console.error('[AiService] generateImage (FormData) ERROR:', error.message);
+        if (error.toJSON)
+          console.error('[AiService] Detailed Error:', JSON.stringify(error.toJSON(), null, 2));
+        throw error;
+      }
     } else {
       console.log('[AiService] Sending image request as JSON');
-      const response = await api.post('/ai/image', { params, style, seed });
-      console.log('[AiService] generateImage (JSON) response:', response.data.data?.url);
-      return response.data.data;
+      try {
+        const response = await api.post('/ai/image', { params, style, seed });
+        console.log('[AiService] generateImage (JSON) response:', response.data.data?.url);
+        return response.data.data;
+      } catch (error: any) {
+        console.error('[AiService] generateImage (JSON) ERROR:', error.message);
+        if (error.toJSON)
+          console.error('[AiService] Detailed Error:', JSON.stringify(error.toJSON(), null, 2));
+        throw error;
+      }
     }
   },
 
@@ -135,12 +149,26 @@ export const AiService = {
       }
 
       console.log('[AiService] Sending social payload as FormData');
-      const response = await api.post('/ai/social', formData);
-      return response.data.data;
+      try {
+        const response = await api.post('/ai/social', formData);
+        return response.data.data;
+      } catch (error: any) {
+        console.error('[AiService] generateSocial (FormData) ERROR:', error.message);
+        if (error.toJSON)
+          console.error('[AiService] Detailed Error:', JSON.stringify(error.toJSON(), null, 2));
+        throw error;
+      }
     } else {
       console.log('[AiService] Sending social payload as JSON');
-      const response = await api.post('/ai/social', { params, seed });
-      return response.data.data;
+      try {
+        const response = await api.post('/ai/social', { params, seed });
+        return response.data.data;
+      } catch (error: any) {
+        console.error('[AiService] generateSocial (JSON) ERROR:', error.message);
+        if (error.toJSON)
+          console.error('[AiService] Detailed Error:', JSON.stringify(error.toJSON(), null, 2));
+        throw error;
+      }
     }
   },
 
@@ -170,12 +198,26 @@ export const AiService = {
       if (seed) {
         formData.append('seed', seed.toString());
       }
-      const response = await api.post('/ai/flyer', formData);
-      return response.data.data;
+      try {
+        const response = await api.post('/ai/flyer', formData);
+        return response.data.data;
+      } catch (error: any) {
+        console.error('[AiService] generateFlyer (FormData) ERROR:', error.message);
+        if (error.toJSON)
+          console.error('[AiService] Detailed Error:', JSON.stringify(error.toJSON(), null, 2));
+        throw error;
+      }
     } else {
       console.log('[AiService] Sending flyer payload as JSON');
-      const response = await api.post('/ai/flyer', { params, seed });
-      return response.data.data;
+      try {
+        const response = await api.post('/ai/flyer', { params, seed });
+        return response.data.data;
+      } catch (error: any) {
+        console.error('[AiService] generateFlyer (JSON) ERROR:', error.message);
+        if (error.toJSON)
+          console.error('[AiService] Detailed Error:', JSON.stringify(error.toJSON(), null, 2));
+        throw error;
+      }
     }
   },
 
@@ -262,6 +304,20 @@ export const AiService = {
       return response.data;
     } catch (error: any) {
       console.error('[AiService] CLEAR_HISTORY ERROR', error?.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  testPing: async () => {
+    console.log('[AiService] PING CALL...');
+    try {
+      const response = await api.post('/ai/ping', { test: true });
+      console.log('[AiService] PING SUCCESS:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('[AiService] PING ERROR:', error.message);
+      if (error.toJSON)
+        console.error('[AiService] PING Detailed Error:', JSON.stringify(error.toJSON(), null, 2));
       throw error;
     }
   },
