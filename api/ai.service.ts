@@ -97,11 +97,7 @@ export const AiService = {
       formData.append('seed', seed.toString());
     }
 
-    const response = await api.post('/ai/image', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+    const response = await api.post('/ai/image', formData);
     console.log('[AiService] generateImage full response:', JSON.stringify(response.data, null, 2));
     console.log('[AiService] generateImage result URL:', response.data.data?.url);
     return response.data.data;
@@ -144,11 +140,7 @@ export const AiService = {
       formData.append('seed', seed.toString());
     }
 
-    const response = await api.post('/ai/social', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+    const response = await api.post('/ai/social', formData);
     console.log('[AiService] generateSocial result keys:', Object.keys(response.data.data || {}));
     return response.data.data;
   },
@@ -183,11 +175,7 @@ export const AiService = {
       formData.append('seed', seed.toString());
     }
 
-    const response = await api.post('/ai/flyer', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+    const response = await api.post('/ai/flyer', formData);
     console.log('[AiService] generateFlyer full response:', JSON.stringify(response.data, null, 2));
     console.log('[AiService] generateFlyer result URL:', response.data.data?.url);
     return response.data.data;

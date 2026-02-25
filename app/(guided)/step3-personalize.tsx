@@ -184,119 +184,117 @@ export default function Step3PersonalizeScreen() {
             </View>
 
             {/* 2. VISUAL STYLE */}
-            {!uploadedImage && (
-              <View style={{ marginTop: 24, overflow: 'visible' }}>
-                <Text style={styles.sectionTitle}>Style artistique</Text>
+            <View style={{ marginTop: 24, overflow: 'visible' }}>
+              <Text style={styles.sectionTitle}>Style artistique</Text>
 
-                <Animated.FlatList
-                  data={VISUAL_STYLES}
-                  horizontal
-                  keyExtractor={(item) => item.label}
-                  showsHorizontalScrollIndicator={false}
-                  snapToInterval={ITEM_WIDTH + SPACING}
-                  decelerationRate="fast"
-                  contentContainerStyle={{
-                    paddingHorizontal: SPACING,
-                    paddingVertical: 50,
-                  }}
-                  style={{ overflow: 'visible' }}
-                  onScroll={Animated.event(
-                    [{ nativeEvent: { contentOffset: { x: scrollX } } }],
-                    { useNativeDriver: true }
-                  )}
-                  ref={flatListRef}
-                  getItemLayout={(data, index) => ({
-                    length: ITEM_WIDTH + SPACING,
-                    offset: (ITEM_WIDTH + SPACING) * index,
-                    index,
-                  })}
-                  renderItem={({ item, index }) => {
-                    const inputRange = [
-                      (index - 1) * (ITEM_WIDTH + SPACING),
-                      index * (ITEM_WIDTH + SPACING),
-                      (index + 1) * (ITEM_WIDTH + SPACING),
-                    ];
+              <Animated.FlatList
+                data={VISUAL_STYLES}
+                horizontal
+                keyExtractor={(item) => item.label}
+                showsHorizontalScrollIndicator={false}
+                snapToInterval={ITEM_WIDTH + SPACING}
+                decelerationRate="fast"
+                contentContainerStyle={{
+                  paddingHorizontal: SPACING,
+                  paddingVertical: 50,
+                }}
+                style={{ overflow: 'visible' }}
+                onScroll={Animated.event(
+                  [{ nativeEvent: { contentOffset: { x: scrollX } } }],
+                  { useNativeDriver: true }
+                )}
+                ref={flatListRef}
+                getItemLayout={(data, index) => ({
+                  length: ITEM_WIDTH + SPACING,
+                  offset: (ITEM_WIDTH + SPACING) * index,
+                  index,
+                })}
+                renderItem={({ item, index }) => {
+                  const inputRange = [
+                    (index - 1) * (ITEM_WIDTH + SPACING),
+                    index * (ITEM_WIDTH + SPACING),
+                    (index + 1) * (ITEM_WIDTH + SPACING),
+                  ];
 
-                    const scale = scrollX.interpolate({
-                      inputRange,
-                      outputRange: [0.8, 1.25, 0.8],
-                      extrapolate: 'clamp',
-                    });
+                  const scale = scrollX.interpolate({
+                    inputRange,
+                    outputRange: [0.8, 1.25, 0.8],
+                    extrapolate: 'clamp',
+                  });
 
-                    const translateY = scrollX.interpolate({
-                      inputRange,
-                      outputRange: [15, -15, 15],
-                      extrapolate: 'clamp',
-                    });
+                  const translateY = scrollX.interpolate({
+                    inputRange,
+                    outputRange: [15, -15, 15],
+                    extrapolate: 'clamp',
+                  });
 
-                    const opacity = scrollX.interpolate({
-                      inputRange,
-                      outputRange: [0.7, 1, 0.7],
-                      extrapolate: 'clamp',
-                    });
+                  const opacity = scrollX.interpolate({
+                    inputRange,
+                    outputRange: [0.7, 1, 0.7],
+                    extrapolate: 'clamp',
+                  });
 
-                    const isSelected = selectedStyle === item.label;
+                  const isSelected = selectedStyle === item.label;
 
-                    return (
-                      <Animated.View
-                        style={{
-                          width: ITEM_WIDTH,
-                          marginHorizontal: SPACING / 2,
-                          transform: [{ scale }, { translateY }],
-                          opacity,
-                          // overflow visible so glow can escape
-                          position: 'relative',
-                        }}
+                  return (
+                    <Animated.View
+                      style={{
+                        width: ITEM_WIDTH,
+                        marginHorizontal: SPACING / 2,
+                        transform: [{ scale }, { translateY }],
+                        opacity,
+                        // overflow visible so glow can escape
+                        position: 'relative',
+                      }}
+                    >
+                      {/* ── Neon glow layers — outside the clipped card ── */}
+                      {isSelected && (
+                        <>
+                          <View style={styles.cardBloomFar} pointerEvents="none" />
+                          <View style={styles.cardBloomMid} pointerEvents="none" />
+                          <View style={styles.cardBorderGlow} pointerEvents="none" />
+                          <View style={styles.cardFloorGlow} pointerEvents="none" />
+                        </>
+                      )}
+
+                      {/* ── Card body — clipped ── */}
+                      <TouchableOpacity
+                        style={[styles.styleCard, isSelected && styles.styleCardSelected]}
+                        onPress={() => handleSelectStyle(item.label, index)}
+                        activeOpacity={0.9}
                       >
-                        {/* ── Neon glow layers — outside the clipped card ── */}
+                        <Image
+                          source={typeof item.image === 'string' ? { uri: item.image } : item.image}
+                          style={styles.styleCardImage}
+                          resizeMode="cover"
+                        />
+
+                        {/* Top neon reflection when selected */}
                         {isSelected && (
-                          <>
-                            <View style={styles.cardBloomFar} pointerEvents="none" />
-                            <View style={styles.cardBloomMid} pointerEvents="none" />
-                            <View style={styles.cardBorderGlow} pointerEvents="none" />
-                            <View style={styles.cardFloorGlow} pointerEvents="none" />
-                          </>
+                          <View style={styles.styleCardTopReflection} pointerEvents="none" />
                         )}
 
-                        {/* ── Card body — clipped ── */}
-                        <TouchableOpacity
-                          style={[styles.styleCard, isSelected && styles.styleCardSelected]}
-                          onPress={() => handleSelectStyle(item.label, index)}
-                          activeOpacity={0.9}
-                        >
-                          <Image
-                            source={typeof item.image === 'string' ? { uri: item.image } : item.image}
-                            style={styles.styleCardImage}
-                            resizeMode="cover"
-                          />
+                        <View style={[styles.styleCardContent, isSelected && { backgroundColor: 'transparent' }]}>
+                          <Text style={[styles.styleCardLabel, isSelected && styles.styleCardLabelSelected]}>
+                            {item.label}
+                          </Text>
+                        </View>
 
-                          {/* Top neon reflection when selected */}
-                          {isSelected && (
-                            <View style={styles.styleCardTopReflection} pointerEvents="none" />
-                          )}
-
-                          <View style={[styles.styleCardContent, isSelected && { backgroundColor: 'transparent' }]}>
-                            <Text style={[styles.styleCardLabel, isSelected && styles.styleCardLabelSelected]}>
-                              {item.label}
-                            </Text>
-                          </View>
-
-                          {isSelected && (
-                            <BlurView intensity={80} tint="dark" style={StyleSheet.absoluteFill}>
-                              <View style={styles.selectedOverlayContent}>
-                                <View style={styles.styleCardCheck}>
-                                  <View style={styles.styleCardCheckInner} />
-                                </View>
+                        {isSelected && (
+                          <BlurView intensity={80} tint="dark" style={StyleSheet.absoluteFill}>
+                            <View style={styles.selectedOverlayContent}>
+                              <View style={styles.styleCardCheck}>
+                                <View style={styles.styleCardCheckInner} />
                               </View>
-                            </BlurView>
-                          )}
-                        </TouchableOpacity>
-                      </Animated.View>
-                    );
-                  }}
-                />
-              </View>
-            )}
+                            </View>
+                          </BlurView>
+                        )}
+                      </TouchableOpacity>
+                    </Animated.View>
+                  );
+                }}
+              />
+            </View>
           </View>
         )}
 

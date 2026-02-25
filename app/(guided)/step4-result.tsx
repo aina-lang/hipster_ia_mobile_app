@@ -826,10 +826,17 @@ export default function Step4ResultScreen() {
         setGenerationId(audioResponse.generationId);
       }
     } catch (error: any) {
-      console.error('Generation error:', error);
+      console.error('[CRITICAL] Generation error details:', {
+        message: error.message,
+        code: error.code,
+        status: error.response?.status,
+        data: error.response?.data,
+        configUrl: error.config?.url,
+        configMethod: error.config?.method,
+      });
       const errMsg = error?.response?.data?.message || error.message || 'Erreur inconnue';
       showModal('error', 'Erreur de génération', errMsg);
-      setResult('Une erreur est survenue lors du génération. ' + errMsg);
+      setResult('Une erreur est survenue lors de la génération. ' + errMsg);
     } finally {
       setLoading(false);
       // Update credits in real-time

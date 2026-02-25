@@ -82,7 +82,6 @@ export default function RootLayout() {
 
     // Vérifier si on est sur le splash screen (page root)
     const isOnSplash = segments.length === 0 || !segments[0];
-    if (isOnSplash) return; // Ne pas rediriger du splash
 
     const timeout = setTimeout(() => {
       const inAuthGroup = segments.some(s => s.includes('(auth)')) || segments.includes('login') || segments.includes('register') || segments.includes('verify-email');
