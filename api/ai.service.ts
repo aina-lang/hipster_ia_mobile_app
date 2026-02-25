@@ -92,7 +92,7 @@ export const AiService = {
     try {
       const response = await api.post('/ai/chat', { messages, conversationId });
       console.log('[AiService] chat response data:', JSON.stringify(response.data, null, 2));
-      return response.data.data;
+      return response.data.data?.data || response.data.data;
     } catch (error: any) {
       console.error('[AiService] chat error:', error?.response?.data || error.message);
       throw error;
@@ -102,8 +102,9 @@ export const AiService = {
   generateText: async (params: any, type: TextGenerationType) => {
     console.log('[AiService] generateText:', type, params.job);
     const response = await api.post('/ai/text', { params, type });
-    console.log('[AiService] generateText result size:', response.data.data?.content?.length);
-    return response.data.data;
+    const result = response.data.data?.data || response.data.data;
+    console.log('[AiService] generateText result size:', result?.content?.length);
+    return result;
   },
 
   generateImage: async (params: any, style: ImageStyle, seed?: number) => {
@@ -120,8 +121,9 @@ export const AiService = {
         const response = await api.post('/ai/image', formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
-        console.log('[AiService] generateImage (FormData) response:', response.data.data?.url);
-        return response.data.data;
+        const result = response.data.data?.data || response.data.data;
+        console.log('[AiService] generateImage (FormData) response:', result?.url);
+        return result;
       } catch (error: any) {
         console.error('[AiService] generateImage (FormData) ERROR:', error.message);
         throw error;
@@ -129,8 +131,9 @@ export const AiService = {
     } else {
       try {
         const response = await api.post('/ai/image', { params, style, seed });
-        console.log('[AiService] generateImage (JSON) response:', response.data.data?.url);
-        return response.data.data;
+        const result = response.data.data?.data || response.data.data;
+        console.log('[AiService] generateImage (JSON) response:', result?.url);
+        return result;
       } catch (error: any) {
         console.error('[AiService] generateImage (JSON) ERROR:', error.message);
         throw error;
@@ -141,8 +144,9 @@ export const AiService = {
   generateDocument: async (type: DocumentType, params: any) => {
     console.log('[AiService] generateDocument:', type, params.job);
     const response = await api.post('/ai/document', { type, params });
-    console.log('[AiService] generateDocument result size:', response.data.data?.content?.length);
-    return response.data.data;
+    const result = response.data.data?.data || response.data.data;
+    console.log('[AiService] generateDocument result size:', result?.content?.length);
+    return result;
   },
 
   generateSocial: async (params: any, seed?: number) => {
@@ -166,11 +170,12 @@ export const AiService = {
         const response = await api.post('/ai/social', formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
+        const result = response.data.data?.data || response.data.data;
         console.log(
           '[AiService] generateSocial (FormData) response:',
-          Object.keys(response.data.data || {})
+          Object.keys(result || {})
         );
-        return response.data.data;
+        return result;
       } catch (error: any) {
         console.error('[AiService] generateSocial (FormData) ERROR:', error.message);
         throw error;
@@ -178,7 +183,7 @@ export const AiService = {
     } else {
       try {
         const response = await api.post('/ai/social', { params, seed });
-        return response.data.data;
+        return response.data.data?.data || response.data.data;
       } catch (error: any) {
         console.error('[AiService] generateSocial (JSON) ERROR:', error.message);
         throw error;
@@ -200,8 +205,9 @@ export const AiService = {
         const response = await api.post('/ai/flyer', formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
-        console.log('[AiService] generateFlyer (FormData) response:', response.data.data?.url);
-        return response.data.data;
+        const result = response.data.data?.data || response.data.data;
+        console.log('[AiService] generateFlyer (FormData) response:', result?.url);
+        return result;
       } catch (error: any) {
         console.error('[AiService] generateFlyer (FormData) ERROR:', error.message);
         throw error;
@@ -209,8 +215,9 @@ export const AiService = {
     } else {
       try {
         const response = await api.post('/ai/flyer', { params, seed });
-        console.log('[AiService] generateFlyer (JSON) response:', response.data.data?.url);
-        return response.data.data;
+        const result = response.data.data?.data || response.data.data;
+        console.log('[AiService] generateFlyer (JSON) response:', result?.url);
+        return result;
       } catch (error: any) {
         console.error('[AiService] generateFlyer (JSON) ERROR:', error.message);
         throw error;
@@ -221,21 +228,22 @@ export const AiService = {
   generateVideo: async (params: any, seed?: number) => {
     console.log('[AiService] generateVideo:', params.job);
     const response = await api.post('/ai/video', { params, seed });
-    return response.data.data;
+    return response.data.data?.data || response.data.data;
   },
 
   generateAudio: async (params: any, seed?: number) => {
     console.log('[AiService] generateAudio:', params.job);
     const response = await api.post('/ai/audio', { params, seed });
-    return response.data.data;
+    return response.data.data?.data || response.data.data;
   },
 
   decrementCredits: async (type: GenerationType) => {
     console.log('[AiService] decrementCredits:', type);
     try {
       const response = await api.post('/ai/payment/decrement', { type });
-      console.log('[AiService] decrementCredits response:', response.data.data);
-      return response.data.data;
+      const result = response.data.data?.data || response.data.data;
+      console.log('[AiService] decrementCredits response:', result);
+      return result;
     } catch (error: any) {
       console.error('[AiService] decrementCredits error:', error?.response?.data || error.message);
       throw error;
@@ -246,8 +254,9 @@ export const AiService = {
     console.log('[AiService] Fetching history...');
     try {
       const response = await api.get('/ai/history');
-      console.log('[AiService] History fetched, count:', response.data.data?.length);
-      return response.data.data;
+      const result = response.data.data?.data || response.data.data;
+      console.log('[AiService] History fetched, count:', result?.length);
+      return result;
     } catch (e: any) {
       console.error('[AiService] Fetch history error:', e.message, e.response?.status);
       throw e;
@@ -258,8 +267,9 @@ export const AiService = {
     console.log('[AiService] Fetching grouped conversations...');
     try {
       const response = await api.get('/ai/conversations');
-      console.log('[AiService] Conversations fetched, count:', response.data.data?.length);
-      return response.data.data;
+      const result = response.data.data?.data || response.data.data;
+      console.log('[AiService] Conversations fetched, count:', result?.length);
+      return result;
     } catch (e: any) {
       console.error('[AiService] Fetch conversations error:', e.message, e.response?.status);
       throw e;
@@ -271,7 +281,7 @@ export const AiService = {
     try {
       const response = await api.get(`/ai/history/${conversationId}`);
       console.log('[AiService] Conversation fetched:', response.data);
-      return response.data.data || response.data; // Handle both wrapped and unwrapped responses
+      return response.data.data?.data || response.data.data || response.data;
     } catch (e: any) {
       console.error('[AiService] Fetch conversation error:', e.message, e.response?.status);
       throw e;
@@ -282,8 +292,9 @@ export const AiService = {
     console.log(`[AiService] DELETE_ITEM CALL -> /ai/history/${id}/delete`);
     try {
       const response = await api.post(`/ai/history/${id}/delete`);
-      console.log(`[AiService] DELETE_ITEM SUCCESS -> ID: ${id}`, response.data);
-      return response.data;
+      const result = response.data.data?.data || response.data.data || response.data;
+      console.log(`[AiService] DELETE_ITEM SUCCESS -> ID: ${id}`, result);
+      return result;
     } catch (error: any) {
       console.error(
         `[AiService] DELETE_ITEM ERROR -> ID: ${id}`,
@@ -297,8 +308,9 @@ export const AiService = {
     console.log('[AiService] CLEAR_HISTORY CALL -> /ai/history/clear');
     try {
       const response = await api.post('/ai/history/clear');
-      console.log('[AiService] CLEAR_HISTORY SUCCESS', response.data);
-      return response.data;
+      const result = response.data.data?.data || response.data.data || response.data;
+      console.log('[AiService] CLEAR_HISTORY SUCCESS', result);
+      return result;
     } catch (error: any) {
       console.error('[AiService] CLEAR_HISTORY ERROR', error?.response?.data || error.message);
       throw error;
