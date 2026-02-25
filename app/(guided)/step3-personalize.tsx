@@ -227,18 +227,20 @@ export default function Step3PersonalizeScreen() {
                       contentContainerStyle={styles.modelsScrollContainer}
                     >
                       <View style={styles.modelsGrid}>
-                        {displayedCategories.find(c => c.id === activeFlyerCategory)?.models.map((model) => {
-                          const isSelected = selectedStyle === model;
-                          const catImage = displayedCategories.find(c => c.id === activeFlyerCategory)?.image;
+                        {displayedCategories.find(c => c.id === activeFlyerCategory)?.models.map((modelObj) => {
+                          const modelLabel = typeof modelObj === 'string' ? modelObj : modelObj.label;
+                          const modelImage = typeof modelObj === 'object' && modelObj.image ? modelObj.image : displayedCategories.find(c => c.id === activeFlyerCategory)?.image;
+                          const isSelected = selectedStyle === modelLabel;
+
                           return (
                             <TouchableOpacity
-                              key={model}
+                              key={modelLabel}
                               style={[styles.modelCard, isSelected && styles.modelCardSelected]}
-                              onPress={() => setStyle(model)}
+                              onPress={() => setStyle(modelLabel)}
                             >
-                              <Image source={catImage} style={styles.modelCardImage} />
+                              <Image source={modelImage} style={styles.modelCardImage} />
                               <View style={styles.modelCardOverlay}>
-                                <Text style={styles.modelCardName} numberOfLines={2}>{model}</Text>
+                                <Text style={styles.modelCardName} numberOfLines={2}>{modelLabel}</Text>
                                 {isSelected && (
                                   <View style={styles.modelCardActiveBadge}>
                                     <Zap size={12} color="white" />

@@ -11,7 +11,7 @@ import {
   PenTool,
 } from 'lucide-react-native';
 
-import modern_img from '../assets/illus2.jpeg';
+import modern_img from '../assets/modernetypo.jpg';
 import colorful_img from '../assets/social.jpeg';
 import elegant_img from '../assets/flyer.jpeg';
 import festive_img from '../assets/illus3.jpeg';
@@ -21,6 +21,9 @@ import nature_img from '../assets/bg.jpeg';
 import classic_img from '../assets/bg-onboarding.jpeg';
 import impact_img from '../assets/site-web.jpeg';
 import creative_img from '../assets/illus4.jpeg';
+import typo_img from '../assets/modernetypo.jpg';
+import neon_img from '../assets/moderneneon.jpg';
+import gradient_img from '../assets/gradient.jpg';
 
 export const FLYER_CATEGORIES = [
   {
@@ -29,14 +32,14 @@ export const FLYER_CATEGORIES = [
     icon: Sparkles,
     image: modern_img,
     models: [
-      'Moderne minimaliste',
-      'Moderne géométrique',
-      'Moderne dégradé (gradient)',
-      'Moderne typographie bold',
-      'Moderne fond sombre',
-      'Moderne flat design',
-      'Moderne glassmorphism',
-      'Moderne néon',
+      { label: 'Moderne minimaliste' },
+      { label: 'Moderne géométrique' },
+      { label: 'Moderne dégradé (gradient)', image: gradient_img },
+      { label: 'Moderne typographie bold', image: typo_img },
+      { label: 'Moderne fond sombre' },
+      { label: 'Moderne flat design' },
+      { label: 'Moderne glassmorphism' },
+      { label: 'Moderne néon', image: neon_img },
     ],
   },
   {
