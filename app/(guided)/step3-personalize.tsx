@@ -17,6 +17,7 @@ import { colors } from '../../theme/colors';
 import { useCreationStore } from '../../store/creationStore';
 import { GuidedScreenWrapper } from '../../components/layout/GuidedScreenWrapper';
 import { NeonButton } from '../../components/ui/NeonButton';
+import { SelectionCard } from '../../components/ui/SelectionCard';
 import { BlurView } from 'expo-blur';
 import {
   Sparkles,
@@ -60,6 +61,34 @@ export default function Step3PersonalizeScreen() {
   const scrollRef = useRef<ScrollView>(null);
   const [localQuery, setLocalQuery] = useState(userQuery || '');
   const [activeFlyerCategory, setActiveFlyerCategory] = useState<string | null>(null);
+
+  // Animation for models grid entry
+  const modelsOpacity = useRef(new Animated.Value(0)).current;
+  const modelsTranslateY = useRef(new Animated.Value(10)).current;
+
+  const animateModelsEntry = () => {
+    modelsOpacity.setValue(0);
+    modelsTranslateY.setValue(10);
+    Animated.parallel([
+      Animated.timing(modelsOpacity, {
+        toValue: 1,
+        duration: 400,
+        useNativeDriver: true,
+      }),
+      Animated.spring(modelsTranslateY, {
+        toValue: 0,
+        friction: 8,
+        tension: 40,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  useEffect(() => {
+    if (activeFlyerCategory) {
+      animateModelsEntry();
+    }
+  }, [activeFlyerCategory]);
 
   const displayedCategories = FLYER_CATEGORIES;
 
@@ -199,59 +228,63 @@ export default function Step3PersonalizeScreen() {
                   <ScrollView
                     horizontal
                     showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.categoryChipsContainer}
-                    style={styles.categoryChipsScroll}
+                    contentContainerStyle={styles.categoryRowContainer}
+                    style={styles.categoryRowScroll}
                   >
                     {displayedCategories.map((cat) => {
                       const isActive = activeFlyerCategory === cat.id;
                       return (
-                        <TouchableOpacity
-                          key={cat.id}
-                          style={[styles.categoryChip, isActive && styles.categoryChipActive]}
-                          onPress={() => setActiveFlyerCategory(cat.id)}
-                        >
-                          <cat.icon size={18} color={isActive ? "white" : colors.text.muted} />
-                          <Text style={[styles.categoryChipText, isActive && styles.categoryChipTextActive]}>
-                            {cat.label}
-                          </Text>
-                        </TouchableOpacity>
+                        <View key={cat.id} style={styles.categoryRowItem}>
+                          <SelectionCard
+                            label={cat.label}
+                            icon={cat.icon}
+                            selected={isActive}
+                            onPress={() => setActiveFlyerCategory(cat.id)}
+                            fullWidth
+                          />
+                        </View>
                       );
                     })}
                   </ScrollView>
 
                   {activeFlyerCategory ? (
-                    <ScrollView
-                      horizontal
-                      showsHorizontalScrollIndicator={false}
-                      style={styles.modelsScroll}
-                      contentContainerStyle={styles.modelsScrollContainer}
-                    >
-                      <View style={styles.modelsGrid}>
-                        {displayedCategories.find(c => c.id === activeFlyerCategory)?.models.map((modelObj) => {
-                          const modelLabel = typeof modelObj === 'string' ? modelObj : modelObj.label;
-                          const modelImage = typeof modelObj === 'object' && modelObj.image ? modelObj.image : displayedCategories.find(c => c.id === activeFlyerCategory)?.image;
-                          const isSelected = selectedStyle === modelLabel;
+                    <Animated.View style={{
+                      opacity: modelsOpacity,
+                      transform: [{ translateY: modelsTranslateY }]
+                    }}>
+                      <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        style={styles.modelsScroll}
+                        contentContainerStyle={styles.modelsScrollContainer}
+                      >
+                        <View style={styles.modelsGrid}>
+                          {displayedCategories.find(c => c.id === activeFlyerCategory)?.models.map((modelObj) => {
+                            const modelLabel = typeof modelObj === 'string' ? modelObj : modelObj.label;
+                            const modelImage = typeof modelObj === 'object' && modelObj.image ? modelObj.image : displayedCategories.find(c => c.id === activeFlyerCategory)?.image;
+                            const isSelected = selectedStyle === modelLabel;
 
-                          return (
-                            <TouchableOpacity
-                              key={modelLabel}
-                              style={[styles.modelCard, isSelected && styles.modelCardSelected]}
-                              onPress={() => setStyle(modelLabel)}
-                            >
-                              <Image source={modelImage} style={styles.modelCardImage} />
-                              <View style={styles.modelCardOverlay}>
-                                <Text style={styles.modelCardName} numberOfLines={2}>{modelLabel}</Text>
-                                {isSelected && (
-                                  <View style={styles.modelCardActiveBadge}>
-                                    <Zap size={12} color="white" />
-                                  </View>
-                                )}
-                              </View>
-                            </TouchableOpacity>
-                          );
-                        })}
-                      </View>
-                    </ScrollView>
+                            return (
+                              <TouchableOpacity
+                                key={modelLabel}
+                                style={[styles.modelCard, isSelected && styles.modelCardSelected]}
+                                onPress={() => setStyle(modelLabel)}
+                              >
+                                <Image source={modelImage} style={styles.modelCardImage} />
+                                <View style={styles.modelCardOverlay}>
+                                  <Text style={styles.modelCardName} numberOfLines={2}>{modelLabel}</Text>
+                                  {isSelected && (
+                                    <View style={styles.modelCardActiveBadge}>
+                                      <Zap size={12} color="white" />
+                                    </View>
+                                  )}
+                                </View>
+                              </TouchableOpacity>
+                            );
+                          })}
+                        </View>
+                      </ScrollView>
+                    </Animated.View>
                   ) : (
                     <View style={styles.emptyModelsContainer}>
                       <Sparkles size={32} color="rgba(255,255,255,0.1)" />
@@ -660,36 +693,21 @@ const styles = StyleSheet.create({
     shadowRadius: 22,
     elevation: 18,
   },
-  categoryChipsScroll: {
+
+
+  categoryRowScroll: {
     marginHorizontal: -20,
-    marginBottom: 20,
+    marginBottom: 16,
+    overflow: 'visible',
   },
-  categoryChipsContainer: {
+  categoryRowContainer: {
     paddingHorizontal: 20,
-    gap: 10,
+    gap: 12,
+    paddingBottom: 20, // Space for the floor glow
+    overflow: 'visible',
   },
-  categoryChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-  },
-  categoryChipActive: {
-    backgroundColor: colors.primary.main,
-    borderColor: colors.primary.main,
-  },
-  categoryChipText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text.muted,
-  },
-  categoryChipTextActive: {
-    color: 'white',
+  categoryRowItem: {
+    width: 200,
   },
   modelsScroll: {
     marginHorizontal: -20,
