@@ -24,13 +24,6 @@ import '../global.css';
 import { StripeProvider } from '@stripe/stripe-react-native';
 import { LoadingTransition } from '../components/ui/LoadingTransition';
 import { StyledStatusBar } from '../components/ui/StyledStatusBar';
-import * as MediaLibrary from 'expo-media-library';
-import * as Notifications from 'expo-notifications';
-import * as ImagePicker from 'expo-image-picker';
-import { Audio } from 'expo-av';
-import { Platform } from 'react-native';
-import * as Sharing from 'expo-sharing';
-import { StatusBar } from 'expo-status-bar';
 
 export default function RootLayout() {
   const { user, isAuthenticated, hasFinishedOnboarding, isHydrated } = useAuthStore();
@@ -139,7 +132,7 @@ export default function RootLayout() {
             <Stack.Screen name="(guided)" />
           </Stack>
 
-          <StatusBar style="light" translucent={true} backgroundColor="transparent" />
+          <StyledStatusBar theme="auto" translucent={true} />
         </StripeProvider>
       </GestureHandlerRootView>
     </SafeAreaProvider>
