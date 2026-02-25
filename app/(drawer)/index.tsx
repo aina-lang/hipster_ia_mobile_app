@@ -801,7 +801,7 @@ export default function HomeScreen() {
                     {user?.name || 'Utilisateur'}
                   </Text>
                   <Text className="text-center text-2xl font-bold leading-9 text-slate-300">
-                    {user?.job ? `Prêt pour votre prochaine création en tant que ${user.job.toLowerCase()} ?` : 'Que créons-nous aujourd\'hui ?'}
+                    {'Que créons-nous aujourd\'hui ?'}
                   </Text>
                 </View>
 
