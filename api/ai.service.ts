@@ -1,4 +1,4 @@
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { api } from './client';
 
 export type TextGenerationType =
@@ -35,6 +35,52 @@ export type ImageStyle =
 export type DocumentType = 'legal' | 'business';
 export type GenerationType = 'text' | 'image' | 'video' | 'audio' | 'document' | 'chat';
 
+/**
+ * Copies an image from any URI scheme (ph://, content://, etc.) to a
+ * guaranteed `file://` temp path. Returns the local file:// URI.
+ */
+const ensureLocalFileUri = async (uri: string): Promise<string> => {
+  // Already a local file URI
+  if (uri.startsWith('file://')) return uri;
+
+  const tmpPath = `${FileSystem.cacheDirectory}hipster_upload_${Date.now()}.jpg`;
+  console.log('[AiService] Copying image to local temp file:', tmpPath);
+  try {
+    await FileSystem.copyAsync({ from: uri, to: tmpPath });
+    console.log('[AiService] Image copied successfully:', tmpPath);
+    return tmpPath;
+  } catch (e: any) {
+    console.warn('[AiService] Could not copy image, using original URI:', e.message);
+    return uri;
+  }
+};
+
+/**
+ * Builds a FormData object with the image as a binary file for multipart upload.
+ */
+const buildFormDataWithImage = async (
+  imageUri: string,
+  params: any,
+  extraFields: Record<string, string> = {}
+): Promise<FormData> => {
+  const localUri = await ensureLocalFileUri(imageUri);
+  console.log('[AiService] Building FormData with image URI:', localUri);
+
+  const formData = new FormData();
+  // @ts-ignore - React Native FormData supports file URIs for binary upload
+  formData.append('image', {
+    uri: localUri,
+    type: 'image/jpeg',
+    name: 'reference.jpg',
+  });
+  formData.append('params', JSON.stringify(params));
+  for (const [key, value] of Object.entries(extraFields)) {
+    formData.append(key, value);
+  }
+  console.log('[AiService] FormData ready with image field');
+  return formData;
+};
+
 export const AiService = {
   chat: async (messages: any[], conversationId?: string | null) => {
     console.log(
@@ -63,52 +109,30 @@ export const AiService = {
   generateImage: async (params: any, style: ImageStyle, seed?: number) => {
     console.log('[AiService] generateImage:', style, params.job, 'Seed:', seed);
     const referenceImage = params.reference_image;
-    const isLocalUri =
-      referenceImage &&
-      (referenceImage.startsWith('file://') ||
-        referenceImage.startsWith('content://') ||
-        referenceImage.startsWith('assets-library://') ||
-        referenceImage.startsWith('ph://') ||
-        referenceImage.startsWith('/'));
 
-    if (isLocalUri) {
-      console.log('[AiService] Appending image as binary file:', referenceImage);
-      const formData = new FormData();
-      // @ts-ignore - React Native FormData supports file URIs
-      formData.append('image', {
-        uri: referenceImage,
-        type: 'image/jpeg',
-        name: 'reference.jpg',
-      });
+    if (referenceImage) {
+      const { reference_image: _ref, style: _sty, ...restParams } = params;
+      const extraFields: Record<string, string> = { style };
+      if (seed) extraFields['seed'] = seed.toString();
 
-      // Remove reference_image and style from params since we're sending them as separate fields
-      const { reference_image: _, style: __, ...restParams } = params;
-      formData.append('params', JSON.stringify(restParams));
-      formData.append('style', style);
-      if (seed) {
-        formData.append('seed', seed.toString());
-      }
-
+      const formData = await buildFormDataWithImage(referenceImage, restParams, extraFields);
       try {
-        const response = await api.post('/ai/image', formData);
+        const response = await api.post('/ai/image', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
         console.log('[AiService] generateImage (FormData) response:', response.data.data?.url);
         return response.data.data;
       } catch (error: any) {
         console.error('[AiService] generateImage (FormData) ERROR:', error.message);
-        if (error.toJSON)
-          console.error('[AiService] Detailed Error:', JSON.stringify(error.toJSON(), null, 2));
         throw error;
       }
     } else {
-      console.log('[AiService] Sending image request as JSON');
       try {
         const response = await api.post('/ai/image', { params, style, seed });
         console.log('[AiService] generateImage (JSON) response:', response.data.data?.url);
         return response.data.data;
       } catch (error: any) {
         console.error('[AiService] generateImage (JSON) ERROR:', error.message);
-        if (error.toJSON)
-          console.error('[AiService] Detailed Error:', JSON.stringify(error.toJSON(), null, 2));
         throw error;
       }
     }
@@ -122,100 +146,73 @@ export const AiService = {
   },
 
   generateSocial: async (params: any, seed?: number) => {
-    console.log('[AiService] generateSocial:', params.job, 'Seed:', seed);
+    console.log(
+      '[AiService] generateSocial:',
+      params.job,
+      'Seed:',
+      seed,
+      'hasImage:',
+      !!params.reference_image
+    );
     const referenceImage = params.reference_image;
-    const isLocalUri =
-      referenceImage &&
-      (referenceImage.startsWith('file://') ||
-        referenceImage.startsWith('content://') ||
-        referenceImage.startsWith('assets-library://') ||
-        referenceImage.startsWith('ph://') ||
-        referenceImage.startsWith('/'));
 
-    if (isLocalUri) {
-      console.log('[AiService] Appending social image as binary file:', referenceImage);
-      const formData = new FormData();
-      // @ts-ignore
-      formData.append('image', {
-        uri: referenceImage,
-        type: 'image/jpeg',
-        name: 'reference.jpg',
-      });
+    if (referenceImage) {
+      const { reference_image: _ref, ...restParams } = params;
+      const extraFields: Record<string, string> = {};
+      if (seed) extraFields['seed'] = seed.toString();
 
-      const { reference_image, ...restParams } = params;
-      formData.append('params', JSON.stringify(restParams));
-      if (seed) {
-        formData.append('seed', seed.toString());
-      }
-
-      console.log('[AiService] Sending social payload as FormData');
+      const formData = await buildFormDataWithImage(referenceImage, restParams, extraFields);
       try {
-        const response = await api.post('/ai/social', formData);
+        const response = await api.post('/ai/social', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        console.log(
+          '[AiService] generateSocial (FormData) response:',
+          Object.keys(response.data.data || {})
+        );
         return response.data.data;
       } catch (error: any) {
         console.error('[AiService] generateSocial (FormData) ERROR:', error.message);
-        if (error.toJSON)
-          console.error('[AiService] Detailed Error:', JSON.stringify(error.toJSON(), null, 2));
         throw error;
       }
     } else {
-      console.log('[AiService] Sending social payload as JSON');
       try {
         const response = await api.post('/ai/social', { params, seed });
         return response.data.data;
       } catch (error: any) {
         console.error('[AiService] generateSocial (JSON) ERROR:', error.message);
-        if (error.toJSON)
-          console.error('[AiService] Detailed Error:', JSON.stringify(error.toJSON(), null, 2));
         throw error;
       }
     }
   },
 
   generateFlyer: async (params: any, seed?: number) => {
-    console.log('[AiService] generateFlyer', 'Seed:', seed);
+    console.log('[AiService] generateFlyer', 'Seed:', seed, 'hasImage:', !!params.reference_image);
     const referenceImage = params.reference_image;
-    const isLocalUri =
-      referenceImage &&
-      (referenceImage.startsWith('file://') ||
-        referenceImage.startsWith('content://') ||
-        referenceImage.startsWith('assets-library://') ||
-        referenceImage.startsWith('ph://') ||
-        referenceImage.startsWith('/'));
 
-    if (isLocalUri) {
-      console.log('[AiService] Appending flyer image as binary file:', referenceImage);
-      const formData = new FormData();
-      // @ts-ignore
-      formData.append('image', {
-        uri: referenceImage,
-        type: 'image/jpeg',
-        name: 'reference.jpg',
-      });
+    if (referenceImage) {
+      const { reference_image: _ref, ...restParams } = params;
+      const extraFields: Record<string, string> = {};
+      if (seed) extraFields['seed'] = seed.toString();
 
-      const { reference_image, ...restParams } = params;
-      formData.append('params', JSON.stringify(restParams));
-      if (seed) {
-        formData.append('seed', seed.toString());
-      }
+      const formData = await buildFormDataWithImage(referenceImage, restParams, extraFields);
       try {
-        const response = await api.post('/ai/flyer', formData);
+        const response = await api.post('/ai/flyer', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        console.log('[AiService] generateFlyer (FormData) response:', response.data.data?.url);
         return response.data.data;
       } catch (error: any) {
         console.error('[AiService] generateFlyer (FormData) ERROR:', error.message);
-        if (error.toJSON)
-          console.error('[AiService] Detailed Error:', JSON.stringify(error.toJSON(), null, 2));
         throw error;
       }
     } else {
-      console.log('[AiService] Sending flyer payload as JSON');
       try {
         const response = await api.post('/ai/flyer', { params, seed });
+        console.log('[AiService] generateFlyer (JSON) response:', response.data.data?.url);
         return response.data.data;
       } catch (error: any) {
         console.error('[AiService] generateFlyer (JSON) ERROR:', error.message);
-        if (error.toJSON)
-          console.error('[AiService] Detailed Error:', JSON.stringify(error.toJSON(), null, 2));
         throw error;
       }
     }
@@ -304,20 +301,6 @@ export const AiService = {
       return response.data;
     } catch (error: any) {
       console.error('[AiService] CLEAR_HISTORY ERROR', error?.response?.data || error.message);
-      throw error;
-    }
-  },
-
-  testPing: async () => {
-    console.log('[AiService] PING CALL...');
-    try {
-      const response = await api.post('/ai/ping', { test: true });
-      console.log('[AiService] PING SUCCESS:', response.data);
-      return response.data;
-    } catch (error: any) {
-      console.error('[AiService] PING ERROR:', error.message);
-      if (error.toJSON)
-        console.error('[AiService] PING Detailed Error:', JSON.stringify(error.toJSON(), null, 2));
       throw error;
     }
   },
