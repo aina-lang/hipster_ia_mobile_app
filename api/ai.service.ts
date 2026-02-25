@@ -146,6 +146,10 @@ export const AiService = {
       formData.append('seed', seed.toString());
     }
 
+    console.log(
+      '[AiService] Sending social payload. Keys:',
+      (formData as any).getParts?.().map((p: any) => p.fieldName)
+    );
     const response = await api.post('/ai/social', formData);
     console.log('[AiService] generateSocial result keys:', Object.keys(response.data.data || {}));
     return response.data.data;

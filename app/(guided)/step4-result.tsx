@@ -536,6 +536,7 @@ export default function Step4ResultScreen() {
       }
 
       let finalReferenceImage = uploadedImage;
+      console.log('[DEBUG] Step4 - uploadedImage from store:', uploadedImage);
       // No longer converting to base64 here. AiService will handle the multipart upload if a URI is detected.
 
 
