@@ -100,7 +100,12 @@ export const AiService = {
       formData.append('seed', seed.toString());
     }
 
-    const response = await api.post('/ai/image', formData);
+    const response = await api.post('/ai/image', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+      transformRequest: (data) => data,
+    });
     console.log('[AiService] generateImage full response:', JSON.stringify(response.data, null, 2));
     console.log('[AiService] generateImage result URL:', response.data.data?.url);
     return response.data.data;
@@ -150,7 +155,12 @@ export const AiService = {
       '[AiService] Sending social payload. Keys:',
       (formData as any).getParts?.().map((p: any) => p.fieldName)
     );
-    const response = await api.post('/ai/social', formData);
+    const response = await api.post('/ai/social', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+      transformRequest: (data) => data,
+    });
     console.log('[AiService] generateSocial result keys:', Object.keys(response.data.data || {}));
     return response.data.data;
   },
@@ -188,7 +198,12 @@ export const AiService = {
       formData.append('seed', seed.toString());
     }
 
-    const response = await api.post('/ai/flyer', formData);
+    const response = await api.post('/ai/flyer', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+      transformRequest: (data) => data,
+    });
     console.log('[AiService] generateFlyer full response:', JSON.stringify(response.data, null, 2));
     console.log('[AiService] generateFlyer result URL:', response.data.data?.url);
     return response.data.data;
