@@ -63,11 +63,6 @@ export const AiService = {
   generateImage: async (params: any, style: ImageStyle, seed?: number) => {
     console.log('[AiService] generateImage:', style, params.job, 'Seed:', seed);
     const referenceImage = params.reference_image;
-
-    // Create FormData for multipart/form-data upload
-    const formData = new FormData();
-
-    // If we have a local image file, append it as binary
     const isLocalUri =
       referenceImage &&
       (referenceImage.startsWith('file://') ||
@@ -78,6 +73,7 @@ export const AiService = {
 
     if (isLocalUri) {
       console.log('[AiService] Appending image as binary file:', referenceImage);
+      const formData = new FormData();
       // @ts-ignore - React Native FormData supports file URIs
       formData.append('image', {
         uri: referenceImage,
@@ -86,29 +82,22 @@ export const AiService = {
       });
 
       // Remove reference_image and style from params since we're sending them as separate fields
-      const { reference_image, style: _, ...restParams } = params;
+      const { reference_image: _, style: __, ...restParams } = params;
       formData.append('params', JSON.stringify(restParams));
+      formData.append('style', style);
+      if (seed) {
+        formData.append('seed', seed.toString());
+      }
+
+      const response = await api.post('/ai/image', formData);
+      console.log('[AiService] generateImage (FormData) response:', response.data.data?.url);
+      return response.data.data;
     } else {
-      // No image or already base64 (legacy support)
-      // Also remove style from params to avoid duplication
-      const { style: _, ...restParams } = params;
-      formData.append('params', JSON.stringify(restParams));
+      console.log('[AiService] Sending image request as JSON');
+      const response = await api.post('/ai/image', { params, style, seed });
+      console.log('[AiService] generateImage (JSON) response:', response.data.data?.url);
+      return response.data.data;
     }
-
-    formData.append('style', style);
-    if (seed) {
-      formData.append('seed', seed.toString());
-    }
-
-    const response = await api.post('/ai/image', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-      transformRequest: (data) => data,
-    });
-    console.log('[AiService] generateImage full response:', JSON.stringify(response.data, null, 2));
-    console.log('[AiService] generateImage result URL:', response.data.data?.url);
-    return response.data.data;
   },
 
   generateDocument: async (type: DocumentType, params: any) => {
@@ -121,9 +110,6 @@ export const AiService = {
   generateSocial: async (params: any, seed?: number) => {
     console.log('[AiService] generateSocial:', params.job, 'Seed:', seed);
     const referenceImage = params.reference_image;
-
-    const formData = new FormData();
-
     const isLocalUri =
       referenceImage &&
       (referenceImage.startsWith('file://') ||
@@ -134,6 +120,7 @@ export const AiService = {
 
     if (isLocalUri) {
       console.log('[AiService] Appending social image as binary file:', referenceImage);
+      const formData = new FormData();
       // @ts-ignore
       formData.append('image', {
         uri: referenceImage,
@@ -143,34 +130,23 @@ export const AiService = {
 
       const { reference_image, ...restParams } = params;
       formData.append('params', JSON.stringify(restParams));
+      if (seed) {
+        formData.append('seed', seed.toString());
+      }
+
+      console.log('[AiService] Sending social payload as FormData');
+      const response = await api.post('/ai/social', formData);
+      return response.data.data;
     } else {
-      formData.append('params', JSON.stringify(params));
+      console.log('[AiService] Sending social payload as JSON');
+      const response = await api.post('/ai/social', { params, seed });
+      return response.data.data;
     }
-
-    if (seed) {
-      formData.append('seed', seed.toString());
-    }
-
-    console.log(
-      '[AiService] Sending social payload. Keys:',
-      (formData as any).getParts?.().map((p: any) => p.fieldName)
-    );
-    const response = await api.post('/ai/social', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-      transformRequest: (data) => data,
-    });
-    console.log('[AiService] generateSocial result keys:', Object.keys(response.data.data || {}));
-    return response.data.data;
   },
 
   generateFlyer: async (params: any, seed?: number) => {
     console.log('[AiService] generateFlyer', 'Seed:', seed);
     const referenceImage = params.reference_image;
-
-    const formData = new FormData();
-
     const isLocalUri =
       referenceImage &&
       (referenceImage.startsWith('file://') ||
@@ -181,6 +157,7 @@ export const AiService = {
 
     if (isLocalUri) {
       console.log('[AiService] Appending flyer image as binary file:', referenceImage);
+      const formData = new FormData();
       // @ts-ignore
       formData.append('image', {
         uri: referenceImage,
@@ -190,23 +167,16 @@ export const AiService = {
 
       const { reference_image, ...restParams } = params;
       formData.append('params', JSON.stringify(restParams));
+      if (seed) {
+        formData.append('seed', seed.toString());
+      }
+      const response = await api.post('/ai/flyer', formData);
+      return response.data.data;
     } else {
-      formData.append('params', JSON.stringify(params));
+      console.log('[AiService] Sending flyer payload as JSON');
+      const response = await api.post('/ai/flyer', { params, seed });
+      return response.data.data;
     }
-
-    if (seed) {
-      formData.append('seed', seed.toString());
-    }
-
-    const response = await api.post('/ai/flyer', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-      transformRequest: (data) => data,
-    });
-    console.log('[AiService] generateFlyer full response:', JSON.stringify(response.data, null, 2));
-    console.log('[AiService] generateFlyer result URL:', response.data.data?.url);
-    return response.data.data;
   },
 
   generateVideo: async (params: any, seed?: number) => {

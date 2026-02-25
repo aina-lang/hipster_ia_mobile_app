@@ -11,9 +11,6 @@ console.log('[API] Initializing with BASE_URL:', BASE_URL);
 export const api = axios.create({
   baseURL: BASE_URL,
   timeout: 120000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
 });
 
 // Request interceptor for adding the bearer token
