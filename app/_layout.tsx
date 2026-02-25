@@ -80,6 +80,9 @@ export default function RootLayout() {
   useEffect(() => {
     if (!isHydrated) return;
 
+    // Vérifier si on est sur le splash screen (page root)
+    const isOnSplash = segments.length === 0 || !segments[0];
+
     const timeout = setTimeout(() => {
       const inAuthGroup = segments.some(s => s.includes('(auth)')) || segments.includes('login') || segments.includes('register') || segments.includes('verify-email');
       const inOnboardingGroup = segments.some(s => s.includes('(onboarding)')) || segments.includes('setup') || segments.includes('branding') || segments.includes('packs') || segments.includes('welcome') || segments.includes('payment');
@@ -139,7 +142,7 @@ export default function RootLayout() {
             <Stack.Screen name="(guided)" />
           </Stack>
 
-        <StatusBar barStyle="light-content" translucent={true} backgroundColor="transparent" />
+          <StatusBar style="light" translucent={true} backgroundColor="transparent" />
         </StripeProvider>
       </GestureHandlerRootView>
     </SafeAreaProvider>

@@ -48,6 +48,7 @@ import {
   ChevronRight,
   ExternalLink,
   MessageSquare,
+  ArrowUpRight,
 } from 'lucide-react-native';
 import { useStripe } from '@stripe/stripe-react-native';
 import { BackgroundGradient } from '../../components/ui/BackgroundGradient';
@@ -759,26 +760,35 @@ export default function HomeScreen() {
               <Menu size={24} color={colors.text.primary} />
             </TouchableOpacity>
 
-            {/* Credit Dashboard */}
-            <View className="flex-row items-center gap-3">
-              {/* <View className="flex-row items-center gap-2 bg-white/10 px-3 py-1.5 rounded-xl border border-white/10">
-                <ImageIcon size={14} color="#1e9bff" />
-                <Text className="text-white text-xs font-black">{imagesRemaining} restants</Text>
-              </View> */}
-              {/* <View className="flex-row items-center gap-2 bg-white/10 px-3 py-1.5 rounded-xl border border-white/10">
-                <MessageSquare size={14} color="#10b981" />
-                <Text className="text-white text-xs font-black">{textRemaining}</Text>
-              </View> */}
-            </View>
+            {/* Mode Guidé shortcut — visible uniquement quand une conversation est active */}
+            {hasMessages ? (
+              <TouchableOpacity
+                onPress={() => {
+                  useCreationStore.getState().reset();
+                  router.push('/(guided)/step1-job');
+                }}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 6,
+                  backgroundColor: 'rgba(59, 130, 246, 0.12)',
+                  borderWidth: 1,
+                  borderColor: 'rgba(59, 130, 246, 0.3)',
+                  paddingHorizontal: 12,
+                  paddingVertical: 6,
+                  borderRadius: 20,
+                }}
+                activeOpacity={0.7}>
+                <ArrowUpRight size={14} color={colors.primary.main} />
+                <Text style={{ color: colors.primary.main, fontSize: 12, fontWeight: '700' }}>
+                  Mode Guidé
+                </Text>
+              </TouchableOpacity>
+            ) : (
+              <View />
+            )}
 
             <View className="flex-row items-center gap-2">
-              {/* <TouchableOpacity
-              className="flex-row items-center gap-2 rounded-xl bg-white/5 py-2 px-3 border border-white/10"
-              onPress={resetChat}>
-              <Plus size={18} color={colors.primary.main} />
-              <Text className="text-slate-200 font-medium text-sm">Nouveau</Text>
-            </TouchableOpacity> */}
-
               {hasMessages && (
                 <TouchableOpacity className="rounded-lg bg-white/5 p-2" onPress={() => setShowDeleteConfirm(true)}>
                   <Trash2 size={20} color={colors.text.muted} />
@@ -801,7 +811,7 @@ export default function HomeScreen() {
                     {user?.name || 'Utilisateur'}
                   </Text>
                   <Text className="text-center text-2xl font-bold leading-9 text-slate-300">
-                    {user?.job ? `Prêt pour votre prochaine création en tant que ${user.job.toLowerCase()} ?` : 'Que créons-nous aujourd\'hui ?'}
+                    {'Que créons-nous aujourd\'hui ?'}
                   </Text>
                 </View>
 
