@@ -10,7 +10,7 @@ export const BASE_URL = `https://hipster-api.fr/api`; // Pointing to local backe
 console.log('[API] Initializing with BASE_URL:', BASE_URL);
 export const api = axios.create({
   baseURL: BASE_URL,
-  timeout: 120000,
+  timeout: 300000, // 5 minutes to avoid Network Error during heavy AI generations
 });
 
 // Request interceptor for adding the bearer token
