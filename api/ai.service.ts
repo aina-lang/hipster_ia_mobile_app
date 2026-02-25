@@ -68,13 +68,16 @@ export const AiService = {
     const formData = new FormData();
 
     // If we have a local image file, append it as binary
-    if (
+    const isLocalUri =
       referenceImage &&
       (referenceImage.startsWith('file://') ||
-        referenceImage.startsWith('/') ||
-        referenceImage.startsWith('content://'))
-    ) {
-      console.log('[AiService] Appending image as binary file...');
+        referenceImage.startsWith('content://') ||
+        referenceImage.startsWith('assets-library://') ||
+        referenceImage.startsWith('ph://') ||
+        referenceImage.startsWith('/'));
+
+    if (isLocalUri) {
+      console.log('[AiService] Appending image as binary file:', referenceImage);
       // @ts-ignore - React Native FormData supports file URIs
       formData.append('image', {
         uri: referenceImage,
@@ -116,13 +119,16 @@ export const AiService = {
 
     const formData = new FormData();
 
-    if (
+    const isLocalUri =
       referenceImage &&
       (referenceImage.startsWith('file://') ||
-        referenceImage.startsWith('/') ||
-        referenceImage.startsWith('content://'))
-    ) {
-      console.log('[AiService] Appending social image as binary file...');
+        referenceImage.startsWith('content://') ||
+        referenceImage.startsWith('assets-library://') ||
+        referenceImage.startsWith('ph://') ||
+        referenceImage.startsWith('/'));
+
+    if (isLocalUri) {
+      console.log('[AiService] Appending social image as binary file:', referenceImage);
       // @ts-ignore
       formData.append('image', {
         uri: referenceImage,
@@ -151,13 +157,16 @@ export const AiService = {
 
     const formData = new FormData();
 
-    if (
+    const isLocalUri =
       referenceImage &&
       (referenceImage.startsWith('file://') ||
-        referenceImage.startsWith('/') ||
-        referenceImage.startsWith('content://'))
-    ) {
-      console.log('[AiService] Appending flyer image as binary file...');
+        referenceImage.startsWith('content://') ||
+        referenceImage.startsWith('assets-library://') ||
+        referenceImage.startsWith('ph://') ||
+        referenceImage.startsWith('/'));
+
+    if (isLocalUri) {
+      console.log('[AiService] Appending flyer image as binary file:', referenceImage);
       // @ts-ignore
       formData.append('image', {
         uri: referenceImage,
