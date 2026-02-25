@@ -4,8 +4,6 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
-  Platform,
-  Keyboard,
   Animated,
   Dimensions,
   StyleSheet,
@@ -19,29 +17,19 @@ import { GuidedScreenWrapper } from '../../components/layout/GuidedScreenWrapper
 import { NeonButton } from '../../components/ui/NeonButton';
 import { SelectionCard } from '../../components/ui/SelectionCard';
 import { BlurView } from 'expo-blur';
-import {
-  Sparkles,
-  ChevronRight,
-  Moon,
-  Sun,
-  Upload,
-  X,
-  Gem,
-  Zap,
-} from 'lucide-react-native';
+import { ChevronRight, Upload, X, Zap, Check } from 'lucide-react-native';
 
-import illus2 from "../../assets/illus2.jpeg"
-import illus3 from "../../assets/illus3.jpeg"
-import illus4 from "../../assets/illus4.jpeg"
+import illus2 from '../../assets/illus2.jpeg';
+import illus3 from '../../assets/illus3.jpeg';
+import illus4 from '../../assets/illus4.jpeg';
 import { FLYER_CATEGORIES } from '../../constants/flyerModels';
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { GenericModal, ModalType } from 'components/ui/GenericModal';
-const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const VISUAL_STYLES = [
-  { label: 'Premium', icon: Moon, description: 'Noir & blanc haut de gamme.\nContrasté, intemporel, effet luxe.', image: illus2 },
-  { label: 'Hero Studio', icon: Sun, description: 'Produit mis en scène comme une icône.\nLumière maîtrisée, impact fort.', image: illus3 },
-  { label: 'Minimal Studio', icon: Sun, description: 'Fond clair, composition épurée.\nModerne, haut de gamme, ultra lisible.', image: illus4 },
+  { label: 'Premium', description: 'Noir & blanc luxe', image: illus2 },
+  { label: 'Hero Studio', description: 'Impact fort', image: illus3 },
+  { label: 'Minimal', description: 'Épuré & moderne', image: illus4 },
 ];
 
 export default function Step3PersonalizeScreen() {
@@ -60,42 +48,6 @@ export default function Step3PersonalizeScreen() {
 
   const scrollRef = useRef<ScrollView>(null);
   const [localQuery, setLocalQuery] = useState(userQuery || '');
-  const [activeFlyerCategory, setActiveFlyerCategory] = useState<string | null>(null);
-
-  // Animation for models grid entry
-  const modelsOpacity = useRef(new Animated.Value(0)).current;
-  const modelsTranslateY = useRef(new Animated.Value(10)).current;
-
-  const animateModelsEntry = () => {
-    modelsOpacity.setValue(0);
-    modelsTranslateY.setValue(10);
-    Animated.parallel([
-      Animated.timing(modelsOpacity, {
-        toValue: 1,
-        duration: 400,
-        useNativeDriver: true,
-      }),
-      Animated.spring(modelsTranslateY, {
-        toValue: 0,
-        friction: 8,
-        tension: 40,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  };
-
-  useEffect(() => {
-    if (activeFlyerCategory) {
-      animateModelsEntry();
-    }
-  }, [activeFlyerCategory]);
-
-  const displayedCategories = FLYER_CATEGORIES;
-
-
-  const skeletonOpacity = useRef(new Animated.Value(1)).current;
-  const contentOpacity = useRef(new Animated.Value(0)).current;
-  const skeletonPulse = useRef(new Animated.Value(0.4)).current;
 
   const [modalVisible, setModalVisible] = useState(false);
   const [modalType, setModalType] = useState<ModalType>('info');
@@ -109,28 +61,6 @@ export default function Step3PersonalizeScreen() {
     setModalVisible(true);
   };
 
-  const flatListRef = useRef<any>(null);
-  const scrollX = useRef(new Animated.Value(0)).current;
-  const ITEM_WIDTH = 240;
-  const SPACING = 20;
-
-  useEffect(() => {
-    const pulse = Animated.loop(
-      Animated.sequence([
-        Animated.timing(skeletonPulse, { toValue: 1, duration: 700, useNativeDriver: true }),
-        Animated.timing(skeletonPulse, { toValue: 0.4, duration: 700, useNativeDriver: true }),
-      ])
-    );
-    pulse.start();
-    const timer = setTimeout(() => {
-      Animated.parallel([
-        Animated.timing(skeletonOpacity, { toValue: 0, duration: 300, useNativeDriver: true }),
-        Animated.timing(contentOpacity, { toValue: 1, duration: 400, useNativeDriver: true }),
-      ]).start();
-    }, 700);
-    return () => { pulse.stop(); clearTimeout(timer); };
-  }, []);
-
   const pickImage = async () => {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -140,294 +70,192 @@ export default function Step3PersonalizeScreen() {
       });
       if (!result.canceled && result.assets[0]) {
         const uri = result.assets[0].uri.toLowerCase();
-        const allowedExtensions = ['.jpg', '.jpeg', '.png', '.webp'];
-        if (!allowedExtensions.some((ext) => uri.endsWith(ext))) {
-          showModal('Format non supporté', 'Veuillez sélectionner une image au format JPEG, PNG ou WebP.', 'error');
+        const allowed = ['.jpg', '.jpeg', '.png', '.webp'];
+        if (!allowed.some((ext) => uri.endsWith(ext))) {
+          showModal('Format non supporté', 'Utilisez JPEG, PNG ou WebP.', 'error');
           return;
         }
         setUploadedImage(result.assets[0].uri);
       }
-    } catch (error) {
+    } catch {
       showModal('Erreur', "Impossible de sélectionner l'image", 'error');
     }
   };
 
   const handleCreate = () => {
-    if (selectedCategory === 'Image' || selectedCategory === 'Social' || selectedCategory === 'Document') {
-      if (!uploadedImage && !selectedStyle) {
-        showModal('Choix requis', 'Veuillez choisir un modèle ou un style.', 'warning');
-        return;
-      }
+    if (
+      (selectedCategory === 'Image' || selectedCategory === 'Social' || selectedCategory === 'Document') &&
+      !uploadedImage &&
+      !selectedStyle
+    ) {
+      showModal('Choix requis', 'Choisissez un style ou un modèle.', 'warning');
+      return;
     }
     setQuery(localQuery);
     router.push('/(guided)/step4-result');
   };
 
-  const handleSelectStyle = (style: string, index: number) => {
-    setStyle(style as any);
-    flatListRef.current?.scrollToIndex({
-      index,
-      animated: true,
-      viewPosition: 0.5,
-    });
-  };
+  const isVisual =
+    selectedCategory === 'Image' ||
+    selectedCategory === 'Social' ||
+    selectedCategory === 'Document';
 
   return (
     <GuidedScreenWrapper scrollViewRef={scrollRef} footer={null}>
-      <View style={{ paddingHorizontal: 20, overflow: 'visible' }}>
+      <View style={styles.container}>
 
-        {/* Header */}
+        {/* ── Header ── */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Personnalisez votre création</Text>
+          <Text style={styles.headerTitle}>Personnalisez</Text>
           <View style={styles.breadcrumb}>
-            <Text style={styles.breadcrumbJob}>{selectedJob}</Text>
-            <ChevronRight size={14} color={colors.text.primary} />
-            <Text style={styles.breadcrumbJob}>{selectedFunction?.split('(')[0]}</Text>
+            <Text style={styles.breadcrumbText}>{selectedJob}</Text>
+            <ChevronRight size={12} color={colors.text.muted} />
+            <Text style={styles.breadcrumbText}>{selectedFunction?.split('(')[0]}</Text>
           </View>
         </View>
 
-        {/* CONDITIONAL FLOW: Visual Layout */}
-        {(selectedCategory === 'Image' || selectedCategory === 'Social' || selectedCategory === 'Document') && (
-          <View style={{ marginBottom: 32, overflow: 'visible' }}>
+        {/* ── Visual Block ── */}
+        {isVisual && (
+          <View style={styles.visualBlock}>
 
-            {/* 1. REFERENCE IMAGE */}
-            <View style={{ marginTop: 20 }}>
-              <Text style={styles.sectionTitle}>Image de référence</Text>
+            {/* ── Image Upload — compact row ── */}
+            <View style={styles.row}>
+              <Text style={styles.label}>Photo de référence</Text>
               {uploadedImage ? (
-                <View style={styles.imagePreviewContainer}>
-                  <Image source={{ uri: uploadedImage }} style={styles.imagePreview} />
-                  <TouchableOpacity style={styles.removeImageButton} onPress={() => setUploadedImage(null)}>
-                    <X size={20} color="white" />
+                <View style={styles.imagePill}>
+                  <Image source={{ uri: uploadedImage }} style={styles.imagePillThumb} />
+                  <TouchableOpacity onPress={pickImage} style={styles.imagePillText}>
+                    <Text style={styles.imagePillLabel} numberOfLines={1}>
+                      Changer l'image
+                    </Text>
                   </TouchableOpacity>
-                  <BlurView intensity={30} tint="dark" style={styles.changeImageOverlay}>
-                    <TouchableOpacity onPress={pickImage} style={styles.changeImageButton}>
-                      <Text style={styles.changeImageText}>Changer l'image</Text>
-                    </TouchableOpacity>
-                  </BlurView>
+                  <TouchableOpacity onPress={() => setUploadedImage(null)} style={styles.imagePillRemove}>
+                    <X size={14} color="white" />
+                  </TouchableOpacity>
                 </View>
               ) : (
-                <TouchableOpacity style={styles.uploadButton} onPress={pickImage}>
-                  <View style={styles.uploadIconContainer}>
-                    <Upload size={32} color={colors.primary.main} />
-                  </View>
-                  <Text style={styles.uploadText}>Cliquez pour ajouter une photo</Text>
-                  <Text style={styles.uploadHint}>JPG, PNG ou WebP</Text>
+                <TouchableOpacity style={styles.uploadCompact} onPress={pickImage}>
+                  <Upload size={16} color={colors.primary.main} />
+                  <Text style={styles.uploadCompactText}>Ajouter une photo</Text>
                 </TouchableOpacity>
               )}
             </View>
 
-            {/* 2. VISUAL STYLE / FLYER MODELS */}
-            <View style={{ marginTop: 24, overflow: 'visible' }}>
-              <Text style={styles.sectionTitle}>
-                {selectedCategory === 'Document' ? 'Modèle de flyer' : 'Style artistique'}
-              </Text>
-
-              {selectedCategory === 'Document' ? (
-                /* FLYER MODELS SELECTION */
-                <View style={{ marginTop: 12 }}>
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.categoryRowContainer}
-                    style={styles.categoryRowScroll}
-                  >
-                    {displayedCategories.map((cat) => {
-                      const isActive = activeFlyerCategory === cat.id;
-                      return (
-                        <View key={cat.id} style={styles.categoryRowItem}>
-                          <SelectionCard
-                            label={cat.label}
-                            icon={cat.icon}
-                            selected={isActive}
-                            onPress={() => setActiveFlyerCategory(cat.id)}
-                            fullWidth
-                          />
-                        </View>
-                      );
-                    })}
-                  </ScrollView>
-
-                  {activeFlyerCategory ? (
-                    <Animated.View style={{
-                      opacity: modelsOpacity,
-                      transform: [{ translateY: modelsTranslateY }]
-                    }}>
-                      <ScrollView
-                        horizontal
-                        showsHorizontalScrollIndicator={false}
-                        style={styles.modelsScroll}
-                        contentContainerStyle={styles.modelsScrollContainer}
-                      >
-                        <View style={styles.modelsGrid}>
-                          {displayedCategories.find(c => c.id === activeFlyerCategory)?.models.map((modelObj) => {
-                            const modelLabel = typeof modelObj === 'string' ? modelObj : modelObj.label;
-                            const modelImage = typeof modelObj === 'object' && modelObj.image ? modelObj.image : displayedCategories.find(c => c.id === activeFlyerCategory)?.image;
-                            const isSelected = selectedStyle === modelLabel;
-
-                            return (
-                              <TouchableOpacity
-                                key={modelLabel}
-                                style={[styles.modelCard, isSelected && styles.modelCardSelected]}
-                                onPress={() => setStyle(modelLabel)}
-                              >
-                                <Image source={modelImage} style={styles.modelCardImage} />
-                                <View style={styles.modelCardOverlay}>
-                                  <Text style={styles.modelCardName} numberOfLines={2}>{modelLabel}</Text>
-                                  {isSelected && (
-                                    <View style={styles.modelCardActiveBadge}>
-                                      <Zap size={12} color="white" />
-                                    </View>
-                                  )}
-                                </View>
-                              </TouchableOpacity>
-                            );
-                          })}
-                        </View>
-                      </ScrollView>
-                    </Animated.View>
-                  ) : (
-                    <View style={styles.emptyModelsContainer}>
-                      <Sparkles size={32} color="rgba(255,255,255,0.1)" />
-                      <Text style={styles.emptyModelsText}>Sélectionnez une catégorie ci-dessus</Text>
-                    </View>
-                  )}
-                </View>
-              ) : (
-                /* STANDARD VISUAL STYLES CAROUSEL */
-                <Animated.FlatList
-                  data={VISUAL_STYLES}
+            {/* ── Style / Model selection ── */}
+            {selectedCategory === 'Document' ? (
+              /* Flyer models: flat list with section headers — no category tap needed */
+              <View style={{ marginTop: 16 }}>
+                <Text style={styles.label}>Modèle de flyer</Text>
+                <ScrollView
                   horizontal
-                  keyExtractor={(item) => item.label}
                   showsHorizontalScrollIndicator={false}
-                  snapToInterval={ITEM_WIDTH + SPACING}
-                  decelerationRate="fast"
-                  contentContainerStyle={{
-                    paddingHorizontal: SPACING,
-                    paddingVertical: 50,
-                  }}
-                  style={{ overflow: 'visible' }}
-                  onScroll={Animated.event(
-                    [{ nativeEvent: { contentOffset: { x: scrollX } } }],
-                    { useNativeDriver: true }
+                  contentContainerStyle={styles.flyerScroll}
+                >
+                  {FLYER_CATEGORIES.map((cat) =>
+                    cat.models.map((modelObj) => {
+                      const modelLabel =
+                        typeof modelObj === 'string' ? modelObj : modelObj.label;
+                      const modelImage =
+                        typeof modelObj === 'object' && modelObj.image
+                          ? modelObj.image
+                          : cat.image;
+                      const isSelected = selectedStyle === modelLabel;
+                      return (
+                        <TouchableOpacity
+                          key={modelLabel}
+                          style={[styles.flyerCard, isSelected && styles.flyerCardSelected]}
+                          onPress={() => setStyle(modelLabel)}
+                        >
+                          <Image source={modelImage} style={styles.flyerCardImage} />
+                          {isSelected && (
+                            <View style={styles.flyerCardBadge}>
+                              <Zap size={10} color="white" />
+                            </View>
+                          )}
+                          <View style={styles.flyerCardOverlay}>
+                            <Text style={styles.flyerCardCat}>{cat.label}</Text>
+                            <Text style={styles.flyerCardName} numberOfLines={2}>
+                              {modelLabel}
+                            </Text>
+                          </View>
+                        </TouchableOpacity>
+                      );
+                    })
                   )}
-                  ref={flatListRef}
-                  getItemLayout={(data, index) => ({
-                    length: ITEM_WIDTH + SPACING,
-                    offset: (ITEM_WIDTH + SPACING) * index,
-                    index,
-                  })}
-                  renderItem={({ item, index }) => {
-                    const inputRange = [
-                      (index - 1) * (ITEM_WIDTH + SPACING),
-                      index * (ITEM_WIDTH + SPACING),
-                      (index + 1) * (ITEM_WIDTH + SPACING),
-                    ];
-
-                    const scale = scrollX.interpolate({
-                      inputRange,
-                      outputRange: [0.8, 1.25, 0.8],
-                      extrapolate: 'clamp',
-                    });
-
-                    const translateY = scrollX.interpolate({
-                      inputRange,
-                      outputRange: [15, -15, 15],
-                      extrapolate: 'clamp',
-                    });
-
-                    const opacity = scrollX.interpolate({
-                      inputRange,
-                      outputRange: [0.7, 1, 0.7],
-                      extrapolate: 'clamp',
-                    });
-
+                </ScrollView>
+              </View>
+            ) : (
+              /* Visual styles: 3 cards side by side — no scroll needed */
+              <View style={{ marginTop: 16 }}>
+                <Text style={styles.label}>Style artistique</Text>
+                <View style={styles.stylesRow}>
+                  {VISUAL_STYLES.map((item) => {
                     const isSelected = selectedStyle === item.label;
-
                     return (
-                      <Animated.View
-                        style={{
-                          width: ITEM_WIDTH,
-                          marginHorizontal: SPACING / 2,
-                          transform: [{ scale }, { translateY }],
-                          opacity,
-                          position: 'relative',
-                        }}
+                      <TouchableOpacity
+                        key={item.label}
+                        style={[styles.styleCard, isSelected && styles.styleCardSelected]}
+                        onPress={() => setStyle(item.label as any)}
+                        activeOpacity={0.85}
                       >
                         {isSelected && (
                           <>
-                            <View style={styles.cardBloomFar} pointerEvents="none" />
-                            <View style={styles.cardBloomMid} pointerEvents="none" />
                             <View style={styles.cardBorderGlow} pointerEvents="none" />
-                            <View style={styles.cardFloorGlow} pointerEvents="none" />
+                            <View style={styles.cardBloom} pointerEvents="none" />
                           </>
                         )}
-
-                        <TouchableOpacity
-                          style={[styles.styleCard, isSelected && styles.styleCardSelected]}
-                          onPress={() => handleSelectStyle(item.label, index)}
-                          activeOpacity={0.9}
-                        >
-                          <Image
-                            source={typeof item.image === 'string' ? { uri: item.image } : item.image}
-                            style={styles.styleCardImage}
-                            resizeMode="cover"
-                          />
-
-                          {isSelected && (
-                            <View style={styles.styleCardTopReflection} pointerEvents="none" />
-                          )}
-
-                          <View style={[styles.styleCardContent, isSelected && { backgroundColor: 'transparent' }]}>
-                            <Text style={[styles.styleCardLabel, isSelected && styles.styleCardLabelSelected]}>
-                              {item.label}
-                            </Text>
+                        <Image
+                          source={
+                            typeof item.image === 'string' ? { uri: item.image } : item.image
+                          }
+                          style={styles.styleCardImage}
+                          resizeMode="cover"
+                        />
+                        {isSelected && (
+                          <View style={styles.styleCardCheckBadge}>
+                            <Check size={10} color="white" strokeWidth={3} />
                           </View>
-
-                          {isSelected && (
-                            <BlurView intensity={80} tint="dark" style={StyleSheet.absoluteFill}>
-                              <View style={styles.selectedOverlayContent}>
-                                <View style={styles.styleCardCheck}>
-                                  <View style={styles.styleCardCheckInner} />
-                                </View>
-                              </View>
-                            </BlurView>
-                          )}
-                        </TouchableOpacity>
-                      </Animated.View>
+                        )}
+                        <View
+                          style={[
+                            styles.styleCardFooter,
+                            isSelected && styles.styleCardFooterSelected,
+                          ]}
+                        >
+                          <Text style={styles.styleCardLabel}>{item.label}</Text>
+                          <Text style={styles.styleCardDesc}>{item.description}</Text>
+                        </View>
+                      </TouchableOpacity>
                     );
-                  }}
-                />
-              )}
-            </View>
+                  })}
+                </View>
+              </View>
+            )}
           </View>
         )}
 
-        {/* Prompt Section */}
-        {/* Extra top padding so NeonButton glow isn't clipped by parent */}
-        <View style={{ marginBottom: 60, overflow: 'visible' }}>
-          <Text style={styles.sectionTitle}>Précisez votre besoin</Text>
+        {/* ── Prompt ── */}
+        <View style={styles.promptBlock}>
+          <Text style={styles.label}>Précisez votre besoin</Text>
+          <TextInput
+            style={styles.promptInput}
+            placeholder="Ex: Une offre spéciale pour la Saint-Valentin..."
+            placeholderTextColor="rgba(255,255,255,0.25)"
+            multiline
+            value={localQuery}
+            onChangeText={setLocalQuery}
+          />
+        </View>
 
-          <View style={styles.promptContainer}>
-            <TextInput
-              style={styles.promptInput}
-              placeholder="Ex: Une offre spéciale pour la Saint-Valentin..."
-              placeholderTextColor="rgba(255, 255, 255, 0.3)"
-              multiline
-              value={localQuery}
-              onChangeText={setLocalQuery}
-            />
-          </View>
-
-          {/* Wrapper with vertical padding so neon floor glow isn't clipped */}
-          <View style={{ paddingBottom: 40, overflow: 'visible' }}>
-            <NeonButton
-              title="Démarrer la création"
-              onPress={handleCreate}
-              variant="premium"
-              size="lg"
-              style={{ width: '100%' }}
-            />
-          </View>
+        {/* ── CTA ── */}
+        <View style={styles.ctaWrapper}>
+          <NeonButton
+            title="Démarrer la création"
+            onPress={handleCreate}
+            variant="premium"
+            size="lg"
+            style={{ width: '100%' }}
+          />
         </View>
       </View>
 
@@ -443,346 +271,260 @@ export default function Step3PersonalizeScreen() {
 }
 
 const styles = StyleSheet.create({
+  container: {
+    paddingHorizontal: 20,
+    paddingBottom: 32,
+  },
+
+  // ── Header ──────────────────────────────────────────────────────────────────
   header: {
     alignItems: 'center',
-    marginBottom: 20,
-    paddingHorizontal: 10,
+    marginBottom: 24,
+    paddingTop: 4,
   },
   headerTitle: {
-    fontSize: 26,
-    fontWeight: 'bold',
+    fontSize: 24,
+    fontWeight: '800',
     color: colors.text.primary,
-    textAlign: 'center',
-    marginBottom: 6,
+    marginBottom: 4,
   },
   breadcrumb: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 4,
   },
-  breadcrumbJob: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text.primary,
+  breadcrumbText: {
+    fontSize: 13,
+    color: colors.text.muted,
+    fontWeight: '500',
   },
-  sectionTitle: {
-    fontSize: 20,
+
+  // ── Section label ────────────────────────────────────────────────────────────
+  label: {
+    fontSize: 14,
     fontWeight: '700',
     color: colors.text.primary,
+    marginBottom: 10,
+    opacity: 0.8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+  },
+
+  // ── Visual block ─────────────────────────────────────────────────────────────
+  visualBlock: {
+    marginBottom: 20,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: 4,
   },
-  promptContainer: {
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+
+  // ── Upload compact pill ───────────────────────────────────────────────────────
+  uploadCompact: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(255,255,255,0.06)',
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-    minHeight: 120,
-    padding: 16,
-    marginBottom: 24,
+    borderColor: 'rgba(255,255,255,0.12)',
+    paddingVertical: 8,
+    paddingHorizontal: 14,
   },
-  promptInput: {
-    flex: 1,
-    fontSize: 16,
-    color: colors.text.primary,
-    textAlignVertical: 'top',
-    paddingTop: 0,
-  },
-  uploadButton: {
-    width: '100%',
-    height: 160,
-    borderRadius: 16,
-    borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-    borderStyle: 'dashed',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 8,
-  },
-  uploadIconContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: 'rgba(148, 163, 184, 0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  uploadText: {
-    fontSize: 16,
+  uploadCompactText: {
+    fontSize: 13,
+    color: colors.primary.main,
     fontWeight: '600',
-    color: colors.text.primary,
   },
-  uploadHint: {
-    fontSize: 12,
-    color: colors.text.muted,
-  },
-  imagePreviewContainer: {
-    width: '100%',
-    height: 200,
-    borderRadius: 16,
+  imagePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderRadius: 20,
     overflow: 'hidden',
-    position: 'relative',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
+    maxWidth: 200,
   },
-  imagePreview: {
-    width: '100%',
-    height: '100%',
+  imagePillThumb: {
+    width: 32,
+    height: 32,
     resizeMode: 'cover',
   },
-  removeImageButton: {
-    position: 'absolute',
-    top: 12,
-    right: 12,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  changeImageButton: {
-    marginTop: 16,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  changeImageText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#94a3b8',
-  },
-  changeImageOverlay: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 48,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-
-  // ── Style Card ──────────────────────────────────────────────────────────────
-
-  // Card body — overflow hidden pour clipper image et overlay
-  styleCard: {
-    borderRadius: 16,
-    overflow: 'hidden',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    height: 140,
-    borderWidth: 1.5,
-    borderColor: 'transparent',
-  },
-
-  styleCardSelected: {
-    borderWidth: 2,
-    borderColor: '#1e9bff',
-  },
-
-  styleCardImage: {
-    width: '100%',
-    height: '100%',
-  },
-
-  // Reflet lumineux bleu en haut de la carte sélectionnée
-  styleCardTopReflection: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: '40%',
-    backgroundColor: 'rgba(80, 170, 255, 0.15)',
-  },
-
-  styleCardContent: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    padding: 12,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-  },
-
-  styleCardLabel: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: colors.text.primary,
-    marginBottom: 4,
-  },
-
-  styleCardLabelSelected: {
-    color: '#ffffff',
-    fontWeight: '800',
-  },
-
-  styleCardCheck: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.5)',
-  },
-
-  styleCardCheckInner: {
-    width: 14,
-    height: 9,
-    borderBottomWidth: 2,
-    borderLeftWidth: 2,
-    borderColor: '#FFFFFF',
-    transform: [{ rotate: '-45deg' }, { translateY: -2 }],
-  },
-
-  selectedOverlayContent: {
+  imagePillText: {
     flex: 1,
+    paddingHorizontal: 10,
+  },
+  imagePillLabel: {
+    fontSize: 12,
+    color: colors.text.primary,
+    fontWeight: '600',
+  },
+  imagePillRemove: {
+    width: 32,
+    height: 32,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(30, 100, 255, 0.08)',
-  },
-
-  // ── Neon glow layers pour styleCard (dans l'Animated.View, hors du card clippé) ──
-
-  cardBorderGlow: {
-    position: 'absolute',
-    top: 0, left: 0, right: 0, bottom: 0,
-    borderRadius: 16,
-    backgroundColor: 'transparent',
-    shadowColor: '#1a8fff',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 1,
-    shadowRadius: 24,
-    elevation: 14,
-  },
-
-  cardBloomMid: {
-    position: 'absolute',
-    top: -4, left: -4, right: -4, bottom: -4,
-    borderRadius: 20,
-    backgroundColor: 'transparent',
-    shadowColor: '#0f60e0',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 20,
-    elevation: 8,
-  },
-
-  cardBloomFar: {
-    position: 'absolute',
-    top: -8, left: -8, right: -8, bottom: -8,
-    borderRadius: 24,
-    backgroundColor: 'transparent',
-    shadowColor: '#0840bb',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.3,
-    shadowRadius: 28,
-    elevation: 4,
-  },
-
-  cardFloorGlow: {
-    position: 'absolute',
-    bottom: -28,
-    alignSelf: 'center',
-    width: 160,
-    height: 36,
-    borderRadius: 50,
-    backgroundColor: 'transparent',
-    shadowColor: '#1a6fff',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.75,
-    shadowRadius: 22,
-    elevation: 18,
-  },
-
-
-  categoryRowScroll: {
-    marginHorizontal: -20,
-    marginBottom: 16,
-    overflow: 'visible',
-  },
-  categoryRowContainer: {
-    paddingHorizontal: 20,
-    gap: 12,
-    paddingBottom: 20, // Space for the floor glow
-    overflow: 'visible',
-  },
-  categoryRowItem: {
-    width: 200,
-  },
-  modelsScroll: {
-    marginHorizontal: -20,
-  },
-  modelsScrollContainer: {
-    paddingHorizontal: 20,
-  },
-  modelsGrid: {
-    flexDirection: 'column',
-    flexWrap: 'wrap',
-    height: 380, // Height for 2 rows of 180px cards + gap
-    gap: 12,
-    marginTop: 8,
-  },
-  modelCard: {
-    width: 156,
-    height: 180,
-    borderRadius: 16,
-    overflow: 'hidden',
     backgroundColor: 'rgba(255,255,255,0.05)',
-    borderWidth: 2,
-    borderColor: 'transparent',
+  },
+
+  // ── 3-col style cards ─────────────────────────────────────────────────────────
+  stylesRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  styleCard: {
+    flex: 1,
+    borderRadius: 14,
+    overflow: 'visible',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: 'rgba(255,255,255,0.04)',
     position: 'relative',
   },
-  modelCardSelected: {
+  styleCardSelected: {
     borderColor: '#1e9bff',
   },
-  modelCardImage: {
+  styleCardImage: {
     width: '100%',
-    height: '100%',
+    height: 90,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+  },
+  styleCardFooter: {
+    padding: 8,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    borderBottomLeftRadius: 12,
+    borderBottomRightRadius: 12,
+  },
+  styleCardFooterSelected: {
+    backgroundColor: 'rgba(30,100,255,0.25)',
+  },
+  styleCardLabel: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#fff',
+    marginBottom: 1,
+  },
+  styleCardDesc: {
+    fontSize: 10,
+    color: 'rgba(255,255,255,0.5)',
+    lineHeight: 13,
+  },
+  styleCardCheckBadge: {
     position: 'absolute',
-    opacity: 0.6,
-  },
-  modelCardOverlay: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    padding: 12,
-    backgroundColor: 'rgba(0,0,0,0.3)',
-  },
-  modelCardName: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: '700',
-    lineHeight: 18,
-  },
-  modelCardActiveBadge: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    top: 6,
+    right: 6,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
     backgroundColor: '#1e9bff',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#1e9bff',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.5,
-    shadowRadius: 4,
-    elevation: 4,
+    zIndex: 10,
   },
-  emptyModelsContainer: {
-    height: 120,
+  cardBorderGlow: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+    borderRadius: 14,
+    backgroundColor: 'transparent',
+    shadowColor: '#1a8fff',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.9,
+    shadowRadius: 16,
+    elevation: 12,
+    zIndex: -1,
+  },
+  cardBloom: {
+    position: 'absolute',
+    top: -6, left: -6, right: -6, bottom: -6,
+    borderRadius: 20,
+    backgroundColor: 'transparent',
+    shadowColor: '#0840bb',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.35,
+    shadowRadius: 20,
+    elevation: 4,
+    zIndex: -1,
+  },
+
+  // ── Flyer cards (horizontal scroll) ──────────────────────────────────────────
+  flyerScroll: {
+    gap: 10,
+    paddingBottom: 4,
+  },
+  flyerCard: {
+    width: 120,
+    height: 160,
+    borderRadius: 14,
+    overflow: 'hidden',
+    borderWidth: 2,
+    borderColor: 'transparent',
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    position: 'relative',
+  },
+  flyerCardSelected: {
+    borderColor: '#1e9bff',
+  },
+  flyerCardImage: {
+    width: '100%',
+    height: '100%',
+    position: 'absolute',
+    opacity: 0.55,
+  },
+  flyerCardOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    padding: 10,
+  },
+  flyerCardCat: {
+    fontSize: 9,
+    color: 'rgba(255,255,255,0.5)',
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+    marginBottom: 2,
+  },
+  flyerCardName: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#fff',
+    lineHeight: 15,
+  },
+  flyerCardBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#1e9bff',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.02)',
+    zIndex: 10,
+  },
+
+  // ── Prompt ───────────────────────────────────────────────────────────────────
+  promptBlock: {
+    marginBottom: 20,
+  },
+  promptInput: {
+    backgroundColor: 'rgba(255,255,255,0.05)',
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
-    borderStyle: 'dashed',
-    gap: 10,
+    borderColor: 'rgba(255,255,255,0.1)',
+    minHeight: 100,
+    padding: 14,
+    fontSize: 15,
+    color: colors.text.primary,
+    textAlignVertical: 'top',
   },
-  emptyModelsText: {
-    color: colors.text.muted,
-    fontSize: 14,
-    fontWeight: '500',
+
+  // ── CTA ──────────────────────────────────────────────────────────────────────
+  ctaWrapper: {
+    paddingBottom: 40,
+    overflow: 'visible',
   },
 });
