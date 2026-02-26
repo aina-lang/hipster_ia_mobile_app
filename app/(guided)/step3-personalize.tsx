@@ -48,6 +48,7 @@ export default function Step3PersonalizeScreen() {
 
   const scrollRef = useRef<ScrollView>(null);
   const [localQuery, setLocalQuery] = useState(userQuery || '');
+  const [selectedFlyerCategory, setSelectedFlyerCategory] = useState(FLYER_CATEGORIES[0].id);
 
   const [modalVisible, setModalVisible] = useState(false);
   const [modalType, setModalType] = useState<ModalType>('info');
@@ -145,20 +146,56 @@ export default function Step3PersonalizeScreen() {
             {selectedCategory === 'Document' ? (
               /* Flyer models: flat list with section headers — no category tap needed */
               <View style={{ marginTop: 16 }}>
-                <Text style={styles.label}>Modèle de flyer</Text>
+                <Text style={styles.label}>Catégorie de flyer</Text>
                 <ScrollView
                   horizontal
                   showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.flyerScroll}
+                  contentContainerStyle={styles.categoryScroll}
                 >
-                  {FLYER_CATEGORIES.map((cat) =>
-                    cat.models.map((modelObj) => {
+                  {FLYER_CATEGORIES.map((cat) => {
+                    const isSelected = selectedFlyerCategory === cat.id;
+                    const Icon = cat.icon;
+                    return (
+                      <TouchableOpacity
+                        key={cat.id}
+                        onPress={() => setSelectedFlyerCategory(cat.id)}
+                        style={[
+                          styles.categoryButton,
+                          isSelected && styles.categoryButtonSelected,
+                        ]}
+                        activeOpacity={0.8}
+                      >
+                        {isSelected && (
+                          <>
+                            <View style={styles.catBorderGlow} pointerEvents="none" />
+                            <View style={styles.catBloom} pointerEvents="none" />
+                          </>
+                        )}
+                        <View style={styles.categoryIconCircle}>
+                          <Icon size={14} color={isSelected ? colors.primary.main : 'rgba(255,255,255,0.4)'} />
+                        </View>
+                        <Text style={[styles.categoryButtonText, isSelected && styles.categoryButtonTextSelected]}>
+                          {cat.label}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+
+                <View style={{ marginTop: 20 }}>
+                  <Text style={styles.label}>Modèle de flyer</Text>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.flyerScroll}
+                  >
+                    {FLYER_CATEGORIES.find((c) => c.id === selectedFlyerCategory)?.models.map((modelObj) => {
                       const modelLabel =
                         typeof modelObj === 'string' ? modelObj : modelObj.label;
                       const modelImage =
                         typeof modelObj === 'object' && modelObj.image
                           ? modelObj.image
-                          : cat.image;
+                          : (FLYER_CATEGORIES.find((c) => c.id === selectedFlyerCategory)?.image);
                       const isSelected = selectedStyle === modelLabel;
                       return (
                         <TouchableOpacity
@@ -166,20 +203,20 @@ export default function Step3PersonalizeScreen() {
                           style={[styles.flyerCard, isSelected && styles.styleCardSelected,]}
                           onPress={() => setStyle(modelLabel)}
                         >
-                             {isSelected && (
-                          <>
-                            <View style={styles.cardBorderGlow} pointerEvents="none" />
-                            <View style={styles.cardBloom} pointerEvents="none" />
-                          </>
-                        )}
+                          {isSelected && (
+                            <>
+                              <View style={styles.cardBorderGlow} pointerEvents="none" />
+                              <View style={styles.cardBloom} pointerEvents="none" />
+                            </>
+                          )}
                           <Image source={modelImage} style={styles.flyerCardImage} />
-                        {isSelected && (
-                          <View style={styles.styleCardCheckBadge}>
-                            <Check size={10} color="white" strokeWidth={3} />
-                          </View>
-                        )}
+                          {isSelected && (
+                            <View style={styles.styleCardCheckBadge}>
+                              <Check size={10} color="white" strokeWidth={3} />
+                            </View>
+                          )}
                           <View style={styles.flyerCardOverlay}>
-                            <Text style={styles.flyerCardCat}>{cat.label}</Text>
+                            <Text style={styles.flyerCardCat}>{FLYER_CATEGORIES.find((c) => c.id === selectedFlyerCategory)?.label}</Text>
                             <Text style={styles.flyerCardName} numberOfLines={2}>
                               {modelLabel}
                             </Text>
@@ -187,8 +224,9 @@ export default function Step3PersonalizeScreen() {
                         </TouchableOpacity>
                       );
                     })
-                  )}
-                </ScrollView>
+                    }
+                  </ScrollView>
+                </View>
               </View>
             ) : (
               /* Visual styles: 3 cards side by side — no scroll needed */
@@ -510,6 +548,69 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 10,
+  },
+
+  // ── Category scroll ──────────────────────────────────────────────────────────
+  categoryScroll: {
+    gap: 8,
+    paddingRight: 20,
+    paddingBottom: 4,
+  },
+  categoryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+  },
+  categoryButtonSelected: {
+    backgroundColor: 'rgba(30,155,255,0.1)',
+    borderColor: '#1e9bff',
+  },
+  categoryIconCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  categoryButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.5)',
+  },
+  categoryButtonTextSelected: {
+    color: '#fff',
+    fontWeight: '700',
+  },
+  catBorderGlow: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+    borderRadius: 12,
+    backgroundColor: 'transparent',
+    shadowColor: '#1a8fff',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 10,
+    elevation: 6,
+    zIndex: -1,
+  },
+  catBloom: {
+    position: 'absolute',
+    top: -2, left: -2, right: -2, bottom: -2,
+    borderRadius: 14,
+    backgroundColor: 'transparent',
+    shadowColor: '#0840bb',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 3,
+    zIndex: -1,
   },
 
   // ── Prompt ───────────────────────────────────────────────────────────────────
