@@ -11,6 +11,7 @@ import {
   Modal,
   FlatList,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
@@ -566,7 +567,34 @@ export default function Step3PersonalizeScreen() {
   const activeFlyerCategory = categories.find((c) => c.id === selectedFlyerCategory);
 
   return (
-    <GuidedScreenWrapper scrollViewRef={scrollRef} footer={null}>
+    <GuidedScreenWrapper
+      scrollViewRef={scrollRef}
+      footer={
+        <View style={styles.fixedFooter}>
+          <View style={styles.promptBlock}>
+            <Text style={styles.label}>Précisez votre besoin</Text>
+            <TextInput
+              style={styles.promptInput}
+              placeholder="Ex: Une offre spéciale pour la Saint-Valentin..."
+              placeholderTextColor="rgba(255,255,255,0.25)"
+              multiline
+              value={localQuery}
+              onChangeText={setLocalQuery}
+            />
+          </View>
+
+          <View style={styles.ctaWrapper}>
+            <NeonButton
+              title="Démarrer la création"
+              onPress={handleCreate}
+              variant="premium"
+              size="lg"
+              style={{ width: '100%' }}
+            />
+          </View>
+        </View>
+      }
+    >
       <View style={styles.container}>
 
         {/* ── Header ── */}
@@ -580,135 +608,117 @@ export default function Step3PersonalizeScreen() {
         </View>
 
         {/* ── Visual Block ── */}
-        {isVisual && (
-          <View style={styles.visualBlock}>
-
-            {/* ── Image Upload ── */}
-            <View style={styles.row}>
-              <Text style={styles.label}>Photo de référence</Text>
-              {uploadedImage ? (
-                <View style={styles.imagePill}>
-                  <Image source={{ uri: uploadedImage }} style={styles.imagePillThumb} />
-                  <TouchableOpacity onPress={pickImage} style={styles.imagePillText}>
-                    <Text style={styles.imagePillLabel} numberOfLines={1}>
-                      Changer l'image
-                    </Text>
+        {isLoading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={colors.primary.main} />
+            <Text style={styles.loadingText}>Chargement des modèles...</Text>
+          </View>
+        ) : (
+          isVisual && (
+            <View style={styles.visualBlock}>
+              {/* ── Image Upload ── */}
+              <View style={styles.row}>
+                <Text style={styles.label}>Photo de référence</Text>
+                {uploadedImage ? (
+                  <View style={styles.imagePill}>
+                    <Image source={{ uri: uploadedImage }} style={styles.imagePillThumb} />
+                    <TouchableOpacity onPress={pickImage} style={styles.imagePillText}>
+                      <Text style={styles.imagePillLabel} numberOfLines={1}>
+                        Changer l'image
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => setUploadedImage(null)} style={styles.imagePillRemove}>
+                      <X size={14} color="white" />
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <TouchableOpacity style={styles.uploadCompact} onPress={pickImage}>
+                    <Upload size={16} color={colors.primary.main} />
+                    <Text style={styles.uploadCompactText}>Ajouter une photo</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity onPress={() => setUploadedImage(null)} style={styles.imagePillRemove}>
-                    <X size={14} color="white" />
-                  </TouchableOpacity>
-                </View>
-              ) : (
-                <TouchableOpacity style={styles.uploadCompact} onPress={pickImage}>
-                  <Upload size={16} color={colors.primary.main} />
-                  <Text style={styles.uploadCompactText}>Ajouter une photo</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-
-            {/* ── Style / Model selection ── */}
-            {selectedCategory === 'Document' ? (
-              <View style={{ marginTop: 16 }}>
-                <Text style={styles.label}>Modèle de flyer</Text>
-
-                <CategoryTabs
-                  categories={categories}
-                  selectedId={selectedFlyerCategory}
-                  onSelect={setSelectedFlyerCategory}
-                />
-
-                {activeFlyerCategory && (
-                  <>
-                    <View style={styles.modelsGrid}>
-                      {activeFlyerCategory?.models?.slice(0, 4).map((modelObj) => (
-                        <ModelGridItem
-                          key={modelObj.label}
-                          modelLabel={modelObj.label}
-                          modelImage={modelObj.image ?? activeFlyerCategory?.image}
-                          isSelected={selectedStyle === modelObj.label}
-                          onPress={() => setStyle(modelObj.label)}
-                        />
-                      ))}
-                    </View>
-
-                    {activeFlyerCategory?.models && activeFlyerCategory.models.length > 4 && (
-                      <TouchableOpacity
-                        style={styles.seeAllButton}
-                        onPress={() => setShowAllModels(true)}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={styles.seeAllText}>Voir tous les modèles</Text>
-                        <ChevronRight size={16} color={colors.primary.main} />
-                      </TouchableOpacity>
-                    )}
-                  </>
                 )}
               </View>
-            ) : (
-              <View style={{ marginTop: 16 }}>
-                <Text style={styles.label}>Style artistique</Text>
-                <View style={styles.stylesRow}>
-                  {VISUAL_STYLES.map((item) => {
-                    const isSelected = selectedStyle === item.label;
-                    return (
-                      <TouchableOpacity
-                        key={item.label}
-                        style={[styles.styleCard, isSelected && styles.styleCardSelected]}
-                        onPress={() => setStyle(item.label as any)}
-                        activeOpacity={0.85}
-                      >
-                        {isSelected && (
-                          <>
-                            <View style={styles.cardBorderGlow} pointerEvents="none" />
-                            <View style={styles.cardBloom} pointerEvents="none" />
-                          </>
-                        )}
-                        <Image
-                          source={typeof item.image === 'string' ? { uri: item.image } : item.image}
-                          style={styles.styleCardImage}
-                          resizeMode="cover"
-                        />
-                        {isSelected && (
-                          <View style={styles.styleCardCheckBadge}>
-                            <Check size={10} color="white" strokeWidth={3} />
-                          </View>
-                        )}
-                        <View style={[styles.styleCardFooter, isSelected && styles.styleCardFooterSelected]}>
-                          <Text style={styles.styleCardLabel}>{item.label}</Text>
-                          <Text style={styles.styleCardDesc}>{item.description}</Text>
-                        </View>
-                      </TouchableOpacity>
-                    );
-                  })}
+
+              {/* ── Style / Model selection ── */}
+              {selectedCategory === 'Document' ? (
+                <View style={{ marginTop: 16 }}>
+                  <Text style={styles.label}>Modèle de flyer</Text>
+
+                  <CategoryTabs
+                    categories={categories}
+                    selectedId={selectedFlyerCategory}
+                    onSelect={setSelectedFlyerCategory}
+                  />
+
+                  {activeFlyerCategory && (
+                    <>
+                      <View style={styles.modelsGrid}>
+                        {activeFlyerCategory?.models?.slice(0, 4).map((modelObj) => (
+                          <ModelGridItem
+                            key={modelObj.label}
+                            modelLabel={modelObj.label}
+                            modelImage={modelObj.image ?? activeFlyerCategory?.image}
+                            isSelected={selectedStyle === modelObj.label}
+                            onPress={() => setStyle(modelObj.label)}
+                          />
+                        ))}
+                      </View>
+
+                    </>
+                  )}
                 </View>
-              </View>
-            )}
-          </View>
+              ) : (
+                <View style={{ marginTop: 16 }}>
+                  <Text style={styles.label}>Style artistique</Text>
+                  <View style={styles.stylesRow}>
+                    {VISUAL_STYLES.map((item) => {
+                      const isSelected = selectedStyle === item.label;
+                      return (
+                        <TouchableOpacity
+                          key={item.label}
+                          style={[styles.styleCard, isSelected && styles.styleCardSelected]}
+                          onPress={() => setStyle(item.label as any)}
+                          activeOpacity={0.85}
+                        >
+                          {isSelected && (
+                            <>
+                              <View style={styles.cardBorderGlow} pointerEvents="none" />
+                              <View style={styles.cardBloom} pointerEvents="none" />
+                            </>
+                          )}
+                          <Image
+                            source={typeof item.image === 'string' ? { uri: item.image } : item.image}
+                            style={styles.styleCardImage}
+                            resizeMode="cover"
+                          />
+                          {isSelected && (
+                            <View style={styles.styleCardCheckBadge}>
+                              <Check size={10} color="white" strokeWidth={3} />
+                            </View>
+                          )}
+                          <View style={[styles.styleCardFooter, isSelected && styles.styleCardFooterSelected]}>
+                            <Text style={styles.styleCardLabel}>{item.label}</Text>
+                            <Text style={styles.styleCardDesc}>{item.description}</Text>
+                          </View>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </View>
+              )}
+
+              {/* Always show See All for visual categories */}
+              <TouchableOpacity
+                style={styles.seeAllButton}
+                onPress={() => setShowAllModels(true)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.seeAllText}>Voir tous les modèles</Text>
+                <ChevronRight size={16} color={colors.primary.main} />
+              </TouchableOpacity>
+            </View>
+          )
         )}
-
-        {/* ── Prompt ── */}
-        <View style={styles.promptBlock}>
-          <Text style={styles.label}>Précisez votre besoin</Text>
-          <TextInput
-            style={styles.promptInput}
-            placeholder="Ex: Une offre spéciale pour la Saint-Valentin..."
-            placeholderTextColor="rgba(255,255,255,0.25)"
-            multiline
-            value={localQuery}
-            onChangeText={setLocalQuery}
-          />
-        </View>
-
-        {/* ── CTA ── */}
-        <View style={styles.ctaWrapper}>
-          <NeonButton
-            title="Démarrer la création"
-            onPress={handleCreate}
-            variant="premium"
-            size="lg"
-            style={{ width: '100%' }}
-          />
-        </View>
       </View>
 
       <GenericModal
@@ -738,7 +748,24 @@ export default function Step3PersonalizeScreen() {
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 20,
-    paddingBottom: 32,
+    paddingBottom: 20,
+  },
+  fixedFooter: {
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    backgroundColor: 'rgba(10,10,10,0.95)',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.08)',
+  },
+  loadingContainer: {
+    paddingVertical: 100,
+    alignItems: 'center',
+    gap: 16,
+  },
+  loadingText: {
+    color: 'rgba(255,255,255,0.5)',
+    fontSize: 14,
+    fontWeight: '600',
   },
 
   // ── Header ──────────────────────────────────────────────────────────────────
