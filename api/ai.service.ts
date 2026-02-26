@@ -171,10 +171,7 @@ export const AiService = {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
         const result = response.data.data?.data || response.data.data;
-        console.log(
-          '[AiService] generateSocial (FormData) response:',
-          Object.keys(result || {})
-        );
+        console.log('[AiService] generateSocial (FormData) response:', Object.keys(result || {}));
         return result;
       } catch (error: any) {
         console.error('[AiService] generateSocial (FormData) ERROR:', error.message);
@@ -249,7 +246,16 @@ export const AiService = {
       throw error;
     }
   },
-
+  getFlyerCategories: async () => {
+    console.log('[AiService] Fetching flyer categories...');
+    try {
+      const response = await api.get('/ai/flyer-categories');
+      return response.data.data?.data || response.data.data || response.data;
+    } catch (e: any) {
+      console.error('[AiService] Fetch flyer categories error:', e.message);
+      throw e;
+    }
+  },
   getHistory: async () => {
     console.log('[AiService] Fetching history...');
     try {

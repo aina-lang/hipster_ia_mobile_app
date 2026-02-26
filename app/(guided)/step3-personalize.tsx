@@ -20,14 +20,15 @@ import { GuidedScreenWrapper } from '../../components/layout/GuidedScreenWrapper
 import { NeonButton } from '../../components/ui/NeonButton';
 import { SelectionCard } from '../../components/ui/SelectionCard';
 import { BlurView } from 'expo-blur';
-import { ChevronRight, Upload, X, Zap, Check, Search } from 'lucide-react-native';
+import { ChevronRight, Upload, X, Zap, Check, Search, Moon } from 'lucide-react-native';
 
 import illus2 from '../../assets/illus2.jpeg';
 import illus3 from '../../assets/illus3.jpeg';
 import illus4 from '../../assets/illus4.jpeg';
-import { FLYER_CATEGORIES } from '../../constants/flyerModels';
-import { useRef, useState, useCallback } from 'react';
+import { FLYER_CATEGORIES as LOCAL_FLYER_CATEGORIES, getFlyerCategoryAssets } from '../../constants/flyerModels';
+import { useRef, useState, useCallback, useEffect } from 'react';
 import { GenericModal, ModalType } from 'components/ui/GenericModal';
+import { AiService } from '../../api/ai.service';
 
 const VISUAL_STYLES = [
   { label: 'Premium', description: 'Noir & blanc luxe', image: illus2 },
@@ -35,13 +36,13 @@ const VISUAL_STYLES = [
   { label: 'Minimal', description: 'Épuré & moderne', image: illus4 },
 ];
 
-// ─── Animated category tab bar ────────────────────────────────────────────────
+// ─── Animated category tab bar (shared) ───────────────────────────────────────
 function CategoryTabs({
   categories,
   selectedId,
   onSelect,
 }: {
-  categories: typeof FLYER_CATEGORIES;
+  categories: any[];
   selectedId: string;
   onSelect: (id: string) => void;
 }) {
@@ -87,21 +88,14 @@ function CategoryTabs({
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={tabStyles.scroll}
       >
-        {/* Sliding pill indicator */}
         {ready && (
           <Animated.View
             pointerEvents="none"
-            style={[
-              tabStyles.indicator,
-              {
-                left: slideX,
-                width: slideW,
-              },
-            ]}
+            style={[tabStyles.indicator, { left: slideX, width: slideW }]}
           />
         )}
 
-        {categories.map((cat, index) => {
+        {categories.map((cat) => {
           const isActive = cat.id === selectedId;
           return (
             <TouchableOpacity
@@ -112,7 +106,6 @@ function CategoryTabs({
                 tabWidths.current[cat.id] = width;
                 tabOffsets.current[cat.id] = x;
 
-                // Initialize position on first render for the default selected tab
                 const allMeasured = categories.every(
                   (c) => tabWidths.current[c.id] !== undefined
                 );
@@ -124,7 +117,6 @@ function CategoryTabs({
                   setReady(true);
                 }
 
-                // Re-animate if this is the currently selected tab
                 if (cat.id === selectedId && ready) {
                   animateTo(cat.id, false);
                 }
@@ -135,10 +127,14 @@ function CategoryTabs({
               }}
               style={tabStyles.tab}
             >
-              <cat.icon
-                size={14}
-                color={isActive ? colors.primary.main : 'rgba(255,255,255,0.45)'}
-              />
+              {cat.icon && typeof cat.icon !== 'string' ? (
+                <cat.icon
+                  size={14}
+                  color={isActive ? colors.primary.main : 'rgba(255,255,255,0.45)'}
+                />
+              ) : (
+                <Moon size={14} color={isActive ? colors.primary.main : 'rgba(255,255,255,0.45)'} />
+              )}
               <Text style={[tabStyles.label, isActive && tabStyles.labelActive]}>
                 {cat.label}
               </Text>
@@ -181,10 +177,6 @@ const tabStyles = StyleSheet.create({
     borderRadius: 12,
     zIndex: 1,
   },
-  icon: {
-    fontSize: 14,
-    lineHeight: 17,
-  },
   label: {
     fontSize: 13,
     fontWeight: '600',
@@ -193,6 +185,281 @@ const tabStyles = StyleSheet.create({
   labelActive: {
     color: '#fff',
     fontWeight: '700',
+  },
+});
+
+// ─── Model grid item (shared between inline + modal) ──────────────────────────
+function ModelGridItem({
+  modelLabel,
+  modelImage,
+  isSelected,
+  onPress,
+}: {
+  modelLabel: string;
+  modelImage: any;
+  isSelected: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <TouchableOpacity
+      style={[styles.flyerGridItem, isSelected && styles.flyerGridItemSelected]}
+      onPress={onPress}
+    >
+      {isSelected && (
+        <>
+          <View style={styles.cardBorderGlow} pointerEvents="none" />
+          <View style={styles.cardBloom} pointerEvents="none" />
+        </>
+      )}
+      <Image source={modelImage} style={styles.flyerGridImage} />
+      {isSelected && (
+        <View style={styles.styleCardCheckBadge}>
+          <Check size={10} color="white" strokeWidth={3} />
+        </View>
+      )}
+      <View style={styles.flyerGridOverlay}>
+        <Text style={styles.flyerGridName} numberOfLines={2}>
+          {modelLabel}
+        </Text>
+      </View>
+    </TouchableOpacity>
+  );
+}
+
+// ─── All-models modal ──────────────────────────────────────────────────────────
+function AllModelsModal({
+  visible,
+  selectedStyle,
+  activeCategoryId,
+  onCategoryChange,
+  onSelect,
+  onClose,
+  categories,
+}: {
+  visible: boolean;
+  selectedStyle: string | null;
+  activeCategoryId: string;
+  onCategoryChange: (id: string) => void;
+  onSelect: (categoryId: string, modelLabel: string) => void;
+  onClose: () => void;
+  categories: any[];
+}) {
+  const [searchQuery, setSearchQuery] = useState('');
+  const isSearching = searchQuery.trim().length > 0;
+
+  // Results when searching — flat list across all categories
+  const searchResults = isSearching
+    ? categories.flatMap((cat) =>
+      cat.models
+        .filter((m) => m.label.toLowerCase().includes(searchQuery.toLowerCase()))
+        .map((m) => ({ cat, model: m }))
+    )
+    : [];
+
+  const activeCat = categories.find((c) => c.id === activeCategoryId) || categories[0];
+
+  const handleClose = () => {
+    setSearchQuery('');
+    onClose();
+  };
+
+  return (
+    <Modal visible={visible} animationType="slide" onRequestClose={handleClose}>
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.95)' }]}>
+        <BlurView intensity={95} tint="dark" style={StyleSheet.absoluteFill}>
+          <View style={modalStyles.container}>
+
+            {/* ── Header ── */}
+            <View style={modalStyles.header}>
+              <View>
+                <Text style={modalStyles.title}>Tous les modèles</Text>
+                <Text style={modalStyles.subtitle}>
+                  {isSearching
+                    ? `${searchResults.length} résultat${searchResults.length !== 1 ? 's' : ''}`
+                    : activeCat.label}
+                </Text>
+              </View>
+              <TouchableOpacity onPress={handleClose} style={modalStyles.closeBtn}>
+                <X size={24} color="white" />
+              </TouchableOpacity>
+            </View>
+
+            {/* ── Search bar ── */}
+            <View style={modalStyles.searchBar}>
+              <Search size={18} color="rgba(255,255,255,0.4)" />
+              <TextInput
+                style={modalStyles.searchInput}
+                placeholder="Rechercher un modèle..."
+                placeholderTextColor="rgba(255,255,255,0.3)"
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                autoCorrect={false}
+              />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity onPress={() => setSearchQuery('')}>
+                  <X size={16} color="rgba(255,255,255,0.4)" />
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {/* ── Category tabs (hidden while searching) ── */}
+            {!isSearching && (
+              <CategoryTabs
+                categories={categories}
+                selectedId={activeCategoryId}
+                onSelect={onCategoryChange}
+              />
+            )}
+
+            {/* ── Content ── */}
+            <ScrollView
+              key={isSearching ? 'search' : activeCategoryId} // remount on tab switch = scroll to top
+              contentContainerStyle={modalStyles.scrollContent}
+              showsVerticalScrollIndicator={false}
+            >
+              {isSearching ? (
+                // ── Search results: grouped by category ──
+                searchResults.length === 0 ? (
+                  <View style={modalStyles.empty}>
+                    <Text style={modalStyles.emptyText}>Aucun modèle ne correspond</Text>
+                  </View>
+                ) : (
+                  categories.map((cat) => {
+                    const hits = searchResults.filter((r) => r.cat.id === cat.id);
+                    if (hits.length === 0) return null;
+                    return (
+                      <View key={cat.id} style={modalStyles.group}>
+                        <View style={modalStyles.groupHeader}>
+                          {cat.icon && typeof cat.icon !== 'string' ? (
+                            <cat.icon size={16} color={colors.primary.main} />
+                          ) : (
+                            <Moon size={16} color={colors.primary.main} />
+                          )}
+                          <Text style={modalStyles.groupLabel}>{cat.label}</Text>
+                        </View>
+                        <View style={styles.modelsGrid}>
+                          {hits.map(({ cat: c, model: m }) => (
+                            <ModelGridItem
+                              key={m.label}
+                              modelLabel={m.label}
+                              modelImage={m.image ?? c.image}
+                              isSelected={selectedStyle === m.label}
+                              onPress={() => {
+                                onSelect(c.id, m.label);
+                                handleClose();
+                              }}
+                            />
+                          ))}
+                        </View>
+                      </View>
+                    );
+                  })
+                )
+              ) : (
+                // ── Active category models ──
+                <View style={styles.modelsGrid}>
+                  {activeCat.models.map((m) => (
+                    <ModelGridItem
+                      key={m.label}
+                      modelLabel={m.label}
+                      modelImage={m.image ?? activeCat.image}
+                      isSelected={selectedStyle === m.label}
+                      onPress={() => {
+                        onSelect(activeCat.id, m.label);
+                        handleClose();
+                      }}
+                    />
+                  ))}
+                </View>
+              )}
+            </ScrollView>
+          </View>
+        </BlurView>
+      </View>
+    </Modal>
+  );
+}
+
+const modalStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    paddingTop: Platform.OS === 'ios' ? 60 : 40,
+    paddingHorizontal: 20,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: 'white',
+    letterSpacing: -0.5,
+  },
+  subtitle: {
+    fontSize: 13,
+    color: colors.primary.main,
+    fontWeight: '600',
+    marginTop: 2,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+  closeBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    marginBottom: 16,
+    height: 48,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  searchInput: {
+    flex: 1,
+    color: 'white',
+    fontSize: 15,
+    height: '100%',
+  },
+  scrollContent: {
+    paddingBottom: 80,
+  },
+  group: {
+    marginBottom: 24,
+  },
+  groupHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+    paddingVertical: 4,
+  },
+  groupLabel: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: 'rgba(255,255,255,0.85)',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  empty: {
+    paddingTop: 80,
+    alignItems: 'center',
+  },
+  emptyText: {
+    color: 'rgba(255,255,255,0.4)',
+    fontSize: 15,
+    textAlign: 'center',
   },
 });
 
@@ -213,9 +480,37 @@ export default function Step3PersonalizeScreen() {
 
   const scrollRef = useRef<ScrollView>(null);
   const [localQuery, setLocalQuery] = useState(userQuery || '');
-  const [selectedFlyerCategory, setSelectedFlyerCategory] = useState(FLYER_CATEGORIES[0].id);
+  const [categories, setCategories] = useState<any[]>(LOCAL_FLYER_CATEGORIES);
+  const [selectedFlyerCategory, setSelectedFlyerCategory] = useState(LOCAL_FLYER_CATEGORIES[0].id);
   const [showAllModels, setShowAllModels] = useState(false);
-  const [modalSearchQuery, setModalSearchQuery] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      setIsLoading(true);
+      try {
+        const data = await AiService.getFlyerCategories();
+        if (data && Array.isArray(data)) {
+          // Map local assets for each category
+          const mapped = data.map(cat => {
+            const assets = getFlyerCategoryAssets(cat.id, cat.icon);
+            return {
+              ...cat,
+              icon: assets.icon,
+              image: assets.image || cat.image,
+            };
+          });
+          setCategories(mapped);
+          setSelectedFlyerCategory(mapped[0].id);
+        }
+      } catch (e) {
+        console.error('Failed to load flyer categories:', e);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchCategories();
+  }, []);
 
   const [modalVisible, setModalVisible] = useState(false);
   const [modalType, setModalType] = useState<ModalType>('info');
@@ -268,7 +563,7 @@ export default function Step3PersonalizeScreen() {
     selectedCategory === 'Social' ||
     selectedCategory === 'Document';
 
-  const activeFlyerCategory = FLYER_CATEGORIES.find((c) => c.id === selectedFlyerCategory);
+  const activeFlyerCategory = categories.find((c) => c.id === selectedFlyerCategory);
 
   return (
     <GuidedScreenWrapper scrollViewRef={scrollRef} footer={null}>
@@ -288,7 +583,7 @@ export default function Step3PersonalizeScreen() {
         {isVisual && (
           <View style={styles.visualBlock}>
 
-            {/* ── Image Upload — compact row ── */}
+            {/* ── Image Upload ── */}
             <View style={styles.row}>
               <Text style={styles.label}>Photo de référence</Text>
               {uploadedImage ? (
@@ -316,54 +611,24 @@ export default function Step3PersonalizeScreen() {
               <View style={{ marginTop: 16 }}>
                 <Text style={styles.label}>Modèle de flyer</Text>
 
-                {/* ── Animated tab bar ── */}
                 <CategoryTabs
-                  categories={FLYER_CATEGORIES}
+                  categories={categories}
                   selectedId={selectedFlyerCategory}
                   onSelect={setSelectedFlyerCategory}
                 />
 
-                {/* ── Models grid for active category (Limited to 4) ── */}
                 {activeFlyerCategory && (
                   <>
                     <View style={styles.modelsGrid}>
-                      {activeFlyerCategory.models.slice(0, 4).map((modelObj) => {
-                        const modelLabel =
-                          typeof modelObj === 'string' ? modelObj : modelObj.label;
-                        const modelImage =
-                          typeof modelObj === 'object' && modelObj.image
-                            ? modelObj.image
-                            : activeFlyerCategory.image;
-                        const isModelSelected = selectedStyle === modelLabel;
-                        return (
-                          <TouchableOpacity
-                            key={modelLabel}
-                            style={[
-                              styles.flyerGridItem,
-                              isModelSelected && styles.flyerGridItemSelected,
-                            ]}
-                            onPress={() => setStyle(modelLabel)}
-                          >
-                            {isModelSelected && (
-                              <>
-                                <View style={styles.cardBorderGlow} pointerEvents="none" />
-                                <View style={styles.cardBloom} pointerEvents="none" />
-                              </>
-                            )}
-                            <Image source={modelImage} style={styles.flyerGridImage} />
-                            {isModelSelected && (
-                              <View style={styles.styleCardCheckBadge}>
-                                <Check size={10} color="white" strokeWidth={3} />
-                              </View>
-                            )}
-                            <View style={styles.flyerGridOverlay}>
-                              <Text style={styles.flyerGridName} numberOfLines={2}>
-                                {modelLabel}
-                              </Text>
-                            </View>
-                          </TouchableOpacity>
-                        );
-                      })}
+                      {activeFlyerCategory.models.slice(0, 4).map((modelObj) => (
+                        <ModelGridItem
+                          key={modelObj.label}
+                          modelLabel={modelObj.label}
+                          modelImage={modelObj.image ?? activeFlyerCategory.image}
+                          isSelected={selectedStyle === modelObj.label}
+                          onPress={() => setStyle(modelObj.label)}
+                        />
+                      ))}
                     </View>
 
                     {activeFlyerCategory.models.length > 4 && (
@@ -372,7 +637,7 @@ export default function Step3PersonalizeScreen() {
                         onPress={() => setShowAllModels(true)}
                         activeOpacity={0.7}
                       >
-                        <Text style={styles.seeAllText}>Voir tout les modèles</Text>
+                        <Text style={styles.seeAllText}>Voir tous les modèles</Text>
                         <ChevronRight size={16} color={colors.primary.main} />
                       </TouchableOpacity>
                     )}
@@ -380,7 +645,6 @@ export default function Step3PersonalizeScreen() {
                 )}
               </View>
             ) : (
-              /* Visual styles: 3 cards side by side */
               <View style={{ marginTop: 16 }}>
                 <Text style={styles.label}>Style artistique</Text>
                 <View style={styles.stylesRow}>
@@ -400,9 +664,7 @@ export default function Step3PersonalizeScreen() {
                           </>
                         )}
                         <Image
-                          source={
-                            typeof item.image === 'string' ? { uri: item.image } : item.image
-                          }
+                          source={typeof item.image === 'string' ? { uri: item.image } : item.image}
                           style={styles.styleCardImage}
                           resizeMode="cover"
                         />
@@ -411,12 +673,7 @@ export default function Step3PersonalizeScreen() {
                             <Check size={10} color="white" strokeWidth={3} />
                           </View>
                         )}
-                        <View
-                          style={[
-                            styles.styleCardFooter,
-                            isSelected && styles.styleCardFooterSelected,
-                          ]}
-                        >
+                        <View style={[styles.styleCardFooter, isSelected && styles.styleCardFooterSelected]}>
                           <Text style={styles.styleCardLabel}>{item.label}</Text>
                           <Text style={styles.styleCardDesc}>{item.description}</Text>
                         </View>
@@ -462,132 +719,18 @@ export default function Step3PersonalizeScreen() {
         onClose={() => setModalVisible(false)}
       />
 
-      {/* ── All Models Selection Modal ── */}
-      <Modal
+      <AllModelsModal
         visible={showAllModels}
-        animationType="slide"
-
-        onRequestClose={() => setShowAllModels(false)}
-      >
-        <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.95)' }]}>
-          <BlurView intensity={95} tint="dark" style={StyleSheet.absoluteFill}>
-            <View style={styles.modalContent}>
-              <View style={styles.modalHeader}>
-                <View>
-                  <Text style={styles.modalTitle}>Tous les modèles</Text>
-                  <Text style={styles.modalSubtitle}>Toutes les catégories</Text>
-                </View>
-                <TouchableOpacity
-                  onPress={() => {
-                    setShowAllModels(false);
-                    setModalSearchQuery('');
-                  }}
-                  style={styles.modalCloseButton}
-                >
-                  <X size={24} color="white" />
-                </TouchableOpacity>
-              </View>
-
-              {/* ── Modal Search ── */}
-              <View style={styles.modalSearchBlock}>
-                <Search size={18} color="rgba(255,255,255,0.4)" style={styles.modalSearchIcon} />
-                <TextInput
-                  style={styles.modalSearchInput}
-                  placeholder="Rechercher un modèle..."
-                  placeholderTextColor="rgba(255,255,255,0.3)"
-                  value={modalSearchQuery}
-                  onChangeText={setModalSearchQuery}
-                  autoCorrect={false}
-                />
-                {modalSearchQuery.length > 0 && (
-                  <TouchableOpacity onPress={() => setModalSearchQuery('')} style={styles.modalSearchClear}>
-                    <X size={16} color="rgba(255,255,255,0.4)" />
-                  </TouchableOpacity>
-                )}
-              </View>
-
-              <ScrollView
-                contentContainerStyle={styles.modalScrollContent}
-                showsVerticalScrollIndicator={false}
-                stickyHeaderIndices={modalSearchQuery.length > 0 ? [] : [0, 2, 4, 6, 8, 10, 12, 14, 16]}
-              >
-                {FLYER_CATEGORIES.map((cat) => {
-                  const filteredModels = cat.models.filter((m) => {
-                    const label = typeof m === 'string' ? m : m.label;
-                    return label.toLowerCase().includes(modalSearchQuery.toLowerCase());
-                  });
-
-                  if (filteredModels.length === 0) return null;
-
-                  return (
-                    <View key={cat.id} style={styles.modalCategoryGroup}>
-                      <View style={styles.modalCategoryHeader}>
-                        <cat.icon size={18} color={colors.primary.main} />
-                        <Text style={styles.modalCategoryLabel}>{cat.label}</Text>
-                      </View>
-
-                      <View style={styles.modelsGrid}>
-                        {filteredModels.map((modelObj) => {
-                          const modelLabel =
-                            typeof modelObj === 'string' ? modelObj : modelObj.label;
-                          const modelImage =
-                            typeof modelObj === 'object' && modelObj.image
-                              ? modelObj.image
-                              : cat.image;
-                          const isModelSelected = selectedStyle === modelLabel;
-
-                          return (
-                            <TouchableOpacity
-                              key={modelLabel}
-                              style={[
-                                styles.flyerGridItem,
-                                isModelSelected && styles.flyerGridItemSelected,
-                              ]}
-                              onPress={() => {
-                                setSelectedFlyerCategory(cat.id);
-                                setStyle(modelLabel);
-                                setShowAllModels(false);
-                                setModalSearchQuery('');
-                              }}
-                            >
-                              {isModelSelected && (
-                                <>
-                                  <View style={styles.cardBorderGlow} pointerEvents="none" />
-                                  <View style={styles.cardBloom} pointerEvents="none" />
-                                </>
-                              )}
-                              <Image source={modelImage} style={styles.flyerGridImage} />
-                              {isModelSelected && (
-                                <View style={styles.styleCardCheckBadge}>
-                                  <Check size={10} color="white" strokeWidth={3} />
-                                </View>
-                              )}
-                              <View style={styles.flyerGridOverlay}>
-                                <Text style={styles.flyerGridName} numberOfLines={2}>
-                                  {modelLabel}
-                                </Text>
-                              </View>
-                            </TouchableOpacity>
-                          );
-                        })}
-                      </View>
-                    </View>
-                  );
-                })}
-
-                {modalSearchQuery.length > 0 &&
-                  FLYER_CATEGORIES.every(cat =>
-                    !cat.models.some(m => (typeof m === 'string' ? m : m.label).toLowerCase().includes(modalSearchQuery.toLowerCase()))
-                  ) && (
-                    <View style={styles.noResults}>
-                      <Text style={styles.noResultsText}>Aucun modèle ne correspond à votre recherche</Text>
-                    </View>
-                  )}
-              </ScrollView>
-            </View>
-          </BlurView>
-        </View>
-      </Modal>
+        selectedStyle={selectedStyle}
+        activeCategoryId={selectedFlyerCategory}
+        categories={categories}
+        onCategoryChange={setSelectedFlyerCategory}
+        onSelect={(catId, modelLabel) => {
+          setSelectedFlyerCategory(catId);
+          setStyle(modelLabel);
+        }}
+        onClose={() => setShowAllModels(false)}
+      />
     </GuidedScreenWrapper>
   );
 }
@@ -829,96 +972,6 @@ const styles = StyleSheet.create({
   ctaWrapper: {
     paddingBottom: 40,
     overflow: 'visible',
-  },
-
-  // ── Modal Styles ─────────────────────────────────────────────────────────────
-  modalContent: {
-    flex: 1,
-    paddingTop: Platform.OS === 'ios' ? 60 : 40,
-    paddingHorizontal: 20,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 24,
-  },
-  modalTitle: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: 'white',
-    letterSpacing: -0.5,
-  },
-  modalSubtitle: {
-    fontSize: 14,
-    color: colors.primary.main,
-    fontWeight: '600',
-    marginTop: 2,
-    textTransform: 'uppercase',
-  },
-  modalCloseButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalScrollContent: {
-    paddingBottom: 100,
-  },
-  modalCategoryGroup: {
-    marginBottom: 24,
-    backgroundColor: 'rgba(13, 13, 13, 1)',
-    padding: 12,
-    borderRadius: 12,
-  },
-  modalCategoryHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    backgroundColor: 'rgba(13, 13, 13, 0.95)',
-    paddingVertical: 12,
-    marginBottom: 12,
-  },
-  modalCategoryLabel: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: 'rgba(255, 255, 255, 0.9)',
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-  },
-  modalSearchBlock: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    marginBottom: 20,
-    height: 48,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-  },
-  modalSearchIcon: {
-    marginRight: 8,
-  },
-  modalSearchInput: {
-    flex: 1,
-    color: 'white',
-    fontSize: 15,
-    height: '100%',
-  },
-  modalSearchClear: {
-    padding: 4,
-  },
-  noResults: {
-    padding: 40,
-    alignItems: 'center',
-  },
-  noResultsText: {
-    color: 'rgba(255,255,255,0.5)',
-    fontSize: 15,
-    textAlign: 'center',
   },
 
   // ── "Voir tout" button ───────────────────────────────────────────────────────
