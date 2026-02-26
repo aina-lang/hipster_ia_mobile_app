@@ -25,7 +25,7 @@ import { ChevronRight, Upload, X, Zap, Check, Search, Moon } from 'lucide-react-
 import illus2 from '../../assets/illus2.jpeg';
 import illus3 from '../../assets/illus3.jpeg';
 import illus4 from '../../assets/illus4.jpeg';
-import { FLYER_CATEGORIES as LOCAL_FLYER_CATEGORIES, getFlyerCategoryAssets } from '../../constants/flyerModels';
+import { FLYER_CATEGORIES as LOCAL_FLYER_CATEGORIES, getFlyerCategoryAssets } from '../../constants/flyerAssets';
 import { useRef, useState, useCallback, useEffect } from 'react';
 import { GenericModal, ModalType } from 'components/ui/GenericModal';
 import { AiService } from '../../api/ai.service';
@@ -276,7 +276,7 @@ function AllModelsModal({
                 <Text style={modalStyles.subtitle}>
                   {isSearching
                     ? `${searchResults.length} résultat${searchResults.length !== 1 ? 's' : ''}`
-                    : activeCat.label}
+                    : activeCat?.label}
                 </Text>
               </View>
               <TouchableOpacity onPress={handleClose} style={modalStyles.closeBtn}>
@@ -358,14 +358,14 @@ function AllModelsModal({
               ) : (
                 // ── Active category models ──
                 <View style={styles.modelsGrid}>
-                  {activeCat.models.map((m) => (
+                  {activeCat?.models?.map((m) => (
                     <ModelGridItem
                       key={m.label}
                       modelLabel={m.label}
-                      modelImage={m.image ?? activeCat.image}
+                      modelImage={m.image ?? activeCat?.image}
                       isSelected={selectedStyle === m.label}
                       onPress={() => {
-                        onSelect(activeCat.id, m.label);
+                        onSelect(activeCat?.id || '', m.label);
                         handleClose();
                       }}
                     />
@@ -481,7 +481,7 @@ export default function Step3PersonalizeScreen() {
   const scrollRef = useRef<ScrollView>(null);
   const [localQuery, setLocalQuery] = useState(userQuery || '');
   const [categories, setCategories] = useState<any[]>(LOCAL_FLYER_CATEGORIES);
-  const [selectedFlyerCategory, setSelectedFlyerCategory] = useState(LOCAL_FLYER_CATEGORIES[0].id);
+  const [selectedFlyerCategory, setSelectedFlyerCategory] = useState(LOCAL_FLYER_CATEGORIES[0]?.id || '');
   const [showAllModels, setShowAllModels] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -620,18 +620,18 @@ export default function Step3PersonalizeScreen() {
                 {activeFlyerCategory && (
                   <>
                     <View style={styles.modelsGrid}>
-                      {activeFlyerCategory.models.slice(0, 4).map((modelObj) => (
+                      {activeFlyerCategory?.models?.slice(0, 4).map((modelObj) => (
                         <ModelGridItem
                           key={modelObj.label}
                           modelLabel={modelObj.label}
-                          modelImage={modelObj.image ?? activeFlyerCategory.image}
+                          modelImage={modelObj.image ?? activeFlyerCategory?.image}
                           isSelected={selectedStyle === modelObj.label}
                           onPress={() => setStyle(modelObj.label)}
                         />
                       ))}
                     </View>
 
-                    {activeFlyerCategory.models.length > 4 && (
+                    {activeFlyerCategory?.models && activeFlyerCategory.models.length > 4 && (
                       <TouchableOpacity
                         style={styles.seeAllButton}
                         onPress={() => setShowAllModels(true)}
