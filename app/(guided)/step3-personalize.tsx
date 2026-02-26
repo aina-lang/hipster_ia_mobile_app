@@ -20,7 +20,7 @@ import { GuidedScreenWrapper } from '../../components/layout/GuidedScreenWrapper
 import { NeonButton } from '../../components/ui/NeonButton';
 import { SelectionCard } from '../../components/ui/SelectionCard';
 import { BlurView } from 'expo-blur';
-import { ChevronRight, Upload, X, Zap, Check } from 'lucide-react-native';
+import { ChevronRight, Upload, X, Zap, Check, Search } from 'lucide-react-native';
 
 import illus2 from '../../assets/illus2.jpeg';
 import illus3 from '../../assets/illus3.jpeg';
@@ -215,6 +215,7 @@ export default function Step3PersonalizeScreen() {
   const [localQuery, setLocalQuery] = useState(userQuery || '');
   const [selectedFlyerCategory, setSelectedFlyerCategory] = useState(FLYER_CATEGORIES[0].id);
   const [showAllModels, setShowAllModels] = useState(false);
+  const [modalSearchQuery, setModalSearchQuery] = useState('');
 
   const [modalVisible, setModalVisible] = useState(false);
   const [modalType, setModalType] = useState<ModalType>('info');
@@ -465,7 +466,7 @@ export default function Step3PersonalizeScreen() {
       <Modal
         visible={showAllModels}
         animationType="slide"
-        transparent={true}
+
         onRequestClose={() => setShowAllModels(false)}
       >
         <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.95)' }]}>
@@ -477,71 +478,111 @@ export default function Step3PersonalizeScreen() {
                   <Text style={styles.modalSubtitle}>Toutes les catégories</Text>
                 </View>
                 <TouchableOpacity
-                  onPress={() => setShowAllModels(false)}
+                  onPress={() => {
+                    setShowAllModels(false);
+                    setModalSearchQuery('');
+                  }}
                   style={styles.modalCloseButton}
                 >
                   <X size={24} color="white" />
                 </TouchableOpacity>
               </View>
 
+              {/* ── Modal Search ── */}
+              <View style={styles.modalSearchBlock}>
+                <Search size={18} color="rgba(255,255,255,0.4)" style={styles.modalSearchIcon} />
+                <TextInput
+                  style={styles.modalSearchInput}
+                  placeholder="Rechercher un modèle..."
+                  placeholderTextColor="rgba(255,255,255,0.3)"
+                  value={modalSearchQuery}
+                  onChangeText={setModalSearchQuery}
+                  autoCorrect={false}
+                />
+                {modalSearchQuery.length > 0 && (
+                  <TouchableOpacity onPress={() => setModalSearchQuery('')} style={styles.modalSearchClear}>
+                    <X size={16} color="rgba(255,255,255,0.4)" />
+                  </TouchableOpacity>
+                )}
+              </View>
+
               <ScrollView
                 contentContainerStyle={styles.modalScrollContent}
                 showsVerticalScrollIndicator={false}
-                stickyHeaderIndices={FLYER_CATEGORIES.map((_, i) => i * 2)}
+                stickyHeaderIndices={modalSearchQuery.length > 0 ? [] : [0, 2, 4, 6, 8, 10, 12, 14, 16]}
               >
-                {FLYER_CATEGORIES.map((cat) => (
-                  <View key={cat.id} style={styles.modalCategoryGroup}>
-                    <View style={styles.modalCategoryHeader}>
-                      <cat.icon size={18} color={colors.primary.main} />
-                      <Text style={styles.modalCategoryLabel}>{cat.label}</Text>
-                    </View>
+                {FLYER_CATEGORIES.map((cat) => {
+                  const filteredModels = cat.models.filter((m) => {
+                    const label = typeof m === 'string' ? m : m.label;
+                    return label.toLowerCase().includes(modalSearchQuery.toLowerCase());
+                  });
 
-                    <View style={styles.modelsGrid}>
-                      {cat.models.map((modelObj) => {
-                        const modelLabel =
-                          typeof modelObj === 'string' ? modelObj : modelObj.label;
-                        const modelImage =
-                          typeof modelObj === 'object' && modelObj.image
-                            ? modelObj.image
-                            : cat.image;
-                        const isModelSelected = selectedStyle === modelLabel;
+                  if (filteredModels.length === 0) return null;
 
-                        return (
-                          <TouchableOpacity
-                            key={modelLabel}
-                            style={[
-                              styles.flyerGridItem,
-                              isModelSelected && styles.flyerGridItemSelected,
-                            ]}
-                            onPress={() => {
-                              setSelectedFlyerCategory(cat.id);
-                              setStyle(modelLabel);
-                              setShowAllModels(false);
-                            }}
-                          >
-                            {isModelSelected && (
-                              <>
-                                <View style={styles.cardBorderGlow} pointerEvents="none" />
-                                <View style={styles.cardBloom} pointerEvents="none" />
-                              </>
-                            )}
-                            <Image source={modelImage} style={styles.flyerGridImage} />
-                            {isModelSelected && (
-                              <View style={styles.styleCardCheckBadge}>
-                                <Check size={10} color="white" strokeWidth={3} />
+                  return (
+                    <View key={cat.id} style={styles.modalCategoryGroup}>
+                      <View style={styles.modalCategoryHeader}>
+                        <cat.icon size={18} color={colors.primary.main} />
+                        <Text style={styles.modalCategoryLabel}>{cat.label}</Text>
+                      </View>
+
+                      <View style={styles.modelsGrid}>
+                        {filteredModels.map((modelObj) => {
+                          const modelLabel =
+                            typeof modelObj === 'string' ? modelObj : modelObj.label;
+                          const modelImage =
+                            typeof modelObj === 'object' && modelObj.image
+                              ? modelObj.image
+                              : cat.image;
+                          const isModelSelected = selectedStyle === modelLabel;
+
+                          return (
+                            <TouchableOpacity
+                              key={modelLabel}
+                              style={[
+                                styles.flyerGridItem,
+                                isModelSelected && styles.flyerGridItemSelected,
+                              ]}
+                              onPress={() => {
+                                setSelectedFlyerCategory(cat.id);
+                                setStyle(modelLabel);
+                                setShowAllModels(false);
+                                setModalSearchQuery('');
+                              }}
+                            >
+                              {isModelSelected && (
+                                <>
+                                  <View style={styles.cardBorderGlow} pointerEvents="none" />
+                                  <View style={styles.cardBloom} pointerEvents="none" />
+                                </>
+                              )}
+                              <Image source={modelImage} style={styles.flyerGridImage} />
+                              {isModelSelected && (
+                                <View style={styles.styleCardCheckBadge}>
+                                  <Check size={10} color="white" strokeWidth={3} />
+                                </View>
+                              )}
+                              <View style={styles.flyerGridOverlay}>
+                                <Text style={styles.flyerGridName} numberOfLines={2}>
+                                  {modelLabel}
+                                </Text>
                               </View>
-                            )}
-                            <View style={styles.flyerGridOverlay}>
-                              <Text style={styles.flyerGridName} numberOfLines={2}>
-                                {modelLabel}
-                              </Text>
-                            </View>
-                          </TouchableOpacity>
-                        );
-                      })}
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
                     </View>
-                  </View>
-                ))}
+                  );
+                })}
+
+                {modalSearchQuery.length > 0 &&
+                  FLYER_CATEGORIES.every(cat =>
+                    !cat.models.some(m => (typeof m === 'string' ? m : m.label).toLowerCase().includes(modalSearchQuery.toLowerCase()))
+                  ) && (
+                    <View style={styles.noResults}>
+                      <Text style={styles.noResultsText}>Aucun modèle ne correspond à votre recherche</Text>
+                    </View>
+                  )}
               </ScrollView>
             </View>
           </BlurView>
@@ -828,6 +869,9 @@ const styles = StyleSheet.create({
   },
   modalCategoryGroup: {
     marginBottom: 24,
+    backgroundColor: 'rgba(13, 13, 13, 1)',
+    padding: 12,
+    borderRadius: 12,
   },
   modalCategoryHeader: {
     flexDirection: 'row',
@@ -843,6 +887,38 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.9)',
     letterSpacing: 0.5,
     textTransform: 'uppercase',
+  },
+  modalSearchBlock: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    marginBottom: 20,
+    height: 48,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  modalSearchIcon: {
+    marginRight: 8,
+  },
+  modalSearchInput: {
+    flex: 1,
+    color: 'white',
+    fontSize: 15,
+    height: '100%',
+  },
+  modalSearchClear: {
+    padding: 4,
+  },
+  noResults: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  noResultsText: {
+    color: 'rgba(255,255,255,0.5)',
+    fontSize: 15,
+    textAlign: 'center',
   },
 
   // ── "Voir tout" button ───────────────────────────────────────────────────────
