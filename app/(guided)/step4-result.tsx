@@ -609,7 +609,6 @@ export default function Step4ResultScreen() {
                 const updatedGen = await AiService.getConversation(flyerResult.generationId.toString());
                 if (updatedGen?.imageUrl?.startsWith('http')) {
                   setImageUrl(updatedGen.imageUrl);
-                  setResult(updatedGen.imageUrl);
                   isCompleted = true;
                 } else if (updatedGen?.result?.startsWith('ERROR')) {
                   isCompleted = true;
@@ -624,7 +623,6 @@ export default function Step4ResultScreen() {
             }
           } else {
             setImageUrl(flyerResult.url);
-            setResult(flyerResult.url);
             setGenerationId(flyerResult.generationId);
             if (flyerResult.seed !== undefined) setSeed(flyerResult.seed);
           }
@@ -658,7 +656,6 @@ export default function Step4ResultScreen() {
                 if (imageUrl && typeof imageUrl === 'string' && imageUrl.startsWith('http')) {
                   console.log('[DEBUG] ✅ Visuel Publicitaire image found:', imageUrl);
                   setImageUrl(imageUrl);
-                  setResult(imageUrl);
                   isCompleted = true;
                 } else if (updatedGen?.result?.startsWith('ERROR')) {
                   isCompleted = true;
@@ -675,7 +672,6 @@ export default function Step4ResultScreen() {
             }
           } else {
             const imageUrl = resultData.url || resultData.image || resultData.imageUrl;
-            setResult(imageUrl || '');
             setImageUrl(imageUrl || '');
             setGenerationId(resultData.generationId);
             if (resultData.seed !== undefined) setSeed(resultData.seed);
@@ -700,7 +696,6 @@ export default function Step4ResultScreen() {
                 const imageUrl = updatedGen?.imageUrl || updatedGen?.url || updatedGen?.image;
                 if (imageUrl && typeof imageUrl === 'string' && imageUrl.startsWith('http')) {
                   setImageUrl(imageUrl);
-                  setResult(imageUrl);
                   isCompleted = true;
                 } else if (updatedGen?.result?.startsWith('ERROR')) {
                   isCompleted = true;
@@ -760,7 +755,6 @@ export default function Step4ResultScreen() {
                 if (imageUrl && typeof imageUrl === 'string' && imageUrl.startsWith('http')) {
                   console.log('[DEBUG] ✅ Flyer image found:', imageUrl);
                   setImageUrl(imageUrl);
-                  setResult(imageUrl);
                   isCompleted = true;
                 } else if (updatedGen?.result?.startsWith('ERROR')) {
                   console.error('[DEBUG] Generation error:', updatedGen.result);
@@ -817,7 +811,6 @@ export default function Step4ResultScreen() {
                 if (imageUrl && typeof imageUrl === 'string' && imageUrl.startsWith('http')) {
                   console.log('[DEBUG] ✅ Visuel Image found:', imageUrl);
                   setImageUrl(imageUrl);
-                  setResult(imageUrl);
                   isCompleted = true;
                 } else if (updatedGen?.result?.startsWith('ERROR')) {
                   console.error('[DEBUG] Generation error:', updatedGen.result);
@@ -838,7 +831,6 @@ export default function Step4ResultScreen() {
             }
           } else {
             const imageUrl = resultData.url || resultData.image || resultData.imageUrl;
-            setResult(imageUrl || '');
             setImageUrl(imageUrl || '');
             setGenerationId(resultData.generationId);
             if (resultData.seed !== undefined) setSeed(resultData.seed);
