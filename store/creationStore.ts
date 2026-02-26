@@ -33,7 +33,8 @@ export type VisualStyle =
   | 'Origami'
   | 'Photographic'
   | 'Pixel Art'
-  | 'Tile Texture';
+  | 'Tile Texture'
+  | (string & {});
 
 interface CreationState {
   // Selection state

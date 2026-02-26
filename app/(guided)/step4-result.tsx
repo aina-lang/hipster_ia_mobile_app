@@ -31,7 +31,6 @@ import {
   RefreshCcw,
   Sparkles,
   Image as LucideImage,
-  ChevronDown,
   X,
   Paperclip,
   Mic,
@@ -61,15 +60,7 @@ Notifications.setNotificationHandler({
 
 const { width } = Dimensions.get('window');
 
-const MODEL_IMAGES: Record<string, string> = {
-  Moderne:
-    'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=400&auto=format&fit=crop',
-  Minimaliste:
-    'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=400&auto=format&fit=crop',
-  Luxe: 'https://images.unsplash.com/photo-1507652313519-d4e9174996dd?q=80&w=400&auto=format&fit=crop',
-  Coloré:
-    'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=400&auto=format&fit=crop',
-};
+
 
 export default function Step4ResultScreen() {
   const router = useRouter();
@@ -115,9 +106,7 @@ export default function Step4ResultScreen() {
   // ... (existing code)
 
 
-  const [selectedModel, setSelectedModel] = useState('Moderne');
   const [showRegeneratePanel, setShowRegeneratePanel] = useState(false);
-  const [showModelPicker, setShowModelPicker] = useState(false);
 
   const [modalVisible, setModalVisible] = useState(false);
   const [modalType, setModalType] = useState<ModalType>('success');
@@ -540,13 +529,19 @@ export default function Step4ResultScreen() {
       // No longer converting to base64 here. AiService will handle the multipart upload if a URI is detected.
 
 
-      const params = {
-        job: selectedJob || 'Autre', // Safeguard against null job
-        function: selectedFunction, // e.g. "Flyers / Affiches"
+      const isFlyerExact = selectedFunction && selectedFunction.includes('Flyers');
+      const params: any = {
+        job: selectedJob || 'Autre',
+        function: selectedFunction,
         userQuery: overrideQuery || userQuery,
-        style: selectedStyle,
         reference_image: finalReferenceImage,
       };
+
+      if (isFlyerExact) {
+        params.model = selectedStyle;
+      } else {
+        params.style = selectedStyle;
+      }
 
       console.log('[DEBUG] Generating Content with params:', JSON.stringify(params, null, 2), 'Seed:', seed);
 
@@ -582,6 +577,7 @@ export default function Step4ResultScreen() {
                 isCompleted = true;
                 console.log('[DEBUG] ✅ Social image found:', imageUrl);
               } else if (updatedGen?.result?.startsWith('ERROR')) {
+                isCompleted = true;
                 throw new Error(updatedGen.result);
               }
             } catch (pollError) {
@@ -616,6 +612,7 @@ export default function Step4ResultScreen() {
                   setResult(updatedGen.imageUrl);
                   isCompleted = true;
                 } else if (updatedGen?.result?.startsWith('ERROR')) {
+                  isCompleted = true;
                   throw new Error(updatedGen.result);
                 }
               } catch (pollError) {
@@ -664,6 +661,7 @@ export default function Step4ResultScreen() {
                   setResult(imageUrl);
                   isCompleted = true;
                 } else if (updatedGen?.result?.startsWith('ERROR')) {
+                  isCompleted = true;
                   throw new Error(updatedGen.result);
                 }
               } catch (pollError) {
@@ -684,9 +682,46 @@ export default function Step4ResultScreen() {
           }
         }
       } else if (selectedCategory === 'Document') {
-        const resultData = await AiService.generateDocument('business', params);
-        setResult(resultData.content);
-        setGenerationId(resultData.generationId);
+        if (isFlyerExact) {
+          const flyerResult = await AiService.generateFlyer(params, seed);
+          console.log('[DEBUG] Document Flyer Result:', JSON.stringify(flyerResult, null, 2));
+
+          const isAsync = !flyerResult.url && flyerResult.generationId;
+          if (isAsync) {
+            setGenerationId(flyerResult.generationId);
+            let isCompleted = false;
+            let attempts = 0;
+            const maxAttempts = 30;
+            while (!isCompleted && attempts < maxAttempts) {
+              attempts++;
+              await new Promise(resolve => setTimeout(resolve, 2000));
+              try {
+                const updatedGen = await AiService.getConversation(flyerResult.generationId.toString());
+                const imageUrl = updatedGen?.imageUrl || updatedGen?.url || updatedGen?.image;
+                if (imageUrl && typeof imageUrl === 'string' && imageUrl.startsWith('http')) {
+                  setImageUrl(imageUrl);
+                  setResult(imageUrl);
+                  isCompleted = true;
+                } else if (updatedGen?.result?.startsWith('ERROR')) {
+                  isCompleted = true;
+                  throw new Error(updatedGen.result);
+                }
+              } catch (pollError) {
+                console.warn('[DEBUG] Document Flyer poll error:', pollError);
+              }
+            }
+            if (!isCompleted) throw new Error('Délai de génération dépassé.');
+          } else {
+            setImageUrl(flyerResult.url);
+            setResult(flyerResult.url);
+            setGenerationId(flyerResult.generationId);
+            if (flyerResult.seed !== undefined) setSeed(flyerResult.seed);
+          }
+        } else {
+          const resultData = await AiService.generateDocument('business', params);
+          setResult(resultData.content);
+          setGenerationId(resultData.generationId);
+        }
       } else if (selectedCategory === 'Texte') {
         // Améliore la détection pour différencier correctement les types
         const isFlyerExact = selectedFunction && selectedFunction.includes('Flyers');
@@ -729,6 +764,7 @@ export default function Step4ResultScreen() {
                   isCompleted = true;
                 } else if (updatedGen?.result?.startsWith('ERROR')) {
                   console.error('[DEBUG] Generation error:', updatedGen.result);
+                  isCompleted = true;
                   throw new Error(updatedGen.result);
                 } else {
                   lastImageUrl = imageUrl; // Track if it's stuck
@@ -785,6 +821,7 @@ export default function Step4ResultScreen() {
                   isCompleted = true;
                 } else if (updatedGen?.result?.startsWith('ERROR')) {
                   console.error('[DEBUG] Generation error:', updatedGen.result);
+                  isCompleted = true;
                   throw new Error(updatedGen.result);
                 } else {
                   lastImageUrl = imageUrl;
@@ -870,102 +907,7 @@ export default function Step4ResultScreen() {
     requestPermissions();
   }, []);
 
-  const handleDownload = async (format: string) => {
-    if (isRestricted) {
-      showModal(
-        'error',
-        'Pack Curieux',
-        'Le téléchargement est indisponible avec le Pack Curieux. Passez au plan Atelier ou Studio pour débloquer !'
-      );
-      return;
-    }
 
-    if (!generationId) {
-      showModal('error', 'Erreur', "Impossible d'exporter : ID manquant");
-      return;
-    }
-
-    try {
-      showModal(
-        'loading',
-        'Téléchargement en cours...',
-        'Veuillez patienter pendant la création du fichier.'
-      );
-
-      const apiBaseUrl = api.defaults.baseURL;
-      const downloadUrl = `${apiBaseUrl}/ai/export/${generationId}?format=${format}&model=${selectedModel}`;
-      const extension = format === 'excel' ? 'xlsx' : format === 'image' ? 'png' : format;
-      const fileName = `Hipster_${generationId}_${Date.now()}.${extension}`;
-      const fileUri = `${FileSystem.documentDirectory}${fileName}`;
-
-      const token = await AsyncStorage.getItem('access_token');
-
-      const downloadRes = await FileSystem.downloadAsync(downloadUrl, fileUri, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      setModalVisible(false);
-
-      if (downloadRes.status === 200) {
-        // Cas spécifique pour les images : Enregistrer dans la galerie
-        if (format === 'image' || format === 'png') {
-          try {
-            const { status } = await MediaLibrary.requestPermissionsAsync();
-            if (status === 'granted') {
-              await MediaLibrary.saveToLibraryAsync(downloadRes.uri);
-              showModal('success', 'Enregistré !', "L'image a été ajoutée à votre galerie");
-              return;
-            }
-          } catch (e) {
-            console.error('MediaLibrary error:', e);
-          }
-        }
-
-        // Pour les autres fichiers ou si MediaLibrary échoue
-        if (Platform.OS === 'android') {
-          try {
-            const contentUri = await FileSystem.getContentUriAsync(downloadRes.uri);
-            await IntentLauncher.startActivityAsync('android.intent.action.VIEW', {
-              data: contentUri,
-              flags: 1,
-              type:
-                format === 'pdf'
-                  ? 'application/pdf'
-                  : format === 'excel' || format === 'xlsx'
-                    ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-                    : format === 'docx'
-                      ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-                      : 'application/octet-stream',
-            });
-          } catch (e) {
-            await Sharing.shareAsync(downloadRes.uri, {
-              dialogTitle: 'Enregistrer le document',
-            });
-          }
-        } else {
-          await Sharing.shareAsync(downloadRes.uri, {
-            UTI:
-              format === 'pdf'
-                ? 'com.adobe.pdf'
-                : format === 'docx'
-                  ? 'org.openxmlformats.wordprocessingml.document'
-                  : format === 'excel' || format === 'xlsx'
-                    ? 'org.openxmlformats.spreadsheetml.sheet'
-                    : undefined,
-          });
-        }
-      } else {
-        showModal('error', 'Erreur', 'Le téléchargement a échoué.');
-      }
-    } catch (error: any) {
-      console.error('Download error:', error);
-      setModalVisible(false);
-      const msg = error?.message || String(error);
-      showModal('error', 'Erreur', `Une erreur est survenue lors du téléchargement. ${msg}`);
-    }
-  };
 
   const handleCopyText = async () => {
     if (isRestricted) {
@@ -1090,11 +1032,8 @@ export default function Step4ResultScreen() {
         } else {
           showModal('error', 'Oups', 'Echec du téléchargement pour le partage.');
         }
-      } else if (selectedCategory === 'Document') {
-        // Pour un document, par défaut on partage le PDF
-        handleDownload('pdf');
-      } else if (result) {
-        // Partage de texte classique
+      } else if (selectedCategory === 'Document' || result) {
+        // Partage de texte classique pour les documents ou autre texte
         await RNShare.share({
           message: getVisibleText(result),
           title: 'Mon contenu Hipster IA',
@@ -1233,75 +1172,7 @@ export default function Step4ResultScreen() {
 
                   {/* Display image if generated */}
                   {imageUrl && renderFlyerImage()}
-
                   <View style={styles.structuredContent}>
-                    {/* Model Picker for Documents */}
-                    <TouchableOpacity
-                      style={styles.modelSelector}
-                      onPress={() => setShowModelPicker(!showModelPicker)}>
-                      <Text selectable={true} style={styles.modelSelectorLabel}>
-                        Design Export :
-                      </Text>
-                      <View style={styles.modelSelectorValue}>
-                        <Text selectable={true} style={styles.modelSelectorText}>
-                          {selectedModel}
-                        </Text>
-                        <ChevronDown size={20} color={colors.text.secondary} />
-                      </View>
-                    </TouchableOpacity>
-
-                    {showModelPicker && (
-                      <View style={styles.modelOptions}>
-                        {['Moderne', 'Minimaliste', 'Luxe', 'Coloré'].map((opt) => (
-                          <TouchableOpacity
-                            key={opt}
-                            style={[
-                              styles.modelOption,
-                              selectedModel === opt && styles.modelOptionSelected,
-                            ]}
-                            onPress={() => {
-                              setSelectedModel(opt);
-                              setShowModelPicker(false);
-                            }}>
-                            <Image
-                              source={{ uri: MODEL_IMAGES[opt] }}
-                              style={styles.modelOptionImage}
-                            />
-                            <Text
-                              selectable={true}
-                              style={[
-                                styles.modelOptionText,
-                                selectedModel === opt && styles.modelOptionTextSelected,
-                              ]}>
-                              {opt}
-                            </Text>
-                          </TouchableOpacity>
-                        ))}
-                      </View>
-                    )}
-
-                    {/* Export Choices for Documents */}
-                    <View style={styles.exportButtons}>
-                      <View style={{ flex: 1 }}>
-                        <NeonButton
-                          title="PDF"
-                          onPress={() => handleDownload('pdf')}
-                          variant="premium"
-                          size="sm"
-                          icon={<Download size={16} color={colors.text.primary} />}
-                        />
-                      </View>
-                      <View style={{ flex: 1 }}>
-                        <NeonButton
-                          title="Word"
-                          onPress={() => handleDownload('docx')}
-                          variant="outline"
-                          size="sm"
-                          icon={<FileText size={16} color={colors.neon.primary} />}
-                        />
-                      </View>
-                    </View>
-
                     {/* Content Preview */}
                     {(() => {
                       const data = getParsedData(result);
@@ -1709,92 +1580,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.text.primary,
   },
-  modelSelector: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    padding: 16,
-    borderRadius: 16,
-    marginBottom: 16,
-  },
-  modelSelectorLabel: {
-    fontSize: 14,
-    color: colors.text.secondary,
-    fontWeight: '600',
-  },
-  modelSelectorValue: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  modelSelectorText: {
-    fontSize: 16,
-    color: colors.text.primary,
-    fontWeight: '600',
-  },
-  modelOptions: {
-    gap: 12,
-    marginBottom: 24,
-  },
-  modelOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.03)',
-    padding: 12,
-    borderRadius: 12,
-    gap: 12,
-    borderWidth: 2,
-    borderColor: 'transparent',
-  },
-  modelOptionSelected: {
-    borderColor: colors.primary.main,
-    backgroundColor: 'rgba(0, 255, 170, 0.05)',
-  },
-  modelOptionImage: {
-    width: 50,
-    height: 50,
-    borderRadius: 8,
-  },
-  modelOptionText: {
-    fontSize: 15,
-    color: colors.text.primary,
-    fontWeight: '500',
-  },
-  modelOptionTextSelected: {
-    color: colors.primary.main,
-    fontWeight: '700',
-  },
-  exportButtons: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  exportButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 14,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  exportButtonPrimary: {
-    backgroundColor: colors.primary.main,
-    borderColor: colors.primary.main,
-  },
-  exportButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text.secondary,
-  },
-  exportButtonTextPrimary: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: colors.background.primary,
-  },
+
   textSection: {
     padding: 24,
   },
