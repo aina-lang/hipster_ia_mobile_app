@@ -371,7 +371,7 @@ export default function Step3PersonalizeScreen() {
                         onPress={() => setShowAllModels(true)}
                         activeOpacity={0.7}
                       >
-                        <Text style={styles.seeAllText}>Voir tout ({activeFlyerCategory.models.length} modèles)</Text>
+                        <Text style={styles.seeAllText}>Voir tout les modèles</Text>
                         <ChevronRight size={16} color={colors.primary.main} />
                       </TouchableOpacity>
                     )}
@@ -468,82 +468,84 @@ export default function Step3PersonalizeScreen() {
         transparent={true}
         onRequestClose={() => setShowAllModels(false)}
       >
-        <BlurView intensity={95} tint="dark" style={StyleSheet.absoluteFill}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <View>
-                <Text style={styles.modalTitle}>Tous les modèles</Text>
-                <Text style={styles.modalSubtitle}>Toutes les catégories</Text>
-              </View>
-              <TouchableOpacity
-                onPress={() => setShowAllModels(false)}
-                style={styles.modalCloseButton}
-              >
-                <X size={24} color="white" />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView
-              contentContainerStyle={styles.modalScrollContent}
-              showsVerticalScrollIndicator={false}
-              stickyHeaderIndices={FLYER_CATEGORIES.map((_, i) => i * 2)}
-            >
-              {FLYER_CATEGORIES.map((cat) => (
-                <View key={cat.id} style={styles.modalCategoryGroup}>
-                  <View style={styles.modalCategoryHeader}>
-                    <cat.icon size={18} color={colors.primary.main} />
-                    <Text style={styles.modalCategoryLabel}>{cat.label}</Text>
-                  </View>
-
-                  <View style={styles.modelsGrid}>
-                    {cat.models.map((modelObj) => {
-                      const modelLabel =
-                        typeof modelObj === 'string' ? modelObj : modelObj.label;
-                      const modelImage =
-                        typeof modelObj === 'object' && modelObj.image
-                          ? modelObj.image
-                          : cat.image;
-                      const isModelSelected = selectedStyle === modelLabel;
-
-                      return (
-                        <TouchableOpacity
-                          key={modelLabel}
-                          style={[
-                            styles.flyerGridItem,
-                            isModelSelected && styles.flyerGridItemSelected,
-                          ]}
-                          onPress={() => {
-                            setSelectedFlyerCategory(cat.id);
-                            setStyle(modelLabel);
-                            setShowAllModels(false);
-                          }}
-                        >
-                          {isModelSelected && (
-                            <>
-                              <View style={styles.cardBorderGlow} pointerEvents="none" />
-                              <View style={styles.cardBloom} pointerEvents="none" />
-                            </>
-                          )}
-                          <Image source={modelImage} style={styles.flyerGridImage} />
-                          {isModelSelected && (
-                            <View style={styles.styleCardCheckBadge}>
-                              <Check size={10} color="white" strokeWidth={3} />
-                            </View>
-                          )}
-                          <View style={styles.flyerGridOverlay}>
-                            <Text style={styles.flyerGridName} numberOfLines={2}>
-                              {modelLabel}
-                            </Text>
-                          </View>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </View>
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.95)' }]}>
+          <BlurView intensity={95} tint="dark" style={StyleSheet.absoluteFill}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <View>
+                  <Text style={styles.modalTitle}>Tous les modèles</Text>
+                  <Text style={styles.modalSubtitle}>Toutes les catégories</Text>
                 </View>
-              ))}
-            </ScrollView>
-          </View>
-        </BlurView>
+                <TouchableOpacity
+                  onPress={() => setShowAllModels(false)}
+                  style={styles.modalCloseButton}
+                >
+                  <X size={24} color="white" />
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView
+                contentContainerStyle={styles.modalScrollContent}
+                showsVerticalScrollIndicator={false}
+                stickyHeaderIndices={FLYER_CATEGORIES.map((_, i) => i * 2)}
+              >
+                {FLYER_CATEGORIES.map((cat) => (
+                  <View key={cat.id} style={styles.modalCategoryGroup}>
+                    <View style={styles.modalCategoryHeader}>
+                      <cat.icon size={18} color={colors.primary.main} />
+                      <Text style={styles.modalCategoryLabel}>{cat.label}</Text>
+                    </View>
+
+                    <View style={styles.modelsGrid}>
+                      {cat.models.map((modelObj) => {
+                        const modelLabel =
+                          typeof modelObj === 'string' ? modelObj : modelObj.label;
+                        const modelImage =
+                          typeof modelObj === 'object' && modelObj.image
+                            ? modelObj.image
+                            : cat.image;
+                        const isModelSelected = selectedStyle === modelLabel;
+
+                        return (
+                          <TouchableOpacity
+                            key={modelLabel}
+                            style={[
+                              styles.flyerGridItem,
+                              isModelSelected && styles.flyerGridItemSelected,
+                            ]}
+                            onPress={() => {
+                              setSelectedFlyerCategory(cat.id);
+                              setStyle(modelLabel);
+                              setShowAllModels(false);
+                            }}
+                          >
+                            {isModelSelected && (
+                              <>
+                                <View style={styles.cardBorderGlow} pointerEvents="none" />
+                                <View style={styles.cardBloom} pointerEvents="none" />
+                              </>
+                            )}
+                            <Image source={modelImage} style={styles.flyerGridImage} />
+                            {isModelSelected && (
+                              <View style={styles.styleCardCheckBadge}>
+                                <Check size={10} color="white" strokeWidth={3} />
+                              </View>
+                            )}
+                            <View style={styles.flyerGridOverlay}>
+                              <Text style={styles.flyerGridName} numberOfLines={2}>
+                                {modelLabel}
+                              </Text>
+                            </View>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  </View>
+                ))}
+              </ScrollView>
+            </View>
+          </BlurView>
+        </View>
       </Modal>
     </GuidedScreenWrapper>
   );
