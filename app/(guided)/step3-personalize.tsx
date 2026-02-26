@@ -23,7 +23,7 @@ import illus2 from '../../assets/illus2.jpeg';
 import illus3 from '../../assets/illus3.jpeg';
 import illus4 from '../../assets/illus4.jpeg';
 import { FLYER_CATEGORIES } from '../../constants/flyerModels';
-import { useRef, useState } from 'react';
+import { useRef, useState, useCallback } from 'react';
 import { GenericModal, ModalType } from 'components/ui/GenericModal';
 
 const VISUAL_STYLES = [
@@ -32,6 +32,168 @@ const VISUAL_STYLES = [
   { label: 'Minimal', description: 'Épuré & moderne', image: illus4 },
 ];
 
+// ─── Animated category tab bar ────────────────────────────────────────────────
+function CategoryTabs({
+  categories,
+  selectedId,
+  onSelect,
+}: {
+  categories: typeof FLYER_CATEGORIES;
+  selectedId: string;
+  onSelect: (id: string) => void;
+}) {
+  const tabWidths = useRef<Record<string, number>>({});
+  const tabOffsets = useRef<Record<string, number>>({});
+  const slideX = useRef(new Animated.Value(0)).current;
+  const slideW = useRef(new Animated.Value(0)).current;
+  const scrollRef = useRef<ScrollView>(null);
+  const [ready, setReady] = useState(false);
+
+  const animateTo = useCallback(
+    (id: string, scroll = true) => {
+      const x = tabOffsets.current[id] ?? 0;
+      const w = tabWidths.current[id] ?? 0;
+
+      Animated.parallel([
+        Animated.spring(slideX, {
+          toValue: x,
+          useNativeDriver: false,
+          stiffness: 260,
+          damping: 24,
+        }),
+        Animated.spring(slideW, {
+          toValue: w,
+          useNativeDriver: false,
+          stiffness: 260,
+          damping: 24,
+        }),
+      ]).start();
+
+      if (scroll) {
+        scrollRef.current?.scrollTo({ x: Math.max(0, x - 16), animated: true });
+      }
+    },
+    [slideX, slideW]
+  );
+
+  return (
+    <View style={tabStyles.wrapper}>
+      <ScrollView
+        ref={scrollRef}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={tabStyles.scroll}
+      >
+        {/* Sliding pill indicator */}
+        {ready && (
+          <Animated.View
+            pointerEvents="none"
+            style={[
+              tabStyles.indicator,
+              {
+                left: slideX,
+                width: slideW,
+              },
+            ]}
+          />
+        )}
+
+        {categories.map((cat, index) => {
+          const isActive = cat.id === selectedId;
+          return (
+            <TouchableOpacity
+              key={cat.id}
+              activeOpacity={0.75}
+              onLayout={(e) => {
+                const { width, x } = e.nativeEvent.layout;
+                tabWidths.current[cat.id] = width;
+                tabOffsets.current[cat.id] = x;
+
+                // Initialize position on first render for the default selected tab
+                const allMeasured = categories.every(
+                  (c) => tabWidths.current[c.id] !== undefined
+                );
+                if (allMeasured && !ready) {
+                  const initX = tabOffsets.current[selectedId] ?? 0;
+                  const initW = tabWidths.current[selectedId] ?? 0;
+                  slideX.setValue(initX);
+                  slideW.setValue(initW);
+                  setReady(true);
+                }
+
+                // Re-animate if this is the currently selected tab
+                if (cat.id === selectedId && ready) {
+                  animateTo(cat.id, false);
+                }
+              }}
+              onPress={() => {
+                onSelect(cat.id);
+                animateTo(cat.id);
+              }}
+              style={tabStyles.tab}
+            >
+              <cat.icon
+                size={14}
+                color={isActive ? colors.primary.main : 'rgba(255,255,255,0.45)'}
+              />
+              <Text style={[tabStyles.label, isActive && tabStyles.labelActive]}>
+                {cat.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+    </View>
+  );
+}
+
+const tabStyles = StyleSheet.create({
+  wrapper: {
+    marginBottom: 14,
+  },
+  scroll: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 2,
+    paddingBottom: 2,
+    gap: 4,
+    position: 'relative',
+  },
+  indicator: {
+    position: 'absolute',
+    bottom: 0,
+    height: '100%',
+    borderRadius: 12,
+    backgroundColor: 'rgba(30,155,255,0.15)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(30,155,255,0.45)',
+    zIndex: 0,
+  },
+  tab: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 9,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    zIndex: 1,
+  },
+  icon: {
+    fontSize: 14,
+    lineHeight: 17,
+  },
+  label: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.45)',
+  },
+  labelActive: {
+    color: '#fff',
+    fontWeight: '700',
+  },
+});
+
+// ─── Main screen ──────────────────────────────────────────────────────────────
 export default function Step3PersonalizeScreen() {
   const router = useRouter();
   const {
@@ -101,6 +263,8 @@ export default function Step3PersonalizeScreen() {
     selectedCategory === 'Social' ||
     selectedCategory === 'Document';
 
+  const activeFlyerCategory = FLYER_CATEGORIES.find((c) => c.id === selectedFlyerCategory);
+
   return (
     <GuidedScreenWrapper scrollViewRef={scrollRef} footer={null}>
       <View style={styles.container}>
@@ -144,92 +308,61 @@ export default function Step3PersonalizeScreen() {
 
             {/* ── Style / Model selection ── */}
             {selectedCategory === 'Document' ? (
-              /* Flyer models: flat list with section headers — no category tap needed */
               <View style={{ marginTop: 16 }}>
-                <Text style={styles.label}>Catégorie de flyer</Text>
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.categoryScroll}
-                >
-                  {FLYER_CATEGORIES.map((cat) => {
-                    const isSelected = selectedFlyerCategory === cat.id;
-                    const Icon = cat.icon;
-                    return (
-                      <TouchableOpacity
-                        key={cat.id}
-                        onPress={() => setSelectedFlyerCategory(cat.id)}
-                        style={[
-                          styles.categoryButton,
-                          isSelected && styles.categoryButtonSelected,
-                        ]}
-                        activeOpacity={0.8}
-                      >
-                        {isSelected && (
-                          <>
-                            <View style={styles.catBorderGlow} pointerEvents="none" />
-                            <View style={styles.catBloom} pointerEvents="none" />
-                          </>
-                        )}
-                        <View style={styles.categoryIconCircle}>
-                          <Icon size={14} color={isSelected ? colors.primary.main : 'rgba(255,255,255,0.4)'} />
-                        </View>
-                        <Text style={[styles.categoryButtonText, isSelected && styles.categoryButtonTextSelected]}>
-                          {cat.label}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </ScrollView>
+                <Text style={styles.label}>Modèle de flyer</Text>
 
-                <View style={{ marginTop: 20 }}>
-                  <Text style={styles.label}>Modèle de flyer</Text>
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.flyerScroll}
-                  >
-                    {FLYER_CATEGORIES.find((c) => c.id === selectedFlyerCategory)?.models.map((modelObj) => {
+                {/* ── Animated tab bar ── */}
+                <CategoryTabs
+                  categories={FLYER_CATEGORIES}
+                  selectedId={selectedFlyerCategory}
+                  onSelect={setSelectedFlyerCategory}
+                />
+
+                {/* ── Models grid for active category ── */}
+                {activeFlyerCategory && (
+                  <View style={styles.modelsGrid}>
+                    {activeFlyerCategory.models.map((modelObj) => {
                       const modelLabel =
                         typeof modelObj === 'string' ? modelObj : modelObj.label;
                       const modelImage =
                         typeof modelObj === 'object' && modelObj.image
                           ? modelObj.image
-                          : (FLYER_CATEGORIES.find((c) => c.id === selectedFlyerCategory)?.image);
-                      const isSelected = selectedStyle === modelLabel;
+                          : activeFlyerCategory.image;
+                      const isModelSelected = selectedStyle === modelLabel;
                       return (
                         <TouchableOpacity
                           key={modelLabel}
-                          style={[styles.flyerCard, isSelected && styles.styleCardSelected,]}
+                          style={[
+                            styles.flyerGridItem,
+                            isModelSelected && styles.flyerGridItemSelected,
+                          ]}
                           onPress={() => setStyle(modelLabel)}
                         >
-                          {isSelected && (
+                          {isModelSelected && (
                             <>
                               <View style={styles.cardBorderGlow} pointerEvents="none" />
                               <View style={styles.cardBloom} pointerEvents="none" />
                             </>
                           )}
-                          <Image source={modelImage} style={styles.flyerCardImage} />
-                          {isSelected && (
+                          <Image source={modelImage} style={styles.flyerGridImage} />
+                          {isModelSelected && (
                             <View style={styles.styleCardCheckBadge}>
                               <Check size={10} color="white" strokeWidth={3} />
                             </View>
                           )}
-                          <View style={styles.flyerCardOverlay}>
-                            <Text style={styles.flyerCardCat}>{FLYER_CATEGORIES.find((c) => c.id === selectedFlyerCategory)?.label}</Text>
-                            <Text style={styles.flyerCardName} numberOfLines={2}>
+                          <View style={styles.flyerGridOverlay}>
+                            <Text style={styles.flyerGridName} numberOfLines={2}>
                               {modelLabel}
                             </Text>
                           </View>
                         </TouchableOpacity>
                       );
-                    })
-                    }
-                  </ScrollView>
-                </View>
+                    })}
+                  </View>
+                )}
               </View>
             ) : (
-              /* Visual styles: 3 cards side by side — no scroll needed */
+              /* Visual styles: 3 cards side by side */
               <View style={{ marginTop: 16 }}>
                 <Text style={styles.label}>Style artistique</Text>
                 <View style={styles.stylesRow}>
@@ -494,123 +627,41 @@ const styles = StyleSheet.create({
     zIndex: -1,
   },
 
-  // ── Flyer cards (horizontal scroll) ──────────────────────────────────────────
-  flyerScroll: {
-    gap: 10,
-    paddingBottom: 4,
+  // ── Flyer grid ───────────────────────────────────────────────────────────────
+  modelsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
   },
-  flyerCard: {
-    width: 120,
-    height: 160,
-    borderRadius: 14,
+  flyerGridItem: {
+    width: '48%',
+    height: 140,
+    borderRadius: 12,
     overflow: 'hidden',
     borderWidth: 1.5,
     borderColor: 'rgba(255,255,255,0.08)',
     backgroundColor: 'rgba(255,255,255,0.04)',
     position: 'relative',
   },
-  flyerCardSelected: {
+  flyerGridItemSelected: {
     borderColor: '#1e9bff',
   },
-  flyerCardImage: {
+  flyerGridImage: {
     width: '100%',
     height: '100%',
     position: 'absolute',
     opacity: 0.55,
   },
-  flyerCardOverlay: {
+  flyerGridOverlay: {
     flex: 1,
     justifyContent: 'flex-end',
-    padding: 10,
+    padding: 8,
   },
-  flyerCardCat: {
-    fontSize: 9,
-    color: 'rgba(255,255,255,0.5)',
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
-    marginBottom: 2,
-  },
-  flyerCardName: {
-    fontSize: 12,
+  flyerGridName: {
+    fontSize: 11,
     fontWeight: '700',
     color: '#fff',
-    lineHeight: 15,
-  },
-  flyerCardBadge: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: '#1e9bff',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 10,
-  },
-
-  // ── Category scroll ──────────────────────────────────────────────────────────
-  categoryScroll: {
-    gap: 8,
-    paddingRight: 20,
-    paddingBottom: 4,
-  },
-  categoryButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 12,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
-  },
-  categoryButtonSelected: {
-    backgroundColor: 'rgba(30,155,255,0.1)',
-    borderColor: '#1e9bff',
-  },
-  categoryIconCircle: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  categoryButtonText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: 'rgba(255,255,255,0.5)',
-  },
-  categoryButtonTextSelected: {
-    color: '#fff',
-    fontWeight: '700',
-  },
-  catBorderGlow: {
-    position: 'absolute',
-    top: 0, left: 0, right: 0, bottom: 0,
-    borderRadius: 12,
-    backgroundColor: 'transparent',
-    shadowColor: '#1a8fff',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
-    shadowRadius: 10,
-    elevation: 6,
-    zIndex: -1,
-  },
-  catBloom: {
-    position: 'absolute',
-    top: -2, left: -2, right: -2, bottom: -2,
-    borderRadius: 14,
-    backgroundColor: 'transparent',
-    shadowColor: '#0840bb',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 3,
-    zIndex: -1,
+    lineHeight: 14,
   },
 
   // ── Prompt ───────────────────────────────────────────────────────────────────

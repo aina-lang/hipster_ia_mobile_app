@@ -1,116 +1,159 @@
 import React from 'react';
-import { TouchableOpacity, View, Text, StyleSheet } from 'react-native';
+import { TouchableOpacity, Text, StyleSheet, View } from 'react-native';
 import { colors } from '../../theme/colors';
+import { LucideIcon } from 'lucide-react-native';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
 
 interface SelectionCardProps {
   label: string;
-  icon: any;
+  icon?: any;
   selected: boolean;
   onPress: () => void;
+  fullWidth?: boolean;
+  children?: React.ReactNode;
+  disabled?: boolean;
 }
+
+const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
 
 export const SelectionCard: React.FC<SelectionCardProps> = ({
   label,
   icon: Icon,
   selected,
   onPress,
+  fullWidth = false,
+  children,
+  disabled = false,
 }) => {
+  const scale = useSharedValue(1);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  const handlePressIn = () => { scale.value = withSpring(0.98, { damping: 15 }); };
+  const handlePressOut = () => { scale.value = withSpring(1, { damping: 15 }); };
+
   return (
-    <TouchableOpacity
-      style={[
-        styles.card,
-        selected && styles.cardSelected,
-      ]}
+    <AnimatedTouchable
       onPress={onPress}
-      activeOpacity={0.8}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+      disabled={disabled}
+      activeOpacity={0.9}
+      style={[styles.wrapper, fullWidth && styles.fullWidth, disabled && styles.disabled, animatedStyle]}
     >
-      {/* Glow background on selection */}
       {selected && (
-        <View style={styles.glowEffect} />
+        <>
+          <View style={styles.bloomFar} pointerEvents="none" />
+          <View style={styles.bloomMid} pointerEvents="none" />
+          <View style={styles.borderGlow} pointerEvents="none" />
+        </>
       )}
 
-      {/* Icon Container */}
-      <View style={[styles.iconContainer, selected && styles.iconContainerSelected]}>
-        <Icon
-          size={28}
-          color={selected ? colors.primary.main : 'rgba(255, 255, 255, 0.6)'}
-          strokeWidth={1.5}
-        />
+      <View style={[styles.container, selected && styles.containerSelected]}>
+        <View style={styles.header}>
+          {Icon && (
+            <View style={[styles.iconContainer, selected && styles.selectedIconContainer]}>
+              <Icon size={24} color={selected ? colors.primary.main : 'rgba(255, 255, 255, 0.6)'} />
+            </View>
+          )}
+          <Text style={[styles.label, selected && styles.selectedLabel]}>{label}</Text>
+        </View>
+        {children && <View style={styles.contentContainer}>{children}</View>}
       </View>
-
-      {/* Label */}
-      <Text 
-        style={[styles.label, selected && styles.labelSelected]}
-        numberOfLines={2}
-      >
-        {label}
-      </Text>
-    </TouchableOpacity>
+    </AnimatedTouchable>
   );
 };
 
 const styles = StyleSheet.create({
-  card: {
-    height: 140,
-    paddingVertical: 14,
-    paddingHorizontal: 12,
-    borderRadius: 16,
+  wrapper: {
+    marginBottom: 12,
+    flex: 1,
+    position: 'relative',
+  },
+  fullWidth: {
+    width: '100%',
+    flex: undefined,
+  },
+  container: {
     backgroundColor: 'rgba(30, 41, 59, 0.6)',
+    borderRadius: 16,
+    padding: 16,
     borderWidth: 1.5,
     borderColor: 'rgba(255, 255, 255, 0.12)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    position: 'relative',
-    overflow: 'hidden',
-    shadowColor: 'rgba(0, 0, 0, 0.1)',
-    shadowOpacity: 0.08,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 6,
-    elevation: 3,
+    minHeight: 64,
   },
-  cardSelected: {
+  containerSelected: {
     borderColor: colors.primary.main + '80',
     backgroundColor: 'rgba(30, 41, 59, 0.8)',
-    borderWidth: 2,
-    shadowColor: colors.primary.main,
-    shadowOpacity: 0.25,
-    shadowOffset: { width: 0, height: 8 },
-    shadowRadius: 16,
-    elevation: 8,
   },
-  glowEffect: {
-    position: 'absolute',
-    inset: 0,
-    borderRadius: 18,
-    backgroundColor: colors.primary.main + '10',
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  contentContainer: {
+    marginTop: 16,
   },
   iconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 11,
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
-    alignItems: 'center',
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.10)',
-    zIndex: 1,
+    alignItems: 'center',
   },
-  iconContainerSelected: {
+  selectedIconContainer: {
     backgroundColor: colors.primary.main + '20',
-    borderColor: colors.primary.main + '50',
+    borderColor: colors.primary.main + '40',
+    borderWidth: 1,
   },
   label: {
-    fontSize: 12,
-    fontWeight: '600',
     color: 'rgba(255, 255, 255, 0.7)',
-    textAlign: 'center',
-    lineHeight: 15,
-    zIndex: 1,
-    maxHeight: 30,
+    fontSize: 14,
+    fontWeight: '600',
+    flex: 1,
   },
-  labelSelected: {
-    color: colors.text.primary,
+  selectedLabel: {
+    color: '#ffffff',
     fontWeight: '700',
+  },
+  disabled: {
+    opacity: 0.45,
+  },
+  borderGlow: {
+    position: 'absolute',
+    inset: 0,
+    borderRadius: 16,
+    shadowColor: colors.primary.main,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 10,
+    elevation: 5,
+  },
+  bloomMid: {
+    position: 'absolute',
+    inset: -4,
+    borderRadius: 20,
+    shadowColor: colors.primary.main,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.3,
+    shadowRadius: 15,
+    elevation: 3,
+  },
+  bloomFar: {
+    position: 'absolute',
+    inset: -8,
+    borderRadius: 24,
+    shadowColor: colors.primary.main,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 2,
   },
 });
