@@ -8,6 +8,9 @@ import {
   Dimensions,
   StyleSheet,
   Image,
+  Modal,
+  FlatList,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
@@ -211,6 +214,7 @@ export default function Step3PersonalizeScreen() {
   const scrollRef = useRef<ScrollView>(null);
   const [localQuery, setLocalQuery] = useState(userQuery || '');
   const [selectedFlyerCategory, setSelectedFlyerCategory] = useState(FLYER_CATEGORIES[0].id);
+  const [showAllModels, setShowAllModels] = useState(false);
 
   const [modalVisible, setModalVisible] = useState(false);
   const [modalType, setModalType] = useState<ModalType>('info');
@@ -318,47 +322,60 @@ export default function Step3PersonalizeScreen() {
                   onSelect={setSelectedFlyerCategory}
                 />
 
-                {/* ── Models grid for active category ── */}
+                {/* ── Models grid for active category (Limited to 4) ── */}
                 {activeFlyerCategory && (
-                  <View style={styles.modelsGrid}>
-                    {activeFlyerCategory.models.map((modelObj) => {
-                      const modelLabel =
-                        typeof modelObj === 'string' ? modelObj : modelObj.label;
-                      const modelImage =
-                        typeof modelObj === 'object' && modelObj.image
-                          ? modelObj.image
-                          : activeFlyerCategory.image;
-                      const isModelSelected = selectedStyle === modelLabel;
-                      return (
-                        <TouchableOpacity
-                          key={modelLabel}
-                          style={[
-                            styles.flyerGridItem,
-                            isModelSelected && styles.flyerGridItemSelected,
-                          ]}
-                          onPress={() => setStyle(modelLabel)}
-                        >
-                          {isModelSelected && (
-                            <>
-                              <View style={styles.cardBorderGlow} pointerEvents="none" />
-                              <View style={styles.cardBloom} pointerEvents="none" />
-                            </>
-                          )}
-                          <Image source={modelImage} style={styles.flyerGridImage} />
-                          {isModelSelected && (
-                            <View style={styles.styleCardCheckBadge}>
-                              <Check size={10} color="white" strokeWidth={3} />
+                  <>
+                    <View style={styles.modelsGrid}>
+                      {activeFlyerCategory.models.slice(0, 4).map((modelObj) => {
+                        const modelLabel =
+                          typeof modelObj === 'string' ? modelObj : modelObj.label;
+                        const modelImage =
+                          typeof modelObj === 'object' && modelObj.image
+                            ? modelObj.image
+                            : activeFlyerCategory.image;
+                        const isModelSelected = selectedStyle === modelLabel;
+                        return (
+                          <TouchableOpacity
+                            key={modelLabel}
+                            style={[
+                              styles.flyerGridItem,
+                              isModelSelected && styles.flyerGridItemSelected,
+                            ]}
+                            onPress={() => setStyle(modelLabel)}
+                          >
+                            {isModelSelected && (
+                              <>
+                                <View style={styles.cardBorderGlow} pointerEvents="none" />
+                                <View style={styles.cardBloom} pointerEvents="none" />
+                              </>
+                            )}
+                            <Image source={modelImage} style={styles.flyerGridImage} />
+                            {isModelSelected && (
+                              <View style={styles.styleCardCheckBadge}>
+                                <Check size={10} color="white" strokeWidth={3} />
+                              </View>
+                            )}
+                            <View style={styles.flyerGridOverlay}>
+                              <Text style={styles.flyerGridName} numberOfLines={2}>
+                                {modelLabel}
+                              </Text>
                             </View>
-                          )}
-                          <View style={styles.flyerGridOverlay}>
-                            <Text style={styles.flyerGridName} numberOfLines={2}>
-                              {modelLabel}
-                            </Text>
-                          </View>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </View>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+
+                    {activeFlyerCategory.models.length > 4 && (
+                      <TouchableOpacity
+                        style={styles.seeAllButton}
+                        onPress={() => setShowAllModels(true)}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={styles.seeAllText}>Voir tout ({activeFlyerCategory.models.length} modèles)</Text>
+                        <ChevronRight size={16} color={colors.primary.main} />
+                      </TouchableOpacity>
+                    )}
+                  </>
                 )}
               </View>
             ) : (
@@ -443,6 +460,80 @@ export default function Step3PersonalizeScreen() {
         message={modalMessage}
         onClose={() => setModalVisible(false)}
       />
+
+      {/* ── All Models Selection Modal ── */}
+      <Modal
+        visible={showAllModels}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowAllModels(false)}
+      >
+        <BlurView intensity={95} tint="dark" style={StyleSheet.absoluteFill}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <View>
+                <Text style={styles.modalTitle}>Tous les modèles</Text>
+                <Text style={styles.modalSubtitle}>{activeFlyerCategory?.label}</Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => setShowAllModels(false)}
+                style={styles.modalCloseButton}
+              >
+                <X size={24} color="white" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView
+              contentContainerStyle={styles.modalScrollContent}
+              showsVerticalScrollIndicator={false}
+            >
+              <View style={styles.modelsGrid}>
+                {activeFlyerCategory?.models.map((modelObj) => {
+                  const modelLabel =
+                    typeof modelObj === 'string' ? modelObj : modelObj.label;
+                  const modelImage =
+                    typeof modelObj === 'object' && modelObj.image
+                      ? modelObj.image
+                      : activeFlyerCategory.image;
+                  const isModelSelected = selectedStyle === modelLabel;
+
+                  return (
+                    <TouchableOpacity
+                      key={modelLabel}
+                      style={[
+                        styles.flyerGridItem,
+                        isModelSelected && styles.flyerGridItemSelected,
+                      ]}
+                      onPress={() => {
+                        setStyle(modelLabel);
+                        setShowAllModels(false);
+                      }}
+                    >
+                      {isModelSelected && (
+                        <>
+                          <View style={styles.cardBorderGlow} pointerEvents="none" />
+                          <View style={styles.cardBloom} pointerEvents="none" />
+                        </>
+                      )}
+                      <Image source={modelImage} style={styles.flyerGridImage} />
+                      {isModelSelected && (
+                        <View style={styles.styleCardCheckBadge}>
+                          <Check size={10} color="white" strokeWidth={3} />
+                        </View>
+                      )}
+                      <View style={styles.flyerGridOverlay}>
+                        <Text style={styles.flyerGridName} numberOfLines={2}>
+                          {modelLabel}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </ScrollView>
+          </View>
+        </BlurView>
+      </Modal>
     </GuidedScreenWrapper>
   );
 }
@@ -684,5 +775,61 @@ const styles = StyleSheet.create({
   ctaWrapper: {
     paddingBottom: 40,
     overflow: 'visible',
+  },
+
+  // ── Modal Styles ─────────────────────────────────────────────────────────────
+  modalContent: {
+    flex: 1,
+    paddingTop: Platform.OS === 'ios' ? 60 : 40,
+    paddingHorizontal: 20,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 24,
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: 'white',
+    letterSpacing: -0.5,
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    color: colors.primary.main,
+    fontWeight: '600',
+    marginTop: 2,
+    textTransform: 'uppercase',
+  },
+  modalCloseButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalScrollContent: {
+    paddingBottom: 100,
+  },
+
+  // ── "Voir tout" button ───────────────────────────────────────────────────────
+  seeAllButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 14,
+    marginTop: 8,
+    backgroundColor: 'rgba(30,155,255,0.06)',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(30,155,255,0.15)',
+  },
+  seeAllText: {
+    color: colors.primary.main,
+    fontSize: 14,
+    fontWeight: '700',
   },
 });
