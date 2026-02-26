@@ -30,7 +30,6 @@ import * as ImagePicker from 'expo-image-picker';
 import { Audio } from 'expo-av';
 import { Platform } from 'react-native';
 import * as Sharing from 'expo-sharing';
-import { StatusBar } from 'expo-status-bar';
 
 export default function RootLayout() {
   const { user, isAuthenticated, hasFinishedOnboarding, isHydrated } = useAuthStore();
@@ -139,7 +138,7 @@ export default function RootLayout() {
             <Stack.Screen name="(guided)" />
           </Stack>
 
-          <StatusBar style="light" translucent={true} backgroundColor="transparent" />
+          <StyledStatusBar theme="dark" translucent={true} />
         </StripeProvider>
       </GestureHandlerRootView>
     </SafeAreaProvider>

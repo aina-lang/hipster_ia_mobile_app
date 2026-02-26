@@ -58,7 +58,7 @@ function CustomDrawerContent(props: any) {
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
-  const [displayedCount, setDisplayedCount] = useState(20);
+  const [displayedCount, setDisplayedCount] = useState(5);
   const [historyError, setHistoryError] = useState<string | null>(null);
 
   // Delete Logic
@@ -213,9 +213,9 @@ function CustomDrawerContent(props: any) {
           attributes: item,
         }));
         setAllHistory(mappedData);
-        setHistory(mappedData.slice(0, 20));
-        setDisplayedCount(20);
-        console.log('[DRAWER] Displayed:', mappedData.slice(0, 20).length, 'conversations');
+        setHistory(mappedData.slice(0, 5));
+        setDisplayedCount(5);
+        console.log('[DRAWER] Displayed:', mappedData.slice(0, 5).length, 'conversations');
       }
     } catch (err: any) {
       console.error('Failed to fetch drawer history', err);
@@ -371,10 +371,9 @@ function CustomDrawerContent(props: any) {
                 {displayedCount < allHistory.length && (
                   <TouchableOpacity
                     style={styles.loadMoreButton}
-                    onPress={loadMore}
-                    disabled={loadingMore}>
+                    onPress={loadMore}>
                     <Text style={styles.loadMoreText}>
-                      {loadingMore ? 'Chargement...' : 'Charger plus'}
+                      Voir plus
                     </Text>
                   </TouchableOpacity>
                 )}
