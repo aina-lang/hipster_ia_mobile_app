@@ -120,6 +120,7 @@ export default function Step1JobScreen() {
                   label={job.label}
                   icon={job.icon}
                   selected={selectedJob === job.label}
+                  variant="vertical"
                   onPress={() => {
                     if (job.label !== 'Autre') {
                       setCustomJob('');
@@ -191,12 +192,13 @@ const styles = StyleSheet.create({
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
+    gap: 14,
     paddingHorizontal: 0,
     justifyContent: 'space-between',
   },
   gridItem: {
-    width: '48%',
+    width: '47.5%',
+    marginBottom: 4,
   },
   customInputSection: {
     marginTop: 36,
