@@ -566,7 +566,7 @@ export default function Step4ResultScreen() {
           const maxAttempts = 60;
           while (!isCompleted && attempts < maxAttempts) {
             attempts++;
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            await new Promise(resolve => setTimeout(resolve, 5000));
             try {
               const updatedGen = await AiService.getConversation(socialResponse.generationId.toString());
               console.log('[DEBUG] Social Poll attempt', attempts, ':', JSON.stringify(updatedGen, null, 2));
@@ -642,13 +642,13 @@ export default function Step4ResultScreen() {
             setGenerationId(resultData.generationId);
             let isCompleted = false;
             let attempts = 0;
-            const maxAttempts = 30;
+            const maxAttempts = 60;
             let lastImageUrl = null;
 
             while (!isCompleted && attempts < maxAttempts) {
               attempts++;
               console.log(`[DEBUG] 🔄 Visuel Publicitaire Poll attempt ${attempts}/${maxAttempts}`);
-              await new Promise(resolve => setTimeout(resolve, 2000));
+              await new Promise(resolve => setTimeout(resolve, 5000));
               try {
                 const updatedGen = await AiService.getConversation(resultData.generationId.toString());
                 console.log('[DEBUG] Visuel Publicitaire Poll response:', JSON.stringify(updatedGen, null, 2));
@@ -691,10 +691,10 @@ export default function Step4ResultScreen() {
             setGenerationId(flyerResult.generationId);
             let isCompleted = false;
             let attempts = 0;
-            const maxAttempts = 30;
+            const maxAttempts = 60;
             while (!isCompleted && attempts < maxAttempts) {
               attempts++;
-              await new Promise(resolve => setTimeout(resolve, 2000));
+              await new Promise(resolve => setTimeout(resolve, 5000));
               try {
                 const updatedGen = await AiService.getConversation(flyerResult.generationId.toString());
                 const imageUrl = updatedGen?.imageUrl || updatedGen?.url || updatedGen?.image;
@@ -742,13 +742,13 @@ export default function Step4ResultScreen() {
             setGenerationId(flyerResult.generationId);
             let isCompleted = false;
             let attempts = 0;
-            const maxAttempts = 30; // Timeout plus rapide: 1 min au lieu de 3 min
+            const maxAttempts = 60; // Timeout plus rapide: 1 min au lieu de 3 min
             let lastImageUrl = null;
 
             while (!isCompleted && attempts < maxAttempts) {
               attempts++;
               console.log(`[DEBUG] 🔄 Flyer Poll attempt ${attempts}/${maxAttempts}`);
-              await new Promise(resolve => setTimeout(resolve, 2000));
+              await new Promise(resolve => setTimeout(resolve, 5000));
               try {
                 console.log('[DEBUG] 📡 Fetching conversation with ID:', flyerResult.generationId);
                 const updatedGen = await AiService.getConversation(flyerResult.generationId.toString());
@@ -799,13 +799,13 @@ export default function Step4ResultScreen() {
             setGenerationId(resultData.generationId);
             let isCompleted = false;
             let attempts = 0;
-            const maxAttempts = 30; // 1 min timeout
+            const maxAttempts = 60; // 1 min timeout
             let lastImageUrl = null;
 
             while (!isCompleted && attempts < maxAttempts) {
               attempts++;
               console.log(`[DEBUG] 🔄 Visuel Image Poll attempt ${attempts}/${maxAttempts}`);
-              await new Promise(resolve => setTimeout(resolve, 2000));
+              await new Promise(resolve => setTimeout(resolve, 5000));
               try {
                 console.log('[DEBUG] 📡 Fetching conversation with ID:', resultData.generationId);
                 const updatedGen = await AiService.getConversation(resultData.generationId.toString());
