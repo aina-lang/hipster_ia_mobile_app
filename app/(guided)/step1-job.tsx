@@ -94,6 +94,9 @@ export default function Step1JobScreen() {
 
   return (
     <GuidedScreenWrapper
+   
+      currentStep={1}
+      totalSteps={4}
       onBack={
         isCustomSelected
           ? () => {
@@ -102,64 +105,60 @@ export default function Step1JobScreen() {
           }
           : undefined
       }>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={{ flex: 1 }}>
-        <View style={{ paddingHorizontal: 20, paddingBottom: 40 }}>
-          {/* Header */}
-          <View style={styles.header}>
-            <Text style={styles.title}>Quel est votre métier ?</Text>
-            <Text style={styles.subtitle}>Nous personnalisons l'expérience pour vous.</Text>
-          </View>
-
-          {/* Grid */}
-          <View style={styles.grid}>
-            {JOBS.map((job) => (
-              <View key={job.label} style={styles.gridItem}>
-                <SelectionCard
-                  label={job.label}
-                  icon={job.icon}
-                  selected={selectedJob === job.label}
-                  variant="vertical"
-                  onPress={() => {
-                    if (job.label !== 'Autre') {
-                      setCustomJob('');
-                    }
-                    handleSelectJob(job.label);
-                  }}
-                />
-              </View>
-            ))}
-          </View>
-
-          {/* Custom Input (Only appears when 'Autre' is selected) */}
-          {isCustomSelected && (
-            <View style={styles.customInputSection}>
-              <View style={styles.divider} />
-              <Text style={styles.customInputLabel}>Saisissez votre secteur d'activité :</Text>
-              <View style={styles.inputRow}>
-                <TextInput
-                  style={[styles.textInput, customJob.trim() ? styles.textInputActive : null]}
-                  placeholder="Ex: Boulanger, Plombier..."
-                  placeholderTextColor="rgba(255, 255, 255, 0.3)"
-                  value={customJob}
-                  onChangeText={setCustomJob}
-                  autoFocus
-                />
-                <TouchableOpacity
-                  style={[
-                    styles.confirmButton,
-                    customJob.trim() ? styles.confirmButtonActive : null,
-                  ]}
-                  onPress={handleConfirmCustomJob}
-                  disabled={!customJob.trim()}>
-                  <ArrowRight size={24} color="white" />
-                </TouchableOpacity>
-              </View>
-            </View>
-          )}
+      <View style={{ paddingHorizontal: 20, paddingBottom: 40 }}>
+        {/* Header Content */}
+        <View style={styles.header}>
+          <Text style={styles.title}>Quel est votre métier ?</Text>
+          <Text style={styles.subtitle}>Nous personnalisons l'expérience pour vous.</Text>
         </View>
-      </KeyboardAvoidingView>
+
+        {/* Grid */}
+        <View style={styles.grid}>
+          {JOBS.map((job) => (
+            <View key={job.label} style={styles.gridItem}>
+              <SelectionCard
+                label={job.label}
+                icon={job.icon}
+                selected={selectedJob === job.label}
+                variant="vertical"
+                onPress={() => {
+                  if (job.label !== 'Autre') {
+                    setCustomJob('');
+                  }
+                  handleSelectJob(job.label);
+                }}
+              />
+            </View>
+          ))}
+        </View>
+
+        {/* Custom Input (Only appears when 'Autre' is selected) */}
+        {isCustomSelected && (
+          <View style={styles.customInputSection}>
+            <View style={styles.divider} />
+            <Text style={styles.customInputLabel}>Saisissez votre secteur d'activité :</Text>
+            <View style={styles.inputRow}>
+              <TextInput
+                style={[styles.textInput, customJob.trim() ? styles.textInputActive : null]}
+                placeholder="Ex: Boulanger, Plombier..."
+                placeholderTextColor="rgba(255, 255, 255, 0.3)"
+                value={customJob}
+                onChangeText={setCustomJob}
+                autoFocus
+              />
+              <TouchableOpacity
+                style={[
+                  styles.confirmButton,
+                  customJob.trim() ? styles.confirmButtonActive : null,
+                ]}
+                onPress={handleConfirmCustomJob}
+                disabled={!customJob.trim()}>
+                <ArrowRight size={24} color="white" />
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+      </View>
     </GuidedScreenWrapper>
   );
 }
@@ -171,7 +170,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   title: {
-    fontSize: 32,
+    fontSize: 25,
     fontWeight: '800',
     color: colors.text.primary,
     textAlign: 'center',

@@ -149,12 +149,14 @@ export default function Step3DirectionsScreen() {
 
   const handleContinue = () => {
     if (selectedArchitecture) {
-      router.push('/(guided)/step4-personalize');
+      router.push('/(guided)/step3-personalize');
     }
   };
 
   return (
     <GuidedScreenWrapper
+      currentStep={3}
+      totalSteps={4}
       scrollViewRef={scrollRef}
       footer={
         <View style={styles.fixedFooter}>
@@ -170,7 +172,7 @@ export default function Step3DirectionsScreen() {
       }
     >
       <View style={styles.container}>
-        {/* ── Header ── */}
+        {/* Header Content */}
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Directions Artistiques</Text>
           <View style={styles.breadcrumb}>
@@ -242,9 +244,8 @@ const styles = StyleSheet.create({
   fixedFooter: {
     paddingHorizontal: 20,
     paddingVertical: 14,
-    backgroundColor: 'rgba(10,10,10,0.95)',
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.08)',
+ 
+
   },
 
   // ── Header ──────────────────────────────────────────────────────────────

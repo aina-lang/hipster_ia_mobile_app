@@ -48,12 +48,22 @@ interface CreationState {
 
   // Input state
   userQuery: string;
+  mainTitle: string;
+  subTitle: string;
+  infoLine: string;
+  colorLeft: string;
+  colorRight: string;
 
   // Actions
   setJob: (job: JobType) => void;
   setFunction: (fn: string, category: CreationCategory) => void;
   setArchitecture: (architectureId: string | null) => void;
   setQuery: (query: string) => void;
+  setMainTitle: (title: string) => void;
+  setSubTitle: (title: string) => void;
+  setInfoLine: (info: string) => void;
+  setColorLeft: (color: string) => void;
+  setColorRight: (color: string) => void;
   setStyle: (style: VisualStyle) => void;
   setUploadedImage: (uri: string | null) => void;
   reset: () => void;
@@ -65,6 +75,11 @@ export const useCreationStore = create<CreationState>((set) => ({
   selectedCategory: null,
   selectedArchitecture: null,
   userQuery: '',
+  mainTitle: '',
+  subTitle: '',
+  infoLine: '',
+  colorLeft: '#FFFFFF',
+  colorRight: '#000000',
   selectedStyle: null,
   uploadedImage: null,
 
@@ -72,6 +87,11 @@ export const useCreationStore = create<CreationState>((set) => ({
   setFunction: (fn, cat) => set({ selectedFunction: fn, selectedCategory: cat }),
   setArchitecture: (architectureId) => set({ selectedArchitecture: architectureId }),
   setQuery: (query) => set({ userQuery: query }),
+  setMainTitle: (title) => set({ mainTitle: title }),
+  setSubTitle: (title) => set({ subTitle: title }),
+  setInfoLine: (info) => set({ infoLine: info }),
+  setColorLeft: (color) => set({ colorLeft: color }),
+  setColorRight: (color) => set({ colorRight: color }),
   setStyle: (style) => set({ selectedStyle: style }),
   setUploadedImage: (uri) => set({ uploadedImage: uri }),
 
@@ -82,6 +102,11 @@ export const useCreationStore = create<CreationState>((set) => ({
       selectedCategory: null,
       selectedArchitecture: null,
       userQuery: '',
+      mainTitle: '',
+      subTitle: '',
+      infoLine: '',
+      colorLeft: '#FFFFFF',
+      colorRight: '#000000',
       selectedStyle: null,
       uploadedImage: null,
     }),

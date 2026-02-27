@@ -69,14 +69,21 @@ export default function Step2TypeScreen() {
     const handleSelectFunction = (fn: JobFunction) => {
         setFunction(fn.label, fn.category);
         setTimeout(() => {
-            router.push('/(guided)/step3-directions');
+            if (fn.category === 'Document') {
+                router.push('/(guided)/step3-directions');
+            } else {
+                router.push('/(guided)/step4-personalize');
+            }
         }, 300);
     };
 
     return (
-        <GuidedScreenWrapper>
+        <GuidedScreenWrapper
+            currentStep={2}
+            totalSteps={4}
+        >
             <View style={{ paddingHorizontal: 20, paddingBottom: 40 }}>
-                {/* Header */}
+                {/* Header Content */}
                 <View style={styles.header}>
                     <Text style={styles.title}>Que souhaitez-vous produire ?</Text>
                     <View style={styles.breadcrumb}>
@@ -85,6 +92,8 @@ export default function Step2TypeScreen() {
                         <Text style={styles.breadcrumbCanal}>Canal</Text>
                     </View>
                 </View>
+
+                {/* LISTE */}
 
                 {/* LISTE */}
                 <View style={styles.functionsList}>

@@ -28,8 +28,6 @@ export function StepIndicator({ currentStep, totalSteps }: StepIndicatorProps) {
 const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
-    marginTop: 60,
-    marginBottom: 20,
   },
   text: {
     color: colors.text.secondary,

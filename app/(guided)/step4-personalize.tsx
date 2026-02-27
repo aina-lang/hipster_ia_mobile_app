@@ -26,14 +26,14 @@ import { ChevronRight, Upload, X, Zap, Check, Search, Moon } from 'lucide-react-
 import illus2 from '../../assets/illus2.jpeg';
 import illus3 from '../../assets/illus3.jpeg';
 import illus4 from '../../assets/illus4.jpeg';
-import { FLYER_CATEGORIES as LOCAL_FLYER_CATEGORIES, getFlyerCategoryAssets } from '../../constants/flyerAssets';
+import { FLYER_CATEGORIES as LOCAL_FLYER_CATEGORIES, getFlyerCategoryAssets, FlyerCategory } from '../../constants/flyerAssets';
 import { useRef, useState, useCallback, useEffect } from 'react';
 import { GenericModal, ModalType } from 'components/ui/GenericModal';
 import { AiService } from '../../api/ai.service';
 
 const VISUAL_STYLES = [
   { label: 'Premium', description: 'Noir & blanc luxe', image: illus2 },
-  { label: 'Hero Studio', description: 'Impact fort', image: illus3 },
+  { label: 'Hero', description: 'Impact fort', image: illus3 },
   { label: 'Minimal', description: 'Épuré & moderne', image: illus4 },
 ];
 
@@ -43,7 +43,7 @@ function CategoryTabs({
   selectedId,
   onSelect,
 }: {
-  categories: any[];
+  categories: FlyerCategory[];
   selectedId: string;
   onSelect: (id: string) => void;
 }) {
@@ -243,7 +243,7 @@ function AllModelsModal({
   onCategoryChange: (id: string) => void;
   onSelect: (categoryId: string, modelLabel: string) => void;
   onClose: () => void;
-  categories: any[];
+  categories: FlyerCategory[];
 }) {
   const [searchQuery, setSearchQuery] = useState('');
   const isSearching = searchQuery.trim().length > 0;
@@ -464,6 +464,123 @@ const modalStyles = StyleSheet.create({
   },
 });
 
+// ─── Style carousel for Social content ─────────────────────────────────────────
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const CAROUSEL_ITEM_WIDTH = SCREEN_WIDTH * 0.75;
+const CAROUSEL_SPACING = (SCREEN_WIDTH - CAROUSEL_ITEM_WIDTH) / 2;
+
+function StyleCarousel({
+  styles: items,
+  selectedStyle,
+  onSelect,
+}: {
+  styles: any[];
+  selectedStyle: string | null;
+  onSelect: (style: string) => void;
+}) {
+  const scrollX = useRef(new Animated.Value(0)).current;
+  const flatListRef = useRef<FlatList>(null);
+
+  const centerOnIndex = (index: number) => {
+    const offset = index * (CAROUSEL_ITEM_WIDTH + 14);
+    setTimeout(() => {
+      flatListRef.current?.scrollToOffset({ offset, animated: true });
+    }, 10);
+  };
+
+  return (
+    <View style={carouselStyles.container}>
+      <Animated.FlatList
+        ref={flatListRef}
+        data={items}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        snapToInterval={CAROUSEL_ITEM_WIDTH + 14} // width + gap
+        decelerationRate="fast"
+        contentContainerStyle={{
+          paddingHorizontal: CAROUSEL_SPACING,
+          paddingVertical: 10,
+        }}
+        onScroll={Animated.event([{ nativeEvent: { contentOffset: { x: scrollX } } }], {
+          useNativeDriver: true,
+        })}
+        onMomentumScrollEnd={(e) => {
+          const x = e.nativeEvent.contentOffset.x;
+          const index = Math.round(x / (CAROUSEL_ITEM_WIDTH + 14));
+          if (items[index]) {
+            onSelect(items[index].label);
+          }
+        }}
+        renderItem={({ item, index }) => {
+          const isSelected = selectedStyle === item.label;
+          const inputRange = [
+            (index - 1) * (CAROUSEL_ITEM_WIDTH + 14),
+            index * (CAROUSEL_ITEM_WIDTH + 14),
+            (index + 1) * (CAROUSEL_ITEM_WIDTH + 14),
+          ];
+
+          const scale = scrollX.interpolate({
+            inputRange,
+            outputRange: [0.92, 1, 0.92],
+            extrapolate: 'clamp',
+          });
+
+          const opacity = scrollX.interpolate({
+            inputRange,
+            outputRange: [0.6, 1, 0.6],
+            extrapolate: 'clamp',
+          });
+
+          return (
+            <Animated.View style={{ transform: [{ scale }], opacity }}>
+              <TouchableOpacity
+                activeOpacity={0.9}
+                onPress={() => {
+                  onSelect(item.label);
+                  centerOnIndex(index);
+                }}
+                style={[
+                  styles.styleCard,
+                  { width: CAROUSEL_ITEM_WIDTH, aspectRatio: 1.4, marginRight: 14 },
+                  isSelected && styles.styleCardSelected,
+                ]}
+              >
+                {isSelected && (
+                  <>
+                    <View style={styles.cardBorderGlow} pointerEvents="none" />
+                    <View style={styles.cardBloom} pointerEvents="none" />
+                  </>
+                )}
+                <Image
+                  source={typeof item.image === 'string' ? { uri: item.image } : item.image}
+                  style={styles.styleCardImage}
+                  resizeMode="cover"
+                />
+                {isSelected && (
+                  <View style={styles.styleCardCheckBadge}>
+                    <Check size={10} color="white" strokeWidth={3} />
+                  </View>
+                )}
+                <View style={[styles.styleCardFooter, isSelected && styles.styleCardFooterSelected]}>
+                  <Text style={styles.styleCardLabel}>{item.label}</Text>
+                  <Text style={styles.styleCardDesc}>{item.description}</Text>
+                </View>
+              </TouchableOpacity>
+            </Animated.View>
+          );
+        }}
+      />
+    </View>
+  );
+}
+
+const carouselStyles = StyleSheet.create({
+  container: {
+    marginHorizontal: -20, // break out of screen padding
+    marginBottom: 8,
+  },
+});
+
 // ─── Main screen ──────────────────────────────────────────────────────────────
 export default function Step4PersonalizeScreen() {
   const router = useRouter();
@@ -481,7 +598,7 @@ export default function Step4PersonalizeScreen() {
 
   const scrollRef = useRef<ScrollView>(null);
   const [localQuery, setLocalQuery] = useState(userQuery || '');
-  const [categories, setCategories] = useState<any[]>(LOCAL_FLYER_CATEGORIES);
+  const [categories, setCategories] = useState<FlyerCategory[]>(LOCAL_FLYER_CATEGORIES);
   const [selectedFlyerCategory, setSelectedFlyerCategory] = useState(LOCAL_FLYER_CATEGORIES[0]?.id || '');
   const [showAllModels, setShowAllModels] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -568,6 +685,8 @@ export default function Step4PersonalizeScreen() {
 
   return (
     <GuidedScreenWrapper
+      currentStep={3}
+      totalSteps={4}
       scrollViewRef={scrollRef}
       footer={
         <View style={styles.fixedFooter}>
@@ -596,8 +715,7 @@ export default function Step4PersonalizeScreen() {
       }
     >
       <View style={styles.container}>
-
-        {/* ── Header ── */}
+        {/* Header Content */}
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Personnalisez</Text>
           <View style={styles.breadcrumb}>
@@ -670,52 +788,66 @@ export default function Step4PersonalizeScreen() {
               ) : (
                 <View style={{ marginTop: 16 }}>
                   <Text style={styles.label}>Style artistique</Text>
-                  <View style={styles.stylesRow}>
-                    {VISUAL_STYLES.map((item) => {
-                      const isSelected = selectedStyle === item.label;
-                      return (
-                        <TouchableOpacity
-                          key={item.label}
-                          style={[styles.styleCard, isSelected && styles.styleCardSelected]}
-                          onPress={() => setStyle(item.label as any)}
-                          activeOpacity={0.85}
-                        >
-                          {isSelected && (
-                            <>
-                              <View style={styles.cardBorderGlow} pointerEvents="none" />
-                              <View style={styles.cardBloom} pointerEvents="none" />
-                            </>
-                          )}
-                          <Image
-                            source={typeof item.image === 'string' ? { uri: item.image } : item.image}
-                            style={styles.styleCardImage}
-                            resizeMode="cover"
-                          />
-                          {isSelected && (
-                            <View style={styles.styleCardCheckBadge}>
-                              <Check size={10} color="white" strokeWidth={3} />
+                  {selectedCategory === 'Social' ? (
+                    <StyleCarousel
+                      styles={VISUAL_STYLES}
+                      selectedStyle={selectedStyle}
+                      onSelect={(s) => setStyle(s as any)}
+                    />
+                  ) : (
+                    <View style={styles.stylesRow}>
+                      {VISUAL_STYLES.map((item) => {
+                        const isSelected = selectedStyle === item.label;
+                        return (
+                          <TouchableOpacity
+                            key={item.label}
+                            style={[
+                              styles.styleCard,
+                              isSelected && styles.styleCardSelected,
+                              { height: 160 }
+                            ]}
+                            onPress={() => setStyle(item.label as any)}
+                            activeOpacity={0.85}
+                          >
+                            {isSelected && (
+                              <>
+                                <View style={styles.cardBorderGlow} pointerEvents="none" />
+                                <View style={styles.cardBloom} pointerEvents="none" />
+                              </>
+                            )}
+                            <Image
+                              source={typeof item.image === 'string' ? { uri: item.image } : item.image}
+                              style={styles.styleCardImage}
+                              resizeMode="cover"
+                            />
+                            {isSelected && (
+                              <View style={styles.styleCardCheckBadge}>
+                                <Check size={10} color="white" strokeWidth={3} />
+                              </View>
+                            )}
+                            <View style={[styles.styleCardFooter, isSelected && styles.styleCardFooterSelected]}>
+                              <Text style={styles.styleCardLabel}>{item.label}</Text>
+                              <Text style={styles.styleCardDesc}>{item.description}</Text>
                             </View>
-                          )}
-                          <View style={[styles.styleCardFooter, isSelected && styles.styleCardFooterSelected]}>
-                            <Text style={styles.styleCardLabel}>{item.label}</Text>
-                            <Text style={styles.styleCardDesc}>{item.description}</Text>
-                          </View>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </View>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  )}
                 </View>
               )}
 
-              {/* Always show See All for visual categories */}
-              <TouchableOpacity
-                style={styles.seeAllButton}
-                onPress={() => setShowAllModels(true)}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.seeAllText}>Voir tous les modèles</Text>
-                <ChevronRight size={16} color={colors.primary.main} />
-              </TouchableOpacity>
+              {/* Always show See All for visual categories EXCEPT Social */}
+              {selectedCategory !== 'Social' && (
+                <TouchableOpacity
+                  style={styles.seeAllButton}
+                  onPress={() => setShowAllModels(true)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.seeAllText}>Voir tous les modèles</Text>
+                  <ChevronRight size={16} color={colors.primary.main} />
+                </TouchableOpacity>
+              )}
             </View>
           )
         )}
@@ -753,9 +885,7 @@ const styles = StyleSheet.create({
   fixedFooter: {
     paddingHorizontal: 20,
     paddingTop: 10,
-    backgroundColor: 'rgba(10,10,10,0.95)',
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: '#000000',
   },
   loadingContainer: {
     paddingVertical: 100,
@@ -881,15 +1011,16 @@ const styles = StyleSheet.create({
   },
   styleCardImage: {
     width: '100%',
-    height: 90,
-    borderTopLeftRadius: 12,
-    borderTopRightRadius: 12,
+    height: '100%',
+    borderRadius: 12,
+    position: 'absolute',
   },
   styleCardFooter: {
-    padding: 8,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    padding: 12,
+    backgroundColor: 'rgba(0,0,0,0.65)',
     borderBottomLeftRadius: 12,
     borderBottomRightRadius: 12,
+    marginTop: 'auto',
   },
   styleCardFooterSelected: {
     backgroundColor: 'rgba(30,100,255,0.25)',

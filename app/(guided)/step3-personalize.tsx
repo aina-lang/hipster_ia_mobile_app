@@ -7,10 +7,14 @@ import {
   ScrollView,
   StyleSheet,
   Image,
+  Modal,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Palette, Minus } from 'lucide-react-native';
+import { Palette, Minus, Check, X } from 'lucide-react-native';
+import ColorPicker, { HueSlider, Panel1, Preview } from 'reanimated-color-picker';
 import { useCreationStore } from '../../store/creationStore';
+import { colors } from '../../theme/colors';
 import { GuidedScreenWrapper } from '../../components/layout/GuidedScreenWrapper';
 import { NeonButton } from '../../components/ui/NeonButton';
 
@@ -27,16 +31,39 @@ const EXAMPLES = [
   { label: 'Tech', image: illus2, text: 'NOUVEAU' },
 ];
 
+const VISUAL_STYLES = [
+  { label: 'Premium', description: 'Noir & blanc luxe', image: illus2 },
+  { label: 'Hero', description: 'Impact fort', image: illus3 },
+  { label: 'Minimal', description: 'Épuré & moderne', image: illus4 },
+];
+
 export default function Step3PersonalizeScreen() {
   const router = useRouter();
   const {
+    selectedCategory,
+    selectedStyle, setStyle,
     mainTitle, setMainTitle,
     subTitle, setSubTitle,
     infoLine, setInfoLine,
     colorLeft, setColorLeft,
-    colorRight, setColorRight,
+    setColorRight,
     setQuery,
   } = useCreationStore();
+
+  const [pickerVisible, setPickerVisible] = React.useState(false);
+  const [activeColorSide, setActiveColorSide] = React.useState<'left' | 'right' | null>(null);
+  const [tempColor, setTempColor] = React.useState('#FFFFFF');
+
+  const openPicker = (side: 'left' | 'right') => {
+    setActiveColorSide(side);
+    setTempColor(side === 'left' ? colorLeft : colorRight);
+    setPickerVisible(true);
+  };
+
+  const handleColorSelect = ({ hex }: { hex: string }) => {
+    if (activeColorSide === 'left') setColorLeft(hex);
+    else if (activeColorSide === 'right') setColorRight(hex);
+  };
 
   const handleCreate = () => {
     // Generate a prompt or pass values to the next screen.
@@ -47,12 +74,13 @@ export default function Step3PersonalizeScreen() {
     queryParts.push(`Couleurs: ${colorLeft} et ${colorRight}`);
     setQuery(queryParts.join('\n'));
 
-    router.push('/(guided)/step4-result');
+    router.push('/(guided)/step4-personalize');
   };
 
   return (
     <GuidedScreenWrapper
-      title="PERSONNALISE TON VISUEL"
+      currentStep={4}
+      totalSteps={4}
       footer={
         <View style={styles.fixedFooter}>
           <View style={styles.ctaWrapper}>
@@ -68,42 +96,79 @@ export default function Step3PersonalizeScreen() {
       }
     >
       <View style={styles.container}>
-        {/* EXAMPLES SECTION */}
-        <Text style={styles.sectionTitle}>Ce modèle s'adapte à tous les produits</Text>
-        <Text style={styles.sectionSubtitle}>Voici quelques exemples</Text>
-
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.carousel}>
-          {EXAMPLES.map((item, index) => (
-            <View key={index} style={styles.exampleCard}>
-              <View style={[StyleSheet.absoluteFill, { backgroundColor: index === 0 ? '#ffb6b9' : index === 1 ? '#e2e8f0' : index === 2 ? '#fde047' : '#94a3b8' }]} />
-              <Image source={item.image} style={styles.exampleImage} />
-
-              <Text style={styles.exampleOverlayText}>{item.text}</Text>
-
-              <View style={styles.exampleBadge}>
-                <Text style={styles.exampleBadgeText}>JUSQU'À</Text>
-                <Text style={styles.exampleBadgeSale}>-50%</Text>
-              </View>
-
-              <View style={styles.exampleLabelContainer}>
-                <Text style={styles.exampleLabelText}>{item.label}</Text>
-              </View>
-            </View>
-          ))}
-        </ScrollView>
-
-        <View style={styles.paginationDots}>
-          <View style={[styles.dot, styles.dotInactive]} />
-          <View style={styles.dotActiveWrapper}>
-            <View style={[styles.dot, styles.dotActive]} />
-          </View>
-          <View style={[styles.dot, styles.dotInactive]} />
+        {/* Header Content */}
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Personnaliser le visuel</Text>
         </View>
+        {/* EXAMPLES OR STYLES SECTION */}
+        {selectedCategory === 'Social' ? (
+          <>
+            <Text style={styles.sectionTitle}>Chosissez votre DA</Text>
+            <Text style={styles.sectionSubtitle}>Sélectionnez l'ambiance de votre contenu</Text>
+            <View style={styles.stylesGrid}>
+              {VISUAL_STYLES.map((item) => {
+                const isSelected = selectedStyle === item.label;
+                return (
+                  <TouchableOpacity
+                    key={item.label}
+                    style={[styles.styleCard, isSelected && styles.styleCardSelected]}
+                    onPress={() => setStyle(item.label as any)}
+                    activeOpacity={0.85}
+                  >
+                    {isSelected && (
+                      <>
+                        <View style={styles.cardBorderGlow} pointerEvents="none" />
+                        <View style={styles.cardBloom} pointerEvents="none" />
+                      </>
+                    )}
+                    <Image source={item.image} style={styles.styleCardImage} />
+                    <View style={[styles.styleCardFooter, isSelected && styles.styleCardFooterSelected]}>
+                      <Text style={styles.styleCardLabel}>{item.label}</Text>
+                      <Text style={styles.styleCardDesc}>{item.description}</Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </>
+        ) : (
+          <>
+            <Text style={styles.sectionTitle}>Ce modèle s'adapte à tous les produits</Text>
+            <Text style={styles.sectionSubtitle}>Voici quelques exemples</Text>
+
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.carousel}>
+              {EXAMPLES.map((item, index) => (
+                <View key={index} style={styles.exampleCard}>
+                  <View style={[StyleSheet.absoluteFill, { backgroundColor: index === 0 ? '#ffb6b9' : index === 1 ? '#e2e8f0' : index === 2 ? '#fde047' : '#94a3b8' }]} />
+                  <Image source={item.image} style={styles.exampleImage} />
+
+                  <Text style={styles.exampleOverlayText}>{item.text}</Text>
+
+                  <View style={styles.exampleBadge}>
+                    <Text style={styles.exampleBadgeText}>JUSQU'À</Text>
+                    <Text style={styles.exampleBadgeSale}>-50%</Text>
+                  </View>
+
+                  <View style={styles.exampleLabelContainer}>
+                    <Text style={styles.exampleLabelText}>{item.label}</Text>
+                  </View>
+                </View>
+              ))}
+            </ScrollView>
+
+            <View style={styles.paginationDots}>
+              <View style={[styles.dot, styles.dotInactive]} />
+              <View style={styles.dotActiveWrapper}>
+                <View style={[styles.dot, styles.dotActive]} />
+              </View>
+              <View style={[styles.dot, styles.dotInactive]} />
+            </View>
+          </>
+        )}
 
         <View style={styles.separator} />
 
         {/* INPUT FORM SECTION */}
-        <Text style={styles.formTitle}>PERSONNALISE TON VISUEL</Text>
 
         <View style={styles.inputGroup}>
           <Text style={styles.inputLabel}>TITRE PRINCIPAL</Text>
@@ -148,11 +213,13 @@ export default function Step3PersonalizeScreen() {
                 </View>
                 <Text style={styles.colorLabel}>COULEUR GAUCHE</Text>
               </View>
-              <TextInput
-                style={[styles.input, styles.colorInput]}
-                value={colorLeft}
-                onChangeText={setColorLeft}
-              />
+              <TouchableOpacity
+                style={[styles.input, styles.colorButton]}
+                onPress={() => openPicker('left')}
+              >
+                <View style={[styles.colorPreview, { backgroundColor: colorLeft }]} />
+                <Text style={styles.colorValue}>{colorLeft.toUpperCase()}</Text>
+              </TouchableOpacity>
             </View>
 
             <View style={styles.colorConfig}>
@@ -161,19 +228,54 @@ export default function Step3PersonalizeScreen() {
                 <View style={styles.tag}>
                   <Text style={styles.tagText}>{"{{LEFT_COLOR}}"}</Text>
                 </View>
-                <Text style={styles.colorLabel}>• COULEUR GAUCHE</Text>
+                <Text style={styles.colorLabel}>• COULEUR DROITE</Text>
               </View>
-              <TextInput
-                style={[styles.input, styles.colorInput, { backgroundColor: '#F2F1EC', color: '#1A1A1A' }]}
-                value={colorRight}
-                onChangeText={setColorRight}
-              />
+              <TouchableOpacity
+                style={[styles.input, styles.colorButton]}
+                onPress={() => openPicker('right')}
+              >
+                <View style={[styles.colorPreview, { backgroundColor: colorRight }]} />
+                <Text style={styles.colorValue}>{colorRight.toUpperCase()}</Text>
+              </TouchableOpacity>
             </View>
           </View>
         </View>
 
+        {/* Color Picker Modal */}
+        <Modal visible={pickerVisible} animationType="fade" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={styles.pickerContainer}>
+              <View style={styles.pickerHeader}>
+                <Text style={styles.pickerTitle}>
+                  Choisir la couleur {activeColorSide === 'left' ? 'gauche' : 'droite'}
+                </Text>
+                <TouchableOpacity onPress={() => setPickerVisible(false)} style={styles.closeButton}>
+                  <X size={20} color="#fff" />
+                </TouchableOpacity>
+              </View>
+
+              <ColorPicker
+                value={tempColor}
+                onComplete={handleColorSelect}
+                style={{ gap: 20 }}
+              >
+                <Panel1 style={styles.colorPanel} />
+                <HueSlider style={styles.hueSlider} />
+                <Preview style={styles.previewContainer} hideText colorFormat="hex" />
+              </ColorPicker>
+
+              <TouchableOpacity
+                style={styles.confirmButton}
+                onPress={() => setPickerVisible(false)}
+              >
+                <Text style={styles.confirmButtonText}>Valider</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+
       </View>
-    </GuidedScreenWrapper>
+    </GuidedScreenWrapper >
   );
 }
 
@@ -183,12 +285,21 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
     paddingTop: 10,
   },
+  header: {
+    alignItems: 'center',
+    marginBottom: 24,
+    paddingTop: 4,
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: colors.text.primary,
+    marginBottom: 4,
+  },
   fixedFooter: {
     paddingHorizontal: 20,
     paddingTop: 10,
-    backgroundColor: 'rgba(10,10,10,0.95)',
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.08)',
+
     paddingBottom: 40,
   },
   ctaWrapper: {
@@ -373,5 +484,165 @@ const styles = StyleSheet.create({
   colorInput: {
     fontWeight: '500',
     fontFamily: 'monospace',
+  },
+  stylesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginBottom: 20,
+  },
+  styleCard: {
+    width: '48%', // Approx 2 columns
+    aspectRatio: 0.8,
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(255,255,255,0.03)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+    position: 'relative',
+  },
+  styleCardSelected: {
+    borderColor: colors.primary.main,
+    borderWidth: 2,
+  },
+  styleCardImage: {
+    width: '100%',
+    height: '100%',
+    position: 'absolute',
+    opacity: 0.6,
+  },
+  styleCardCheckBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: colors.primary.main,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  styleCardFooter: {
+    marginTop: 'auto',
+    padding: 10,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+  },
+  styleCardFooterSelected: {
+    backgroundColor: 'rgba(30,155,255,0.2)',
+  },
+  cardBorderGlow: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+    borderRadius: 12,
+    backgroundColor: 'transparent',
+    shadowColor: '#1a8fff',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.9,
+    shadowRadius: 16,
+    elevation: 12,
+    zIndex: -1,
+  },
+  cardBloom: {
+    position: 'absolute',
+    top: -6, left: -6, right: -6, bottom: -6,
+    borderRadius: 18,
+    backgroundColor: 'transparent',
+    shadowColor: '#0840bb',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.35,
+    shadowRadius: 20,
+    elevation: 4,
+    zIndex: -1,
+  },
+  styleCardLabel: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  styleCardDesc: {
+    color: 'rgba(255,255,255,0.5)',
+    fontSize: 10,
+    marginTop: 2,
+  },
+  // Color Picker styles
+  colorButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 12,
+  },
+  colorPreview: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+  },
+  colorValue: {
+    fontSize: 13,
+    color: '#fff',
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    fontWeight: '600',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.85)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  pickerContainer: {
+    width: '100%',
+    maxWidth: 340,
+    backgroundColor: '#1c1c1e',
+    borderRadius: 24,
+    padding: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  pickerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  pickerTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  closeButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  colorPanel: {
+    height: 200,
+    borderRadius: 16,
+  },
+  hueSlider: {
+    height: 24,
+    borderRadius: 12,
+  },
+  previewContainer: {
+    height: 40,
+    borderRadius: 10,
+  },
+  confirmButton: {
+    backgroundColor: colors.primary.main,
+    height: 50,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 24,
+  },
+  confirmButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '700',
   },
 });
