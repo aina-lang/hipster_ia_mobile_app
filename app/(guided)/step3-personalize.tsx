@@ -254,7 +254,7 @@ export default function Step3PersonalizeScreen() {
                 <View style={styles.iconCircle}>
                   <Palette size={12} color="#fff" />
                 </View>
-                <Text style={styles.colorLabel}>COULEUR GAUCHE</Text>
+                <Text style={styles.colorLabel}>COULEUR PRINCIPALE</Text>
               </View>
               <TouchableOpacity
                 style={[styles.input, styles.colorButton]}
@@ -270,7 +270,7 @@ export default function Step3PersonalizeScreen() {
                 <View style={styles.iconCircle}>
                   <Palette size={12} color="#fff" />
                 </View>
-                <Text style={styles.colorLabel}> COULEUR DROITE</Text>
+                <Text style={styles.colorLabel}> COULEUR SECONDAIRE</Text>
               </View>
               <TouchableOpacity
                 style={[styles.input, styles.colorButton]}
@@ -289,7 +289,7 @@ export default function Step3PersonalizeScreen() {
             <View style={styles.pickerContainer}>
               <View style={styles.pickerHeader}>
                 <Text style={styles.pickerTitle}>
-                  Choisir la couleur {activeColorSide === 'left' ? 'gauche' : 'droite'}
+                  Choisir la couleur {activeColorSide === 'left' ? 'principale' : 'secondaire'}
                 </Text>
                 <TouchableOpacity onPress={() => setPickerVisible(false)} style={styles.closeButton}>
                   <X size={20} color="#fff" />
