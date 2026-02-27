@@ -46,7 +46,7 @@ export default function Step3PersonalizeScreen() {
     subTitle, setSubTitle,
     infoLine, setInfoLine,
     colorLeft, setColorLeft,
-    setColorRight,
+    colorRight, setColorRight,
     setQuery,
   } = useCreationStore();
 
