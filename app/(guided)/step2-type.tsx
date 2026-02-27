@@ -75,7 +75,7 @@ export default function Step2TypeScreen() {
     const handleSelectFunction = (fn: JobFunction) => {
         setFunction(fn.label, fn.category);
         setTimeout(() => {
-            router.push('/(guided)/step3-personalize');
+            router.push('/(guided)/step3-directions');
         }, 300);
     };
 

@@ -41,6 +41,7 @@ interface CreationState {
   selectedJob: JobType | null;
   selectedFunction: string | null;
   selectedCategory: CreationCategory | null;
+  selectedArchitecture: string | null;
   // Conditional flow state
   selectedStyle: VisualStyle | null;
   uploadedImage: string | null;
@@ -51,6 +52,7 @@ interface CreationState {
   // Actions
   setJob: (job: JobType) => void;
   setFunction: (fn: string, category: CreationCategory) => void;
+  setArchitecture: (architectureId: string | null) => void;
   setQuery: (query: string) => void;
   setStyle: (style: VisualStyle) => void;
   setUploadedImage: (uri: string | null) => void;
@@ -61,12 +63,14 @@ export const useCreationStore = create<CreationState>((set) => ({
   selectedJob: null,
   selectedFunction: null,
   selectedCategory: null,
+  selectedArchitecture: null,
   userQuery: '',
   selectedStyle: null,
   uploadedImage: null,
 
   setJob: (job) => set({ selectedJob: job }),
   setFunction: (fn, cat) => set({ selectedFunction: fn, selectedCategory: cat }),
+  setArchitecture: (architectureId) => set({ selectedArchitecture: architectureId }),
   setQuery: (query) => set({ userQuery: query }),
   setStyle: (style) => set({ selectedStyle: style }),
   setUploadedImage: (uri) => set({ uploadedImage: uri }),
@@ -76,6 +80,7 @@ export const useCreationStore = create<CreationState>((set) => ({
       selectedJob: null,
       selectedFunction: null,
       selectedCategory: null,
+      selectedArchitecture: null,
       userQuery: '',
       selectedStyle: null,
       uploadedImage: null,
