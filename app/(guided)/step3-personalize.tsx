@@ -13,6 +13,7 @@ import {
 import { useRouter } from 'expo-router';
 import { Palette, Minus, Check, X } from 'lucide-react-native';
 import ColorPicker, { HueSlider, Panel1, Preview } from 'reanimated-color-picker';
+import { runOnJS } from 'react-native-reanimated';
 import { useCreationStore } from '../../store/creationStore';
 import { colors } from '../../theme/colors';
 import { GuidedScreenWrapper } from '../../components/layout/GuidedScreenWrapper';
@@ -60,9 +61,14 @@ export default function Step3PersonalizeScreen() {
     setPickerVisible(true);
   };
 
-  const handleColorSelect = ({ hex }: { hex: string }) => {
+  const updateColorState = React.useCallback((hex: string) => {
     if (activeColorSide === 'left') setColorLeft(hex);
     else if (activeColorSide === 'right') setColorRight(hex);
+  }, [activeColorSide, setColorLeft, setColorRight]);
+
+  const handleColorSelect = (event: { hex: string }) => {
+    'worklet';
+    runOnJS(updateColorState)(event.hex);
   };
 
   const handleCreate = () => {
