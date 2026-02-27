@@ -60,12 +60,6 @@ const UNIVERSAL_FUNCTIONS: JobFunction[] = [
         icon: Globe,
         image: ordiBlancImage
     },
-    {
-        label: 'Email marketing',
-        category: 'Texte',
-        icon: Mail,
-        image: emailImg
-    },
 ];
 
 export default function Step2TypeScreen() {

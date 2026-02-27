@@ -2,16 +2,6 @@
 // VISUAL ARCHITECTURES - Directions Artistiques
 // ──────────────────────────────────────────────────────────────────────────────
 
-import { 
-  Sparkles, 
-  Zap, 
-  Eye, 
-  Palette, 
-  Type, 
-  Crown,
-  LucideIcon,
-} from 'lucide-react-native';
-
 // Import images
 import fashionImg from '../assets/premierCard.jpeg';
 import streetSaleImg from '../assets/deuxiemeCard.jpeg';
@@ -26,7 +16,6 @@ export interface VisualArchitecture {
   description: string;
   subtitle?: string;
   image: any;
-  icon: LucideIcon;
   color: string;
   type: 'FASHION_VERTICAL' | 'STREET_SALE' | 'MAGAZINE' | 'EDITORIAL' | 'SPLIT_TYPO' | 'LUXURY';
 }
@@ -38,7 +27,6 @@ export const VISUAL_ARCHITECTURES: VisualArchitecture[] = [
     description: 'Poster moderne & mode',
     subtitle: 'Portrait cinématique avec typographie élancée',
     image: fashionImg,
-    icon: Sparkles,
     color: '#FF6B9D',
     type: 'FASHION_VERTICAL',
   },
@@ -48,7 +36,6 @@ export const VISUAL_ARCHITECTURES: VisualArchitecture[] = [
     description: 'Impact commercial',
     subtitle: 'Affiche urbaine avec couleurs éclatantes',
     image: streetSaleImg,
-    icon: Zap,
     color: '#FF1744',
     type: 'STREET_SALE',
   },
@@ -58,7 +45,6 @@ export const VISUAL_ARCHITECTURES: VisualArchitecture[] = [
     description: 'Couverture éditoriale',
     subtitle: 'Style éditorial sophistiqué',
     image: magazineCoverImg,
-    icon: Eye,
     color: '#1A73E8',
     type: 'MAGAZINE',
   },
@@ -68,7 +54,6 @@ export const VISUAL_ARCHITECTURES: VisualArchitecture[] = [
     description: 'Effet premium fashion',
     subtitle: 'Cinéma de mode haute couture',
     image: editorialMotionImg,
-    icon: Palette,
     color: '#FF9800',
     type: 'EDITORIAL',
   },
@@ -78,7 +63,6 @@ export const VISUAL_ARCHITECTURES: VisualArchitecture[] = [
     description: 'Design graphique bold',
     subtitle: 'Typographie fragmentée et moderne',
     image: splitTypoImg,
-    icon: Type,
     color: '#00BCD4',
     type: 'SPLIT_TYPO',
   },
@@ -88,7 +72,6 @@ export const VISUAL_ARCHITECTURES: VisualArchitecture[] = [
     description: 'Événement & collection',
     subtitle: 'Luxe raffiné et minimaliste',
     image: luxurySerieImg,
-    icon: Crown,
     color: '#D4AF37',
     type: 'LUXURY',
   },

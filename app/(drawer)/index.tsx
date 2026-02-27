@@ -83,6 +83,7 @@ export default function HomeScreen() {
 
   const [inputValue, setInputValue] = useState('');
   const { messages, setMessages, conversationId, setConversationId, resetChat: clearChatStore } = useChatStore();
+  const resetCreationStore = useCreationStore((state) => state.reset);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isBackendConnected, setIsBackendConnected] = useState<boolean | null>(null);
   const [isLoadingConversation, setIsLoadingConversation] = useState(false);
@@ -764,7 +765,7 @@ export default function HomeScreen() {
             {hasMessages ? (
               <TouchableOpacity
                 onPress={() => {
-                  useCreationStore.getState().reset();
+                  resetCreationStore();
                   router.push('/(guided)/step1-job');
                 }}
                 style={{
