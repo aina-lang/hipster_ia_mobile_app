@@ -3,9 +3,9 @@
 // ──────────────────────────────────────────────────────────────────────────────
 
 // Import images
-import fashionImg from '../assets/premierCard.jpeg';
-import streetSaleImg from '../assets/deuxiemeCard.jpeg';
-import magazineCoverImg from '../assets/TroisiemeCard.jpeg';
+import fashionImg from '../assets/WhatsApp Image 2026-02-27 at 10.27.50.jpeg';
+import streetSaleImg from '../assets/WhatsApp Image 2026-02-27 at 10.27.50 (1).jpeg';
+import magazineCoverImg from '../assets/WhatsApp Image 2026-02-27 at 10.27.50 (2).jpeg';
 import editorialMotionImg from '../assets/quatriemeCard.jpeg';
 import splitTypoImg from '../assets/WhatsApp Image 2026-02-27 at 10.27.51.jpeg';
 import luxurySerieImg from '../assets/WhatsApp Image 2026-02-27 at 10.27.51 (2).jpeg';
