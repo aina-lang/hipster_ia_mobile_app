@@ -114,7 +114,8 @@ export default function Step3PersonalizeScreen() {
     if (mainTitle) queryParts.push(`Titre: ${mainTitle}`);
     if (subTitle) queryParts.push(`Sous-titre: ${subTitle}`);
     if (infoLine) queryParts.push(`Info: ${infoLine}`);
-    queryParts.push(`Couleurs: ${colorLeft} et ${colorRight}`);
+    queryParts.push(`Couleur Principale: ${colorLeft}`);
+    queryParts.push(`Couleur Secondaire: ${colorRight}`);
     setQuery(queryParts.join('\n'));
 
     router.push('/(guided)/step4-personalize');

@@ -71,6 +71,11 @@ export default function Step4ResultScreen() {
     selectedCategory,
     selectedStyle,
     uploadedImage,
+    colorLeft,
+    colorRight,
+    mainTitle,
+    subTitle,
+    infoLine,
 
     reset,
   } = useCreationStore();
@@ -539,6 +544,11 @@ export default function Step4ResultScreen() {
 
       if (isFlyerExact) {
         params.model = selectedStyle;
+        params.colorPrincipale = colorLeft;
+        params.colorSecondaire = colorRight;
+        params.mainWord = mainTitle;
+        params.scriptPhrase = subTitle;
+        params.infoLine = infoLine;
       } else {
         params.style = selectedStyle;
       }
