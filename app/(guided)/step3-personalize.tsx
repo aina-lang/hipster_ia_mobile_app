@@ -10,8 +10,9 @@ import {
   Modal,
   Platform,
 } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
-import { Palette, Minus, Check, X } from 'lucide-react-native';
+import { Palette, Minus, Check, X, Upload } from 'lucide-react-native';
 import ColorPicker, { HueSlider, Panel1, Preview } from 'reanimated-color-picker';
 import { runOnJS } from 'react-native-reanimated';
 import { useCreationStore } from '../../store/creationStore';
@@ -19,6 +20,7 @@ import { useAuthStore } from '../../store/authStore';
 import { colors } from '../../theme/colors';
 import { GuidedScreenWrapper } from '../../components/layout/GuidedScreenWrapper';
 import { NeonButton } from '../../components/ui/NeonButton';
+import { GenericModal, ModalType } from '../../components/ui/GenericModal';
 
 import illus2 from '../../assets/illus2.jpeg';
 import illus3 from '../../assets/illus3.jpeg';
@@ -49,6 +51,7 @@ export default function Step3PersonalizeScreen() {
     infoLine, setInfoLine,
     colorLeft, setColorLeft,
     colorRight, setColorRight,
+    uploadedImage, setUploadedImage,
     setQuery,
   } = useCreationStore();
 
@@ -64,6 +67,39 @@ export default function Step3PersonalizeScreen() {
   const [activeColorSide, setActiveColorSide] = React.useState<'left' | 'right' | null>(null);
   const [tempColor, setTempColor] = React.useState('#FFFFFF');
   const [tempHex, setTempHex] = React.useState('#FFFFFF');
+
+  const [modalVisible, setModalVisible] = React.useState(false);
+  const [modalType, setModalType] = React.useState<ModalType>('info');
+  const [modalTitle, setModalTitle] = React.useState('');
+  const [modalMessage, setModalMessage] = React.useState('');
+
+  const showModal = (title: string, message: string, type: ModalType = 'info') => {
+    setModalTitle(title);
+    setModalMessage(message);
+    setModalType(type);
+    setModalVisible(true);
+  };
+
+  const pickImage = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: false,
+        quality: 0.8,
+      });
+      if (!result.canceled && result.assets[0]) {
+        const uri = result.assets[0].uri.toLowerCase();
+        const allowed = ['.jpg', '.jpeg', '.png', '.webp'];
+        if (!allowed.some((ext) => uri.endsWith(ext))) {
+          showModal('Format non supporté', 'Utilisez JPEG, PNG ou WebP.', 'error');
+          return;
+        }
+        setUploadedImage(result.assets[0].uri);
+      }
+    } catch {
+      showModal('Erreur', "Impossible de sélectionner l'image", 'error');
+    }
+  };
 
   const openPicker = (side: 'left' | 'right') => {
     setActiveColorSide(side);
@@ -118,13 +154,13 @@ export default function Step3PersonalizeScreen() {
     queryParts.push(`Couleur Secondaire: ${colorRight}`);
     setQuery(queryParts.join('\n'));
 
-    router.push('/(guided)/step4-personalize');
+    router.push('/(guided)/step4-result');
   };
 
   return (
     <GuidedScreenWrapper
-      currentStep={4}
-      totalSteps={4}
+      currentStep={selectedCategory === 'Social' || selectedCategory === 'Image' ? 3 : 4}
+      totalSteps={selectedCategory === 'Social' || selectedCategory === 'Image' ? 3 : 4}
       footer={
         <View style={styles.fixedFooter}>
           <View style={styles.ctaWrapper}>
@@ -211,6 +247,36 @@ export default function Step3PersonalizeScreen() {
         )}
 
         <View style={styles.separator} />
+
+        {/* IMAGE UPLOAD SECTION */}
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>PHOTO DE RÉFÉRENCE (OPTIONNEL)</Text>
+          <TouchableOpacity
+            style={styles.uploadCard}
+            onPress={pickImage}
+            activeOpacity={0.7}
+          >
+            {uploadedImage ? (
+              <View style={styles.imagePreviewContainer}>
+                <Image source={{ uri: uploadedImage }} style={styles.uploadedImage} />
+                <TouchableOpacity
+                  style={styles.removeImageButton}
+                  onPress={() => setUploadedImage(null)}
+                >
+                  <X size={16} color="#fff" />
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View style={styles.uploadPlaceholder}>
+                <View style={styles.uploadIconCircle}>
+                  <Upload size={20} color={colors.primary.main} />
+                </View>
+                <Text style={styles.uploadText}>Sélectionner une image</Text>
+                <Text style={styles.uploadSubtext}>JPG, PNG ou WebP</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        </View>
 
         {/* INPUT FORM SECTION */}
 
@@ -332,6 +398,14 @@ export default function Step3PersonalizeScreen() {
           </View>
         </Modal>
 
+        {/* Info/Error Modal */}
+        <GenericModal
+          visible={modalVisible}
+          type={modalType}
+          title={modalTitle}
+          message={modalMessage}
+          onClose={() => setModalVisible(false)}
+        />
       </View>
     </GuidedScreenWrapper >
   );
@@ -622,6 +696,60 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.5)',
     fontSize: 10,
     marginTop: 2,
+  },
+  // Upload Card
+  uploadCard: {
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    borderStyle: 'dashed',
+    height: 140,
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+  },
+  uploadPlaceholder: {
+    alignItems: 'center',
+    gap: 8,
+  },
+  uploadIconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(23, 162, 184, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  uploadText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  uploadSubtext: {
+    color: 'rgba(255,255,255,0.4)',
+    fontSize: 12,
+  },
+  imagePreviewContainer: {
+    width: '100%',
+    height: '100%',
+  },
+  uploadedImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  removeImageButton: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   // Color Picker styles
   colorButton: {

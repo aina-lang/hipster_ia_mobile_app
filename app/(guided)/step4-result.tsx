@@ -46,6 +46,7 @@ import { AiService, TextGenerationType } from '../../api/ai.service';
 import { api } from '../../api/client';
 import { WORKFLOWS } from '../../constants/workflows';
 import { GuidedScreenWrapper } from '../../components/layout/GuidedScreenWrapper';
+import { VISUAL_ARCHITECTURES } from '../../constants/visualArchitectures';
 
 // Configure notifications
 Notifications.setNotificationHandler({
@@ -76,6 +77,7 @@ export default function Step4ResultScreen() {
     mainTitle,
     subTitle,
     infoLine,
+    selectedArchitecture,
 
     reset,
   } = useCreationStore();
@@ -543,7 +545,8 @@ export default function Step4ResultScreen() {
       };
 
       if (isFlyerExact) {
-        params.model = selectedStyle;
+        const arch = VISUAL_ARCHITECTURES.find(a => a.id === selectedArchitecture);
+        params.model = arch ? arch.label : selectedStyle;
         params.colorPrincipale = colorLeft;
         params.colorSecondaire = colorRight;
         params.mainWord = mainTitle;
