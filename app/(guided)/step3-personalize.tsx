@@ -15,6 +15,7 @@ import { Palette, Minus, Check, X } from 'lucide-react-native';
 import ColorPicker, { HueSlider, Panel1, Preview } from 'reanimated-color-picker';
 import { runOnJS } from 'react-native-reanimated';
 import { useCreationStore } from '../../store/creationStore';
+import { useAuthStore } from '../../store/authStore';
 import { colors } from '../../theme/colors';
 import { GuidedScreenWrapper } from '../../components/layout/GuidedScreenWrapper';
 import { NeonButton } from '../../components/ui/NeonButton';
@@ -51,24 +52,60 @@ export default function Step3PersonalizeScreen() {
     setQuery,
   } = useCreationStore();
 
+  const { user } = useAuthStore();
+
+  React.useEffect(() => {
+    if (user?.brandingColor && colorRight === '#000000') {
+      setColorRight(user.brandingColor);
+    }
+  }, [user, colorRight, setColorRight]);
+
   const [pickerVisible, setPickerVisible] = React.useState(false);
   const [activeColorSide, setActiveColorSide] = React.useState<'left' | 'right' | null>(null);
   const [tempColor, setTempColor] = React.useState('#FFFFFF');
+  const [tempHex, setTempHex] = React.useState('#FFFFFF');
 
   const openPicker = (side: 'left' | 'right') => {
     setActiveColorSide(side);
-    setTempColor(side === 'left' ? colorLeft : colorRight);
+    const currentColor = side === 'left' ? colorLeft : colorRight;
+    setTempColor(currentColor);
+    setTempHex(currentColor.toUpperCase());
     setPickerVisible(true);
   };
 
   const updateColorState = React.useCallback((hex: string) => {
     if (activeColorSide === 'left') setColorLeft(hex);
     else if (activeColorSide === 'right') setColorRight(hex);
+    setTempHex(hex.toUpperCase());
+    setTempColor(hex);
   }, [activeColorSide, setColorLeft, setColorRight]);
 
   const handleColorSelect = (event: { hex: string }) => {
     'worklet';
     runOnJS(updateColorState)(event.hex);
+  };
+
+  const handleHexChange = (text: string) => {
+    const sanitized = text.toUpperCase().replace(/[^0-9A-F#]/g, '');
+    setTempHex(sanitized);
+
+    if (/^#([0-9A-F]{3,4}|[0-9A-F]{6}|[0-9A-F]{8})$/i.test(sanitized)) {
+      updateColorState(sanitized);
+    }
+  };
+
+  const handleHexBlur = () => {
+    let formatted = tempHex;
+    if (formatted.length > 0 && !formatted.startsWith('#')) {
+      formatted = '#' + formatted;
+    }
+
+    if (/^#([0-9A-F]{3,4}|[0-9A-F]{6}|[0-9A-F]{8})$/i.test(formatted)) {
+      updateColorState(formatted);
+    } else {
+      const currentColor = activeColorSide === 'left' ? colorLeft : colorRight;
+      setTempHex(currentColor.toUpperCase());
+    }
   };
 
   const handleCreate = () => {
@@ -230,11 +267,10 @@ export default function Step3PersonalizeScreen() {
 
             <View style={styles.colorConfig}>
               <View style={styles.colorHeader}>
-                <Minus size={12} color="rgba(255,255,255,0.5)" />
-                <View style={styles.tag}>
-                  <Text style={styles.tagText}>{"{{LEFT_COLOR}}"}</Text>
+                <View style={styles.iconCircle}>
+                  <Palette size={12} color="#fff" />
                 </View>
-                <Text style={styles.colorLabel}>• COULEUR DROITE</Text>
+                <Text style={styles.colorLabel}> COULEUR DROITE</Text>
               </View>
               <TouchableOpacity
                 style={[styles.input, styles.colorButton]}
@@ -267,7 +303,22 @@ export default function Step3PersonalizeScreen() {
               >
                 <Panel1 style={styles.colorPanel} />
                 <HueSlider style={styles.hueSlider} />
-                <Preview style={styles.previewContainer} hideText colorFormat="hex" />
+
+                <View style={styles.pickerFooter}>
+                  <Preview style={styles.previewContainer} hideText colorFormat="hex" />
+                  <TextInput
+                    style={styles.hexInput}
+                    value={tempHex}
+                    onChangeText={handleHexChange}
+                    onBlur={handleHexBlur}
+                    placeholder="#FFFFFF"
+                    placeholderTextColor="rgba(255,255,255,0.3)"
+                    maxLength={9}
+                    autoCapitalize="characters"
+                    spellCheck={false}
+                    autoCorrect={false}
+                  />
+                </View>
               </ColorPicker>
 
               <TouchableOpacity
@@ -306,7 +357,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 10,
 
-    paddingBottom: 40,
+    paddingBottom: 20,
   },
   ctaWrapper: {
     overflow: 'visible',
@@ -635,8 +686,33 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   previewContainer: {
-    height: 40,
-    borderRadius: 10,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  pickerFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 16,
+    paddingTop: 8,
+  },
+  hexInput: {
+    flex: 1,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    height: 48,
+    paddingHorizontal: 16,
+    fontSize: 16,
+    color: '#fff',
+    fontWeight: '700',
+    letterSpacing: 1,
+    textAlign: 'center',
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
   },
   confirmButton: {
     backgroundColor: colors.primary.main,
