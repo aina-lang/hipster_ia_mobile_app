@@ -413,7 +413,7 @@ export default function Step3PersonalizeScreen() {
                 activeOpacity={1}
               >
                 {uploadedImage ? (
-                  <Animated.View 
+                  <Animated.View
                     style={[
                       styles.imagePreviewContainer,
                       { transform: [{ translateX: imagePreviewSlide }] }

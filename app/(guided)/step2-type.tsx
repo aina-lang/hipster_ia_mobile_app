@@ -76,7 +76,7 @@ export default function Step2TypeScreen() {
             if (fn.category === 'Document') {
                 router.push('/(guided)/step3-directions');
             } else {
-                router.push('/(guided)/step3-personalize');
+                router.push('/(guided)/step4-personalize');
             }
         }, 300);
     };
