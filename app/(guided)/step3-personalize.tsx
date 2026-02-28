@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,8 @@ import {
   Image,
   Modal,
   Platform,
+  Animated,
+  Easing,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
@@ -39,6 +41,11 @@ import magazine2 from '../../assets/magazine2_1.jpeg';
 import magazine3 from '../../assets/magazine3.jpeg';
 import magazine4 from '../../assets/magazine4.jpeg';
 import magazine5 from '../../assets/magazine5.jpeg';
+//Commerce Impact
+import mode from '../../assets/mode.jpeg';
+import chiot from '../../assets/chiot.jpeg';
+import casque from '../../assets/Casque.jpeg';
+import chantier from '../../assets/chantierComm.jpeg';
 // Fallback to illus2 if illus1 is not there.
 const EXAMPLES_DEFAULT = [
   { label: '', image: illus2, text: '' },
@@ -59,13 +66,15 @@ const ARCHITECTURE_EXAMPLES = {
     { label: '', image: magazine2, text: '' },
     { label: '', image: magazine3, text: '' },
     { label: '', image: magazine4, text: '' },
-    { label: '', image: magazine5, text: '' },  
+    { label: '', image: magazine5, text: '' },
   ],
   'impact-commercial': [
     { label: '', image: illus2, text: '' },
     { label: '', image: illus3, text: '' },
-    { label: '', image: illus4, text: 'SOLDES' },
-    { label: '', image: illus1, text: 'NOUVEAU' },
+    { label: '', image: mode, text: '' },
+    { label: '', image: chiot, text: '' },
+    { label: '', image: casque, text: '' },
+    { label: '', image: chantier, text: '' },
   ],
   'editorial-motion': [
     { label: '', image: illus2, text: '' },
@@ -135,6 +144,59 @@ export default function Step3PersonalizeScreen() {
   const [modalType, setModalType] = React.useState<ModalType>('info');
   const [modalTitle, setModalTitle] = React.useState('');
   const [modalMessage, setModalMessage] = React.useState('');
+
+  // Animation references for slide animations
+  const textButtonSlide = useRef(new Animated.Value(0)).current;
+  const imageButtonSlide = useRef(new Animated.Value(0)).current;
+  const uploadCardSlide = useRef(new Animated.Value(0)).current;
+  const imagePreviewSlide = useRef(new Animated.Value(0)).current;
+
+  const animateButtonSlide = (slideRef: any) => {
+    Animated.sequence([
+      Animated.timing(slideRef, {
+        toValue: -30,
+        duration: 280,
+        easing: Easing.bezier(0.25, 0.46, 0.45, 0.94),
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideRef, {
+        toValue: 0,
+        duration: 350,
+        easing: Easing.bezier(0.33, 0.66, 0.66, 1),
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  const animateCardSlide = (slideRef: any) => {
+    Animated.sequence([
+      Animated.timing(slideRef, {
+        toValue: -40,
+        duration: 320,
+        easing: Easing.bezier(0.25, 0.46, 0.45, 0.94),
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideRef, {
+        toValue: 0,
+        duration: 420,
+        easing: Easing.bezier(0.33, 0.66, 0.66, 1),
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  const [subjectSourceType, setSubjectSourceType] = React.useState<'image' | 'text'>(
+    uploadedImage ? 'image' : 'text'
+  );
+
+  const handleSourceTypeChange = (type: 'image' | 'text') => {
+    setSubjectSourceType(type);
+    if (type === 'image') {
+      setSubject('');
+    } else {
+      setUploadedImage(null);
+    }
+  };
 
   const showModal = (title: string, message: string, type: ModalType = 'info') => {
     setModalTitle(title);
@@ -306,44 +368,86 @@ export default function Step3PersonalizeScreen() {
 
         <View style={styles.separator} />
 
-        {/* IMAGE UPLOAD SECTION */}
+        {/* SUBJECT SOURCE TOGGLE */}
         <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>PHOTO DE RÉFÉRENCE (OPTIONNEL)</Text>
-          <TouchableOpacity
-            style={styles.uploadCard}
-            onPress={pickImage}
-            activeOpacity={0.7}
-          >
-            {uploadedImage ? (
-              <View style={styles.imagePreviewContainer}>
-                <Image source={{ uri: uploadedImage }} style={styles.uploadedImage} />
-                <TouchableOpacity
-                  style={styles.removeImageButton}
-                  onPress={() => setUploadedImage(null)}
-                >
-                  <X size={16} color="#fff" />
-                </TouchableOpacity>
-              </View>
-            ) : (
-              <View style={styles.uploadPlaceholder}>
-                <View style={styles.uploadIconCircle}>
-                  <Upload size={20} color={colors.primary.main} />
-                </View>
-                <Text style={styles.uploadText}>Sélectionner une image</Text>
-                <Text style={styles.uploadSubtext}>JPG, PNG ou WebP</Text>
-              </View>
-            )}
-          </TouchableOpacity>
+          <Text style={styles.inputLabel}>SOURCE DU SUJET</Text>
+          <Text style={styles.inputDescription}>Comment voulez-vous définir le sujet principal ?</Text>
+
+          <View style={styles.sourceToggleContainer}>
+            <TouchableOpacity
+              style={[styles.sourceToggleButton, subjectSourceType === 'text' && styles.sourceToggleButtonActive]}
+              onPress={() => {
+                animateButtonSlide(textButtonSlide);
+                handleSourceTypeChange('text');
+              }}
+              activeOpacity={1}
+            >
+              <Animated.View style={{ position: 'absolute', inset: 0, transform: [{ translateX: textButtonSlide }], borderRadius: 12 }} />
+              <Text style={[styles.sourceToggleText, subjectSourceType === 'text' && styles.sourceToggleTextActive, { zIndex: 1 }]}>Texte</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.sourceToggleButton, subjectSourceType === 'image' && styles.sourceToggleButtonActive]}
+              onPress={() => {
+                animateButtonSlide(imageButtonSlide);
+                handleSourceTypeChange('image');
+              }}
+              activeOpacity={1}
+            >
+              <Animated.View style={{ position: 'absolute', inset: 0, transform: [{ translateX: imageButtonSlide }], borderRadius: 12 }} />
+              <Text style={[styles.sourceToggleText, subjectSourceType === 'image' && styles.sourceToggleTextActive, { zIndex: 1 }]}>Photo</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
-        {/* SUBJECT FIELD - When no image uploaded */}
-        {!uploadedImage && (
+        {subjectSourceType === 'image' ? (
+          /* IMAGE UPLOAD SECTION */
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>OU SUJET</Text>
-            <Text style={styles.inputDescription}>Ex: parfum, sac à main, menu ou: our nicer de coiffure...</Text>
+            <Animated.View style={{ transform: [{ translateX: uploadCardSlide }] }}>
+              <TouchableOpacity
+                style={styles.uploadCard}
+                onPress={() => {
+                  animateCardSlide(uploadCardSlide);
+                  pickImage();
+                }}
+                activeOpacity={1}
+              >
+                {uploadedImage ? (
+                  <Animated.View 
+                    style={[
+                      styles.imagePreviewContainer,
+                      { transform: [{ translateX: imagePreviewSlide }] }
+                    ]}
+                  >
+                    <Image source={{ uri: uploadedImage }} style={styles.uploadedImage} />
+                    <TouchableOpacity
+                      style={styles.removeImageButton}
+                      onPress={() => {
+                        animateCardSlide(imagePreviewSlide);
+                        setUploadedImage(null);
+                      }}
+                    >
+                      <X size={16} color="#fff" />
+                    </TouchableOpacity>
+                  </Animated.View>
+                ) : (
+                  <View style={styles.uploadPlaceholder}>
+                    <View style={styles.uploadIconCircle}>
+                      <Upload size={20} color={colors.primary.main} />
+                    </View>
+                    <Text style={styles.uploadText}>Sélectionner une image</Text>
+                    <Text style={styles.uploadSubtext}>JPG, PNG ou WebP</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            </Animated.View>
+          </View>
+        ) : (
+          /* SUBJECT FIELD */
+          <View style={styles.inputGroup}>
             <TextInput
               style={styles.input}
-              placeholder="Décris ton sujet ici"
+              placeholder="Ex: un bouquet de fleurs, un sac à main..."
               placeholderTextColor="rgba(255,255,255,0.3)"
               value={subject}
               onChangeText={setSubject}
@@ -680,6 +784,49 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#fff',
   },
+  sourceToggleContainer: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(15, 23, 42, 0.8)',
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: 'rgba(0, 212, 255, 0.15)',
+    overflow: 'hidden',
+    marginTop: 12,
+    marginBottom: 12,
+    gap: 1,
+    padding: 2,
+    shadowColor: 'rgba(0, 212, 255, 0.2)',
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  sourceToggleButton: {
+    flex: 1,
+    paddingVertical: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 12,
+  },
+  sourceToggleButtonActive: {
+    backgroundColor: colors.primary.main,
+    shadowColor: colors.primary.main,
+    shadowOpacity: 0.3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  sourceToggleText: {
+    color: 'rgba(255,255,255,0.5)',
+    fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+  },
+  sourceToggleTextActive: {
+    color: '#000',
+    fontWeight: '800',
+  },
   colorRow: {
     flexDirection: 'row',
     gap: 12,
@@ -805,15 +952,51 @@ const styles = StyleSheet.create({
   },
   // Upload Card
   uploadCard: {
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: 'rgba(15, 23, 42, 0.7)',
     borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(0, 212, 255, 0.20)',
     borderStyle: 'dashed',
-    height: 140,
-    justifyContent: 'center',
+    paddingVertical: 24,
+    paddingHorizontal: 18,
     alignItems: 'center',
-    overflow: 'hidden',
+    justifyContent: 'center',
+    minHeight: 140,
+    shadowColor: 'rgba(0, 212, 255, 0.15)',
+    shadowOpacity: 0.08,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 12,
+    elevation: 3,
+  },
+  uploadPlaceholder: {
+    alignItems: 'center',
+    gap: 10,
+  },
+  uploadIconCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: 'rgba(0, 212, 255, 0.10)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: 'rgba(0, 212, 255, 0.25)',
+    shadowColor: colors.primary.main,
+    shadowOpacity: 0.12,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  uploadText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '700',
+    letterSpacing: -0.2,
+  },
+  uploadSubtext: {
+    color: 'rgba(255,255,255,0.5)',
+    fontSize: 12,
+    fontWeight: '500',
   },
   uploadPlaceholder: {
     alignItems: 'center',
@@ -838,8 +1021,41 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   imagePreviewContainer: {
+    position: 'relative',
+    width: '100%',
+    height: 140,
+    borderRadius: 16,
+    overflow: 'hidden',
+    borderWidth: 1.5,
+    borderColor: 'rgba(0, 212, 255, 0.20)',
+    shadowColor: colors.primary.main,
+    shadowOpacity: 0.15,
+    shadowOffset: { width: 0, height: 6 },
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  uploadedImage: {
     width: '100%',
     height: '100%',
+    resizeMode: 'cover',
+  },
+  removeImageButton: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 59, 48, 0.4)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.3,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 6,
+    elevation: 3,
   },
   uploadedImage: {
     width: '100%',
