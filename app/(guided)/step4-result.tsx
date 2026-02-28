@@ -400,7 +400,8 @@ export default function Step4ResultScreen() {
       mainTitle: storeMainTitle,
       subTitle: storeSubTitle,
       infoLine: storeInfoLine,
-      textPromo: storeTextPromo
+      textPromo: storeTextPromo,
+      subject: storeSubject
     } = state;
 
     let effectiveCategory = selectedCategory;
@@ -457,6 +458,11 @@ export default function Step4ResultScreen() {
         params.scriptPhrase = storeSubTitle;
         params.infoLine = storeInfoLine;
         params.textPromo = storeTextPromo;
+        if (storeSubject && !storeImage) {
+          params.subject = storeSubject;
+          // We can also append it to the userQuery so the backend LLM uses it intuitively
+          params.userQuery = params.userQuery ? `${params.userQuery} - Sujet: ${storeSubject}` : `Sujet: ${storeSubject}`;
+        }
       } else {
         params.style = selectedStyle;
       }

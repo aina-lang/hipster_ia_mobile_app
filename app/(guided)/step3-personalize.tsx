@@ -22,18 +22,58 @@ import { GuidedScreenWrapper } from '../../components/layout/GuidedScreenWrapper
 import { NeonButton } from '../../components/ui/NeonButton';
 import { GenericModal, ModalType } from '../../components/ui/GenericModal';
 
-import illus2 from '../../assets/illus2.jpeg';
-import illus3 from '../../assets/illus3.jpeg';
-import illus4 from '../../assets/illus4.jpeg';
-import illus1 from '../../assets/illus1.jpeg'; // Assuming illus1 exists, if not I'll handle it. Actually I will use illus2 again to be safe.
-
+import illus2 from '../../assets/Rouge_a_levre.jpeg';
+import illus3 from '../../assets/casquette.jpeg';
+import illus4 from '../../assets/TroisiemeCard.jpeg';
+import illus1 from '../../assets/montre.jpeg'; // Assuming illus1 exists, if not I'll handle it. Actually I will use illus2 again to be safe.
+//VERTICAL FASHION
+import vertical1 from '../../assets/vertical1.jpeg';
+import vertical2 from '../../assets/vertical2.jpeg';
+import vertical3 from '../../assets/vertical3.jpeg';
+import vertical4 from '../../assets/vertical4.jpeg';
+//Magazine cover
+import vertical5 from '../../assets/vertical5.jpeg';
+import vertical6 from '../../assets/vertical6.jpeg';
+import magazine1 from '../../assets/magazin1.jpeg';
+import magazine2 from '../../assets/magazine2_1.jpeg';
+import magazine3 from '../../assets/magazine3.jpeg';
+import magazine4 from '../../assets/magazine4.jpeg';
+import magazine5 from '../../assets/magazine5.jpeg';
 // Fallback to illus2 if illus1 is not there.
-const EXAMPLES = [
-  { label: 'Cosmétique', image: illus2, text: 'NOUVEAU' },
-  { label: 'Mode', image: illus3, text: 'NOUVEAU' },
-  { label: 'Mobilier', image: illus4, text: 'SOLDES' },
-  { label: 'Tech', image: illus2, text: 'NOUVEAU' },
+const EXAMPLES_DEFAULT = [
+  { label: '', image: illus2, text: '' },
+  { label: '', image: illus3, text: '' },
+  { label: '', image: illus4, text: '' },
+  { label: '', image: illus1, text: '' },
 ];
+
+const ARCHITECTURE_EXAMPLES = {
+  'fashion-vertical-impact': [
+    { label: '', image: vertical1, text: '' },
+    { label: '', image: vertical2, text: '' },
+    { label: '', image: vertical3, text: '' },
+    { label: '', image: vertical4, text: '' },
+  ],
+  'magazine-cover-poster': [
+    { label: '', image: vertical5, text: '' },
+    { label: '', image: magazine2, text: '' },
+    { label: '', image: magazine3, text: '' },
+    { label: '', image: magazine4, text: '' },
+    { label: '', image: magazine5, text: '' },  
+  ],
+  'impact-commercial': [
+    { label: '', image: illus2, text: '' },
+    { label: '', image: illus3, text: '' },
+    { label: '', image: illus4, text: 'SOLDES' },
+    { label: '', image: illus1, text: 'NOUVEAU' },
+  ],
+  'editorial-motion': [
+    { label: '', image: illus2, text: '' },
+    { label: '', image: illus3, text: '' },
+    { label: '', image: illus4, text: 'MOTION' },
+    { label: '', image: illus1, text: 'PREMIUM' },
+  ],
+};
 
 const VISUAL_STYLES = [
   { label: 'Premium', description: 'Noir & blanc luxe', image: illus2 },
@@ -46,12 +86,26 @@ export default function Step3PersonalizeScreen() {
   const {
     selectedJob,
     selectedCategory,
-    selectedStyle, setStyle,
-    mainTitle, setMainTitle,
-    subTitle, setSubTitle,
-    infoLine, setInfoLine,
-    colorLeft, setColorLeft,
+    selectedFunction,
+    selectedArchitecture,
+    selectedStyle,
+    setStyle,
+    mainTitle,
+    setMainTitle,
+    subTitle,
+    setSubTitle,
+    infoLine,
+    setInfoLine,
+    subject,
+    setSubject,
+    colorLeft,
+    setColorLeft,
+    colorRight,
     setColorRight,
+    textPromo,
+    setTextPromo,
+    uploadedImage,
+    setUploadedImage,
     setQuery,
   } = useCreationStore();
 
@@ -226,21 +280,16 @@ export default function Step3PersonalizeScreen() {
             <Text style={styles.sectionSubtitle}>Voici quelques exemples</Text>
 
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.carousel}>
-              {EXAMPLES.map((item, index) => (
+              {(selectedArchitecture && selectedArchitecture in ARCHITECTURE_EXAMPLES
+                ? ARCHITECTURE_EXAMPLES[selectedArchitecture as keyof typeof ARCHITECTURE_EXAMPLES]
+                : EXAMPLES_DEFAULT
+              ).map((item, index) => (
                 <View key={index} style={styles.exampleCard}>
                   <View style={[StyleSheet.absoluteFill, { backgroundColor: index === 0 ? '#ffb6b9' : index === 1 ? '#e2e8f0' : index === 2 ? '#fde047' : '#94a3b8' }]} />
                   <Image source={item.image} style={styles.exampleImage} />
 
                   <Text style={styles.exampleOverlayText}>{item.text}</Text>
 
-                  <View style={styles.exampleBadge}>
-                    <Text style={styles.exampleBadgeText}>JUSQU'À</Text>
-                    <Text style={styles.exampleBadgeSale}>-50%</Text>
-                  </View>
-
-                  <View style={styles.exampleLabelContainer}>
-                    <Text style={styles.exampleLabelText}>{item.label}</Text>
-                  </View>
                 </View>
               ))}
             </ScrollView>
@@ -286,6 +335,22 @@ export default function Step3PersonalizeScreen() {
             )}
           </TouchableOpacity>
         </View>
+
+        {/* SUBJECT FIELD - When no image uploaded */}
+        {!uploadedImage && (
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>OU SUJET</Text>
+            <Text style={styles.inputDescription}>Ex: parfum, sac à main, menu ou: our nicer de coiffure...</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Décris ton sujet ici"
+              placeholderTextColor="rgba(255,255,255,0.3)"
+              value={subject}
+              onChangeText={setSubject}
+            />
+            <Text style={styles.helperText}>Décris en 3-8 mots ce que tu veux au centre du visuel</Text>
+          </View>
+        )}
 
         {/* INPUT FORM SECTION */}
 
@@ -493,7 +558,6 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     position: 'absolute',
-    opacity: 0.8,
   },
   exampleOverlayText: {
     position: 'absolute',
@@ -593,6 +657,18 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
+  },
+  inputDescription: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.6)',
+    marginBottom: 8,
+    fontStyle: 'italic',
+  },
+  helperText: {
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.5)',
+    marginTop: 8,
+    fontStyle: 'italic',
   },
   input: {
     backgroundColor: 'rgba(255,255,255,0.03)',

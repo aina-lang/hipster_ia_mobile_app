@@ -53,6 +53,7 @@ interface CreationState {
   mainTitle: string;
   subTitle: string;
   infoLine: string;
+  subject: string;
   colorLeft: string;
   colorRight: string;
   textPromo: string;
@@ -65,6 +66,7 @@ interface CreationState {
   setMainTitle: (title: string) => void;
   setSubTitle: (title: string) => void;
   setInfoLine: (info: string) => void;
+  setSubject: (subject: string) => void;
   setColorLeft: (color: string) => void;
   setColorRight: (color: string) => void;
   setTextPromo: (text: string) => void;
@@ -84,6 +86,7 @@ export const useCreationStore = create<CreationState>()(
       mainTitle: '',
       subTitle: '',
       infoLine: '',
+      subject: '',
       colorLeft: '#FFFFFF',
       colorRight: '#000000',
       textPromo: '',
@@ -97,6 +100,7 @@ export const useCreationStore = create<CreationState>()(
       setMainTitle: (title) => set({ mainTitle: title }),
       setSubTitle: (title) => set({ subTitle: title }),
       setInfoLine: (info) => set({ infoLine: info }),
+      setSubject: (subject) => set({ subject }),
       setColorLeft: (color) => set({ colorLeft: color }),
       setColorRight: (color) => set({ colorRight: color }),
       setTextPromo: (text) => set({ textPromo: text }),
@@ -118,6 +122,7 @@ export const useCreationStore = create<CreationState>()(
           textPromo: '',
           selectedStyle: null,
           uploadedImage: null,
+          subject: '',
         }),
     }),
     {
