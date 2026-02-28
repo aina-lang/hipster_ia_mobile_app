@@ -141,6 +141,10 @@ export default function Step3DirectionsScreen() {
     selectedFunction,
   } = useCreationStore();
 
+  React.useEffect(() => {
+    console.log('[DEBUG] Step3DirectionsScreen MODIFIED MOUNT', { selectedJob, selectedFunction, selectedArchitecture });
+  }, []);
+
   const [showSubtitle, setShowSubtitle] = useState(true);
 
   const handleSelectArchitecture = (id: string) => {
@@ -244,7 +248,7 @@ const styles = StyleSheet.create({
   fixedFooter: {
     paddingHorizontal: 20,
     paddingVertical: 14,
- 
+
 
   },
 

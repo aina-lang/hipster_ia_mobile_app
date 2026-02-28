@@ -10,13 +10,17 @@ import {
   Modal,
   Platform,
 } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
-import { Palette, Minus, Check, X } from 'lucide-react-native';
+import { Palette, Minus, Check, X, Upload } from 'lucide-react-native';
 import ColorPicker, { HueSlider, Panel1, Preview } from 'reanimated-color-picker';
+import { runOnJS } from 'react-native-reanimated';
 import { useCreationStore } from '../../store/creationStore';
+import { useAuthStore } from '../../store/authStore';
 import { colors } from '../../theme/colors';
 import { GuidedScreenWrapper } from '../../components/layout/GuidedScreenWrapper';
 import { NeonButton } from '../../components/ui/NeonButton';
+import { GenericModal, ModalType } from '../../components/ui/GenericModal';
 
 import illus2 from '../../assets/illus2.jpeg';
 import illus3 from '../../assets/illus3.jpeg';
@@ -40,47 +44,132 @@ const VISUAL_STYLES = [
 export default function Step3PersonalizeScreen() {
   const router = useRouter();
   const {
+    selectedJob,
     selectedCategory,
     selectedStyle, setStyle,
     mainTitle, setMainTitle,
     subTitle, setSubTitle,
     infoLine, setInfoLine,
     colorLeft, setColorLeft,
-    colorRight, setColorRight,
+    setColorRight,
     setQuery,
   } = useCreationStore();
+
+  React.useEffect(() => {
+    console.log('[DEBUG] Step3PersonalizeScreen MODIFIED MOUNT', {
+      selectedCategory,
+      selectedFunction,
+      selectedArchitecture,
+      selectedJob
+    });
+  }, []);
+
+  const { user } = useAuthStore();
+
+  React.useEffect(() => {
+    if (user?.brandingColor && colorRight === '#000000') {
+      setColorRight(user.brandingColor);
+    }
+  }, [user, colorRight, setColorRight]);
 
   const [pickerVisible, setPickerVisible] = React.useState(false);
   const [activeColorSide, setActiveColorSide] = React.useState<'left' | 'right' | null>(null);
   const [tempColor, setTempColor] = React.useState('#FFFFFF');
+  const [tempHex, setTempHex] = React.useState('#FFFFFF');
+
+  const [modalVisible, setModalVisible] = React.useState(false);
+  const [modalType, setModalType] = React.useState<ModalType>('info');
+  const [modalTitle, setModalTitle] = React.useState('');
+  const [modalMessage, setModalMessage] = React.useState('');
+
+  const showModal = (title: string, message: string, type: ModalType = 'info') => {
+    setModalTitle(title);
+    setModalMessage(message);
+    setModalType(type);
+    setModalVisible(true);
+  };
+
+  const pickImage = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: false,
+        quality: 0.8,
+      });
+      if (!result.canceled && result.assets[0]) {
+        const uri = result.assets[0].uri.toLowerCase();
+        const allowed = ['.jpg', '.jpeg', '.png', '.webp'];
+        if (!allowed.some((ext) => uri.endsWith(ext))) {
+          showModal('Format non supporté', 'Utilisez JPEG, PNG ou WebP.', 'error');
+          return;
+        }
+        setUploadedImage(result.assets[0].uri);
+      }
+    } catch {
+      showModal('Erreur', "Impossible de sélectionner l'image", 'error');
+    }
+  };
 
   const openPicker = (side: 'left' | 'right') => {
     setActiveColorSide(side);
-    setTempColor(side === 'left' ? colorLeft : colorRight);
+    const currentColor = side === 'left' ? colorLeft : colorRight;
+    setTempColor(currentColor);
+    setTempHex(currentColor.toUpperCase());
     setPickerVisible(true);
   };
 
-  const handleColorSelect = ({ hex }: { hex: string }) => {
+  const updateColorState = React.useCallback((hex: string) => {
     if (activeColorSide === 'left') setColorLeft(hex);
     else if (activeColorSide === 'right') setColorRight(hex);
+    setTempHex(hex.toUpperCase());
+    setTempColor(hex);
+  }, [activeColorSide, setColorLeft, setColorRight]);
+
+  const handleColorSelect = (event: { hex: string }) => {
+    'worklet';
+    runOnJS(updateColorState)(event.hex);
+  };
+
+  const handleHexChange = (text: string) => {
+    const sanitized = text.toUpperCase().replace(/[^0-9A-F#]/g, '');
+    setTempHex(sanitized);
+
+    if (/^#([0-9A-F]{3,4}|[0-9A-F]{6}|[0-9A-F]{8})$/i.test(sanitized)) {
+      updateColorState(sanitized);
+    }
+  };
+
+  const handleHexBlur = () => {
+    let formatted = tempHex;
+    if (formatted.length > 0 && !formatted.startsWith('#')) {
+      formatted = '#' + formatted;
+    }
+
+    if (/^#([0-9A-F]{3,4}|[0-9A-F]{6}|[0-9A-F]{8})$/i.test(formatted)) {
+      updateColorState(formatted);
+    } else {
+      const currentColor = activeColorSide === 'left' ? colorLeft : colorRight;
+      setTempHex(currentColor.toUpperCase());
+    }
   };
 
   const handleCreate = () => {
-    // Generate a prompt or pass values to the next screen.
     const queryParts = [];
-    if (mainTitle) queryParts.push(`Titre: ${mainTitle}`);
-    if (subTitle) queryParts.push(`Sous-titre: ${subTitle}`);
-    if (infoLine) queryParts.push(`Info: ${infoLine}`);
-    queryParts.push(`Couleurs: ${colorLeft} et ${colorRight}`);
-    setQuery(queryParts.join('\n'));
+    if (mainTitle) queryParts.push(mainTitle);
+    if (subTitle) queryParts.push(subTitle);
+    if (textPromo) queryParts.push(textPromo);
+    if (infoLine) queryParts.push(infoLine);
 
-    router.push('/(guided)/step4-personalize');
+    // Use a simple space-separated string for improvisation context
+    setQuery(queryParts.join(' '));
+
+    router.push('/(guided)/step4-result');
   };
 
   return (
     <GuidedScreenWrapper
-      currentStep={4}
-      totalSteps={4}
+      currentStep={selectedCategory === 'Social' || selectedCategory === 'Image' ? 3 : 4}
+      totalSteps={selectedCategory === 'Social' || selectedCategory === 'Image' ? 3 : 4}
       footer={
         <View style={styles.fixedFooter}>
           <View style={styles.ctaWrapper}>
@@ -168,6 +257,36 @@ export default function Step3PersonalizeScreen() {
 
         <View style={styles.separator} />
 
+        {/* IMAGE UPLOAD SECTION */}
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>PHOTO DE RÉFÉRENCE (OPTIONNEL)</Text>
+          <TouchableOpacity
+            style={styles.uploadCard}
+            onPress={pickImage}
+            activeOpacity={0.7}
+          >
+            {uploadedImage ? (
+              <View style={styles.imagePreviewContainer}>
+                <Image source={{ uri: uploadedImage }} style={styles.uploadedImage} />
+                <TouchableOpacity
+                  style={styles.removeImageButton}
+                  onPress={() => setUploadedImage(null)}
+                >
+                  <X size={16} color="#fff" />
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View style={styles.uploadPlaceholder}>
+                <View style={styles.uploadIconCircle}>
+                  <Upload size={20} color={colors.primary.main} />
+                </View>
+                <Text style={styles.uploadText}>Sélectionner une image</Text>
+                <Text style={styles.uploadSubtext}>JPG, PNG ou WebP</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        </View>
+
         {/* INPUT FORM SECTION */}
 
         <View style={styles.inputGroup}>
@@ -192,6 +311,19 @@ export default function Step3PersonalizeScreen() {
           />
         </View>
 
+        {selectedArchitecture === 'impact-commercial' && (
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>TEXTE PROMO (POUR LE BADGE)</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Ex: -50% ou NOUVEAU"
+              placeholderTextColor="rgba(255,255,255,0.3)"
+              value={textPromo}
+              onChangeText={setTextPromo}
+            />
+          </View>
+        )}
+
         <View style={styles.inputGroup}>
           <Text style={styles.inputLabel}>LIGNE D'INFO</Text>
           <TextInput
@@ -211,7 +343,9 @@ export default function Step3PersonalizeScreen() {
                 <View style={styles.iconCircle}>
                   <Palette size={12} color="#fff" />
                 </View>
-                <Text style={styles.colorLabel}>COULEUR GAUCHE</Text>
+                <Text style={styles.colorLabel}>
+                  {selectedArchitecture === 'impact-commercial' ? 'COULEUR DE FOND' : 'COULEUR PRINCIPALE'}
+                </Text>
               </View>
               <TouchableOpacity
                 style={[styles.input, styles.colorButton]}
@@ -222,32 +356,36 @@ export default function Step3PersonalizeScreen() {
               </TouchableOpacity>
             </View>
 
-            <View style={styles.colorConfig}>
-              <View style={styles.colorHeader}>
-                <Minus size={12} color="rgba(255,255,255,0.5)" />
-                <View style={styles.tag}>
-                  <Text style={styles.tagText}>{"{{LEFT_COLOR}}"}</Text>
+            {/* SECONDAIRE - HIDDEN FOR STREET SALE (single-color architecture) */}
+            {selectedArchitecture !== 'magazine-cover-poster' && (
+              <View style={styles.colorConfig}>
+                <View style={styles.colorHeader}>
+                  <View style={styles.iconCircle}>
+                    <Palette size={12} color="#fff" />
+                  </View>
+                  <Text style={styles.colorLabel}>
+                    {selectedArchitecture === 'impact-commercial' ? 'COULEUR DU SUJET' : 'COULEUR SECONDAIRE'}
+                  </Text>
                 </View>
-                <Text style={styles.colorLabel}>• COULEUR DROITE</Text>
+                <TouchableOpacity
+                  style={[styles.input, styles.colorButton]}
+                  onPress={() => openPicker('right')}
+                >
+                  <View style={[styles.colorPreview, { backgroundColor: colorRight }]} />
+                  <Text style={styles.colorValue}>{colorRight.toUpperCase()}</Text>
+                </TouchableOpacity>
               </View>
-              <TouchableOpacity
-                style={[styles.input, styles.colorButton]}
-                onPress={() => openPicker('right')}
-              >
-                <View style={[styles.colorPreview, { backgroundColor: colorRight }]} />
-                <Text style={styles.colorValue}>{colorRight.toUpperCase()}</Text>
-              </TouchableOpacity>
-            </View>
+            )}
           </View>
         </View>
 
         {/* Color Picker Modal */}
-        <Modal visible={pickerVisible} animationType="fade" transparent>
+        < Modal visible={pickerVisible} animationType="fade" transparent >
           <View style={styles.modalOverlay}>
             <View style={styles.pickerContainer}>
               <View style={styles.pickerHeader}>
                 <Text style={styles.pickerTitle}>
-                  Choisir la couleur {activeColorSide === 'left' ? 'gauche' : 'droite'}
+                  Choisir la couleur {activeColorSide === 'left' ? 'principale' : 'secondaire'}
                 </Text>
                 <TouchableOpacity onPress={() => setPickerVisible(false)} style={styles.closeButton}>
                   <X size={20} color="#fff" />
@@ -261,7 +399,22 @@ export default function Step3PersonalizeScreen() {
               >
                 <Panel1 style={styles.colorPanel} />
                 <HueSlider style={styles.hueSlider} />
-                <Preview style={styles.previewContainer} hideText colorFormat="hex" />
+
+                <View style={styles.pickerFooter}>
+                  <Preview style={styles.previewContainer} hideText colorFormat="hex" />
+                  <TextInput
+                    style={styles.hexInput}
+                    value={tempHex}
+                    onChangeText={handleHexChange}
+                    onBlur={handleHexBlur}
+                    placeholder="#FFFFFF"
+                    placeholderTextColor="rgba(255,255,255,0.3)"
+                    maxLength={9}
+                    autoCapitalize="characters"
+                    spellCheck={false}
+                    autoCorrect={false}
+                  />
+                </View>
               </ColorPicker>
 
               <TouchableOpacity
@@ -272,9 +425,18 @@ export default function Step3PersonalizeScreen() {
               </TouchableOpacity>
             </View>
           </View>
-        </Modal>
+        </Modal >
 
-      </View>
+        {/* Info/Error Modal */}
+        < GenericModal
+          visible={modalVisible}
+          type={modalType}
+          title={modalTitle}
+          message={modalMessage}
+          onClose={() => setModalVisible(false)
+          }
+        />
+      </View >
     </GuidedScreenWrapper >
   );
 }
@@ -300,7 +462,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 10,
 
-    paddingBottom: 40,
+    paddingBottom: 20,
   },
   ctaWrapper: {
     overflow: 'visible',
@@ -565,6 +727,60 @@ const styles = StyleSheet.create({
     fontSize: 10,
     marginTop: 2,
   },
+  // Upload Card
+  uploadCard: {
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    borderStyle: 'dashed',
+    height: 140,
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+  },
+  uploadPlaceholder: {
+    alignItems: 'center',
+    gap: 8,
+  },
+  uploadIconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(23, 162, 184, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  uploadText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  uploadSubtext: {
+    color: 'rgba(255,255,255,0.4)',
+    fontSize: 12,
+  },
+  imagePreviewContainer: {
+    width: '100%',
+    height: '100%',
+  },
+  uploadedImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  removeImageButton: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   // Color Picker styles
   colorButton: {
     flexDirection: 'row',
@@ -629,8 +845,33 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   previewContainer: {
-    height: 40,
-    borderRadius: 10,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  pickerFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 16,
+    paddingTop: 8,
+  },
+  hexInput: {
+    flex: 1,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    height: 48,
+    paddingHorizontal: 16,
+    fontSize: 16,
+    color: '#fff',
+    fontWeight: '700',
+    letterSpacing: 1,
+    textAlign: 'center',
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
   },
   confirmButton: {
     backgroundColor: colors.primary.main,

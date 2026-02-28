@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export type JobType =
   | 'Coiffure & Esthétique'
@@ -53,6 +55,7 @@ interface CreationState {
   infoLine: string;
   colorLeft: string;
   colorRight: string;
+  textPromo: string;
 
   // Actions
   setJob: (job: JobType) => void;
@@ -64,39 +67,15 @@ interface CreationState {
   setInfoLine: (info: string) => void;
   setColorLeft: (color: string) => void;
   setColorRight: (color: string) => void;
+  setTextPromo: (text: string) => void;
   setStyle: (style: VisualStyle) => void;
   setUploadedImage: (uri: string | null) => void;
   reset: () => void;
 }
 
-export const useCreationStore = create<CreationState>((set) => ({
-  selectedJob: null,
-  selectedFunction: null,
-  selectedCategory: null,
-  selectedArchitecture: null,
-  userQuery: '',
-  mainTitle: '',
-  subTitle: '',
-  infoLine: '',
-  colorLeft: '#FFFFFF',
-  colorRight: '#000000',
-  selectedStyle: null,
-  uploadedImage: null,
-
-  setJob: (job) => set({ selectedJob: job }),
-  setFunction: (fn, cat) => set({ selectedFunction: fn, selectedCategory: cat }),
-  setArchitecture: (architectureId) => set({ selectedArchitecture: architectureId }),
-  setQuery: (query) => set({ userQuery: query }),
-  setMainTitle: (title) => set({ mainTitle: title }),
-  setSubTitle: (title) => set({ subTitle: title }),
-  setInfoLine: (info) => set({ infoLine: info }),
-  setColorLeft: (color) => set({ colorLeft: color }),
-  setColorRight: (color) => set({ colorRight: color }),
-  setStyle: (style) => set({ selectedStyle: style }),
-  setUploadedImage: (uri) => set({ uploadedImage: uri }),
-
-  reset: () =>
-    set({
+export const useCreationStore = create<CreationState>()(
+  persist(
+    (set) => ({
       selectedJob: null,
       selectedFunction: null,
       selectedCategory: null,
@@ -107,7 +86,43 @@ export const useCreationStore = create<CreationState>((set) => ({
       infoLine: '',
       colorLeft: '#FFFFFF',
       colorRight: '#000000',
+      textPromo: '',
       selectedStyle: null,
       uploadedImage: null,
+
+      setJob: (job) => set({ selectedJob: job }),
+      setFunction: (fn, cat) => set({ selectedFunction: fn, selectedCategory: cat }),
+      setArchitecture: (architectureId) => set({ selectedArchitecture: architectureId }),
+      setQuery: (query) => set({ userQuery: query }),
+      setMainTitle: (title) => set({ mainTitle: title }),
+      setSubTitle: (title) => set({ subTitle: title }),
+      setInfoLine: (info) => set({ infoLine: info }),
+      setColorLeft: (color) => set({ colorLeft: color }),
+      setColorRight: (color) => set({ colorRight: color }),
+      setTextPromo: (text) => set({ textPromo: text }),
+      setStyle: (style) => set({ selectedStyle: style }),
+      setUploadedImage: (uri) => set({ uploadedImage: uri }),
+
+      reset: () =>
+        set({
+          selectedJob: null,
+          selectedFunction: null,
+          selectedCategory: null,
+          selectedArchitecture: null,
+          userQuery: '',
+          mainTitle: '',
+          subTitle: '',
+          infoLine: '',
+          colorLeft: '#FFFFFF',
+          colorRight: '#000000',
+          textPromo: '',
+          selectedStyle: null,
+          uploadedImage: null,
+        }),
     }),
-}));
+    {
+      name: 'creation-storage',
+      storage: createJSONStorage(() => AsyncStorage),
+    }
+  )
+);

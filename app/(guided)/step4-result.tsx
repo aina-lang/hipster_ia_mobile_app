@@ -46,6 +46,7 @@ import { AiService, TextGenerationType } from '../../api/ai.service';
 import { api } from '../../api/client';
 import { WORKFLOWS } from '../../constants/workflows';
 import { GuidedScreenWrapper } from '../../components/layout/GuidedScreenWrapper';
+import { VISUAL_ARCHITECTURES } from '../../constants/visualArchitectures';
 
 // Configure notifications
 Notifications.setNotificationHandler({
@@ -60,10 +61,10 @@ Notifications.setNotificationHandler({
 
 const { width } = Dimensions.get('window');
 
-
-
 export default function Step4ResultScreen() {
   const router = useRouter();
+
+  // Direct store values for rendering (reactive)
   const {
     userQuery,
     selectedJob,
@@ -71,9 +72,15 @@ export default function Step4ResultScreen() {
     selectedCategory,
     selectedStyle,
     uploadedImage,
-
+    colorLeft,
+    colorRight,
+    mainTitle,
+    subTitle,
+    infoLine,
+    selectedArchitecture,
     reset,
   } = useCreationStore();
+
   const { user, aiRefreshUser } = useAuthStore();
 
   const isRestricted = user?.planType === 'curieux';
@@ -103,9 +110,6 @@ export default function Step4ResultScreen() {
   const [localQuery, setLocalQuery] = useState('');
   const [regenMode, setRegenMode] = useState<'text' | 'image' | 'both'>('text');
 
-  // ... (existing code)
-
-
   const [showRegeneratePanel, setShowRegeneratePanel] = useState(false);
 
   const [modalVisible, setModalVisible] = useState(false);
@@ -127,8 +131,6 @@ export default function Step4ResultScreen() {
     setModalMessage(message);
     setModalVisible(true);
   };
-
-
 
   useEffect(() => {
     let animation: Animated.CompositeAnimation | null = null;
@@ -161,7 +163,7 @@ export default function Step4ResultScreen() {
   }, [loading, pulseAnim]);
 
   useEffect(() => {
-    setLocalQuery(userQuery);
+    setLocalQuery(userQuery || '');
   }, [userQuery]);
 
   const getParsedData = (rawResult: string | null) => {
@@ -247,107 +249,6 @@ export default function Step4ResultScreen() {
           )}
         </View>
         <View style={styles.imageSeparator} />
-      </View>
-    );
-  };
-
-  const renderPosterResult = (data: any) => {
-    return (
-      <View style={styles.posterCard}>
-        <View style={styles.posterHeader}>
-          <Text selectable={true} style={styles.posterLabel}>
-            Affiche Promotionnelle
-          </Text>
-          <TouchableOpacity
-            onPress={() => copyValueToClipboard('affiche_complete', data)}
-            style={styles.miniCopyButton}>
-            {copiedKey === 'affiche_complete' ? (
-              <Check size={16} color={colors.primary.main} />
-            ) : (
-              <Copy size={16} color={colors.primary.main} />
-            )}
-          </TouchableOpacity>
-        </View>
-
-        {data.titre_principal && (
-          <View style={{ position: 'relative', marginBottom: 15 }}>
-            <Text selectable={true} style={styles.posterTitle}>
-              {data.titre_principal}
-            </Text>
-            <TouchableOpacity
-              onPress={() => copyValueToClipboard('titre', data.titre_principal)}
-              style={styles.miniCopyButtonAbsolute}>
-              {copiedKey === 'titre' ? (
-                <Check size={12} color={colors.primary.main} />
-              ) : (
-                <Copy size={12} color={colors.text.muted} />
-              )}
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {data.sous_titre && (
-          <View style={{ position: 'relative', marginBottom: 15 }}>
-            <Text selectable={true} style={styles.posterSubtitle}>
-              {data.sous_titre}
-            </Text>
-            <TouchableOpacity
-              onPress={() => copyValueToClipboard('sous_titre', data.sous_titre)}
-              style={styles.miniCopyButtonAbsolute}>
-              {copiedKey === 'sous_titre' ? (
-                <Check size={12} color={colors.primary.main} />
-              ) : (
-                <Copy size={12} color={colors.text.muted} />
-              )}
-            </TouchableOpacity>
-          </View>
-        )}
-
-        <View style={styles.posterSeparator} />
-
-        {data.offres_speciales && data.offres_speciales !== '' && (
-          <View style={styles.posterOfferCard}>
-            <Text selectable={true} style={styles.posterOfferText}>
-              {data.offres_speciales}
-            </Text>
-            <TouchableOpacity
-              onPress={() => copyValueToClipboard('offre', data.offres_speciales)}
-              style={styles.miniCopyButtonAbsolute}>
-              {copiedKey === 'offre' ? (
-                <Check size={12} color={colors.primary.main} />
-              ) : (
-                <Copy size={12} color={colors.text.muted} />
-              )}
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {data.informations_pratiques && (
-          <View style={styles.posterInfo}>
-            <Text selectable={true} style={styles.posterInfoText}>
-              {data.informations_pratiques}
-            </Text>
-            <TouchableOpacity
-              onPress={() => copyValueToClipboard('infos', data.informations_pratiques)}
-              style={styles.miniCopyButtonAbsolute}>
-              {copiedKey === 'infos' ? (
-                <Check size={12} color={colors.primary.main} />
-              ) : (
-                <Copy size={12} color={colors.text.muted} />
-              )}
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {data.appel_a_l_action && (
-          <NeonButton
-            title={data.appel_a_l_action}
-            onPress={() => copyValueToClipboard('cta', data.appel_a_l_action)}
-            variant="premium"
-            size="md"
-            style={{ marginTop: 12 }}
-          />
-        )}
       </View>
     );
   };
@@ -474,7 +375,6 @@ export default function Step4ResultScreen() {
       }
     };
 
-    // Priority keys or all keys if generic
     const keys = Object.keys(data);
     keys.forEach((key) => processValue(key, data[key]));
 
@@ -485,28 +385,51 @@ export default function Step4ResultScreen() {
     overrideQuery?: string,
     mode: 'text' | 'image' | 'both' = 'both'
   ) => {
-    console.log('generateContent', { mode });
+    // CRITICAL: Get latest state from store to avoid stale closures
+    const state = useCreationStore.getState();
+    const {
+      selectedCategory,
+      selectedFunction,
+      selectedJob,
+      selectedArchitecture,
+      selectedStyle,
+      userQuery: storeQuery,
+      uploadedImage: storeImage,
+      colorLeft: storeColorLeft,
+      colorRight: storeColorRight,
+      mainTitle: storeMainTitle,
+      subTitle: storeSubTitle,
+      infoLine: storeInfoLine,
+      textPromo: storeTextPromo
+    } = state;
 
-    // if (loading) return;
+    let effectiveCategory = selectedCategory;
+    let effectiveFunction = selectedFunction;
 
-    // Check credits before starting
+    // Fallback logic if store is partially empty (e.g. after refresh)
+    if (!effectiveCategory && effectiveFunction) {
+      if (effectiveFunction.includes('Flyers')) effectiveCategory = 'Document';
+      else if (effectiveFunction.includes('réseaux')) effectiveCategory = 'Social';
+      else if (effectiveFunction.includes('Visuel')) effectiveCategory = 'Image';
+      else if (effectiveFunction.includes('SEO') || effectiveFunction.includes('Email')) effectiveCategory = 'Texte';
+    }
+
+    console.log('[DEBUG] generateContent START', {
+      mode,
+      effectiveCategory,
+      effectiveFunction,
+      selectedArchitecture
+    });
+
+    if (!effectiveCategory) {
+      console.error('[CRITICAL] effectiveCategory is null in generateContent');
+      setResult('Erreur : Session expirée ou catégorie non sélectionnée.');
+      setLoading(false);
+      return;
+    }
+
     const needsText = mode === 'text' || mode === 'both';
     const needsImage = mode === 'image' || mode === 'both';
-
-    if (needsText && isTextExhausted) {
-      const textLimitMsg = promptLimit >= 999999 ? 'illimitée' : `de ${promptLimit} texte${promptLimit > 1 ? 's' : ''}`;
-      showModal('error', 'Limite textes atteinte', `Vous avez atteint votre limite ${textLimitMsg} ${isPackCurieux ? 'par jour' : 'par mois'}. Vous pouvez encore générer des images !`);
-      return;
-    }
-    if (needsImage && isImagesExhausted) {
-      const imageLimitMsg = imagesLimit >= 999999 ? 'illimitée' : `de ${imagesLimit} image${imagesLimit > 1 ? 's' : ''}`;
-      showModal('error', 'Limite images atteinte', `Vous avez atteint votre limite ${imageLimitMsg} ${isPackCurieux ? 'par jour' : 'par mois'}. Vous pouvez encore générer des textes !`);
-      return;
-    }
-    if (isExpired && isPackCurieux) {
-      showModal('error', 'Essai terminé', 'Votre essai de 7 jours est terminé. Veuillez passer au Pack Studio.');
-      return;
-    }
 
     setLoading(true);
     setRegenMode(mode);
@@ -517,42 +440,33 @@ export default function Step4ResultScreen() {
       if (mode === 'image' || mode === 'both') setImageUrl('');
       setShowRegeneratePanel(false);
 
-      if (!selectedCategory) {
-        console.error('selectedCategory is null');
-        setResult('Erreur : Catégorie non sélectionnée.');
-        setLoading(false);
-        return;
-      }
-
-      let finalReferenceImage = uploadedImage;
-      console.log('[DEBUG] Step4 - uploadedImage from store:', uploadedImage);
-      // No longer converting to base64 here. AiService will handle the multipart upload if a URI is detected.
-
-
-      const isFlyerExact = selectedFunction && selectedFunction.includes('Flyers');
+      const isFlyerExact = effectiveFunction && effectiveFunction.includes('Flyers');
       const params: any = {
         job: selectedJob || 'Autre',
-        function: selectedFunction,
-        userQuery: overrideQuery || userQuery,
-        reference_image: finalReferenceImage,
+        function: effectiveFunction,
+        userQuery: overrideQuery || storeQuery,
+        reference_image: storeImage,
       };
 
       if (isFlyerExact) {
-        params.model = selectedStyle;
+        const arch = VISUAL_ARCHITECTURES.find(a => a.id === selectedArchitecture);
+        params.model = arch ? arch.label : selectedStyle;
+        params.colorPrincipale = storeColorLeft;
+        params.colorSecondaire = storeColorRight;
+        params.mainWord = storeMainTitle;
+        params.scriptPhrase = storeSubTitle;
+        params.infoLine = storeInfoLine;
+        params.textPromo = storeTextPromo;
       } else {
         params.style = selectedStyle;
       }
 
-      console.log('[DEBUG] Generating Content with params:', JSON.stringify(params, null, 2), 'Seed:', seed);
+      console.log('[DEBUG] Generating Content with params:', JSON.stringify(params), 'Seed:', seed);
 
       // Specialized prompts per category
-      if (selectedCategory === 'Social') {
+      if (effectiveCategory === 'Social') {
         const socialResponse = await AiService.generateSocial(params, seed);
-        console.log('[DEBUG] Social Response:', JSON.stringify(socialResponse, null, 2));
-
-        if (mode === 'text' || mode === 'both') {
-          setResult(socialResponse.text || socialResponse.content || '');
-        }
+        if (mode === 'text' || mode === 'both') setResult(socialResponse.text || socialResponse.content || '');
         if (mode === 'image' || mode === 'both') {
           setImageUrl(socialResponse.image || socialResponse.url || '');
           if (socialResponse.seed !== undefined) setSeed(socialResponse.seed);
@@ -560,7 +474,6 @@ export default function Step4ResultScreen() {
         setGenerationId(socialResponse.generationId);
 
         if (socialResponse.isAsync) {
-          console.log('[DEBUG] Social Async detected. Polling...');
           let isCompleted = false;
           let attempts = 0;
           const maxAttempts = 60;
@@ -569,13 +482,10 @@ export default function Step4ResultScreen() {
             await new Promise(resolve => setTimeout(resolve, 5000));
             try {
               const updatedGen = await AiService.getConversation(socialResponse.generationId.toString());
-              console.log('[DEBUG] Social Poll attempt', attempts, ':', JSON.stringify(updatedGen, null, 2));
-              // Check for imageUrl (backend field), url, or image
-              const imageUrl = updatedGen?.imageUrl || updatedGen?.url || updatedGen?.image;
-              if (imageUrl && typeof imageUrl === 'string' && imageUrl.startsWith('http')) {
-                setImageUrl(imageUrl);
+              const img = updatedGen?.imageUrl || updatedGen?.url || updatedGen?.image;
+              if (img && typeof img === 'string' && img.startsWith('http')) {
+                setImageUrl(img);
                 isCompleted = true;
-                console.log('[DEBUG] ✅ Social image found:', imageUrl);
               } else if (updatedGen?.result?.startsWith('ERROR')) {
                 isCompleted = true;
                 throw new Error(updatedGen.result);
@@ -584,322 +494,166 @@ export default function Step4ResultScreen() {
               console.warn('Social poll error:', pollError);
             }
           }
-          if (!isCompleted) {
-            throw new Error('Délai de génération dépassé. Veuillez vérifier votre historique dans quelques instants.');
-          }
         }
-      } else if (selectedCategory === 'Image') {
-        // Différencie Flyers/Affiches de Visuel publicitaire
-        const isFlyerExact = selectedFunction && selectedFunction.includes('Flyers');
-        const isVisuelPub = selectedFunction && selectedFunction.includes('Visuel');
+      } else if (effectiveCategory === 'Image') {
+        const isVisuelPub = effectiveFunction && effectiveFunction.includes('Visuel');
 
         if (isFlyerExact) {
-          // Génère avec generateFlyer pour "Flyers / Affiches"
           const flyerResult = await AiService.generateFlyer(params, seed);
           if (flyerResult.isAsync) {
-            console.log('[DEBUG] Flyer Async detected. Polling...');
             setGenerationId(flyerResult.generationId);
             let isCompleted = false;
             let attempts = 0;
-            const maxAttempts = 60;
-            while (!isCompleted && attempts < maxAttempts) {
+            while (!isCompleted && attempts < 60) {
               attempts++;
               await new Promise(resolve => setTimeout(resolve, 5000));
-              try {
-                const updatedGen = await AiService.getConversation(flyerResult.generationId.toString());
-                if (updatedGen?.imageUrl?.startsWith('http')) {
-                  setImageUrl(updatedGen.imageUrl);
-                  isCompleted = true;
-                } else if (updatedGen?.result?.startsWith('ERROR')) {
-                  isCompleted = true;
-                  throw new Error(updatedGen.result);
-                }
-              } catch (pollError) {
-                console.warn('Flyer poll error:', pollError);
+              const updatedGen = await AiService.getConversation(flyerResult.generationId.toString());
+              if (updatedGen?.imageUrl?.startsWith('http')) {
+                setImageUrl(updatedGen.imageUrl);
+                isCompleted = true;
+              } else if (updatedGen?.result?.startsWith('ERROR')) {
+                isCompleted = true;
+                throw new Error(updatedGen.result);
               }
-            }
-            if (!isCompleted) {
-              throw new Error('Délai de génération dépassé. Veuillez vérifier votre historique dans quelques instants.');
             }
           } else {
             setImageUrl(flyerResult.url);
             setGenerationId(flyerResult.generationId);
-            if (flyerResult.seed !== undefined) setSeed(flyerResult.seed);
           }
         } else if (isVisuelPub) {
-          // Génère avec generateImage pour "Visuel publicitaire" - SAME CODE AS SOCIAL THAT WORKS
           const resultData = await AiService.generateImage(params, (selectedStyle as any) || 'realistic', seed);
-          console.log('[DEBUG] Visuel Publicitaire Image Result:', JSON.stringify(resultData, null, 2));
-
-          // Détecte si c'est asynchrone (URL null mais generationId présent)
-          const isAsync = !resultData.url && resultData.generationId;
-          console.log('[DEBUG] Visuel Publicitaire isAsync:', isAsync, 'generationId:', resultData.generationId);
-
-          if (isAsync) {
-            console.log('[DEBUG] ⏳ Starting Visuel Publicitaire polling with generationId:', resultData.generationId);
+          if (!resultData.url && resultData.generationId) {
             setGenerationId(resultData.generationId);
             let isCompleted = false;
             let attempts = 0;
-            const maxAttempts = 60;
-            let lastImageUrl = null;
-
-            while (!isCompleted && attempts < maxAttempts) {
+            while (!isCompleted && attempts < 60) {
               attempts++;
-              console.log(`[DEBUG] 🔄 Visuel Publicitaire Poll attempt ${attempts}/${maxAttempts}`);
               await new Promise(resolve => setTimeout(resolve, 5000));
-              try {
-                const updatedGen = await AiService.getConversation(resultData.generationId.toString());
-                console.log('[DEBUG] Visuel Publicitaire Poll response:', JSON.stringify(updatedGen, null, 2));
-                const imageUrl = updatedGen?.imageUrl || updatedGen?.url || updatedGen?.image;
-                console.log('[DEBUG] Extracted imageUrl:', imageUrl);
-
-                if (imageUrl && typeof imageUrl === 'string' && imageUrl.startsWith('http')) {
-                  console.log('[DEBUG] ✅ Visuel Publicitaire image found:', imageUrl);
-                  setImageUrl(imageUrl);
-                  isCompleted = true;
-                } else if (updatedGen?.result?.startsWith('ERROR')) {
-                  isCompleted = true;
-                  throw new Error(updatedGen.result);
-                }
-              } catch (pollError) {
-                console.warn('[DEBUG] Visuel Publicitaire poll error:', pollError);
+              const updatedGen = await AiService.getConversation(resultData.generationId.toString());
+              const img = updatedGen?.imageUrl || updatedGen?.url || updatedGen?.image;
+              if (img && typeof img === 'string' && img.startsWith('http')) {
+                setImageUrl(img);
+                isCompleted = true;
+              } else if (updatedGen?.result?.startsWith('ERROR')) {
+                isCompleted = true;
+                throw new Error(updatedGen.result);
               }
             }
-
-            if (!isCompleted) {
-              console.error('[DEBUG] ❌ Visuel Publicitaire polling timed out');
-              throw new Error('Image generation timed out');
-            }
           } else {
-            const imageUrl = resultData.url || resultData.image || resultData.imageUrl;
-            setImageUrl(imageUrl || '');
+            setImageUrl(resultData.url || resultData.image || resultData.imageUrl || '');
             setGenerationId(resultData.generationId);
-            if (resultData.seed !== undefined) setSeed(resultData.seed);
           }
         }
-      } else if (selectedCategory === 'Document') {
+      } else if (effectiveCategory === 'Document') {
         if (isFlyerExact) {
           const flyerResult = await AiService.generateFlyer(params, seed);
-          console.log('[DEBUG] Document Flyer Result:', JSON.stringify(flyerResult, null, 2));
-
-          const isAsync = !flyerResult.url && flyerResult.generationId;
-          if (isAsync) {
+          if (!flyerResult.url && flyerResult.generationId) {
             setGenerationId(flyerResult.generationId);
             let isCompleted = false;
             let attempts = 0;
-            const maxAttempts = 60;
-            while (!isCompleted && attempts < maxAttempts) {
+            while (!isCompleted && attempts < 60) {
               attempts++;
               await new Promise(resolve => setTimeout(resolve, 5000));
-              try {
-                const updatedGen = await AiService.getConversation(flyerResult.generationId.toString());
-                const imageUrl = updatedGen?.imageUrl || updatedGen?.url || updatedGen?.image;
-                if (imageUrl && typeof imageUrl === 'string' && imageUrl.startsWith('http')) {
-                  setImageUrl(imageUrl);
-                  isCompleted = true;
-                } else if (updatedGen?.result?.startsWith('ERROR')) {
-                  isCompleted = true;
-                  throw new Error(updatedGen.result);
-                }
-              } catch (pollError) {
-                console.warn('[DEBUG] Document Flyer poll error:', pollError);
+              const updatedGen = await AiService.getConversation(flyerResult.generationId.toString());
+              const img = updatedGen?.imageUrl || updatedGen?.url || updatedGen?.image;
+              if (img && typeof img === 'string' && img.startsWith('http')) {
+                setImageUrl(img);
+                isCompleted = true;
               }
             }
-            if (!isCompleted) throw new Error('Délai de génération dépassé.');
           } else {
             setImageUrl(flyerResult.url);
             setResult(flyerResult.url);
             setGenerationId(flyerResult.generationId);
-            if (flyerResult.seed !== undefined) setSeed(flyerResult.seed);
           }
         } else {
           const resultData = await AiService.generateDocument('business', params);
           setResult(resultData.content);
           setGenerationId(resultData.generationId);
         }
-      } else if (selectedCategory === 'Texte') {
-        // Améliore la détection pour différencier correctement les types
-        const isFlyerExact = selectedFunction && selectedFunction.includes('Flyers');
-        const isVisuel = selectedFunction && selectedFunction.includes('Visuel');
-
-        console.log('[DEBUG] Texte category - selectedFunction:', selectedFunction, 'isFlyerExact:', isFlyerExact, 'isVisuel:', isVisuel);
-
-        if (isFlyerExact) {
-          const flyerResult = await AiService.generateFlyer(params, seed);
-          console.log('[DEBUG] Flyer Result:', JSON.stringify(flyerResult, null, 2));
-
-          // Détecte si c'est asynchrone (URL null mais generationId présent)
-          const isAsync = !flyerResult.url && flyerResult.generationId;
-          console.log('[DEBUG] Flyer isAsync:', isAsync, 'generationId:', flyerResult.generationId, 'url:', flyerResult.url);
-
-          if (isAsync) {
-            console.log('[DEBUG] ⏳ Starting Flyer polling with generationId:', flyerResult.generationId);
-            setGenerationId(flyerResult.generationId);
-            let isCompleted = false;
-            let attempts = 0;
-            const maxAttempts = 60; // Timeout plus rapide: 1 min au lieu de 3 min
-            let lastImageUrl = null;
-
-            while (!isCompleted && attempts < maxAttempts) {
-              attempts++;
-              console.log(`[DEBUG] 🔄 Flyer Poll attempt ${attempts}/${maxAttempts}`);
-              await new Promise(resolve => setTimeout(resolve, 5000));
-              try {
-                console.log('[DEBUG] 📡 Fetching conversation with ID:', flyerResult.generationId);
-                const updatedGen = await AiService.getConversation(flyerResult.generationId.toString());
-                console.log('[DEBUG] Flyer Poll attempt', attempts, 'response:', JSON.stringify(updatedGen, null, 2));
-                // Check for imageUrl (backend field), url, or image
-                const imageUrl = updatedGen?.imageUrl || updatedGen?.url || updatedGen?.image;
-                console.log('[DEBUG] Extracted imageUrl:', imageUrl);
-
-                if (imageUrl && typeof imageUrl === 'string' && imageUrl.startsWith('http')) {
-                  console.log('[DEBUG] ✅ Flyer image found:', imageUrl);
-                  setImageUrl(imageUrl);
-                  isCompleted = true;
-                } else if (updatedGen?.result?.startsWith('ERROR')) {
-                  console.error('[DEBUG] Generation error:', updatedGen.result);
-                  isCompleted = true;
-                  throw new Error(updatedGen.result);
-                } else {
-                  lastImageUrl = imageUrl; // Track if it's stuck
-                }
-              } catch (pollError) {
-                console.warn('[DEBUG] ⚠️ Flyer poll error on attempt', attempts, ':', pollError);
-              }
-            }
-
-            if (!isCompleted) {
-              console.error('[DEBUG] ❌ Flyer polling timed out after', maxAttempts, 'attempts. LastImageUrl:', lastImageUrl);
-              showModal('error', 'Génération échouée', 'L\'API de génération d\'images n\'a pas pu créer votre image. Vérifiez vos paramètres et réessayez.');
-              throw new Error('Image generation timed out');
-            }
-          } else {
-            setImageUrl(flyerResult.url);
-            setResult(flyerResult.url);
-            setGenerationId(flyerResult.generationId);
-            if (flyerResult.seed !== undefined) setSeed(flyerResult.seed);
-          }
-        } else if (isVisuel) {
-          // Génère une image pour "Visuel publicitaire"
-          const resultData = await AiService.generateImage(params, (selectedStyle as any) || 'realistic', seed);
-          console.log('[DEBUG] Visuel Image Result:', JSON.stringify(resultData, null, 2));
-
-          // Détecte si c'est asynchrone (URL null mais generationId présent)
-          const isAsync = !resultData.url && resultData.generationId;
-          console.log('[DEBUG] Visuel Image isAsync:', isAsync, 'generationId:', resultData.generationId, 'url:', resultData.url);
-
-          if (isAsync) {
-            console.log('[DEBUG] ⏳ Starting Visuel Image polling with generationId:', resultData.generationId);
-            setGenerationId(resultData.generationId);
-            let isCompleted = false;
-            let attempts = 0;
-            const maxAttempts = 60; // 1 min timeout
-            let lastImageUrl = null;
-
-            while (!isCompleted && attempts < maxAttempts) {
-              attempts++;
-              console.log(`[DEBUG] 🔄 Visuel Image Poll attempt ${attempts}/${maxAttempts}`);
-              await new Promise(resolve => setTimeout(resolve, 5000));
-              try {
-                console.log('[DEBUG] 📡 Fetching conversation with ID:', resultData.generationId);
-                const updatedGen = await AiService.getConversation(resultData.generationId.toString());
-                console.log('[DEBUG] Visuel Image Poll attempt', attempts, 'response:', JSON.stringify(updatedGen, null, 2));
-                // Check for imageUrl (backend field), url, or image
-                const imageUrl = updatedGen?.imageUrl || updatedGen?.url || updatedGen?.image;
-                console.log('[DEBUG] Extracted imageUrl:', imageUrl);
-
-                if (imageUrl && typeof imageUrl === 'string' && imageUrl.startsWith('http')) {
-                  console.log('[DEBUG] ✅ Visuel Image found:', imageUrl);
-                  setImageUrl(imageUrl);
-                  isCompleted = true;
-                } else if (updatedGen?.result?.startsWith('ERROR')) {
-                  console.error('[DEBUG] Generation error:', updatedGen.result);
-                  isCompleted = true;
-                  throw new Error(updatedGen.result);
-                } else {
-                  lastImageUrl = imageUrl;
-                }
-              } catch (pollError) {
-                console.warn('[DEBUG] ⚠️ Visuel Image poll error on attempt', attempts, ':', pollError);
-              }
-            }
-
-            if (!isCompleted) {
-              console.error('[DEBUG] ❌ Visuel Image polling timed out after', maxAttempts, 'attempts. LastImageUrl:', lastImageUrl);
-              showModal('error', 'Génération échouée', 'L\'API de génération d\'images n\'a pas pu créer votre image. Vérifiez vos paramètres et réessayez.');
-              throw new Error('Image generation timed out');
-            }
-          } else {
-            const imageUrl = resultData.url || resultData.image || resultData.imageUrl;
-            setImageUrl(imageUrl || '');
-            setGenerationId(resultData.generationId);
-            if (resultData.seed !== undefined) setSeed(resultData.seed);
-          }
-        } else {
-          const resultData = await AiService.generateText(
-            params,
-            selectedCategory.toLowerCase() as TextGenerationType
-          );
-          setResult(resultData.content);
-          setGenerationId(resultData.generationId);
-        }
-      } else if (selectedCategory === 'Video') {
+      } else if (effectiveCategory === 'Texte') {
+        const resultData = await AiService.generateText(params, effectiveCategory.toLowerCase() as TextGenerationType);
+        setResult(resultData.content);
+        setGenerationId(resultData.generationId);
+      } else if (effectiveCategory === 'Video') {
         const videoResponse = await AiService.generateVideo(params, seed);
-        setImageUrl(videoResponse.url); // Use image preview for video if available or just the video url
+        setImageUrl(videoResponse.url);
         setResult(videoResponse.url);
         setGenerationId(videoResponse.generationId);
-        if (videoResponse.seed !== undefined) setSeed(videoResponse.seed);
-      } else if (selectedCategory === 'Audio') {
+      } else if (effectiveCategory === 'Audio') {
         const audioResponse = await AiService.generateAudio(params, seed);
         setResult(audioResponse.content);
         setImageUrl(null);
         setGenerationId(audioResponse.generationId);
       }
     } catch (error: any) {
-      console.error('[CRITICAL] Generation error details:', {
-        message: error.message,
-        code: error.code,
-        status: error.response?.status,
-        data: error.response?.data,
-        configUrl: error.config?.url,
-        configMethod: error.config?.method,
-      });
+      console.error('[CRITICAL] Generation error details:', error);
       const errMsg = error?.response?.data?.message || error.message || 'Erreur inconnue';
       showModal('error', 'Erreur de génération', errMsg);
       setResult('Une erreur est survenue lors de la génération. ' + errMsg);
     } finally {
       setLoading(false);
-      // Update credits in real-time
       await aiRefreshUser();
     }
   };
 
   useEffect(() => {
-    generateContent();
+    // Robust mount handling for persistent store
+    const checkStoreAndGenerate = () => {
+      const state = useCreationStore.getState();
+      console.log('[DEBUG] Step4ResultScreen MOUNT CHECK', {
+        hasHydrated: useCreationStore.persist.hasHydrated(),
+        selectedCategory: state.selectedCategory,
+        selectedFunction: state.selectedFunction,
+        selectedArchitecture: state.selectedArchitecture
+      });
 
-    // Request permissions upfront - with better error handling
+      if (state.selectedCategory || state.selectedFunction) {
+        generateContent();
+      } else {
+        console.warn('[DEBUG] Delaying generateContent: store not ready or empty');
+        const timer = setTimeout(() => {
+          const latestState = useCreationStore.getState();
+          if (latestState.selectedCategory || latestState.selectedFunction) {
+            generateContent();
+          } else {
+            console.error('[DEBUG] Store STILL not ready after 2s', {
+              latestState,
+              hasHydrated: useCreationStore.persist.hasHydrated()
+            });
+            setLoading(false);
+            setResult('Erreur : Session expirée ou données manquantes.');
+          }
+        }, 2000);
+        return () => clearTimeout(timer);
+      }
+    };
+
+    // If already hydrated, check immediately. Otherwise wait for hydration.
+    if (useCreationStore.persist.hasHydrated()) {
+      checkStoreAndGenerate();
+    } else {
+      const unsub = useCreationStore.persist.onFinishHydration(() => {
+        console.log('[DEBUG] Store hydration finished');
+        checkStoreAndGenerate();
+      });
+      return () => unsub();
+    }
+  }, []); // Explicitly mount only
+
+  useEffect(() => {
     const requestPermissions = async () => {
       try {
         try {
           await MediaLibrary.requestPermissionsAsync();
-        } catch (mediaError) {
-          console.warn('[PERMISSION] MediaLibrary not available in Expo Go:', mediaError);
-          // Continue anyway - it's not critical for the feature
-        }
-
+        } catch (e) { }
         try {
           await Notifications.requestPermissionsAsync();
-        } catch (notifError) {
-          console.warn('[PERMISSION] Notifications permission error:', notifError);
-        }
-      } catch (e) {
-        console.warn('[PERMISSION] General permission request error:', e);
-      }
+        } catch (e) { }
+      } catch (e) { }
     };
     requestPermissions();
   }, []);
-
-
 
   const handleCopyText = async () => {
     if (isRestricted) {
@@ -921,75 +675,26 @@ export default function Step4ResultScreen() {
 
     try {
       if (permissionResponse?.status !== 'granted') {
-        try {
-          const permission = await requestPermission();
-          if (!permission.granted) {
-            showModal(
-              'error',
-              'Permission refusée',
-              "Nous avons besoin de votre permission pour enregistrer l'image."
-            );
-            return;
-          }
-        } catch (permError: any) {
-          console.warn('MediaLibrary.requestPermissionsAsync failed:', permError);
-          // Expo Go on Android may reject this call due to scoped storage changes.
-          // Fallback: download file and open share dialog so user can save it manually.
-          try {
-            showModal('loading', 'Préparation', "Téléchargement de l'image pour partage...");
-            const filename = `Hipster-${Date.now()}.png`;
-            const fileUri = `${FileSystem.cacheDirectory}${filename}`;
-            const downloadRes = await FileSystem.downloadAsync(imageUrl, fileUri);
-            setModalVisible(false);
-            if (downloadRes.status === 200) {
-              await Sharing.shareAsync(downloadRes.uri, { dialogTitle: 'Enregistrer l\'image' });
-              showModal('info', 'Astuce', "Sur Expo Go Android, l'enregistrement direct nécessite une build de développement. Utilisez le partage pour sauvegarder l'image ou créez une build via EAS.");
-            } else {
-              showModal('error', 'Oups', 'Echec du téléchargement pour le partage.');
-            }
-          } catch (e) {
-            console.error('Fallback share/download error:', e);
-            setModalVisible(false);
-            showModal('error', 'Erreur', "Impossible d'enregistrer l'image.");
-          }
+        const permission = await requestPermission();
+        if (!permission.granted) {
+          showModal('error', 'Permission refusée', "Nous avons besoin de votre permission pour enregistrer l'image.");
           return;
         }
       }
 
       showModal('loading', 'Enregistrement...', 'Sauvegarde dans votre galerie.');
-
       const filename = `Hipster-${Date.now()}.png`;
-      const cacheDir = FileSystem.cacheDirectory;
-      if (!cacheDir) throw new Error('Cache directory not available');
-      const fileUri = cacheDir.endsWith('/') ? `${cacheDir}${filename}` : `${cacheDir}/${filename}`;
-
+      const fileUri = `${FileSystem.cacheDirectory}${filename}`;
       const downloadRes = await FileSystem.downloadAsync(imageUrl, fileUri);
 
-      if (downloadRes.status !== 200) {
-        throw new Error('Download failed');
-      }
+      if (downloadRes.status !== 200) throw new Error('Download failed');
 
-      let asset;
-      try {
-        asset = await MediaLibrary.createAssetAsync(downloadRes.uri);
-      } catch (assetError: any) {
-        console.warn('MediaLibrary.createAssetAsync failed:', assetError);
-        // Fallback to sharing
-        setModalVisible(false);
-        await Sharing.shareAsync(downloadRes.uri, { dialogTitle: 'Enregistrer l\'image' });
-        showModal('info', 'Astuce', "L'enregistrement direct a échoué. Utilisez le menu de partage pour sauvegarder l'image dans vos photos.");
-        return;
-      }
-
-      try {
-        const album = await MediaLibrary.getAlbumAsync('Hipster');
-        if (album == null) {
-          await MediaLibrary.createAlbumAsync('Hipster', asset, false);
-        } else {
-          await MediaLibrary.addAssetsToAlbumAsync([asset], album, false);
-        }
-      } catch (albumError) {
-        console.warn('Could not add to album, but asset saved:', albumError);
+      const asset = await MediaLibrary.createAssetAsync(downloadRes.uri);
+      const album = await MediaLibrary.getAlbumAsync('Hipster');
+      if (album == null) {
+        await MediaLibrary.createAlbumAsync('Hipster', asset, false);
+      } else {
+        await MediaLibrary.addAssetsToAlbumAsync([asset], album, false);
       }
 
       setModalVisible(false);
@@ -997,8 +702,7 @@ export default function Step4ResultScreen() {
     } catch (error: any) {
       console.error('Save to gallery error:', error);
       setModalVisible(false);
-      const msg = error?.message || String(error);
-      showModal('error', 'Erreur', `Impossible d'enregistrer l'image. ${msg}`);
+      showModal('error', 'Erreur', "Impossible d'enregistrer l'image.");
     }
   };
 
@@ -1012,20 +716,14 @@ export default function Step4ResultScreen() {
         showModal('loading', 'Préparation', "Téléchargement de l'image...");
         const remoteUrl = imageUrl || result;
         if (!remoteUrl) return;
-
         const filename = `share-${Date.now()}.png`;
-        const fileUri = `${(FileSystem as any).cacheDirectory}${filename}`;
-
-        const res = await (FileSystem as any).downloadAsync(remoteUrl, fileUri);
+        const fileUri = `${FileSystem.cacheDirectory}${filename}`;
+        const res = await FileSystem.downloadAsync(remoteUrl, fileUri);
         setModalVisible(false);
-
         if (res.status === 200) {
           await Sharing.shareAsync(res.uri);
-        } else {
-          showModal('error', 'Oups', 'Echec du téléchargement pour le partage.');
         }
       } else if (selectedCategory === 'Document' || result) {
-        // Partage de texte classique pour les documents ou autre texte
         await RNShare.share({
           message: getVisibleText(result),
           title: 'Mon contenu Hipster IA',
@@ -1033,7 +731,6 @@ export default function Step4ResultScreen() {
       }
     } catch (error) {
       setModalVisible(false);
-      console.error('Share error:', error);
       showModal('error', 'Erreur', 'Impossible de partager.');
     }
   };
@@ -1058,32 +755,14 @@ export default function Step4ResultScreen() {
       }>
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
         <View style={styles.content}>
-          {/* Header simplifié */}
           <View style={styles.header}>
             {loading ? (
               <View style={styles.skeletonWrapper}>
-                {/* Bloc image skeleton */}
-                <Animated.View
-                  style={[styles.skeletonImage, { opacity: pulseAnim }]}
-                />
-
-                {/* Bloc titre skeleton */}
-                <Animated.View
-                  style={[styles.skeletonTitle, { opacity: pulseAnim }]}
-                />
-
-                {/* Lignes de texte skeleton */}
-                <Animated.View
-                  style={[styles.skeletonLine, { opacity: pulseAnim, width: '90%' }]}
-                />
-                <Animated.View
-                  style={[styles.skeletonLine, { opacity: pulseAnim, width: '75%' }]}
-                />
-                <Animated.View
-                  style={[styles.skeletonLine, { opacity: pulseAnim, width: '60%' }]}
-                />
-
-                {/* Label discret */}
+                <Animated.View style={[styles.skeletonImage, { opacity: pulseAnim }]} />
+                <Animated.View style={[styles.skeletonTitle, { opacity: pulseAnim }]} />
+                <Animated.View style={[styles.skeletonLine, { opacity: pulseAnim, width: '90%' }]} />
+                <Animated.View style={[styles.skeletonLine, { opacity: pulseAnim, width: '75%' }]} />
+                <Animated.View style={[styles.skeletonLine, { opacity: pulseAnim, width: '60%' }]} />
                 <Text style={styles.skeletonLabel}>Hipster•IA génère votre contenu...</Text>
               </View>
             ) : (
@@ -1091,841 +770,184 @@ export default function Step4ResultScreen() {
                 <View style={styles.successIcon}>
                   <Check size={32} color={colors.background.dark} />
                 </View>
-                <Text selectable={true} style={styles.title}>
-                  Votre contenu est prêt !
-                </Text>
+                <Text selectable={true} style={styles.title}>Votre contenu est prêt !</Text>
               </>
             )}
           </View>
 
           {!loading && (
             <View style={styles.resultCard}>
-              {/* 📱 SOCIAL CATEGORY (Image + Caption) */}
               {selectedCategory === 'Social' && (
                 <View style={styles.socialCard}>
                   <View style={styles.socialHeader}>
-                    <View style={styles.socialAvatar}>
-                      <Sparkles size={16} color={colors.primary.main} />
-                    </View>
+                    <View style={styles.socialAvatar}><Sparkles size={16} color={colors.primary.main} /></View>
                     <View>
                       <Text style={styles.socialUser}>Hipster IA</Text>
                       <Text style={styles.socialTime}>À l'instant • Publicité</Text>
                     </View>
                   </View>
-
                   <View style={[styles.socialImageSection, { aspectRatio: 0.8 }]}>
                     {imageUrl ? (
-                      <Image
-                        source={{ uri: imageUrl }}
-                        style={styles.generatedImage}
-                        resizeMode="cover"
-                      />
+                      <Image source={{ uri: imageUrl }} style={styles.generatedImage} resizeMode="cover" />
                     ) : (
                       <View style={[styles.generatedImage, { justifyContent: 'center', alignItems: 'center' }]}>
-                        <Text style={{ color: '#999', fontSize: 14 }}>Image en cours de génération...</Text>
+                        <Text style={{ color: '#999', fontSize: 14 }}>Image en cours...</Text>
                       </View>
                     )}
                   </View>
-
                   <View style={styles.socialCaptionSection}>
-                    <Text selectable={true} style={styles.socialCaptionText}>
-                      {result}
-                    </Text>
+                    <Text selectable={true} style={styles.socialCaptionText}>{result}</Text>
                   </View>
                 </View>
               )}
 
-              {/* 🖼️ IMAGE CATEGORY (Full Visual focus) */}
               {selectedCategory === 'Image' && (
                 <View style={styles.imageSection}>
                   {imageUrl ? (
-                    <Image
-                      source={{ uri: imageUrl }}
-                      style={styles.generatedImage}
-                      resizeMode="contain"
-                    />
+                    <Image source={{ uri: imageUrl }} style={styles.generatedImage} resizeMode="contain" />
                   ) : (
                     <View style={[styles.generatedImage, { justifyContent: 'center', alignItems: 'center', backgroundColor: '#f5f5f5', borderRadius: 8 }]}>
-                      <Text style={{ color: '#999', fontSize: 14 }}>Image en cours de génération...</Text>
+                      <Text style={{ color: '#999', fontSize: 14 }}>Image en cours...</Text>
                     </View>
                   )}
                 </View>
               )}
 
-              {/* 📄 DOCUMENT CATEGORY (Structured View) */}
               {selectedCategory === 'Document' && (
                 <View style={styles.documentSection}>
                   <View style={styles.documentHeader}>
                     <FileText size={32} color={colors.primary.main} />
-                    <Text selectable={true} style={styles.documentTitle}>
-                      Document structuré
-                    </Text>
+                    <Text selectable={true} style={styles.documentTitle}>Document structuré</Text>
                   </View>
-
-                  {/* Display image if generated */}
                   {imageUrl && renderFlyerImage()}
                   <View style={styles.structuredContent}>
-                    {/* Content Preview */}
-                    {(() => {
-                      const data = getParsedData(result);
-                      return data ? (
-                        <View style={{ marginTop: 20 }}>
-                          <Text selectable={true} style={styles.sectionTitle}>
-                            {data.title || 'Contenu'}
-                          </Text>
-                          <Text selectable={true} style={styles.contentText}>
-                            {data.presentation || result}
-                          </Text>
-                        </View>
-                      ) : (
-                        <Text selectable={true} style={styles.contentText}>
-                          {result}
-                        </Text>
-                      );
-                    })()}
+                    <Text selectable={true} style={styles.contentText}>{getVisibleText(result)}</Text>
                   </View>
                 </View>
               )}
 
-              {/* ✍️ TEXT CATEGORY (Clean Reading focus) */}
               {selectedCategory === 'Texte' && (
                 <View style={styles.textSection}>
-                  {/* Display image exactly like Social does - SAME CODE THAT WORKS */}
                   {imageUrl && (
                     <View style={[styles.socialImageSection, { aspectRatio: 0.8, marginBottom: 20 }]}>
-                      <Image
-                        source={{ uri: imageUrl }}
-                        style={styles.generatedImage}
-                        resizeMode="cover"
-                      />
+                      <Image source={{ uri: imageUrl }} style={styles.generatedImage} resizeMode="cover" />
                     </View>
                   )}
-
-                  <View>
-                    <View style={{ marginTop: 12 }}>
-                      {(() => {
-                        const data = getParsedData(result);
-                        if (data) {
-                          // Si c'est une affiche (détectée par ses clés spécifiques)
-                          // if (
-                          //   data.titre_principal ||
-                          //   (selectedFunction && selectedFunction.includes('Affiche'))
-                          // ) {
-                          //   return renderPosterResult(data);
-                          // }
-                          return renderJsonResult(data);
-                        }
-                        return (
-                          <Text selectable={true} style={styles.contentText}>
-                            {result}
-                          </Text>
-                        );
-                      })()}
-                    </View>
-                  </View>
+                  <View>{renderJsonResult(getParsedData(result)) || <Text selectable={true} style={styles.contentText}>{result}</Text>}</View>
                 </View>
               )}
 
-              {/* 🛠️ NAVIGATION & ACTIONS BAR (Generic but adapted) */}
               <View style={styles.actionsBar}>
                 <View style={{ flex: 1, paddingHorizontal: 4 }}>
-                  <NeonButton
-                    title="Copier"
-                    onPress={handleCopyText}
-                    variant="ghost"
-                    size="sm"
-                    icon={<Copy size={16} color={colors.neon.primary} />}
-                  />
+                  <NeonButton title="Copier" onPress={handleCopyText} variant="ghost" size="sm" icon={<Copy size={16} color={colors.neon.primary} />} />
                 </View>
-
                 {(selectedCategory === 'Image' || selectedCategory === 'Social' || imageUrl) && (
                   <View style={{ flex: 1, paddingHorizontal: 4 }}>
-                    <NeonButton
-                      title="Enregistrer"
-                      onPress={handleSaveToGallery}
-                      variant="ghost"
-                      size="sm"
-                      icon={<Download size={16} color={colors.neon.primary} />}
-                    />
+                    <NeonButton title="Enregistrer" onPress={handleSaveToGallery} variant="ghost" size="sm" icon={<Download size={16} color={colors.neon.primary} />} />
                   </View>
                 )}
-
                 <View style={{ flex: 1, paddingHorizontal: 4 }}>
-                  <NeonButton
-                    title="Partager"
-                    onPress={handleShare}
-                    variant="ghost"
-                    size="sm"
-                    icon={<ShareIcon size={16} color={colors.neon.primary} />}
-                  />
+                  <NeonButton title="Partager" onPress={handleShare} variant="ghost" size="sm" icon={<ShareIcon size={16} color={colors.neon.primary} />} />
                 </View>
               </View>
             </View>
           )}
 
-          {/* Panneau de régénération replié */}
           {!loading && (
-            <>
-              {/* Daily Quota Warnings */}
-              {isPackCurieux && (
-                <View style={{ marginBottom: 16, alignItems: 'center' }}>
-                  {isTextExhausted && !isImagesExhausted && (
-                    <Text style={{ fontSize: 13, color: '#fb923c', textAlign: 'center' }}>
-                      Limite de textes atteinte aujourd'hui.
-                    </Text>
-                  )}
-                  {!isTextExhausted && isImagesExhausted && (
-                    <Text style={{ fontSize: 13, color: '#fb923c', textAlign: 'center' }}>
-                      Limite d'images atteinte aujourd'hui.
-                    </Text>
-                  )}
-                  {isFullyExhausted && (
-                    <Text style={{ fontSize: 13, color: '#f87171', fontWeight: '700', textAlign: 'center' }}>
-                      Limites quotidiennes atteintes (2/2). Revenez demain !
-                    </Text>
-                  )}
-                  {!isFullyExhausted && (
-                    <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', textAlign: 'center' }}>
-                      Restant aujourd'hui: {textRemaining} textes, {imagesRemaining} images
-                    </Text>
-                  )}
+            <View style={styles.regenerateSection}>
+              {!showRegeneratePanel ? (
+                <NeonButton title="Modifier et régénérer" onPress={() => setShowRegeneratePanel(true)} variant="outline" size="md" icon={<RefreshCcw size={18} color={colors.neon.primary} />} style={{ width: '100%' }} />
+              ) : (
+                <View style={styles.regeneratePanel}>
+                  <View style={styles.regeneratePanelHeader}>
+                    <Text style={styles.regeneratePanelTitle}>Modifier ma demande</Text>
+                    <TouchableOpacity onPress={() => setShowRegeneratePanel(false)}><X size={24} color={colors.text.secondary} /></TouchableOpacity>
+                  </View>
+                  <TextInput style={styles.regenerateInput} multiline value={localQuery} onChangeText={setLocalQuery} placeholder="Ex: Changez les couleurs, ajoutez plus de texte..." placeholderTextColor="rgba(255,255,255,0.3)" />
+                  <View style={styles.modeSelector}>
+                    <Text style={styles.modeLabel}>Régénérer :</Text>
+                    <View style={styles.modeOptionsRow}>
+                      {['text', 'image', 'both'].filter(id => {
+                        if (selectedCategory === 'Social') return true;
+                        if (selectedCategory === 'Image') return id === 'image';
+                        if (selectedCategory === 'Texte') return id === 'text';
+                        return true;
+                      }).map(id => (
+                        <TouchableOpacity key={id} style={[styles.modeItem, regenMode === id && styles.modeItemSelected]} onPress={() => setRegenMode(id as any)}>
+                          <Text style={[styles.modeItemText, regenMode === id && styles.modeItemTextSelected]}>{id === 'both' ? 'Les deux' : id === 'text' ? 'Texte' : 'Image'}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </View>
+                  <NeonButton title="Régénérer" onPress={() => generateContent(localQuery, regenMode)} icon={<Sparkles size={20} color="#000" />} size="lg" variant="premium" />
                 </View>
               )}
-
-              <View style={styles.regenerateSection}>
-                {!showRegeneratePanel ? (
-                  <NeonButton
-                    title="Modifier et régénérer"
-                    onPress={() => setShowRegeneratePanel(true)}
-                    variant="outline"
-                    size="md"
-                    icon={<RefreshCcw size={18} color={colors.neon.primary} />}
-                    style={{ width: '100%' }}
-                  />
-                ) : (
-                  <View style={styles.regeneratePanel}>
-                    <View style={styles.regeneratePanelHeader}>
-                      <Text style={styles.regeneratePanelTitle}>Affinez votre demande</Text>
-                      <TouchableOpacity onPress={() => setShowRegeneratePanel(false)}>
-                        <X size={24} color={colors.text.secondary} />
-                      </TouchableOpacity>
-                    </View>
-
-                    <Text style={{ color: colors.text.secondary, marginBottom: 20 }}>
-                      Voulez-vous générer une nouvelle version de ce visuel ?
-                    </Text>
-
-                    <View style={styles.regenerateTools}>
-                      <TouchableOpacity style={styles.toolIcon}>
-                        <LucideImage size={20} color={colors.text.secondary} />
-                      </TouchableOpacity>
-                      <TouchableOpacity style={styles.toolIcon}>
-                        <Paperclip size={20} color={colors.text.secondary} />
-                      </TouchableOpacity>
-                      <TouchableOpacity style={styles.toolIcon}>
-                        <Mic size={20} color={colors.text.secondary} />
-                      </TouchableOpacity>
-                      <View style={{ flex: 1 }} />
-                      <View style={styles.charCounter}>
-                        <Text style={styles.charCounterText}>{localQuery.length}/500</Text>
-                      </View>
-                    </View>
-
-                    {/* Choice for regeneration */}
-                    <View style={styles.modeSelector}>
-                      <Text style={styles.modeLabel}>Régénérer :</Text>
-                      <View style={styles.modeOptionsRow}>
-                        {[
-                          { id: 'text', label: 'Texte', icon: <FileText size={16} /> },
-                          { id: 'image', label: 'Image', icon: <LucideImage size={16} /> },
-                          { id: 'both', label: 'Les deux', icon: <Sparkles size={16} /> },
-                        ]
-                          .filter((m) => {
-                            if (selectedCategory === 'Social') return true;
-                            if (selectedCategory === 'Texte') return m.id !== 'both';
-                            if (selectedCategory === 'Image') return m.id === 'image';
-                            return m.id === 'text';
-                          })
-                          .map((m) => (
-                            <TouchableOpacity
-                              key={m.id}
-                              style={[styles.modeItem, regenMode === m.id && styles.modeItemSelected]}
-                              onPress={() => setRegenMode(m.id as any)}>
-                              {React.cloneElement(
-                                m.icon as React.ReactElement,
-                                {
-                                  color:
-                                    regenMode === m.id
-                                      ? colors.background.dark
-                                      : colors.text.secondary,
-                                } as any
-                              )}
-                              <Text
-                                style={[
-                                  styles.modeItemText,
-                                  regenMode === m.id && styles.modeItemTextSelected,
-                                ]}>
-                                {m.label}
-                              </Text>
-                            </TouchableOpacity>
-                          ))}
-                      </View>
-                    </View>
-
-                    <NeonButton
-                      title="C'est parti"
-                      onPress={() => {
-                        generateContent(localQuery, regenMode);
-                      }}
-                      icon={<Sparkles size={20} color="#000" />}
-                      size="lg"
-                      variant="premium"
-                    />
-                  </View>
-                )}
-              </View>
-            </>
+            </View>
           )}
-
           <View style={{ height: 60 }} />
         </View>
       </ScrollView>
-
-      <GenericModal
-        visible={modalVisible}
-        type={modalType}
-        title={modalTitle}
-        message={modalMessage}
-        onClose={() => setModalVisible(false)}
-      />
-    </GuidedScreenWrapper >
+      <GenericModal visible={modalVisible} type={modalType} title={modalTitle} message={modalMessage} onClose={() => setModalVisible(false)} />
+    </GuidedScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  content: {
-    paddingHorizontal: 20,
-  },
-  finishButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: 'rgba(0, 255, 170, 0.1)',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  finishButtonText: {
-    color: colors.primary.main,
-    fontWeight: '600',
-    fontSize: 14,
-  },
-  header: {
-    alignItems: 'center',
-    marginTop: 20,
-    marginBottom: 32,
-  },
-  loadingHeader: {
-    alignItems: 'center',
-    gap: 12,
-  },
-  loadingTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: colors.text.primary,
-  },
-  loadingSubtitle: {
-    fontSize: 14,
-    color: colors.text.secondary,
-  },
-  skeletonWrapper: {
-    width: '100%',
-    paddingHorizontal: 4,
-    gap: 12,
-  },
-  skeletonImage: {
-    width: '100%',
-    height: 220,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-  },
-  skeletonTitle: {
-    width: '55%',
-    height: 20,
-    borderRadius: 8,
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    alignSelf: 'center',
-  },
-  skeletonLine: {
-    height: 14,
-    borderRadius: 6,
-    backgroundColor: 'rgba(255,255,255,0.07)',
-  },
-  skeletonLabel: {
-    marginTop: 8,
-    textAlign: 'center',
-    fontSize: 13,
-    color: colors.text.muted,
-    letterSpacing: 0.3,
-  },
-  successIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: colors.primary.main,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
-    shadowColor: colors.primary.main,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: colors.text.primary,
-  },
-  resultCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderRadius: 24,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  imageSection: {
-    width: '100%',
-  },
-  imagePlaceholder: {
-    width: '100%',
-    aspectRatio: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 16,
-  },
-  placeholderText: {
-    color: colors.text.secondary,
-    fontSize: 14,
-  },
-  generatedImage: {
-    width: '100%',
-    aspectRatio: 1,
-  },
-  /* --- SOCIAL POST STYLE --- */
-  socialCard: {
-    width: '100%',
-    backgroundColor: 'rgba(255, 255, 255, 0.02)',
-  },
-  socialHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    gap: 12,
-  },
-  socialAvatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: `${colors.primary.main}20`,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: `${colors.primary.main}40`,
-  },
-  socialUser: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: colors.text.primary,
-  },
-  socialTime: {
-    fontSize: 11,
-    color: colors.text.secondary,
-  },
-  socialImageSection: {
-    width: '100%',
-    backgroundColor: '#000',
-  },
-  socialCaptionSection: {
-    padding: 16,
-    paddingTop: 12,
-  },
-  socialCaptionText: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: colors.text.primary,
-  },
-  documentSection: {
-    padding: 24,
-  },
-  documentHeader: {
-    alignItems: 'center',
-    marginBottom: 24,
-    gap: 12,
-  },
-  documentTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: colors.text.primary,
-  },
-
-  textSection: {
-    padding: 24,
-  },
-  textPlaceholder: {
-    gap: 12,
-  },
-  structuredContent: {
-    gap: 20,
-    marginTop: 10,
-  },
-  contentSection: {
-    gap: 8,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.primary.main,
-    marginBottom: 4,
-  },
-  contentText: {
-    fontSize: 15,
-    lineHeight: 24,
-    color: colors.text.primary,
-  },
-  conclusionText: {
-    fontSize: 15,
-    lineHeight: 24,
-    color: colors.text.secondary,
-    fontStyle: 'italic',
-  },
-  actionsBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.1)',
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-  },
-  actionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-  },
-  actionButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.primary.main,
-  },
-  actionDivider: {
-    width: 1,
-    height: 24,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  regenerateSection: {
-    marginTop: 24,
-    paddingTop: 24,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.1)',
-  },
-  regeneratePanel: {
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderRadius: 20,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-    gap: 16,
-  },
-  regeneratePanelHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  regeneratePanelTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.text.primary,
-  },
-  regenerateInput: {
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
-    borderRadius: 16,
-    padding: 16,
-    color: colors.text.primary,
-    fontSize: 15,
-    minHeight: 120,
-    textAlignVertical: 'top',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  charCounter: {
-    alignItems: 'flex-end',
-  },
-  charCounterText: {
-    fontSize: 12,
-    color: colors.text.muted,
-  },
-  regenerateTools: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.05)',
-    paddingTop: 12,
-  },
-  toolIcon: {
-    padding: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderRadius: 8,
-  },
-  modeSelector: {
-    marginVertical: 10,
-    gap: 12,
-  },
-  modeLabel: {
-    fontSize: 14,
-    color: colors.text.secondary,
-    fontWeight: '600',
-  },
-  modeOptionsRow: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  modeItem: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 10,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.03)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  modeItemSelected: {
-    backgroundColor: colors.primary.main,
-    borderColor: colors.primary.main,
-  },
-  modeItemText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: colors.text.secondary,
-  },
-  modeItemTextSelected: {
-    color: colors.background.dark,
-    fontWeight: '700',
-  },
-  jsonContainer: {
-    gap: 16,
-  },
-  jsonField: {
-    backgroundColor: 'rgba(255, 255, 255, 0.03)',
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.05)',
-  },
-  jsonKey: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: colors.primary.main,
-    marginBottom: 8,
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-  },
-  jsonValue: {
-    fontSize: 15,
-    lineHeight: 22,
-    color: colors.text.primary,
-  },
-  jsonValueList: {
-    gap: 6,
-  },
-  jsonValueListItem: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: colors.text.secondary,
-  },
-  jsonListItem: {
-    marginBottom: 8,
-  },
-  jsonSubValue: {
-    fontSize: 14,
-    color: colors.text.primary,
-    marginBottom: 4,
-  },
-  jsonFieldHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  miniCopyButton: {
-    padding: 4,
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 6,
-  },
-  jsonSubObjectCard: {
-    backgroundColor: 'rgba(255,255,255,0.02)',
-    padding: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
-    position: 'relative',
-  },
-  miniCopyButtonAbsolute: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    padding: 4,
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 4,
-  },
-  posterCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.02)',
-    borderRadius: 16,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.05)',
-    marginBottom: 20,
-  },
-  posterHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.1)',
-    paddingBottom: 10,
-  },
-  posterLabel: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: colors.primary.main,
-    letterSpacing: 2,
-    textTransform: 'uppercase',
-  },
-  posterTitle: {
-    fontSize: 28,
-    fontWeight: '900',
-    color: colors.text.primary,
-    textAlign: 'center',
-    marginBottom: 12,
-    lineHeight: 34,
-  },
-  posterSubtitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.primary.main,
-    textAlign: 'center',
-    marginBottom: 20,
-    fontStyle: 'italic',
-  },
-  posterBody: {
-    fontSize: 16,
-    lineHeight: 24,
-    color: colors.text.secondary,
-    textAlign: 'center',
-    marginBottom: 24,
-  },
-  posterOfferCard: {
-    backgroundColor: 'rgba(0, 255, 170, 0.1)',
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderStyle: 'dashed',
-    borderColor: colors.primary.main,
-    marginBottom: 24,
-  },
-  posterOfferText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: colors.primary.main,
-    textAlign: 'center',
-    lineHeight: 22,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: colors.text.secondary,
-    textAlign: 'center',
-    lineHeight: 24,
-  },
-  posterInfo: {
-    position: 'relative',
-    marginBottom: 15,
-    padding: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderRadius: 10,
-  },
-  posterInfoText: {
-    fontSize: 14,
-    color: colors.text.secondary,
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-  posterCta: {
-    backgroundColor: colors.primary.main,
-    paddingVertical: 14,
-    borderRadius: 30,
-    alignItems: 'center',
-  },
-  posterCtaText: {
-    color: '#000',
-    fontSize: 16,
-    fontWeight: '800',
-    textTransform: 'uppercase',
-  },
-  posterSeparator: {
-    height: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    marginVertical: 10,
-    width: '100%',
-  },
-  imageContainer: {
-    marginBottom: 24,
-    borderRadius: 12,
-    backgroundColor: colors.background.premium,
-    borderWidth: 1,
-    borderColor: `${colors.primary.main}30`,
-    overflow: 'hidden' as const,
-  },
-  imageHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: `${colors.primary.main}10`,
-    borderBottomWidth: 1,
-    borderBottomColor: `${colors.primary.main}20`,
-  },
-  imageLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.primary.main,
-  },
-  imageWrapper: {
-    width: '100%',
-    aspectRatio: 0.8,
-    backgroundColor: colors.background.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  flyerImage: {
-    width: '100%',
-    height: '100%',
-  },
-  imageSeparator: {
-    height: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    marginVertical: 0,
-  },
+  container: { flex: 1 },
+  content: { paddingHorizontal: 20 },
+  header: { alignItems: 'center', marginTop: 20, marginBottom: 32 },
+  skeletonWrapper: { width: '100%', paddingHorizontal: 4, gap: 12 },
+  skeletonImage: { width: '100%', height: 220, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.08)' },
+  skeletonTitle: { width: '55%', height: 20, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.12)', alignSelf: 'center' },
+  skeletonLine: { height: 14, borderRadius: 6, backgroundColor: 'rgba(255,255,255,0.07)' },
+  skeletonLabel: { marginTop: 8, textAlign: 'center', fontSize: 13, color: colors.text.muted },
+  successIcon: { width: 64, height: 64, borderRadius: 32, backgroundColor: colors.primary.main, justifyContent: 'center', alignItems: 'center', marginBottom: 16 },
+  title: { fontSize: 24, fontWeight: '700', color: colors.text.primary },
+  resultCard: { backgroundColor: 'rgba(255, 255, 255, 0.05)', borderRadius: 24, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.1)' },
+  socialCard: { width: '100%', backgroundColor: 'rgba(255, 255, 255, 0.02)' },
+  socialHeader: { flexDirection: 'row', alignItems: 'center', padding: 16, gap: 12 },
+  socialAvatar: { width: 36, height: 36, borderRadius: 18, backgroundColor: `${colors.primary.main}20`, alignItems: 'center', justifyContent: 'center', borderWidt: 1, borderColor: `${colors.primary.main}40` },
+  socialUser: { fontSize: 14, fontWeight: '700', color: colors.text.primary },
+  socialTime: { fontSize: 11, color: colors.text.secondary },
+  socialImageSection: { width: '100%', backgroundColor: '#000' },
+  socialCaptionSection: { padding: 16, paddingTop: 12 },
+  socialCaptionText: { fontSize: 14, lineHeight: 20, color: colors.text.primary },
+  imageSection: { width: '100%' },
+  generatedImage: { width: '100%', aspectRatio: 1 },
+  documentSection: { padding: 24 },
+  documentHeader: { alignItems: 'center', marginBottom: 24, gap: 12 },
+  documentTitle: { fontSize: 20, fontWeight: '700', color: colors.text.primary },
+  structuredContent: { gap: 20, marginTop: 10 },
+  contentText: { fontSize: 15, lineHeight: 24, color: colors.text.primary },
+  textSection: { padding: 24 },
+  actionsBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', borderTopWidth: 1, borderTopColor: 'rgba(255, 255, 255, 0.1)', paddingVertical: 16, paddingHorizontal: 24 },
+  regenerateSection: { marginTop: 24, paddingTop: 24, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.1)' },
+  regeneratePanel: { backgroundColor: 'rgba(255, 255, 255, 0.05)', borderRadius: 20, padding: 20, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.1)', gap: 16 },
+  regeneratePanelHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+  regeneratePanelTitle: { fontSize: 16, fontWeight: '700', color: colors.text.primary },
+  regenerateInput: { backgroundColor: 'rgba(0, 0, 0, 0.3)', borderRadius: 16, padding: 16, color: colors.text.primary, fontSize: 15, minHeight: 120, textAlignVertical: 'top', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.1)' },
+  modeSelector: { marginVertical: 10, gap: 12 },
+  modeLabel: { fontSize: 14, color: colors.text.secondary, fontWeight: '600' },
+  modeOptionsRow: { flexDirection: 'row', gap: 10 },
+  modeItem: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10, borderRadius: 12, backgroundColor: 'rgba(255, 255, 255, 0.03)', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.1)' },
+  modeItemSelected: { backgroundColor: colors.primary.main, borderColor: colors.primary.main },
+  modeItemText: { fontSize: 13, fontWeight: '600', color: colors.text.secondary },
+  modeItemTextSelected: { color: colors.background.dark, fontWeight: '700' },
+  jsonContainer: { gap: 16 },
+  jsonField: { backgroundColor: 'rgba(255, 255, 255, 0.03)', borderRadius: 12, padding: 16, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.05)' },
+  jsonKey: { fontSize: 12, fontWeight: '700', color: colors.primary.main, marginBottom: 8, letterSpacing: 1, textTransform: 'uppercase' },
+  jsonValue: { fontSize: 15, lineHeight: 22, color: colors.text.primary },
+  jsonValueList: { gap: 6 },
+  jsonValueListItem: { fontSize: 14, lineHeight: 20, color: colors.text.secondary },
+  jsonListItem: { marginBottom: 8 },
+  jsonSubValue: { fontSize: 14, color: colors.text.primary, marginBottom: 4 },
+  jsonFieldHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
+  miniCopyButton: { padding: 4, backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 6 },
+  jsonSubObjectCard: { backgroundColor: 'rgba(255,255,255,0.02)', padding: 12, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', position: 'relative' },
+  miniCopyButtonAbsolute: { position: 'absolute', top: 8, right: 8, padding: 4, backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 4 },
+  imageContainer: { marginBottom: 24, borderRadius: 12, backgroundColor: colors.background.premium, borderWidth: 1, borderColor: `${colors.primary.main}30`, overflow: 'hidden' },
+  imageHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, backgroundColor: `${colors.primary.main}10`, borderBottomWidth: 1, borderColor: `${colors.primary.main}20` },
+  imageLabel: { fontSize: 14, fontWeight: '600', color: colors.primary.main },
+  imageWrapper: { width: '100%', aspectRatio: 0.8, backgroundColor: colors.background.primary, justifyContent: 'center', alignItems: 'center' },
+  flyerImage: { width: '100%', height: '100%' },
 });

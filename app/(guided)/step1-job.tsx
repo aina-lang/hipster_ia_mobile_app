@@ -72,6 +72,10 @@ export default function Step1JobScreen() {
   const { setJob, selectedJob } = useCreationStore();
   const [customJob, setCustomJob] = useState('');
 
+  React.useEffect(() => {
+    console.log('[DEBUG] Step1JobScreen MODIFIED MOUNT', { selectedJob });
+  }, []);
+
   const isCustomSelected = selectedJob === 'Autre';
 
   const handleSelectJob = (job: JobType) => {
@@ -94,7 +98,7 @@ export default function Step1JobScreen() {
 
   return (
     <GuidedScreenWrapper
-   
+
       currentStep={1}
       totalSteps={4}
       onBack={
