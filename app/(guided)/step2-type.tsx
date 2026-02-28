@@ -66,6 +66,10 @@ export default function Step2TypeScreen() {
     const router = useRouter();
     const { selectedJob, setFunction, selectedFunction } = useCreationStore();
 
+    React.useEffect(() => {
+        console.log('[DEBUG] Step2TypeScreen MODIFIED MOUNT', { selectedJob, selectedFunction });
+    }, []);
+
     const handleSelectFunction = (fn: JobFunction) => {
         setFunction(fn.label, fn.category);
         setTimeout(() => {

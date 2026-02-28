@@ -44,17 +44,37 @@ const VISUAL_STYLES = [
 export default function Step3PersonalizeScreen() {
   const router = useRouter();
   const {
+    selectedJob,
     selectedCategory,
+    selectedFunction,
     selectedArchitecture,
-    selectedStyle, setStyle,
-    mainTitle, setMainTitle,
-    subTitle, setSubTitle,
-    infoLine, setInfoLine,
-    colorLeft, setColorLeft,
-    colorRight, setColorRight,
-    uploadedImage, setUploadedImage,
+    selectedStyle,
+    setStyle,
+    mainTitle,
+    setMainTitle,
+    subTitle,
+    setSubTitle,
+    infoLine,
+    setInfoLine,
+    colorLeft,
+    setColorLeft,
+    colorRight,
+    setColorRight,
+    textPromo,
+    setTextPromo,
+    uploadedImage,
+    setUploadedImage,
     setQuery,
   } = useCreationStore();
+
+  React.useEffect(() => {
+    console.log('[DEBUG] Step3PersonalizeScreen MODIFIED MOUNT', {
+      selectedCategory,
+      selectedFunction,
+      selectedArchitecture,
+      selectedJob
+    });
+  }, []);
 
   const { user } = useAuthStore();
 
@@ -146,15 +166,14 @@ export default function Step3PersonalizeScreen() {
   };
 
   const handleCreate = () => {
-    // For Street Sale & Vertical Poster: enforce single color by using colorLeft for both
-    const effectiveColorRight = (selectedArchitecture === 'magazine-cover-poster' || selectedArchitecture === 'vertical-poster') ? colorLeft : colorRight;
     const queryParts = [];
-    if (mainTitle) queryParts.push(`Titre: ${mainTitle}`);
-    if (subTitle) queryParts.push(`Sous-titre: ${subTitle}`);
-    if (infoLine) queryParts.push(`Info: ${infoLine}`);
-    queryParts.push(`Couleur Principale: ${colorLeft}`);
-    queryParts.push(`Couleur Secondaire: ${effectiveColorRight}`);
-    setQuery(queryParts.join('\n'));
+    if (mainTitle) queryParts.push(mainTitle);
+    if (subTitle) queryParts.push(subTitle);
+    if (textPromo) queryParts.push(textPromo);
+    if (infoLine) queryParts.push(infoLine);
+
+    // Use a simple space-separated string for improvisation context
+    setQuery(queryParts.join(' '));
 
     router.push('/(guided)/step4-result');
   };
@@ -304,6 +323,19 @@ export default function Step3PersonalizeScreen() {
           />
         </View>
 
+        {selectedArchitecture === 'impact-commercial' && (
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>TEXTE PROMO (POUR LE BADGE)</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Ex: -50% ou NOUVEAU"
+              placeholderTextColor="rgba(255,255,255,0.3)"
+              value={textPromo}
+              onChangeText={setTextPromo}
+            />
+          </View>
+        )}
+
         <View style={styles.inputGroup}>
           <Text style={styles.inputLabel}>LIGNE D'INFO</Text>
           <TextInput
@@ -323,7 +355,9 @@ export default function Step3PersonalizeScreen() {
                 <View style={styles.iconCircle}>
                   <Palette size={12} color="#fff" />
                 </View>
-                <Text style={styles.colorLabel}>COULEUR PRINCIPALE</Text>
+                <Text style={styles.colorLabel}>
+                  {selectedArchitecture === 'impact-commercial' ? 'COULEUR DE FOND' : 'COULEUR PRINCIPALE'}
+                </Text>
               </View>
               <TouchableOpacity
                 style={[styles.input, styles.colorButton]}
@@ -334,14 +368,16 @@ export default function Step3PersonalizeScreen() {
               </TouchableOpacity>
             </View>
 
-            {/* SECONDAIRE - HIDDEN FOR STREET SALE & VERTICAL POSTER (single-color architectures) */}
-            {selectedArchitecture !== 'magazine-cover-poster' && selectedArchitecture !== 'vertical-poster' && (
+            {/* SECONDAIRE - HIDDEN FOR STREET SALE (single-color architecture) */}
+            {selectedArchitecture !== 'magazine-cover-poster' && (
               <View style={styles.colorConfig}>
                 <View style={styles.colorHeader}>
                   <View style={styles.iconCircle}>
                     <Palette size={12} color="#fff" />
                   </View>
-                  <Text style={styles.colorLabel}> COULEUR SECONDAIRE</Text>
+                  <Text style={styles.colorLabel}>
+                    {selectedArchitecture === 'impact-commercial' ? 'COULEUR DU SUJET' : 'COULEUR SECONDAIRE'}
+                  </Text>
                 </View>
                 <TouchableOpacity
                   style={[styles.input, styles.colorButton]}
