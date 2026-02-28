@@ -271,7 +271,34 @@ export default function Step3PersonalizeScreen() {
 
   const handleCreate = () => {
     const queryParts = [];
-    if (mainTitle) queryParts.push(mainTitle);
+    
+    // Special handling for magazine-cover-poster
+    if (selectedArchitecture === 'magazine-cover-poster' && mainTitle) {
+      const wordCount = mainTitle.trim().split(/\s+/).length;
+      if (wordCount > 2) {
+        // Wrap automatically: split into lines, max ~15 chars per line for optimal layout
+        const words = mainTitle.trim().split(/\s+/);
+        let lines: string[] = [];
+        let currentLine = '';
+        
+        for (const word of words) {
+          if ((currentLine + ' ' + word).trim().length <= 15) {
+            currentLine = currentLine ? currentLine + ' ' + word : word;
+          } else {
+            if (currentLine) lines.push(currentLine);
+            currentLine = word;
+          }
+        }
+        if (currentLine) lines.push(currentLine);
+        
+        queryParts.push(`Title (wrapped, TOP LEFT): ${lines.join(' / ')}`);
+      } else {
+        queryParts.push(`Title (TOP LEFT): ${mainTitle}`);
+      }
+    } else {
+      if (mainTitle) queryParts.push(mainTitle);
+    }
+    
     if (subTitle) queryParts.push(subTitle);
     if (textPromo) queryParts.push(textPromo);
     if (infoLine) queryParts.push(infoLine);
