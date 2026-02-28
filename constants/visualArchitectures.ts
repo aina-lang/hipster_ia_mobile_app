@@ -7,8 +7,6 @@ import fashionImg from '../assets/premierCard.jpeg';
 import streetSaleImg from '../assets/deuxiemeCard.jpeg';
 import magazineCoverImg from '../assets/TroisiemeCard.jpeg';
 import editorialMotionImg from '../assets/quatriemeCard.jpeg';
-import splitTypoImg from '../assets/WhatsApp Image 2026-02-27 at 10.27.51.jpeg';
-import luxurySerieImg from '../assets/WhatsApp Image 2026-02-27 at 10.27.51 (2).jpeg';
 
 export interface VisualArchitecture {
   id: string;
@@ -17,7 +15,7 @@ export interface VisualArchitecture {
   subtitle?: string;
   image: any;
   color: string;
-  type: 'FASHION_VERTICAL' | 'STREET_SALE' | 'MAGAZINE' | 'EDITORIAL' | 'SPLIT_TYPO' | 'LUXURY';
+  type: 'FASHION_VERTICAL' | 'MAGAZINE_COVER_POSTER' | 'MAGAZINE' | 'EDITORIAL';
 }
 
 export const VISUAL_ARCHITECTURES: VisualArchitecture[] = [
@@ -31,19 +29,19 @@ export const VISUAL_ARCHITECTURES: VisualArchitecture[] = [
     type: 'FASHION_VERTICAL',
   },
   {
-    id: 'street-sale',
-    label: 'STREET SALE',
-    description: 'Impact commercial',
-    subtitle: 'Affiche urbaine avec couleurs éclatantes',
+    id: 'magazine-cover-poster',
+    label: 'MAGAZINE COVER POSTER',
+    description: 'Couverture magazine premium',
+    subtitle: 'Poster éditorial monochrome avec sujet centré',
     image: streetSaleImg,
     color: '#FF1744',
-    type: 'STREET_SALE',
+    type: 'MAGAZINE_COVER_POSTER',
   },
   {
-    id: 'magazine-cover',
-    label: 'MAGAZINE COVER',
-    description: 'Couverture éditoriale',
-    subtitle: 'Style éditorial sophistiqué',
+    id: 'impact-commercial',
+    label: 'IMPACT COMMERCIAL',
+    description: 'Impact commercial',
+    subtitle: 'Affiche publicitaire percutante',
     image: magazineCoverImg,
     color: '#1A73E8',
     type: 'MAGAZINE',
@@ -56,24 +54,6 @@ export const VISUAL_ARCHITECTURES: VisualArchitecture[] = [
     image: editorialMotionImg,
     color: '#FF9800',
     type: 'EDITORIAL',
-  },
-  {
-    id: 'split-typo',
-    label: 'SPLIT TYPO',
-    description: 'Design graphique bold',
-    subtitle: 'Typographie fragmentée et moderne',
-    image: splitTypoImg,
-    color: '#00BCD4',
-    type: 'SPLIT_TYPO',
-  },
-  {
-    id: 'luxury-serie',
-    label: 'LUXURY SERIE',
-    description: 'Événement & collection',
-    subtitle: 'Luxe raffiné et minimaliste',
-    image: luxurySerieImg,
-    color: '#D4AF37',
-    type: 'LUXURY',
   },
 ];
 

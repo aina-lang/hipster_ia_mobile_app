@@ -45,6 +45,7 @@ export default function Step3PersonalizeScreen() {
   const router = useRouter();
   const {
     selectedCategory,
+    selectedArchitecture,
     selectedStyle, setStyle,
     mainTitle, setMainTitle,
     subTitle, setSubTitle,
@@ -145,13 +146,14 @@ export default function Step3PersonalizeScreen() {
   };
 
   const handleCreate = () => {
-    // Generate a prompt or pass values to the next screen.
+    // For Street Sale & Vertical Poster: enforce single color by using colorLeft for both
+    const effectiveColorRight = (selectedArchitecture === 'magazine-cover-poster' || selectedArchitecture === 'vertical-poster') ? colorLeft : colorRight;
     const queryParts = [];
     if (mainTitle) queryParts.push(`Titre: ${mainTitle}`);
     if (subTitle) queryParts.push(`Sous-titre: ${subTitle}`);
     if (infoLine) queryParts.push(`Info: ${infoLine}`);
     queryParts.push(`Couleur Principale: ${colorLeft}`);
-    queryParts.push(`Couleur Secondaire: ${colorRight}`);
+    queryParts.push(`Couleur Secondaire: ${effectiveColorRight}`);
     setQuery(queryParts.join('\n'));
 
     router.push('/(guided)/step4-result');
@@ -332,26 +334,29 @@ export default function Step3PersonalizeScreen() {
               </TouchableOpacity>
             </View>
 
-            <View style={styles.colorConfig}>
-              <View style={styles.colorHeader}>
-                <View style={styles.iconCircle}>
-                  <Palette size={12} color="#fff" />
+            {/* SECONDAIRE - HIDDEN FOR STREET SALE & VERTICAL POSTER (single-color architectures) */}
+            {selectedArchitecture !== 'magazine-cover-poster' && selectedArchitecture !== 'vertical-poster' && (
+              <View style={styles.colorConfig}>
+                <View style={styles.colorHeader}>
+                  <View style={styles.iconCircle}>
+                    <Palette size={12} color="#fff" />
+                  </View>
+                  <Text style={styles.colorLabel}> COULEUR SECONDAIRE</Text>
                 </View>
-                <Text style={styles.colorLabel}> COULEUR SECONDAIRE</Text>
+                <TouchableOpacity
+                  style={[styles.input, styles.colorButton]}
+                  onPress={() => openPicker('right')}
+                >
+                  <View style={[styles.colorPreview, { backgroundColor: colorRight }]} />
+                  <Text style={styles.colorValue}>{colorRight.toUpperCase()}</Text>
+                </TouchableOpacity>
               </View>
-              <TouchableOpacity
-                style={[styles.input, styles.colorButton]}
-                onPress={() => openPicker('right')}
-              >
-                <View style={[styles.colorPreview, { backgroundColor: colorRight }]} />
-                <Text style={styles.colorValue}>{colorRight.toUpperCase()}</Text>
-              </TouchableOpacity>
-            </View>
+            )}
           </View>
         </View>
 
         {/* Color Picker Modal */}
-        <Modal visible={pickerVisible} animationType="fade" transparent>
+        < Modal visible={pickerVisible} animationType="fade" transparent >
           <View style={styles.modalOverlay}>
             <View style={styles.pickerContainer}>
               <View style={styles.pickerHeader}>
@@ -396,17 +401,18 @@ export default function Step3PersonalizeScreen() {
               </TouchableOpacity>
             </View>
           </View>
-        </Modal>
+        </Modal >
 
         {/* Info/Error Modal */}
-        <GenericModal
+        < GenericModal
           visible={modalVisible}
           type={modalType}
           title={modalTitle}
           message={modalMessage}
-          onClose={() => setModalVisible(false)}
+          onClose={() => setModalVisible(false)
+          }
         />
-      </View>
+      </View >
     </GuidedScreenWrapper >
   );
 }
