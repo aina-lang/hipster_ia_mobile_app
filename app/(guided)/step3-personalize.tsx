@@ -11,10 +11,11 @@ import {
   Platform,
   Animated,
   Easing,
+  Dimensions,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
-import { Palette, Minus, Check, X, Upload } from 'lucide-react-native';
+import { Palette, X, Upload } from 'lucide-react-native';
 import ColorPicker, { HueSlider, Panel1, Preview } from 'reanimated-color-picker';
 import { runOnJS } from 'react-native-reanimated';
 import { useCreationStore } from '../../store/creationStore';
@@ -27,60 +28,75 @@ import { GenericModal, ModalType } from '../../components/ui/GenericModal';
 import illus2 from '../../assets/Rouge_a_levre.jpeg';
 import illus3 from '../../assets/casquette.jpeg';
 import illus4 from '../../assets/TroisiemeCard.jpeg';
-import illus1 from '../../assets/montre.jpeg'; // Assuming illus1 exists, if not I'll handle it. Actually I will use illus2 again to be safe.
-//VERTICAL FASHION
+import illus1 from '../../assets/montre.jpeg';
+// VERTICAL FASHION
 import vertical1 from '../../assets/vertical1.jpeg';
 import vertical2 from '../../assets/vertical2.jpeg';
 import vertical3 from '../../assets/vertical3.jpeg';
 import vertical4 from '../../assets/vertical4.jpeg';
-//Magazine cover
+// Magazine cover
 import vertical5 from '../../assets/vertical5.jpeg';
-import vertical6 from '../../assets/vertical6.jpeg';
-import magazine1 from '../../assets/magazin1.jpeg';
 import magazine2 from '../../assets/magazine2_1.jpeg';
 import magazine3 from '../../assets/magazine3.jpeg';
 import magazine4 from '../../assets/magazine4.jpeg';
 import magazine5 from '../../assets/magazine5.jpeg';
-//Commerce Impact
+// Commerce Impact
 import mode from '../../assets/mode.jpeg';
 import chiot from '../../assets/chiot.jpeg';
 import casque from '../../assets/Casque.jpeg';
 import chantier from '../../assets/chantierComm.jpeg';
-// Fallback to illus2 if illus1 is not there.
+// Motion
+import motion1 from '../../assets/motion1.jpeg';
+import motion2 from '../../assets/motion2.jpeg';
+import motion3 from '../../assets/motion3.jpeg';
+import motion4 from '../../assets/motion4.jpeg';
+import motion5 from '../../assets/motion5.jpeg';
+import motion6 from '../../assets/motion6.jpeg';
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const CARD_WIDTH = 125;
+const CARD_MARGIN = 8;
+const SNAP_INTERVAL = CARD_WIDTH + CARD_MARGIN * 2;
+
+const CARD_COLORS = ['#ffb6b9', '#e2e8f0', '#fde047', '#94a3b8', '#c4b5fd', '#6ee7b7'];
+
 const EXAMPLES_DEFAULT = [
-  { label: '', image: illus2, text: '' },
-  { label: '', image: illus3, text: '' },
-  { label: '', image: illus4, text: '' },
-  { label: '', image: illus1, text: '' },
+  { image: illus2 },
+  { image: illus3 },
+  { image: illus4 },
+  { image: illus1 },
 ];
 
 const ARCHITECTURE_EXAMPLES = {
   'fashion-vertical-impact': [
-    { label: '', image: vertical1, text: '' },
-    { label: '', image: vertical2, text: '' },
-    { label: '', image: vertical3, text: '' },
-    { label: '', image: vertical4, text: '' },
+    { image: vertical1 },
+    { image: vertical2 },
+    { image: vertical3 },
+    { image: vertical4 },
   ],
   'magazine-cover-poster': [
-    { label: '', image: vertical5, text: '' },
-    { label: '', image: magazine2, text: '' },
-    { label: '', image: magazine3, text: '' },
-    { label: '', image: magazine4, text: '' },
-    { label: '', image: magazine5, text: '' },
+    { image: vertical5 },
+    { image: magazine2 },
+    { image: magazine3 },
+    { image: magazine4 },
+    { image: magazine5 },
   ],
   'impact-commercial': [
-    { label: '', image: illus2, text: '' },
-    { label: '', image: illus3, text: '' },
-    { label: '', image: mode, text: '' },
-    { label: '', image: chiot, text: '' },
-    { label: '', image: casque, text: '' },
-    { label: '', image: chantier, text: '' },
+    { image: illus2 },
+    { image: illus3 },
+    { image: mode },
+    { image: chiot },
+    { image: casque },
+    { image: chantier },
   ],
   'editorial-motion': [
-    { label: '', image: illus2, text: '' },
-    { label: '', image: illus3, text: '' },
-    { label: '', image: illus4, text: 'MOTION' },
-    { label: '', image: illus1, text: 'PREMIUM' },
+    { image: motion1 },
+    { image: motion2 },
+    { image: motion3 },
+    { image: motion4 },
+    { image: motion5 },
+    { image: motion6 },
   ],
 };
 
@@ -90,12 +106,106 @@ const VISUAL_STYLES = [
   { label: 'Minimal', description: 'Épuré & moderne', image: illus4 },
 ];
 
+// ─── Auto-scroll Carousel ─────────────────────────────────────────────────────
+function ExamplesCarousel({ examples }: { examples: { image: any }[] }) {
+  const scrollRef = useRef<ScrollView>(null);
+  const [activeIndex, setActiveIndex] = React.useState(0);
+  const autoScrollTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const isUserScrolling = useRef(false);
+  const activeIndexRef = useRef(0);
+
+  const startAutoScroll = React.useCallback(() => {
+    if (autoScrollTimer.current) clearInterval(autoScrollTimer.current);
+    autoScrollTimer.current = setInterval(() => {
+      if (!isUserScrolling.current) {
+        const next = (activeIndexRef.current + 1) % examples.length;
+        activeIndexRef.current = next;
+        setActiveIndex(next);
+        scrollRef.current?.scrollTo({ x: next * SNAP_INTERVAL, animated: true });
+      }
+    }, 2800);
+  }, [examples.length]);
+
+  React.useEffect(() => {
+    activeIndexRef.current = 0;
+    setActiveIndex(0);
+    scrollRef.current?.scrollTo({ x: 0, animated: false });
+    startAutoScroll();
+    return () => {
+      if (autoScrollTimer.current) clearInterval(autoScrollTimer.current);
+    };
+  }, [examples.length, startAutoScroll]);
+
+  const handleScrollBegin = () => {
+    isUserScrolling.current = true;
+    if (autoScrollTimer.current) clearInterval(autoScrollTimer.current);
+  };
+
+  const handleScrollEnd = (e: any) => {
+    const offsetX = e.nativeEvent.contentOffset.x;
+    const index = Math.round(offsetX / SNAP_INTERVAL);
+    const clamped = Math.max(0, Math.min(index, examples.length - 1));
+    activeIndexRef.current = clamped;
+    setActiveIndex(clamped);
+    isUserScrolling.current = false;
+    startAutoScroll();
+  };
+
+  return (
+    <View>
+      <ScrollView
+        ref={scrollRef}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        snapToInterval={SNAP_INTERVAL}
+        decelerationRate="fast"
+        contentContainerStyle={styles.carousel}
+        onScrollBeginDrag={handleScrollBegin}
+        onMomentumScrollEnd={handleScrollEnd}
+        scrollEventThrottle={16}
+      >
+        {examples.map((item, index) => {
+          const isActive = index === activeIndex;
+          return (
+            <View
+              key={index}
+              style={[
+                styles.exampleCard,
+                { backgroundColor: CARD_COLORS[index % CARD_COLORS.length] },
+                isActive ? styles.exampleCardActive : styles.exampleCardInactive,
+              ]}
+            >
+        
+
+              <Image source={item.image} style={styles.exampleImage} resizeMode="cover" />
+
+
+            </View>
+          );
+        })}
+      </ScrollView>
+
+      {/* Pagination dots */}
+      <View style={styles.paginationDots}>
+        {examples.map((_, index) => {
+          const isActive = index === activeIndex;
+          return (
+            <View
+              key={index}
+              style={[styles.dot, isActive ? styles.dotActive : styles.dotInactive]}
+            />
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
+// ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function Step3PersonalizeScreen() {
   const router = useRouter();
   const {
-    selectedJob,
     selectedCategory,
-    selectedFunction,
     selectedArchitecture,
     selectedStyle,
     setStyle,
@@ -118,15 +228,6 @@ export default function Step3PersonalizeScreen() {
     setQuery,
   } = useCreationStore();
 
-  React.useEffect(() => {
-    console.log('[DEBUG] Step3PersonalizeScreen MODIFIED MOUNT', {
-      selectedCategory,
-      selectedFunction,
-      selectedArchitecture,
-      selectedJob
-    });
-  }, []);
-
   const { user } = useAuthStore();
 
   React.useEffect(() => {
@@ -145,13 +246,13 @@ export default function Step3PersonalizeScreen() {
   const [modalTitle, setModalTitle] = React.useState('');
   const [modalMessage, setModalMessage] = React.useState('');
 
-  // Animation references for slide animations
+  // Animation refs
   const textButtonSlide = useRef(new Animated.Value(0)).current;
   const imageButtonSlide = useRef(new Animated.Value(0)).current;
   const uploadCardSlide = useRef(new Animated.Value(0)).current;
   const imagePreviewSlide = useRef(new Animated.Value(0)).current;
 
-  const animateButtonSlide = (slideRef: any) => {
+  const animateButtonSlide = (slideRef: Animated.Value) => {
     Animated.sequence([
       Animated.timing(slideRef, {
         toValue: -30,
@@ -168,7 +269,7 @@ export default function Step3PersonalizeScreen() {
     ]).start();
   };
 
-  const animateCardSlide = (slideRef: any) => {
+  const animateCardSlide = (slideRef: Animated.Value) => {
     Animated.sequence([
       Animated.timing(slideRef, {
         toValue: -40,
@@ -234,12 +335,15 @@ export default function Step3PersonalizeScreen() {
     setPickerVisible(true);
   };
 
-  const updateColorState = React.useCallback((hex: string) => {
-    if (activeColorSide === 'left') setColorLeft(hex);
-    else if (activeColorSide === 'right') setColorRight(hex);
-    setTempHex(hex.toUpperCase());
-    setTempColor(hex);
-  }, [activeColorSide, setColorLeft, setColorRight]);
+  const updateColorState = React.useCallback(
+    (hex: string) => {
+      if (activeColorSide === 'left') setColorLeft(hex);
+      else if (activeColorSide === 'right') setColorRight(hex);
+      setTempHex(hex.toUpperCase());
+      setTempColor(hex);
+    },
+    [activeColorSide, setColorLeft, setColorRight]
+  );
 
   const handleColorSelect = (event: { hex: string }) => {
     'worklet';
@@ -249,7 +353,6 @@ export default function Step3PersonalizeScreen() {
   const handleHexChange = (text: string) => {
     const sanitized = text.toUpperCase().replace(/[^0-9A-F#]/g, '');
     setTempHex(sanitized);
-
     if (/^#([0-9A-F]{3,4}|[0-9A-F]{6}|[0-9A-F]{8})$/i.test(sanitized)) {
       updateColorState(sanitized);
     }
@@ -260,7 +363,6 @@ export default function Step3PersonalizeScreen() {
     if (formatted.length > 0 && !formatted.startsWith('#')) {
       formatted = '#' + formatted;
     }
-
     if (/^#([0-9A-F]{3,4}|[0-9A-F]{6}|[0-9A-F]{8})$/i.test(formatted)) {
       updateColorState(formatted);
     } else {
@@ -270,17 +372,14 @@ export default function Step3PersonalizeScreen() {
   };
 
   const handleCreate = () => {
-    const queryParts = [];
-    
-    // Special handling for magazine-cover-poster
+    const queryParts: string[] = [];
+
     if (selectedArchitecture === 'magazine-cover-poster' && mainTitle) {
       const wordCount = mainTitle.trim().split(/\s+/).length;
       if (wordCount > 2) {
-        // Wrap automatically: split into lines, max ~15 chars per line for optimal layout
         const words = mainTitle.trim().split(/\s+/);
-        let lines: string[] = [];
+        const lines: string[] = [];
         let currentLine = '';
-        
         for (const word of words) {
           if ((currentLine + ' ' + word).trim().length <= 15) {
             currentLine = currentLine ? currentLine + ' ' + word : word;
@@ -290,7 +389,6 @@ export default function Step3PersonalizeScreen() {
           }
         }
         if (currentLine) lines.push(currentLine);
-        
         queryParts.push(`Title (wrapped, TOP LEFT): ${lines.join(' / ')}`);
       } else {
         queryParts.push(`Title (TOP LEFT): ${mainTitle}`);
@@ -298,16 +396,20 @@ export default function Step3PersonalizeScreen() {
     } else {
       if (mainTitle) queryParts.push(mainTitle);
     }
-    
+
     if (subTitle) queryParts.push(subTitle);
     if (textPromo) queryParts.push(textPromo);
     if (infoLine) queryParts.push(infoLine);
 
-    // Use a simple space-separated string for improvisation context
     setQuery(queryParts.join(' '));
-
     router.push('/(guided)/step4-result');
   };
+
+  // Resolve examples for the current architecture
+  const currentExamples =
+    selectedArchitecture && selectedArchitecture in ARCHITECTURE_EXAMPLES
+      ? ARCHITECTURE_EXAMPLES[selectedArchitecture as keyof typeof ARCHITECTURE_EXAMPLES]
+      : EXAMPLES_DEFAULT;
 
   return (
     <GuidedScreenWrapper
@@ -328,14 +430,15 @@ export default function Step3PersonalizeScreen() {
       }
     >
       <View style={styles.container}>
-        {/* Header Content */}
+        {/* Header */}
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Personnaliser le visuel</Text>
         </View>
-        {/* EXAMPLES OR STYLES SECTION */}
+
+        {/* ── Examples / Styles section ── */}
         {selectedCategory === 'Social' ? (
           <>
-            <Text style={styles.sectionTitle}>Chosissez votre DA</Text>
+            <Text style={styles.sectionTitle}>Choisissez votre DA</Text>
             <Text style={styles.sectionSubtitle}>Sélectionnez l'ambiance de votre contenu</Text>
             <View style={styles.stylesGrid}>
               {VISUAL_STYLES.map((item) => {
@@ -354,7 +457,12 @@ export default function Step3PersonalizeScreen() {
                       </>
                     )}
                     <Image source={item.image} style={styles.styleCardImage} />
-                    <View style={[styles.styleCardFooter, isSelected && styles.styleCardFooterSelected]}>
+                    <View
+                      style={[
+                        styles.styleCardFooter,
+                        isSelected && styles.styleCardFooterSelected,
+                      ]}
+                    >
                       <Text style={styles.styleCardLabel}>{item.label}</Text>
                       <Text style={styles.styleCardDesc}>{item.description}</Text>
                     </View>
@@ -368,67 +476,84 @@ export default function Step3PersonalizeScreen() {
             <Text style={styles.sectionTitle}>Ce modèle s'adapte à tous les produits</Text>
             <Text style={styles.sectionSubtitle}>Voici quelques exemples</Text>
 
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.carousel}>
-              {(selectedArchitecture && selectedArchitecture in ARCHITECTURE_EXAMPLES
-                ? ARCHITECTURE_EXAMPLES[selectedArchitecture as keyof typeof ARCHITECTURE_EXAMPLES]
-                : EXAMPLES_DEFAULT
-              ).map((item, index) => (
-                <View key={index} style={styles.exampleCard}>
-                  <View style={[StyleSheet.absoluteFill, { backgroundColor: index === 0 ? '#ffb6b9' : index === 1 ? '#e2e8f0' : index === 2 ? '#fde047' : '#94a3b8' }]} />
-                  <Image source={item.image} style={styles.exampleImage} />
-
-                  <Text style={styles.exampleOverlayText}>{item.text}</Text>
-
-                </View>
-              ))}
-            </ScrollView>
-
-            <View style={styles.paginationDots}>
-              <View style={[styles.dot, styles.dotInactive]} />
-              <View style={styles.dotActiveWrapper}>
-                <View style={[styles.dot, styles.dotActive]} />
-              </View>
-              <View style={[styles.dot, styles.dotInactive]} />
-            </View>
+            {/* ── Auto-scroll Carousel ── */}
+            <ExamplesCarousel examples={currentExamples} />
           </>
         )}
 
         <View style={styles.separator} />
 
-        {/* SUBJECT SOURCE TOGGLE */}
+        {/* ── Subject source toggle ── */}
         <View style={styles.inputGroup}>
           <Text style={styles.inputLabel}>SOURCE DU SUJET</Text>
-          <Text style={styles.inputDescription}>Comment voulez-vous définir le sujet principal ?</Text>
+          <Text style={styles.inputDescription}>
+            Comment voulez-vous définir le sujet principal ?
+          </Text>
 
           <View style={styles.sourceToggleContainer}>
             <TouchableOpacity
-              style={[styles.sourceToggleButton, subjectSourceType === 'text' && styles.sourceToggleButtonActive]}
+              style={[
+                styles.sourceToggleButton,
+                subjectSourceType === 'text' && styles.sourceToggleButtonActive,
+              ]}
               onPress={() => {
                 animateButtonSlide(textButtonSlide);
                 handleSourceTypeChange('text');
               }}
               activeOpacity={1}
             >
-              <Animated.View style={{ position: 'absolute', inset: 0, transform: [{ translateX: textButtonSlide }], borderRadius: 12 }} />
-              <Text style={[styles.sourceToggleText, subjectSourceType === 'text' && styles.sourceToggleTextActive, { zIndex: 1 }]}>Texte</Text>
+              <Animated.View
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  transform: [{ translateX: textButtonSlide }],
+                  borderRadius: 12,
+                }}
+              />
+              <Text
+                style={[
+                  styles.sourceToggleText,
+                  subjectSourceType === 'text' && styles.sourceToggleTextActive,
+                  { zIndex: 1 },
+                ]}
+              >
+                Texte
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.sourceToggleButton, subjectSourceType === 'image' && styles.sourceToggleButtonActive]}
+              style={[
+                styles.sourceToggleButton,
+                subjectSourceType === 'image' && styles.sourceToggleButtonActive,
+              ]}
               onPress={() => {
                 animateButtonSlide(imageButtonSlide);
                 handleSourceTypeChange('image');
               }}
               activeOpacity={1}
             >
-              <Animated.View style={{ position: 'absolute', inset: 0, transform: [{ translateX: imageButtonSlide }], borderRadius: 12 }} />
-              <Text style={[styles.sourceToggleText, subjectSourceType === 'image' && styles.sourceToggleTextActive, { zIndex: 1 }]}>Photo</Text>
+              <Animated.View
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  transform: [{ translateX: imageButtonSlide }],
+                  borderRadius: 12,
+                }}
+              />
+              <Text
+                style={[
+                  styles.sourceToggleText,
+                  subjectSourceType === 'image' && styles.sourceToggleTextActive,
+                  { zIndex: 1 },
+                ]}
+              >
+                Photo
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
 
         {subjectSourceType === 'image' ? (
-          /* IMAGE UPLOAD SECTION */
           <View style={styles.inputGroup}>
             <Animated.View style={{ transform: [{ translateX: uploadCardSlide }] }}>
               <TouchableOpacity
@@ -443,7 +568,7 @@ export default function Step3PersonalizeScreen() {
                   <Animated.View
                     style={[
                       styles.imagePreviewContainer,
-                      { transform: [{ translateX: imagePreviewSlide }] }
+                      { transform: [{ translateX: imagePreviewSlide }] },
                     ]}
                   >
                     <Image source={{ uri: uploadedImage }} style={styles.uploadedImage} />
@@ -470,7 +595,6 @@ export default function Step3PersonalizeScreen() {
             </Animated.View>
           </View>
         ) : (
-          /* SUBJECT FIELD */
           <View style={styles.inputGroup}>
             <TextInput
               style={styles.input}
@@ -479,12 +603,13 @@ export default function Step3PersonalizeScreen() {
               value={subject}
               onChangeText={setSubject}
             />
-            <Text style={styles.helperText}>Décris en 3-8 mots ce que tu veux au centre du visuel</Text>
+            <Text style={styles.helperText}>
+              Décris en 3-8 mots ce que tu veux au centre du visuel
+            </Text>
           </View>
         )}
 
-        {/* INPUT FORM SECTION */}
-
+        {/* ── Form inputs ── */}
         <View style={styles.inputGroup}>
           <Text style={styles.inputLabel}>TITRE PRINCIPAL</Text>
           <TextInput
@@ -531,6 +656,7 @@ export default function Step3PersonalizeScreen() {
           />
         </View>
 
+        {/* ── Color pickers ── */}
         <View style={styles.inputGroup}>
           <Text style={styles.inputLabel}>PERSONNALISATION DES COULEURS</Text>
           <View style={styles.colorRow}>
@@ -540,7 +666,9 @@ export default function Step3PersonalizeScreen() {
                   <Palette size={12} color="#fff" />
                 </View>
                 <Text style={styles.colorLabel}>
-                  {selectedArchitecture === 'impact-commercial' ? 'COULEUR DE FOND' : 'COULEUR PRINCIPALE'}
+                  {selectedArchitecture === 'impact-commercial'
+                    ? 'COULEUR DE FOND'
+                    : 'COULEUR PRINCIPALE'}
                 </Text>
               </View>
               <TouchableOpacity
@@ -552,7 +680,6 @@ export default function Step3PersonalizeScreen() {
               </TouchableOpacity>
             </View>
 
-            {/* SECONDAIRE - HIDDEN FOR STREET SALE (single-color architecture) */}
             {selectedArchitecture !== 'magazine-cover-poster' && (
               <View style={styles.colorConfig}>
                 <View style={styles.colorHeader}>
@@ -560,7 +687,9 @@ export default function Step3PersonalizeScreen() {
                     <Palette size={12} color="#fff" />
                   </View>
                   <Text style={styles.colorLabel}>
-                    {selectedArchitecture === 'impact-commercial' ? 'COULEUR DU SUJET' : 'COULEUR SECONDAIRE'}
+                    {selectedArchitecture === 'impact-commercial'
+                      ? 'COULEUR DU SUJET'
+                      : 'COULEUR SECONDAIRE'}
                   </Text>
                 </View>
                 <TouchableOpacity
@@ -575,27 +704,26 @@ export default function Step3PersonalizeScreen() {
           </View>
         </View>
 
-        {/* Color Picker Modal */}
-        < Modal visible={pickerVisible} animationType="fade" transparent >
+        {/* ── Color Picker Modal ── */}
+        <Modal visible={pickerVisible} animationType="fade" transparent>
           <View style={styles.modalOverlay}>
             <View style={styles.pickerContainer}>
               <View style={styles.pickerHeader}>
                 <Text style={styles.pickerTitle}>
-                  Choisir la couleur {activeColorSide === 'left' ? 'principale' : 'secondaire'}
+                  Choisir la couleur{' '}
+                  {activeColorSide === 'left' ? 'principale' : 'secondaire'}
                 </Text>
-                <TouchableOpacity onPress={() => setPickerVisible(false)} style={styles.closeButton}>
+                <TouchableOpacity
+                  onPress={() => setPickerVisible(false)}
+                  style={styles.closeButton}
+                >
                   <X size={20} color="#fff" />
                 </TouchableOpacity>
               </View>
 
-              <ColorPicker
-                value={tempColor}
-                onComplete={handleColorSelect}
-                style={{ gap: 20 }}
-              >
+              <ColorPicker value={tempColor} onComplete={handleColorSelect} style={{ gap: 20 }}>
                 <Panel1 style={styles.colorPanel} />
                 <HueSlider style={styles.hueSlider} />
-
                 <View style={styles.pickerFooter}>
                   <Preview style={styles.previewContainer} hideText colorFormat="hex" />
                   <TextInput
@@ -621,22 +749,22 @@ export default function Step3PersonalizeScreen() {
               </TouchableOpacity>
             </View>
           </View>
-        </Modal >
+        </Modal>
 
-        {/* Info/Error Modal */}
-        < GenericModal
+        {/* ── Info / Error Modal ── */}
+        <GenericModal
           visible={modalVisible}
           type={modalType}
           title={modalTitle}
           message={modalMessage}
-          onClose={() => setModalVisible(false)
-          }
+          onClose={() => setModalVisible(false)}
         />
-      </View >
-    </GuidedScreenWrapper >
+      </View>
+    </GuidedScreenWrapper>
   );
 }
 
+// ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 20,
@@ -657,7 +785,6 @@ const styles = StyleSheet.create({
   fixedFooter: {
     paddingHorizontal: 20,
     paddingTop: 10,
-
     paddingBottom: 20,
   },
   ctaWrapper: {
@@ -672,112 +799,92 @@ const styles = StyleSheet.create({
   sectionSubtitle: {
     fontSize: 14,
     color: 'rgba(255,255,255,0.5)',
-    marginBottom: 24,
+    marginBottom: 16,
   },
+
+  // ── Carousel ──
   carousel: {
-    gap: 12,
+    paddingHorizontal:2,
+    paddingBottom: 4,
   },
   exampleCard: {
-    width: 125,
-    height: 160,
-    borderRadius: 12,
+    width: CARD_WIDTH,
+    height: CARD_WIDTH * 1.3,
+    borderRadius: 16,
+    marginHorizontal: CARD_MARGIN,
     overflow: 'hidden',
-    position: 'relative',
-    backgroundColor: '#1c1c1e',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 18,
+    elevation: 10,
+  },
+  exampleCardActive: {
+    transform: [{ scale: 1 }],
+  },
+  exampleCardInactive: {
+    transform: [{ scale: 0.95 }],
+    opacity: 0.75,
   },
   exampleImage: {
     width: '100%',
     height: '100%',
     position: 'absolute',
   },
-  exampleOverlayText: {
-    position: 'absolute',
-    top: 40,
-    width: '100%',
-    textAlign: 'center',
-    fontSize: 26,
-    fontWeight: '900',
-    color: 'rgba(255,255,255,0.85)',
-    textTransform: 'uppercase',
-  },
   exampleBadge: {
     position: 'absolute',
-    top: 6,
-    right: 6,
-    backgroundColor: '#000',
-    paddingHorizontal: 6,
-    paddingVertical: 4,
-    borderRadius: 4,
-    alignItems: 'center',
+    top: 10,
+    left: 10,
+    backgroundColor: 'rgba(255,255,255,0.82)',
+    borderRadius: 7,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
     zIndex: 10,
   },
   exampleBadgeText: {
-    color: '#fff',
-    fontSize: 6,
-    fontWeight: '700',
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#1e293b',
     letterSpacing: 0.5,
   },
-  exampleBadgeSale: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '800',
-  },
-  exampleLabelContainer: {
+  exampleOverlay: {
     position: 'absolute',
-    bottom: 12,
-    left: 14,
-    right: 14,
-    backgroundColor: '#1E1E24',
-    paddingVertical: 6,
-    borderRadius: 16,
-    alignItems: 'center',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: '35%',
+    backgroundColor: 'rgba(0,0,0,0.22)',
   },
-  exampleLabelText: {
-    color: '#fff',
-    fontSize: 10,
-    fontWeight: '700',
-  },
+
+  // ── Pagination ──
   paginationDots: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
     gap: 6,
-    marginTop: 20,
+    marginTop: 16,
     marginBottom: 24,
   },
   dot: {
-    height: 4,
-    borderRadius: 2,
-  },
-  dotActiveWrapper: {
-    width: 20,
-    height: 4,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    borderRadius: 2,
-    overflow: 'hidden',
+    height: 5,
+    borderRadius: 10,
   },
   dotActive: {
-    width: '50%',
-    backgroundColor: '#3b82f6',
-    height: '100%',
+    width: 20,
+    backgroundColor: colors.primary.main,
   },
   dotInactive: {
-    width: 4,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    width: 5,
+    backgroundColor: 'rgba(255,255,255,0.25)',
   },
+
   separator: {
     height: 1,
     backgroundColor: 'rgba(255,255,255,0.06)',
     marginBottom: 24,
   },
-  formTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#fff',
-    marginBottom: 16,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
+
+  // ── Inputs ──
   inputGroup: {
     marginBottom: 16,
   },
@@ -811,6 +918,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#fff',
   },
+
+  // ── Source toggle ──
   sourceToggleContainer: {
     flexDirection: 'row',
     backgroundColor: 'rgba(15, 23, 42, 0.8)',
@@ -822,11 +931,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     gap: 1,
     padding: 2,
-    shadowColor: 'rgba(0, 212, 255, 0.2)',
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 4 },
-    shadowRadius: 8,
-    elevation: 3,
   },
   sourceToggleButton: {
     flex: 1,
@@ -837,11 +941,6 @@ const styles = StyleSheet.create({
   },
   sourceToggleButtonActive: {
     backgroundColor: colors.primary.main,
-    shadowColor: colors.primary.main,
-    shadowOpacity: 0.3,
-    shadowOffset: { width: 0, height: 4 },
-    shadowRadius: 8,
-    elevation: 4,
   },
   sourceToggleText: {
     color: 'rgba(255,255,255,0.5)',
@@ -854,6 +953,74 @@ const styles = StyleSheet.create({
     color: '#000',
     fontWeight: '800',
   },
+
+  // ── Upload card ──
+  uploadCard: {
+    backgroundColor: 'rgba(15, 23, 42, 0.7)',
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: 'rgba(0, 212, 255, 0.20)',
+    borderStyle: 'dashed',
+    paddingVertical: 24,
+    paddingHorizontal: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 140,
+  },
+  uploadPlaceholder: {
+    alignItems: 'center',
+    gap: 10,
+  },
+  uploadIconCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: 'rgba(0, 212, 255, 0.10)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: 'rgba(0, 212, 255, 0.25)',
+  },
+  uploadText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '700',
+    letterSpacing: -0.2,
+  },
+  uploadSubtext: {
+    color: 'rgba(255,255,255,0.5)',
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  imagePreviewContainer: {
+    position: 'relative',
+    width: '100%',
+    height: 140,
+    borderRadius: 16,
+    overflow: 'hidden',
+    borderWidth: 1.5,
+    borderColor: 'rgba(0, 212, 255, 0.20)',
+  },
+  uploadedImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  removeImageButton: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 59, 48, 0.4)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  // ── Colors ──
   colorRow: {
     flexDirection: 'row',
     gap: 12,
@@ -877,230 +1044,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  tag: {
-    backgroundColor: 'rgba(30,155,255,0.15)',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  tagText: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: '#60a5fa',
-  },
   colorLabel: {
     fontSize: 10,
     fontWeight: '600',
     color: 'rgba(255,255,255,0.6)',
   },
-  colorInput: {
-    fontWeight: '500',
-    fontFamily: 'monospace',
-  },
-  stylesGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-    marginBottom: 20,
-  },
-  styleCard: {
-    width: '48%', // Approx 2 columns
-    aspectRatio: 0.8,
-    borderRadius: 12,
-    overflow: 'hidden',
-    backgroundColor: 'rgba(255,255,255,0.03)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
-    position: 'relative',
-  },
-  styleCardSelected: {
-    borderColor: colors.primary.main,
-    borderWidth: 2,
-  },
-  styleCardImage: {
-    width: '100%',
-    height: '100%',
-    position: 'absolute',
-    opacity: 0.6,
-  },
-  styleCardCheckBadge: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: colors.primary.main,
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 10,
-  },
-  styleCardFooter: {
-    marginTop: 'auto',
-    padding: 10,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-  },
-  styleCardFooterSelected: {
-    backgroundColor: 'rgba(30,155,255,0.2)',
-  },
-  cardBorderGlow: {
-    position: 'absolute',
-    top: 0, left: 0, right: 0, bottom: 0,
-    borderRadius: 12,
-    backgroundColor: 'transparent',
-    shadowColor: '#1a8fff',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.9,
-    shadowRadius: 16,
-    elevation: 12,
-    zIndex: -1,
-  },
-  cardBloom: {
-    position: 'absolute',
-    top: -6, left: -6, right: -6, bottom: -6,
-    borderRadius: 18,
-    backgroundColor: 'transparent',
-    shadowColor: '#0840bb',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.35,
-    shadowRadius: 20,
-    elevation: 4,
-    zIndex: -1,
-  },
-  styleCardLabel: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  styleCardDesc: {
-    color: 'rgba(255,255,255,0.5)',
-    fontSize: 10,
-    marginTop: 2,
-  },
-  // Upload Card
-  uploadCard: {
-    backgroundColor: 'rgba(15, 23, 42, 0.7)',
-    borderRadius: 16,
-    borderWidth: 1.5,
-    borderColor: 'rgba(0, 212, 255, 0.20)',
-    borderStyle: 'dashed',
-    paddingVertical: 24,
-    paddingHorizontal: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 140,
-    shadowColor: 'rgba(0, 212, 255, 0.15)',
-    shadowOpacity: 0.08,
-    shadowOffset: { width: 0, height: 4 },
-    shadowRadius: 12,
-    elevation: 3,
-  },
-  uploadPlaceholder: {
-    alignItems: 'center',
-    gap: 10,
-  },
-  uploadIconCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    backgroundColor: 'rgba(0, 212, 255, 0.10)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1.5,
-    borderColor: 'rgba(0, 212, 255, 0.25)',
-    shadowColor: colors.primary.main,
-    shadowOpacity: 0.12,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  uploadText: {
-    color: '#fff',
-    fontSize: 15,
-    fontWeight: '700',
-    letterSpacing: -0.2,
-  },
-  uploadSubtext: {
-    color: 'rgba(255,255,255,0.5)',
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  uploadPlaceholder: {
-    alignItems: 'center',
-    gap: 8,
-  },
-  uploadIconCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(23, 162, 184, 0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  uploadText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  uploadSubtext: {
-    color: 'rgba(255,255,255,0.4)',
-    fontSize: 12,
-  },
-  imagePreviewContainer: {
-    position: 'relative',
-    width: '100%',
-    height: 140,
-    borderRadius: 16,
-    overflow: 'hidden',
-    borderWidth: 1.5,
-    borderColor: 'rgba(0, 212, 255, 0.20)',
-    shadowColor: colors.primary.main,
-    shadowOpacity: 0.15,
-    shadowOffset: { width: 0, height: 6 },
-    shadowRadius: 12,
-    elevation: 4,
-  },
-  uploadedImage: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
-  },
-  removeImageButton: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    width: 32,
-    height: 32,
-    borderRadius: 10,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-    borderWidth: 1.5,
-    borderColor: 'rgba(255, 59, 48, 0.4)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.3,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 6,
-    elevation: 3,
-  },
-  uploadedImage: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
-  },
-  removeImageButton: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  // Color Picker styles
   colorButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1120,6 +1068,84 @@ const styles = StyleSheet.create({
     fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
     fontWeight: '600',
   },
+
+  // ── Styles grid ──
+  stylesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginBottom: 20,
+  },
+  styleCard: {
+    width: '48%',
+    aspectRatio: 0.8,
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(255,255,255,0.03)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+    position: 'relative',
+  },
+  styleCardSelected: {
+    borderColor: colors.primary.main,
+    borderWidth: 2,
+  },
+  styleCardImage: {
+    width: '100%',
+    height: '100%',
+    position: 'absolute',
+    opacity: 0.6,
+  },
+  styleCardFooter: {
+    marginTop: 'auto',
+    padding: 10,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+  },
+  styleCardFooterSelected: {
+    backgroundColor: 'rgba(30,155,255,0.2)',
+  },
+  cardBorderGlow: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: 12,
+    backgroundColor: 'transparent',
+    shadowColor: '#1a8fff',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.9,
+    shadowRadius: 16,
+    elevation: 12,
+    zIndex: -1,
+  },
+  cardBloom: {
+    position: 'absolute',
+    top: -6,
+    left: -6,
+    right: -6,
+    bottom: -6,
+    borderRadius: 18,
+    backgroundColor: 'transparent',
+    shadowColor: '#0840bb',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.35,
+    shadowRadius: 20,
+    elevation: 4,
+    zIndex: -1,
+  },
+  styleCardLabel: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  styleCardDesc: {
+    color: 'rgba(255,255,255,0.5)',
+    fontSize: 10,
+    marginTop: 2,
+  },
+
+  // ── Color picker modal ──
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.85)',
