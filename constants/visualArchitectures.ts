@@ -8,6 +8,7 @@ import streetSaleImg from '../assets/deuxiemeCard.jpeg';
 import magazineCoverImg from '../assets/TroisiemeCard.jpeg';
 import editorialMotionImg from '../assets/quatriemeCard.jpeg';
 import prestigeImg from '../assets/bw5.jpeg';
+import signatureSplash from '../assets/signatureSplash.jpeg';
 
 export interface VisualArchitecture {
   id: string;
@@ -64,7 +65,16 @@ export const VISUAL_ARCHITECTURES: VisualArchitecture[] = [
     image: prestigeImg,
     color: '#FF9800',
     type: 'EDITORIAL',
-  }
+  },
+{
+  id: 'signature-splash',
+  label: 'SIGNATURE SPLASH',
+  description: 'Effet splash éditorial premium',
+  subtitle: 'Motion design avec impact cinématique',
+  image: signatureSplash,
+  color: '#FF9800',
+  type: 'EDITORIAL',
+}
 ];
 
 export const getArchitectureById = (id: string): VisualArchitecture | undefined => {
