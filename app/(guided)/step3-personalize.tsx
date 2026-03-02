@@ -114,7 +114,7 @@ const ARCHITECTURE_EXAMPLES = {
     { image: blackWhite3 },
     { image: blackWhite4 },
     { image: blackWhite5 },
-    
+
   ],
 };
 
@@ -193,7 +193,7 @@ function ExamplesCarousel({ examples }: { examples: { image: any }[] }) {
                 isActive ? styles.exampleCardActive : styles.exampleCardInactive,
               ]}
             >
-        
+
 
               <Image source={item.image} style={styles.exampleImage} resizeMode="cover" />
 
@@ -490,23 +490,29 @@ export default function Step3PersonalizeScreen() {
             </View>
           </>
         ) : (
-          <>
-            <Text style={styles.sectionTitle}>Ce modèle s'adapte à tous les produits</Text>
-            <Text style={styles.sectionSubtitle}>Voici quelques exemples</Text>
+          selectedArchitecture !== 'editorial-black-white' && (
+            <>
+              <Text style={styles.sectionTitle}>Ce modèle s'adapte à tous les produits</Text>
+              <Text style={styles.sectionSubtitle}>Voici quelques exemples</Text>
 
-            {/* ── Auto-scroll Carousel ── */}
-            <ExamplesCarousel examples={currentExamples} />
-          </>
+              {/* ── Auto-scroll Carousel ── */}
+              <ExamplesCarousel examples={currentExamples} />
+            </>
+          )
         )}
 
         <View style={styles.separator} />
 
         {/* ── Subject source toggle ── */}
         <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>SOURCE DU SUJET</Text>
-          <Text style={styles.inputDescription}>
-            Comment voulez-vous définir le sujet principal ?
+          <Text style={styles.inputLabel}>
+            {selectedArchitecture === 'editorial-black-white' ? 'SUJET (TEXTE OU PHOTO)' : 'SOURCE DU SUJET'}
           </Text>
+          {selectedArchitecture !== 'editorial-black-white' && (
+            <Text style={styles.inputDescription}>
+              Comment voulez-vous définir le sujet principal ?
+            </Text>
+          )}
 
           <View style={styles.sourceToggleContainer}>
             <TouchableOpacity
@@ -629,26 +635,30 @@ export default function Step3PersonalizeScreen() {
 
         {/* ── Form inputs ── */}
         <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>TITRE PRINCIPAL</Text>
+          <Text style={styles.inputLabel}>
+            {selectedArchitecture === 'editorial-black-white' ? 'NOM DE LA MARQUE' : 'TITRE PRINCIPAL'}
+          </Text>
           <TextInput
             style={styles.input}
-            placeholder="TON TITRE ICI"
+            placeholder={selectedArchitecture === 'editorial-black-white' ? 'EX: ROLEX' : 'TON TITRE ICI'}
             placeholderTextColor="rgba(255,255,255,0.3)"
             value={mainTitle}
             onChangeText={setMainTitle}
           />
         </View>
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>SOUS-TITRE (OPTIONNEL)</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Ajouter un sous-titre ici"
-            placeholderTextColor="rgba(255,255,255,0.3)"
-            value={subTitle}
-            onChangeText={setSubTitle}
-          />
-        </View>
+        {selectedArchitecture !== 'editorial-black-white' && (
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>SOUS-TITRE (OPTIONNEL)</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Ajouter un sous-titre ici"
+              placeholderTextColor="rgba(255,255,255,0.3)"
+              value={subTitle}
+              onChangeText={setSubTitle}
+            />
+          </View>
+        )}
 
         {selectedArchitecture === 'impact-commercial' && (
           <View style={styles.inputGroup}>
@@ -663,42 +673,24 @@ export default function Step3PersonalizeScreen() {
           </View>
         )}
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>LIGNE D'INFO</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Date ou info brève ici"
-            placeholderTextColor="rgba(255,255,255,0.3)"
-            value={infoLine}
-            onChangeText={setInfoLine}
-          />
-        </View>
+        {selectedArchitecture !== 'editorial-black-white' && (
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>LIGNE D'INFO</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Date ou info brève ici"
+              placeholderTextColor="rgba(255,255,255,0.3)"
+              value={infoLine}
+              onChangeText={setInfoLine}
+            />
+          </View>
+        )}
 
         {/* ── Color pickers ── */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>PERSONNALISATION DES COULEURS</Text>
-          <View style={styles.colorRow}>
-            <View style={styles.colorConfig}>
-              <View style={styles.colorHeader}>
-                <View style={styles.iconCircle}>
-                  <Palette size={12} color="#fff" />
-                </View>
-                <Text style={styles.colorLabel}>
-                  {selectedArchitecture === 'impact-commercial'
-                    ? 'COULEUR DE FOND'
-                    : 'COULEUR PRINCIPALE'}
-                </Text>
-              </View>
-              <TouchableOpacity
-                style={[styles.input, styles.colorButton]}
-                onPress={() => openPicker('left')}
-              >
-                <View style={[styles.colorPreview, { backgroundColor: colorLeft }]} />
-                <Text style={styles.colorValue}>{colorLeft.toUpperCase()}</Text>
-              </TouchableOpacity>
-            </View>
-
-            {selectedArchitecture !== 'magazine-cover-poster' && (
+        {selectedArchitecture !== 'editorial-black-white' && (
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>PERSONNALISATION DES COULEURS</Text>
+            <View style={styles.colorRow}>
               <View style={styles.colorConfig}>
                 <View style={styles.colorHeader}>
                   <View style={styles.iconCircle}>
@@ -706,21 +698,43 @@ export default function Step3PersonalizeScreen() {
                   </View>
                   <Text style={styles.colorLabel}>
                     {selectedArchitecture === 'impact-commercial'
-                      ? 'COULEUR DU SUJET'
-                      : 'COULEUR SECONDAIRE'}
+                      ? 'COULEUR DE FOND'
+                      : 'COULEUR PRINCIPALE'}
                   </Text>
                 </View>
                 <TouchableOpacity
                   style={[styles.input, styles.colorButton]}
-                  onPress={() => openPicker('right')}
+                  onPress={() => openPicker('left')}
                 >
-                  <View style={[styles.colorPreview, { backgroundColor: colorRight }]} />
-                  <Text style={styles.colorValue}>{colorRight.toUpperCase()}</Text>
+                  <View style={[styles.colorPreview, { backgroundColor: colorLeft }]} />
+                  <Text style={styles.colorValue}>{colorLeft.toUpperCase()}</Text>
                 </TouchableOpacity>
               </View>
-            )}
+
+              {selectedArchitecture !== 'magazine-cover-poster' && (
+                <View style={styles.colorConfig}>
+                  <View style={styles.colorHeader}>
+                    <View style={styles.iconCircle}>
+                      <Palette size={12} color="#fff" />
+                    </View>
+                    <Text style={styles.colorLabel}>
+                      {selectedArchitecture === 'impact-commercial'
+                        ? 'COULEUR DU SUJET'
+                        : 'COULEUR SECONDAIRE'}
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    style={[styles.input, styles.colorButton]}
+                    onPress={() => openPicker('right')}
+                  >
+                    <View style={[styles.colorPreview, { backgroundColor: colorRight }]} />
+                    <Text style={styles.colorValue}>{colorRight.toUpperCase()}</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
           </View>
-        </View>
+        )}
 
         {/* ── Color Picker Modal ── */}
         <Modal visible={pickerVisible} animationType="fade" transparent>
@@ -822,7 +836,7 @@ const styles = StyleSheet.create({
 
   // ── Carousel ──
   carousel: {
-    paddingHorizontal:2,
+    paddingHorizontal: 2,
     paddingBottom: 4,
   },
   exampleCard: {
