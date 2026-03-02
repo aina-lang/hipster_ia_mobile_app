@@ -53,6 +53,15 @@ import motion4 from '../../assets/motion4.jpeg';
 import motion5 from '../../assets/motion5.jpeg';
 import motion6 from '../../assets/motion6.jpeg';
 
+
+import blackWhite1 from '../../assets/bw1.jpeg';
+import blackWhite2 from '../../assets/bw2.jpeg';
+import blackWhite3 from '../../assets/bw3.jpeg';
+import blackWhite4 from '../../assets/bw4.jpeg';
+import blackWhite5 from '../../assets/bw5.jpeg';
+import blackWhite6 from '../../assets/bw6.jpeg';
+
+
 // ─── Constants ────────────────────────────────────────────────────────────────
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = 125;
@@ -97,6 +106,15 @@ const ARCHITECTURE_EXAMPLES = {
     { image: motion4 },
     { image: motion5 },
     { image: motion6 },
+
+  ],
+  'editorial-black-white': [
+    { image: blackWhite1 },
+    { image: blackWhite2 },
+    { image: blackWhite3 },
+    { image: blackWhite4 },
+    { image: blackWhite5 },
+    
   ],
 };
 

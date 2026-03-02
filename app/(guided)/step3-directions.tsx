@@ -19,7 +19,7 @@ import { useCreationStore } from '../../store/creationStore';
 import { ChevronRight } from 'lucide-react-native';
 
 const { width } = Dimensions.get('window');
-const TILE_WIDTH = (width - 56) / 2; // 2 columns with padding
+const TILE_WIDTH = (width - 56) / 2;
 
 // ============================================================================
 // Architecture Card Component
@@ -37,7 +37,7 @@ function ArchitectureCard({
 
   const handlePressIn = () => {
     Animated.spring(scaleAnim, {
-      toValue: 0.94,
+      toValue: 0.96,
       useNativeDriver: true,
       stiffness: 260,
       damping: 20,
@@ -64,64 +64,55 @@ function ArchitectureCard({
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         onPress={onPress}
-        activeOpacity={0.8}
-        style={[styles.card, isSelected && styles.cardSelected]}
+        activeOpacity={0.9}
+        style={[
+          styles.card,
+          isSelected && { borderColor: architecture.color },
+        ]}
       >
-        {/* Background image */}
-        <Image
-          source={architecture.image}
-          style={styles.cardImage}
-          resizeMode="cover"
-        />
+        {/* ── Zone image (haut) — pleinement visible ── */}
+        <View style={styles.imageContainer}>
+          <Image
+            source={architecture.image}
+            style={styles.cardImage}
+            resizeMode="contain"
+          />
 
-        {/* Gradient overlay */}
-        <View
-          style={[
-            styles.cardOverlay,
-            {
-              backgroundColor: `rgba(0, 0, 0, ${isSelected ? 0.4 : 0.5})`,
-            },
-          ]}
-        />
+          {/* Fondu bas très léger pour raccorder visuellement avec la zone texte */}
+          {/* <View style={styles.imageBottomFade} pointerEvents="none" /> */}
 
-        {/* Selection glow */}
-        {isSelected && (
-          <>
-            <View
-              style={[
-                styles.cardGlow,
-                { borderColor: architecture.color },
-              ]}
-              pointerEvents="none"
-            />
-            <View
-              style={[
-                styles.cardBloom,
-                { shadowColor: architecture.color },
-              ]}
-              pointerEvents="none"
-            />
-          </>
-        )}
-
-        {/* Content */}
-        <View style={styles.cardContent}>
-          {/* Title */}
-          <Text style={styles.cardTitle} numberOfLines={2}>
-            {architecture.label}
-          </Text>
-
-          {/* Description */}
-          <Text style={styles.cardDescription} numberOfLines={1}>
-            {architecture.description}
-          </Text>
-
-          {/* Selection indicator */}
+          {/* Badge sélection posé sur l'image */}
           {isSelected && (
-            <View style={styles.selectedBadge}>
+            <View
+              style={[
+                styles.selectedBadge,
+                { backgroundColor: architecture.color },
+              ]}
+            >
               <View style={styles.selectedDot} />
             </View>
           )}
+
+          {/* Bordure colorée interne quand sélectionné */}
+          
+        </View>
+
+        {/* ── Zone texte (bas) — fond solide, jamais sur l'image ── */}
+        <View
+          style={[
+            styles.textZone,
+            isSelected && {
+              backgroundColor: `${architecture.color}18`,
+              borderTopColor: `${architecture.color}66`,
+            },
+          ]}
+        >
+          <Text style={styles.cardTitle} numberOfLines={1}>
+            {architecture.label}
+          </Text>
+          <Text style={styles.cardDescription} numberOfLines={2}>
+            {architecture.description}
+          </Text>
         </View>
       </TouchableOpacity>
     </Animated.View>
@@ -142,10 +133,12 @@ export default function Step3DirectionsScreen() {
   } = useCreationStore();
 
   React.useEffect(() => {
-    console.log('[DEBUG] Step3DirectionsScreen MODIFIED MOUNT', { selectedJob, selectedFunction, selectedArchitecture });
+    console.log('[DEBUG] Step3DirectionsScreen MOUNT', {
+      selectedJob,
+      selectedFunction,
+      selectedArchitecture,
+    });
   }, []);
-
-  const [showSubtitle, setShowSubtitle] = useState(true);
 
   const handleSelectArchitecture = (id: string) => {
     setArchitecture(id);
@@ -176,7 +169,7 @@ export default function Step3DirectionsScreen() {
       }
     >
       <View style={styles.container}>
-        {/* Header Content */}
+        {/* Header */}
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Directions Artistiques</Text>
           <View style={styles.breadcrumb}>
@@ -188,7 +181,7 @@ export default function Step3DirectionsScreen() {
           </View>
         </View>
 
-        {/* ── Subtitle ── */}
+        {/* Subtitle */}
         <View style={styles.subtitleBlock}>
           <Text style={styles.subtitle}>
             Sélectionnez une architecture graphique
@@ -198,7 +191,7 @@ export default function Step3DirectionsScreen() {
           </Text>
         </View>
 
-        {/* ── Grid of architectures ── */}
+        {/* Grid */}
         <View style={styles.grid}>
           {VISUAL_ARCHITECTURES.map((architecture) => (
             <ArchitectureCard
@@ -210,7 +203,7 @@ export default function Step3DirectionsScreen() {
           ))}
         </View>
 
-        {/* ── Selected architecture details ── */}
+        {/* Détails architecture sélectionnée */}
         {selectedArchitecture && (
           <View style={styles.detailsBlock}>
             {VISUAL_ARCHITECTURES.map((arch) => {
@@ -240,6 +233,9 @@ export default function Step3DirectionsScreen() {
   );
 }
 
+// ============================================================================
+// Styles
+// ============================================================================
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 20,
@@ -248,11 +244,9 @@ const styles = StyleSheet.create({
   fixedFooter: {
     paddingHorizontal: 20,
     paddingVertical: 14,
-
-
   },
 
-  // ── Header ──────────────────────────────────────────────────────────────
+  // ── Header ────────────────────────────────────────────────────────────────
   header: {
     alignItems: 'center',
     marginBottom: 16,
@@ -276,7 +270,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
 
-  // ── Subtitle ────────────────────────────────────────────────────────────
+  // ── Subtitle ──────────────────────────────────────────────────────────────
   subtitleBlock: {
     marginBottom: 24,
   },
@@ -292,7 +286,7 @@ const styles = StyleSheet.create({
     fontWeight: '400',
   },
 
-  // ── Grid ────────────────────────────────────────────────────────────────
+  // ── Grid ──────────────────────────────────────────────────────────────────
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -301,93 +295,99 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
 
-  // ── Card ────────────────────────────────────────────────────────────────
+  // ── Card ──────────────────────────────────────────────────────────────────
   card: {
-    height: 220,
-    borderRadius: 16,
+    width: TILE_WIDTH,
+    borderRadius: 14,
     overflow: 'hidden',
     borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: 'rgba(255,255,255,0.10)',
     backgroundColor: 'rgba(255,255,255,0.04)',
-    position: 'relative',
   },
-  cardSelected: {
-    borderColor: '#1e9bff',
+
+  // Image zone
+  imageContainer: {
+    height: 260,
+    width: '100%',
+    position: 'relative',
+    overflow: 'hidden',
   },
   cardImage: {
     width: '100%',
     height: '100%',
     position: 'absolute',
   },
-  cardOverlay: {
+  // Fondu très discret en bas de l'image — ne cache PAS l'image
+  imageBottomFade: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 28,
+    backgroundColor: 'transparent',
+    // Pour un vrai gradient, remplacer ce View par :
+    // <LinearGradient
+    //   colors={['transparent', 'rgba(10,12,18,0.7)']}
+    //   style={{ position:'absolute', bottom:0, left:0, right:0, height:36 }}
+    // />
+  },
+  imageGlowBorder: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
+    borderWidth: 1.5,
   },
-  cardGlow: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    borderRadius: 16,
-    borderWidth: 2,
-    zIndex: 5,
-  },
-  cardBloom: {
-    position: 'absolute',
-    top: -8,
-    left: -8,
-    right: -8,
-    bottom: -8,
-    borderRadius: 24,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.4,
-    shadowRadius: 20,
-    elevation: 8,
-    zIndex: -1,
-  },
-  cardContent: {
-    flex: 1,
-    padding: 12,
-    justifyContent: 'flex-end',
-    zIndex: 3,
+
+  // Text zone — fond opaque, jamais superposé à l'image
+  textZone: {
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    backgroundColor: 'rgba(10,12,18,0.7)',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.08)',
   },
   cardTitle: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '800',
     color: '#fff',
-    marginBottom: 4,
-    lineHeight: 16,
+    marginBottom: 3,
+    letterSpacing: 0.2,
   },
   cardDescription: {
-    fontSize: 11,
-    color: 'rgba(255,255,255,0.8)',
-    fontWeight: '500',
+    fontSize: 10,
+    color: 'rgba(255,255,255,0.55)',
+    fontWeight: '400',
+    lineHeight: 14,
   },
+
+  // Badge sélection
   selectedBadge: {
     position: 'absolute',
-    top: 12,
-    right: 12,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: '#1e9bff',
+    top: 8,
+    right: 8,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.3)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.4)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.5,
+    shadowRadius: 4,
+    elevation: 6,
   },
   selectedDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
     backgroundColor: '#fff',
   },
 
-  // ── Details block ────────────────────────────────────────────────────────
+  // ── Details block ─────────────────────────────────────────────────────────
   detailsBlock: {
     marginTop: 8,
   },

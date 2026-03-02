@@ -7,6 +7,7 @@ import fashionImg from '../assets/premierCard.jpeg';
 import streetSaleImg from '../assets/deuxiemeCard.jpeg';
 import magazineCoverImg from '../assets/TroisiemeCard.jpeg';
 import editorialMotionImg from '../assets/quatriemeCard.jpeg';
+import prestigeImg from '../assets/bw5.jpeg';
 
 export interface VisualArchitecture {
   id: string;
@@ -55,6 +56,15 @@ export const VISUAL_ARCHITECTURES: VisualArchitecture[] = [
     color: '#FF9800',
     type: 'EDITORIAL',
   },
+  {
+    id: 'editorial-black-white',
+    label: 'PRESTIGE',
+    description: 'Noir & blanc luxe',
+    subtitle: 'qualité premium',
+    image: prestigeImg,
+    color: '#FF9800',
+    type: 'EDITORIAL',
+  }
 ];
 
 export const getArchitectureById = (id: string): VisualArchitecture | undefined => {
