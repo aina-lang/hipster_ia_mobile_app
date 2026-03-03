@@ -9,6 +9,7 @@ import magazineCoverImg from '../assets/TroisiemeCard.jpeg';
 import editorialMotionImg from '../assets/quatriemeCard.jpeg';
 import prestigeImg from '../assets/bw5.jpeg';
 import signatureSplash from '../assets/signatureSplash.jpeg';
+import editionnalGrid from '../assets/editionnalGrid.jpeg';
 
 export interface VisualArchitecture {
   id: string;
@@ -74,7 +75,16 @@ export const VISUAL_ARCHITECTURES: VisualArchitecture[] = [
   image: signatureSplash,
   color: '#FF9800',
   type: 'EDITORIAL',
-}
+},
+{
+  id: 'editorial-grid',
+  label: 'EDITORIAL GRID',
+  description: 'Architecture grille éditorial',
+  subtitle: 'Design modulaire avec composition en grille',
+  image: editionnalGrid,
+  color: '#FF9800',
+  type: 'EDITORIAL',
+},
 ];
 
 export const getArchitectureById = (id: string): VisualArchitecture | undefined => {
