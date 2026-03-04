@@ -10,7 +10,7 @@ import editorialMotionImg from '../assets/quatriemeCard.jpeg';
 import prestigeImg from '../assets/bw5.jpeg';
 import signatureSplash from '../assets/signatureSplash.jpeg';
 import editionnalGrid from '../assets/editionnalGrid.jpeg';
-
+import focusCircleImg from '../assets/focuscircle.jpeg';
 export interface VisualArchitecture {
   id: string;
   label: string;
@@ -85,6 +85,15 @@ export const VISUAL_ARCHITECTURES: VisualArchitecture[] = [
   color: '#FF9800',
   type: 'EDITORIAL',
 },
+{
+  id: 'focus-circle',
+  label: 'FOCUS CIRCLE',
+  description: 'Focus circle',
+  subtitle: 'Focus circle',
+  image: focusCircleImg,
+  color: '#FF9800',
+  type: 'EDITORIAL',
+}
 ];
 
 export const getArchitectureById = (id: string): VisualArchitecture | undefined => {
