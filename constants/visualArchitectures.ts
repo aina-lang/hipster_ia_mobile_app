@@ -11,6 +11,7 @@ import prestigeImg from '../assets/bw5.jpeg';
 import signatureSplash from '../assets/signatureSplash.jpeg';
 import editionnalGrid from '../assets/editionnalGrid.jpeg';
 import focusCircleImg from '../assets/focuscircle.jpeg';
+import DiagonalSplitImg from "../assets/diagonalsiplitdesign.jpeg"
 export interface VisualArchitecture {
   id: string;
   label: string;
@@ -93,6 +94,15 @@ export const VISUAL_ARCHITECTURES: VisualArchitecture[] = [
   image: focusCircleImg,
   color: '#FF9800',
   type: 'EDITORIAL',
+},
+{
+  id:'diagonal-split-design',
+  label:"",
+  description:"",
+  subtitle:"",
+  color:"",
+  image:DiagonalSplitImg,
+  type:"EDITORIAL"
 }
 ];
 
