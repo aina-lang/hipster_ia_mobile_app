@@ -673,11 +673,11 @@ export default function Step4ResultScreen() {
   };
 
   const handleSaveToGallery = async () => {
-    if (isRestricted) {
-      showModal('error', 'Pack Curieux', 'La sauvegarde est indisponible avec le Pack Curieux.');
-      return;
-    }
-    if (!imageUrl) return;
+    // if (isRestricted) {
+    //   showModal('error', 'Pack Curieux', 'La sauvegarde est indisponible avec le Pack Curieux.');
+    //   return;
+    // }
+    // if (!imageUrl) return;
 
     try {
       if (permissionResponse?.status !== 'granted') {
