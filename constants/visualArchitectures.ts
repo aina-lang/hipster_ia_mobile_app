@@ -9,10 +9,10 @@ import magazineCoverImg from '../assets/TroisiemeCard.jpeg';
 import editorialMotionImg from '../assets/quatriemeCard.jpeg';
 import prestigeImg from '../assets/bw5.jpeg';
 import signatureSplash from '../assets/signatureSplash.jpeg';
-import editionnalGrid from '../assets/editionnalGrid.jpeg';
-import focusCircleImg from '../assets/focuscircle.jpeg';
+import editionnalGrid from '../assets/EditionnalGridImg.jpeg';
 import DiagonalSplitImg from "../assets/diagonalsiplitdesign.jpeg"
 import studioPoster from '../assets/studioPoster.jpeg';
+import focusCircleImg from '../assets/FocusCircle3.jpeg';
 export interface VisualArchitecture {
   id: string;
   label: string;
@@ -53,7 +53,7 @@ export const VISUAL_ARCHITECTURES: VisualArchitecture[] = [
   },
   {
     id: 'editorial-motion',
-    label: 'EDITORIAL MOTION',
+    label: 'EDITIONNAL MOTION',
     description: 'Effet premium fashion',
     subtitle: 'Cinéma de mode haute couture',
     image: editorialMotionImg,
