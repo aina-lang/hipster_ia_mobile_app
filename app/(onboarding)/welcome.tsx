@@ -51,7 +51,6 @@ export default function WelcomeScreen() {
       <View style={styles.container}>
         <View style={styles.content}>
           <Animated.View
-            className={'top-[480]'}
             entering={FadeInDown.delay(300).duration(800)}
             style={styles.textContainer}>
             <Text style={styles.title}>Bienvenue sur Hipster IA</Text>
@@ -92,13 +91,15 @@ export default function WelcomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: 32,
+    paddingHorizontal: 24,
     justifyContent: 'space-between',
-    paddingTop: height * 0.1,
+    paddingTop: height * 0.15,
     paddingBottom: 50,
   },
   content: {
+    flex: 1,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   imageContainer: {
     width: width * 0.6,
@@ -118,14 +119,15 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     textAlign: 'center',
     marginBottom: 16,
-    letterSpacing: -1,
+    letterSpacing: -0.8,
+    numberOfLines: 1,
   },
   subtitle: {
-    fontSize: 18,
+    fontSize: 16,
     color: colors.text.secondary,
     textAlign: 'center',
-    lineHeight: 26,
-    paddingHorizontal: 10,
+    lineHeight: 24,
+    paddingHorizontal: 0,
   },
   footerContainer: {
     width: '100%',

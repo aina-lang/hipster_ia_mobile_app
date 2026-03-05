@@ -104,6 +104,18 @@ const ARCHITECTURE_EXAMPLES = {
     { label: '', image: signatureSplash3, text: '' },
     { label: '', image: signatureSplash4, text: '' },
   ],
+  'diagonal-split-design': [
+    { label: '', image: FocusCircle1, text: '' },
+    { label: '', image: FocusCircle2, text: '' },
+    { label: '', image: FocusCircle3, text: '' },
+    { label: '', image: FocusCircle4, text: '' },
+  ],
+  'studio-poster': [
+    { label: '', image: illus2, text: '' },
+    { label: '', image: illus3, text: '' },
+    { label: '', image: illus4, text: '' },
+    { label: '', image: illus1, text: '' },
+  ],
 };
 
 const VISUAL_STYLES = [

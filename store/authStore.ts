@@ -93,6 +93,7 @@ interface AuthState {
   uploadAvatar: (imageUri: string) => Promise<string>;
   uploadLogo: (profileId: number, imageUri: string) => Promise<string>;
   aiRefreshUser: () => Promise<void>;
+  initializeAuth: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -490,6 +491,62 @@ export const useAuthStore = create<AuthState>()(
           }
         } catch (e) {
           console.warn('[AuthStore] Failed to refresh AI credits', e);
+        }
+      },
+
+      // Initialize auth on app startup - verify session is still valid
+      initializeAuth: async () => {
+        try {
+          const state = get();
+          const accessToken = state.accessToken;
+
+          // If no token stored, stay logged out
+          if (!accessToken) {
+            console.log('[AuthStore] No access token found, user is logged out');
+            // Make sure isAuthenticated is false if no token
+            set({
+              isAuthenticated: false,
+              user: null,
+            });
+            return;
+          }
+
+          // Verify the token is still valid by calling backend
+          const user = state.user;
+          if (user?.type === 'ai') {
+            // For AI users, verify token with GET /ai/me
+            const { data } = await api.get('/ai/me');
+            const userData = data?.data || data;
+
+            console.log('[AuthStore] Session verified on startup, user:', userData.email);
+
+            set({
+              user: userData,
+              isAuthenticated: true,
+              hasFinishedOnboarding: !!userData.isSetupComplete,
+            });
+          } else if (user) {
+            // For regular users, verify token with GET /users/me
+            const { data } = await api.get('/users/me');
+            const userData = data?.data || data;
+
+            console.log('[AuthStore] Session verified on startup, user:', userData.email);
+
+            set({
+              user: userData,
+              isAuthenticated: true,
+            });
+          }
+        } catch (error: any) {
+          console.warn('[AuthStore] Session verification failed during init:', error.message);
+          // Token is invalid or expired, logout
+          await AsyncStorage.multiRemove(['access_token', 'refresh_token']);
+          set({
+            user: null,
+            isAuthenticated: false,
+            accessToken: null,
+            refreshToken: null,
+          });
         }
       },
     }),

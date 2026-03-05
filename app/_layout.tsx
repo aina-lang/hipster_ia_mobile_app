@@ -32,10 +32,46 @@ import { Platform } from 'react-native';
 import * as Sharing from 'expo-sharing';
 
 export default function RootLayout() {
-  const { user, isAuthenticated, hasFinishedOnboarding, isHydrated } = useAuthStore();
+  const { user, isAuthenticated, hasFinishedOnboarding, isHydrated, initializeAuth } = useAuthStore();
   const segments = useSegments();
   const router = useRouter();
   const [isRouting, setIsRouting] = React.useState(true);
+  const [isInitialized, setIsInitialized] = React.useState(false);
+  const initializeAuthRef = React.useRef(false);
+
+  // On app startup, verify that stored session is still valid
+  useEffect(() => {
+    if (!isHydrated) {
+      console.log('[RootLayout] Waiting for hydration...');
+      return;
+    }
+
+    // Only run initialization once
+    if (initializeAuthRef.current) {
+      console.log('[RootLayout] Already initialized, skipping...');
+      return;
+    }
+
+    initializeAuthRef.current = true;
+    console.log('[RootLayout] Starting initialization...');
+    const auth = useAuthStore.getState();
+    const initApp = async () => {
+      try {
+        // Verify the stored session is still valid
+        console.log('[RootLayout] Calling initializeAuth()...');
+        await auth.initializeAuth();
+        console.log('[RootLayout] initializeAuth() complete');
+      } catch (error) {
+        console.error('[RootLayout] Initialization error:', error);
+      } finally {
+        // Mark initialization as complete so routing can proceed
+        console.log('[RootLayout] Setting isInitialized=true');
+        setIsInitialized(true);
+      }
+    };
+
+    initApp();
+  }, [isHydrated]);
 
   useEffect(() => {
     // Request all necessary permissions upfront
@@ -77,51 +113,54 @@ export default function RootLayout() {
   }, []);
 
   useEffect(() => {
-    if (!isHydrated) return;
+    if (!isHydrated || !isInitialized) {
+      console.log(`[RootLayout] Routing blocked - isHydrated=${isHydrated}, isInitialized=${isInitialized}`);
+      return;
+    }
 
-    const timeout = setTimeout(() => {
-      const inAuthGroup = segments.some(s => s.includes('(auth)')) || segments.includes('login') || segments.includes('register') || segments.includes('verify-email');
-      const inOnboardingGroup = segments.some(s => s.includes('(onboarding)')) || segments.includes('setup') || segments.includes('branding') || segments.includes('packs') || segments.includes('welcome') || segments.includes('payment');
-      let targetRoute: string | null = null;
+    console.log(`[RootLayout] Starting routing decision - isAuthenticated=${isAuthenticated}, user=${user?.email}`);
+    const inAuthGroup = segments.some(s => s.includes('(auth)')) || segments.includes('login') || segments.includes('register') || segments.includes('verify-email');
+    const inOnboardingGroup = segments.some(s => s.includes('(onboarding)')) || segments.includes('setup') || segments.includes('branding') || segments.includes('packs') || segments.includes('welcome') || segments.includes('payment');
+    let targetRoute: string | null = null;
 
-      if (isAuthenticated) {
-        // 1. Check if email is verified
-        if (user && !user.isEmailVerified) {
-          if (!segments.includes('verify-email')) {
-            targetRoute = '/(auth)/verify-email';
-          }
-        }
-        // 2. Check if onboarding (branding) is complete
-        else if (user && !user.isSetupComplete) {
-          if (!segments.includes('branding')) {
-            targetRoute = '/(onboarding)/branding';
-          }
-        }
-        // 3. Normal app access
-        else {
-          if (inAuthGroup || inOnboardingGroup || !segments[0]) {
-            targetRoute = '/(drawer)';
-          }
-        }
-      } else {
-        // If not authenticated, always land on Welcome 
-        // (Login/Register are accessible from there)
-        if (!inAuthGroup && !inOnboardingGroup) {
-          targetRoute = '/(onboarding)/welcome';
+    if (isAuthenticated) {
+      // 1. Check if email is verified
+      if (user && !user.isEmailVerified) {
+        if (!segments.includes('verify-email')) {
+          targetRoute = '/(auth)/verify-email';
         }
       }
-
-      if (targetRoute && targetRoute !== '/' + segments.join('/')) {
-        router.replace(targetRoute as any);
+      // 2. Check if onboarding (branding) is complete
+      else if (user && !user.isSetupComplete) {
+        if (!segments.includes('branding')) {
+          targetRoute = '/(onboarding)/branding';
+        }
       }
+      // 3. Normal app access
+      else {
+        if (inAuthGroup || inOnboardingGroup || !segments[0]) {
+          targetRoute = '/(drawer)';
+        }
+      }
+    } else {
+      // If not authenticated, always land on Welcome 
+      // (Login/Register are accessible from there)
+      if (!inAuthGroup && !inOnboardingGroup) {
+        targetRoute = '/(onboarding)/welcome';
+      }
+    }
 
-      setIsRouting(false);
-    }, 2500); // Réduit de 5000 à 2500ms
+    if (targetRoute && targetRoute !== '/' + segments.join('/')) {
+      console.log(`[RootLayout] Routing to: ${targetRoute} (current: /${segments.join('/')})`);
+      router.replace(targetRoute as any);
+    } else {
+      console.log(`[RootLayout] No routing needed (same route or targetRoute is null)`);
+    }
 
-    return () => clearTimeout(timeout);
-  }, [isAuthenticated, hasFinishedOnboarding, isHydrated, segments]);
+    setIsRouting(false);
+  }, [isAuthenticated, hasFinishedOnboarding, isHydrated, isInitialized, segments]);
 
-  if (!isHydrated || isRouting) {
+  if (!isHydrated || isRouting || !isInitialized) {
     return <LoadingTransition />;
   }
 
@@ -131,7 +170,9 @@ export default function RootLayout() {
         <StripeProvider
           publishableKey="pk_test_51SCdnjFhrfQ5vRxFnG03V2aEFEsGvoTSbhEa1CyB2J07h6W8VVtNbirPeJtT9yOnLw3EPFlfPqARXKBBRAXdFz1G00xhCi28vk"
           merchantIdentifier="merchant.com.hipster">
-          <Stack screenOptions={{ headerShown: false }}>
+          <Stack
+            screenOptions={{ headerShown: false }}
+            initialRouteName={isAuthenticated ? '(drawer)' : '(onboarding)'}>
             <Stack.Screen name="(auth)" />
             <Stack.Screen name="(onboarding)" />
             <Stack.Screen name="(drawer)" />
