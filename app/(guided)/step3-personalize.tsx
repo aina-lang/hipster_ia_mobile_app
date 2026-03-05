@@ -51,6 +51,11 @@ import signatureSplash1 from '../../assets/signatureSplash1.jpeg';
 import signatureSplash2 from '../../assets/signatureSplash2.jpeg';
 import signatureSplash3 from '../../assets/signatureSplash3.jpeg';
 import signatureSplash4 from '../../assets/signatureSplash4.jpeg';
+//Focus Circle
+import FocusCircle1 from '../../assets/FocusCircle1.jpeg';
+import FocusCircle2 from '../../assets/FocusCircle2.jpeg';
+import FocusCircle3 from '../../assets/FocusCircle3.jpeg';
+import FocusCircle4 from '../../assets/FocusCircle4.jpeg';
 // Fallback to illus2 if illus1 is not there.
 const EXAMPLES_DEFAULT = [
   { label: '', image: illus2, text: '' },
@@ -72,6 +77,12 @@ const ARCHITECTURE_EXAMPLES = {
     { label: '', image: magazine3, text: '' },
     { label: '', image: magazine4, text: '' },
     { label: '', image: magazine5, text: '' },
+  ],
+  'focus-circle': [
+    { label: '', image: FocusCircle1, text: '' },
+    { label: '', image: FocusCircle2, text: '' },
+    { label: '', image: FocusCircle3, text: '' },
+    { label: '', image: FocusCircle4, text: '' },
   ],
   'impact-commercial': [
     { label: '', image: illus2, text: '' },

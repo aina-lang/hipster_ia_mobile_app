@@ -12,6 +12,7 @@ import signatureSplash from '../assets/signatureSplash.jpeg';
 import editionnalGrid from '../assets/editionnalGrid.jpeg';
 import focusCircleImg from '../assets/focuscircle.jpeg';
 import DiagonalSplitImg from "../assets/diagonalsiplitdesign.jpeg"
+import studioPoster from '../assets/studioPoster.jpeg';
 export interface VisualArchitecture {
   id: string;
   label: string;
@@ -97,12 +98,21 @@ export const VISUAL_ARCHITECTURES: VisualArchitecture[] = [
 },
 {
   id:'diagonal-split-design',
-  label:"",
-  description:"",
-  subtitle:"",
-  color:"",
-  image:DiagonalSplitImg,
-  type:"EDITORIAL"
+  label: 'DIAGONAL SPLIT DESIGN',
+  description: 'Design split diagonal premium',
+  subtitle: 'Composition diagonale avec lentille circulaire',
+  color: '#FF9800',
+  image: DiagonalSplitImg,
+  type: 'EDITORIAL'
+},
+{
+  id: 'studio-poster',
+  label: 'STUDIO POSTER',
+  description: 'Affiche studio premium',
+  subtitle: 'Design minimaliste et épuré',
+  image: studioPoster,
+  color: '#FF9800',
+  type: 'EDITORIAL',
 }
 ];
 
