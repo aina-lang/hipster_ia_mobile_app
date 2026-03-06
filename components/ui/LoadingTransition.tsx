@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { Video } from 'expo-av';
 import Animated, {
   FadeIn,
   FadeOut,
@@ -13,8 +14,6 @@ import Animated, {
   Easing,
 } from 'react-native-reanimated';
 import { SplashParticles } from '../SplashParticles';
-
-const splashImage = require('../../assets/splashNew.jpeg');
 
 // Enhanced neon colors for the deer
 const NEON_BLUE = '#00d4ff';
@@ -104,10 +103,13 @@ export const LoadingTransition = () => {
 
       {/* Background with landing scale animation */}
       <View style={StyleSheet.absoluteFill}>
-        <Animated.Image
-          source={splashImage}
-          style={[styles.bgImage, imageStyle]}
+        <Video
+          source={require('../../assets/video/splashVideo.mp4')}
+          style={styles.bgVideo}
           resizeMode="cover"
+          shouldPlay={true}
+          isLooping={false}
+          rate={1}
         />
         {/* Dark overlay */}
         {/* <View style={styles.overlay} /> */}
@@ -144,7 +146,7 @@ export const LoadingTransition = () => {
 };
 
 const styles = StyleSheet.create({
-  bgImage: {
+  bgVideo: {
     position: 'absolute',
     top: 0,
     left: 0,
