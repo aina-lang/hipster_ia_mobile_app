@@ -53,7 +53,7 @@ export default function WelcomeScreen() {
           <Animated.View
             entering={FadeInDown.delay(300).duration(800)}
             style={styles.textContainer}>
-            <Text style={styles.title}>Bienvenue sur Hipster IA</Text>
+            <Text numberOfLines={1} style={styles.title}>Bienvenue sur Hipster IA</Text>
             <Text style={styles.subtitle}>
               Profitez de notre intelligence artificielle pour votre communication
             </Text>
@@ -73,7 +73,10 @@ export default function WelcomeScreen() {
 
           <Animated.View entering={FadeInDown.delay(900).duration(800)}>
             <View style={styles.secondaryLinks}>
-              <TouchableOpacity onPress={() => router.push('/(auth)/login')} style={styles.loginLink}>
+              <TouchableOpacity
+                onPress={() => router.push('/(auth)/login')}
+                style={styles.loginLink}
+              >
                 <Text style={styles.loginText}>Déjà un compte ? <Text style={styles.loginHighlight}>Se connecter</Text></Text>
               </TouchableOpacity>
 
@@ -120,7 +123,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 16,
     letterSpacing: -0.8,
-    numberOfLines: 1,
   },
   subtitle: {
     fontSize: 16,

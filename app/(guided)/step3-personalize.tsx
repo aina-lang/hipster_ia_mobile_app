@@ -116,6 +116,12 @@ const ARCHITECTURE_EXAMPLES = {
     { label: '', image: illus4, text: '' },
     { label: '', image: illus1, text: '' },
   ],
+  'mono-accent': [
+    { label: '', image: vertical1, text: '' },
+    { label: '', image: vertical2, text: '' },
+    { label: '', image: vertical3, text: '' },
+    { label: '', image: vertical4, text: '' },
+  ],
 };
 
 const VISUAL_STYLES = [
@@ -465,7 +471,7 @@ export default function Step3PersonalizeScreen() {
                 activeOpacity={1}
               >
                 {uploadedImage ? (
-                  <Animated.View 
+                  <Animated.View
                     style={[
                       styles.imagePreviewContainer,
                       { transform: [{ translateX: imagePreviewSlide }] }
@@ -559,23 +565,25 @@ export default function Step3PersonalizeScreen() {
         <View style={styles.inputGroup}>
           <Text style={styles.inputLabel}>PERSONNALISATION DES COULEURS</Text>
           <View style={styles.colorRow}>
-            <View style={styles.colorConfig}>
-              <View style={styles.colorHeader}>
-                <View style={styles.iconCircle}>
-                  <Palette size={12} color="#fff" />
+            {selectedArchitecture !== 'mono-accent' && (
+              <View style={styles.colorConfig}>
+                <View style={styles.colorHeader}>
+                  <View style={styles.iconCircle}>
+                    <Palette size={12} color="#fff" />
+                  </View>
+                  <Text style={styles.colorLabel}>
+                    {selectedArchitecture === 'impact-commercial' ? 'COULEUR DE FOND' : 'COULEUR PRINCIPALE'}
+                  </Text>
                 </View>
-                <Text style={styles.colorLabel}>
-                  {selectedArchitecture === 'impact-commercial' ? 'COULEUR DE FOND' : 'COULEUR PRINCIPALE'}
-                </Text>
+                <TouchableOpacity
+                  style={[styles.input, styles.colorButton]}
+                  onPress={() => openPicker('left')}
+                >
+                  <View style={[styles.colorPreview, { backgroundColor: colorLeft }]} />
+                  <Text style={styles.colorValue}>{colorLeft.toUpperCase()}</Text>
+                </TouchableOpacity>
               </View>
-              <TouchableOpacity
-                style={[styles.input, styles.colorButton]}
-                onPress={() => openPicker('left')}
-              >
-                <View style={[styles.colorPreview, { backgroundColor: colorLeft }]} />
-                <Text style={styles.colorValue}>{colorLeft.toUpperCase()}</Text>
-              </TouchableOpacity>
-            </View>
+            )}
 
             {/* SECONDAIRE - HIDDEN FOR STREET SALE (single-color architecture) */}
             {selectedArchitecture !== 'magazine-cover-poster' && (

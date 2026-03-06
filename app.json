@@ -28,6 +28,13 @@
         {
           "photosPermission": "Cette application accède à vos photos pour vous permettre de les personnaliser avec l'IA."
         }
+      ],
+      [
+        "expo-video",
+        {
+          "supportsBackgroundPlayback": true,
+          "supportsPictureInPicture": true
+        }
       ]
     ],
     "orientation": "portrait",
@@ -35,10 +42,13 @@
     "userInterfaceStyle": "automatic",
     "splash": {
       "image": "./assets/splashNew.jpeg",
-      "resizeMode": "cover",
+      "resizeMode": "contain",
       "backgroundColor": "#000000"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*",
+      "assets/**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.anonymous.myexpoapp",

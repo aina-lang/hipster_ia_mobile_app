@@ -333,6 +333,7 @@ export const useAuthStore = create<AuthState>()(
           set({
             user: {
               ...resData.user,
+              type: 'ai', // Ensure type is set
             },
             isAuthenticated: true,
             accessToken: resData.access_token,
@@ -425,10 +426,11 @@ export const useAuthStore = create<AuthState>()(
           set({
             user: {
               ...resData.user,
+              type: 'ai',
             },
             isAuthenticated: true,
             accessToken: resData.access_token,
-            refreshToken: resData.refresh_token,
+            refreshToken: resData.refreshToken || resData.refresh_token,
             hasFinishedOnboarding: !!resData.user.isSetupComplete,
             isLoading: false,
           });
@@ -466,10 +468,16 @@ export const useAuthStore = create<AuthState>()(
           if (token) {
             const user = get().user;
             const endpoint = user?.type === 'ai' ? '/ai/auth/logout' : '/logout';
-            await api.post(endpoint);
+            // Only attempt to call logout on server if we have a token
+            // and don't let a 401 on logout block the local cleanup
+            await api.post(endpoint).catch((err) => {
+              if (err.response?.status !== 401) {
+                console.error('Logout error on server:', err);
+              }
+            });
           }
         } catch (e) {
-          console.error('Logout error:', e);
+          // General error handling if needed, but finally block will run
         } finally {
           await AsyncStorage.multiRemove(['access_token', 'refresh_token']);
           set({
@@ -513,6 +521,37 @@ export const useAuthStore = create<AuthState>()(
 
           // Verify the token is still valid by calling backend
           const user = state.user;
+
+          // If we have a token but no user object, we try to discover who we are
+          if (accessToken && !user) {
+            console.log('[AuthStore] Token exists but no user object, attempting discovery...');
+            try {
+              // Try AI profile first as it's the primary focus
+              const { data } = await api.get('/ai/me');
+              const userData = data?.data || data;
+              set({
+                user: { ...userData, type: 'ai' },
+                isAuthenticated: true,
+                hasFinishedOnboarding: !!userData.isSetupComplete,
+              });
+              return;
+            } catch (e) {
+              // Fallback to regular user
+              try {
+                const { data } = await api.get('/users/me');
+                const userData = data?.data || data;
+                set({
+                  user: { ...userData, type: 'standard' },
+                  isAuthenticated: true,
+                });
+                return;
+              } catch (e2) {
+                // Both failed, token is useless
+                throw new Error('User discovery failed');
+              }
+            }
+          }
+
           if (user?.type === 'ai') {
             // For AI users, verify token with GET /ai/me
             const { data } = await api.get('/ai/me');
@@ -521,19 +560,19 @@ export const useAuthStore = create<AuthState>()(
             console.log('[AuthStore] Session verified on startup, user:', userData.email);
 
             set({
-              user: userData,
+              user: { ...userData, type: 'ai' },
               isAuthenticated: true,
               hasFinishedOnboarding: !!userData.isSetupComplete,
             });
-          } else if (user) {
-            // For regular users, verify token with GET /users/me
+          } else {
+            // For regular users (or users with missing type), verify token with GET /users/me
             const { data } = await api.get('/users/me');
             const userData = data?.data || data;
 
             console.log('[AuthStore] Session verified on startup, user:', userData.email);
 
             set({
-              user: userData,
+              user: { ...userData, type: 'standard' },
               isAuthenticated: true,
             });
           }

@@ -1,9 +1,12 @@
 import React from 'react';
-import { StyleSheet, View, Image, Dimensions } from 'react-native';
-import { BlurView } from 'expo-blur';
+import { Dimensions, StyleSheet, View } from 'react-native';
 import { colors } from './../../theme/colors';
+import { BlurView } from 'expo-blur';
+import { Image } from 'react-native';
 
-const { width, height } = Dimensions.get('screen');
+
+
+const { width, height } = Dimensions.get('window');
 
 interface BackgroundGradientProps {
   children?: React.ReactNode;
@@ -12,26 +15,36 @@ interface BackgroundGradientProps {
   imageSource?: 'default' | 'splash';
 }
 
-export function BackgroundGradientOnboarding({ children, blurIntensity = 0, darkOverlay = false, imageSource = 'default' }: BackgroundGradientProps) {
-  const bgImage = imageSource === 'splash' 
-    ? require('../../assets/splashNew.jpeg')
-    : require('../../assets/bg-onboarding.png');
-
+export function BackgroundGradientOnboarding({
+  children,
+  blurIntensity = 0,
+  darkOverlay = false,
+  imageSource = 'default',
+}: BackgroundGradientProps) {
   const isLightBackground = imageSource === 'default';
+
 
   return (
     <View style={styles.container}>
       <Image
-        source={bgImage}
+        source={require('../../assets/bg-onboarding.png')}
         style={[styles.image, { width, height }]}
-        resizeMode="contain"
+        resizeMode="cover"
       />
-      <View style={[StyleSheet.absoluteFill, isLightBackground ? styles.lightOverlay : styles.overlay]} />
+
+      <View
+        style={[
+          StyleSheet.absoluteFill,
+          isLightBackground ? styles.lightOverlay : styles.overlay,
+        ]}
+      />
+
       {blurIntensity > 0 && (
         <BlurView intensity={blurIntensity} style={StyleSheet.absoluteFill} tint="dark" />
       )}
-      {/* Dark overlay to focus on content */}
+
       {darkOverlay && <View style={[StyleSheet.absoluteFill, styles.darkOverlay]} />}
+
       {children}
     </View>
   );
@@ -41,23 +54,22 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#0a0a11',
-    // backgroundColor: colors.background.primary,
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  lightOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0)',
+  },
+  darkOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.80)',
   },
   image: {
     position: 'absolute',
     top: 0,
     left: 0,
-  },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  lightOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0)',
-  },
-  darkOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.80)',
   },
 });

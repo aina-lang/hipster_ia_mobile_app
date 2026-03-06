@@ -1,22 +1,5 @@
-// Polyfill for Reflect.construct to fix "Unable to activate keep awake" crash in some environments
-// if (typeof Reflect === 'undefined' || !Reflect.construct) {
-//   // @ts-ignore
-//   require('harmony-reflect'); // Or a simple shim if harmony-reflect isn't available
-//   if (typeof Reflect === 'undefined' || !Reflect.construct) {
-//     (global as any).Reflect = (global as any).Reflect || {};
-//     (global as any).Reflect.construct = function (Target: any, args: any, newTarget: any) {
-//       const a = [null];
-//       a.push.apply(a, args);
-//       const Constructor = Target.bind.apply(Target, a);
-//       const instance = new Constructor();
-//       if (newTarget) Object.setPrototypeOf(instance, newTarget.prototype);
-//       return instance;
-//     };
-//   }
-// }
-
 import React, { useEffect } from 'react';
-import { Stack, useRouter, useSegments } from 'expo-router';
+import { Stack, useRouter, useSegments, usePathname } from 'expo-router';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useAuthStore } from '../store/authStore';
@@ -26,21 +9,31 @@ import { LoadingTransition } from '../components/ui/LoadingTransition';
 import { StyledStatusBar } from '../components/ui/StyledStatusBar';
 import * as MediaLibrary from 'expo-media-library';
 import * as Notifications from 'expo-notifications';
+import * as SplashScreen from 'expo-splash-screen';
+
+SplashScreen.preventAutoHideAsync();
 import * as ImagePicker from 'expo-image-picker';
 import { Audio } from 'expo-av';
 import { Platform } from 'react-native';
 import * as Sharing from 'expo-sharing';
 
+import * as SystemUI from 'expo-system-ui';
+
 export default function RootLayout() {
   const { user, isAuthenticated, hasFinishedOnboarding, isHydrated, initializeAuth } = useAuthStore();
   const segments = useSegments();
+  const pathname = usePathname();
   const router = useRouter();
   const [isRouting, setIsRouting] = React.useState(true);
   const [isInitialized, setIsInitialized] = React.useState(false);
+  const [videoFinished, setVideoFinished] = React.useState(false);
   const initializeAuthRef = React.useRef(false);
 
   // On app startup, verify that stored session is still valid
   useEffect(() => {
+    // Set root background to black to prevent white flash
+    SystemUI.setBackgroundColorAsync('#000000').catch(() => { });
+
     if (!isHydrated) {
       console.log('[RootLayout] Waiting for hydration...');
       return;
@@ -118,50 +111,60 @@ export default function RootLayout() {
       return;
     }
 
-    console.log(`[RootLayout] Starting routing decision - isAuthenticated=${isAuthenticated}, user=${user?.email}`);
+    console.log(`[RootLayout] Starting routing decision - isAuthenticated=${isAuthenticated}, user=${user?.email}, pathname=${pathname}`);
+
+    // Check if we are in specific groups/pages
     const inAuthGroup = segments.some(s => s.includes('(auth)')) || segments.includes('login') || segments.includes('register') || segments.includes('verify-email');
     const inOnboardingGroup = segments.some(s => s.includes('(onboarding)')) || segments.includes('setup') || segments.includes('branding') || segments.includes('packs') || segments.includes('welcome') || segments.includes('payment');
+
     let targetRoute: string | null = null;
 
     if (isAuthenticated) {
-      // 1. Check if email is verified
       if (user && !user.isEmailVerified) {
         if (!segments.includes('verify-email')) {
           targetRoute = '/(auth)/verify-email';
         }
       }
-      // 2. Check if onboarding (branding) is complete
       else if (user && !user.isSetupComplete) {
         if (!segments.includes('branding')) {
           targetRoute = '/(onboarding)/branding';
         }
       }
-      // 3. Normal app access
-      else {
-        if (inAuthGroup || inOnboardingGroup || !segments[0]) {
-          targetRoute = '/(drawer)';
-        }
+      else if (inAuthGroup || inOnboardingGroup || !segments[0]) {
+        targetRoute = '/(drawer)';
       }
     } else {
-      // If not authenticated, always land on Welcome 
-      // (Login/Register are accessible from there)
+      // If not authenticated, always land on Welcome if not already in auth/onboarding
       if (!inAuthGroup && !inOnboardingGroup) {
         targetRoute = '/(onboarding)/welcome';
       }
     }
 
-    if (targetRoute && targetRoute !== '/' + segments.join('/')) {
-      console.log(`[RootLayout] Routing to: ${targetRoute} (current: /${segments.join('/')})`);
+    // Pathname normalization for comparison: removes parentheses for group names
+    // Examples: /(onboarding)/welcome -> /welcome, /(drawer) -> /
+    const normalizePath = (path: string) => path.replace(/\/\([^)]+\)/g, '').replace(/\/index$/, '') || '/';
+    const normalizedTarget = targetRoute ? normalizePath(targetRoute) : null;
+    const normalizedPathname = normalizePath(pathname);
+
+    if (targetRoute && normalizedTarget !== normalizedPathname) {
+      console.log(`[RootLayout] Routing to: ${targetRoute} (normalized current: ${normalizedPathname})`);
+
+      // CRITICAL: Only redirect if video is finished
+      if (!videoFinished) {
+        console.log('[RootLayout] Redirect blocked: video not finished');
+        return;
+      }
+
+      setIsRouting(true);
       router.replace(targetRoute as any);
     } else {
-      console.log(`[RootLayout] No routing needed (same route or targetRoute is null)`);
+      console.log(`[RootLayout] No routing needed or arrived at target (normalized: ${normalizedPathname})`);
+      setIsRouting(false);
     }
+  }, [isAuthenticated, hasFinishedOnboarding, isHydrated, isInitialized, segments, pathname, videoFinished]);
 
-    setIsRouting(false);
-  }, [isAuthenticated, hasFinishedOnboarding, isHydrated, isInitialized, segments]);
-
-  if (!isHydrated || isRouting || !isInitialized) {
-    return <LoadingTransition />;
+  if (!isHydrated || isRouting || !isInitialized || !videoFinished) {
+    return <LoadingTransition onVideoFinish={() => setVideoFinished(true)} />;
   }
 
   return (

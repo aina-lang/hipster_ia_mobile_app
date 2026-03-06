@@ -1,9 +1,7 @@
 import React, { useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { Video } from 'expo-av';
 import Animated, {
-  FadeIn,
   FadeOut,
   useSharedValue,
   useAnimatedStyle,
@@ -13,204 +11,187 @@ import Animated, {
   withDelay,
   Easing,
 } from 'react-native-reanimated';
-import { SplashParticles } from '../SplashParticles';
+import { useVideoPlayer, VideoView } from 'expo-video';
+import * as SplashScreen from 'expo-splash-screen';
 
-// Enhanced neon colors for the deer
 const NEON_BLUE = '#00d4ff';
 const NEON_GLOW = '#0099ff';
 const NEON_LIGHT = '#66e5ff';
 
-export const LoadingTransition = () => {
-  // Image landing scale (starts zoomed in, eases to normal)
-  const imageScale = useSharedValue(1.2);
-  // Glow bloom intensity
-  const glowOpacity = useSharedValue(0.4);
-  // Scale for the title
-  const titleScale = useSharedValue(0.8);
-  // Sub-title fade in
-  const subOpacity = useSharedValue(0);
-  // Particle twinkle effect
-  const particleOpacity = useSharedValue(0);
+const videobg = require('../../assets/video/splashVideo-fixed-mobile.mp4');
+
+const PARTICLES: {
+  x: number;
+  y: number;
+  size: number;
+  color: string;
+  delayMs: number;
+  durationMs: number;
+}[] = [
+    { x: 0, y: -80, size: 2.5, color: NEON_BLUE, delayMs: 500, durationMs: 1700 },
+    { x: -30, y: -85, size: 2, color: NEON_LIGHT, delayMs: 620, durationMs: 1300 },
+    { x: 30, y: -85, size: 2, color: NEON_LIGHT, delayMs: 540, durationMs: 1500 },
+    { x: -60, y: -78, size: 3, color: NEON_GLOW, delayMs: 700, durationMs: 1800 },
+    { x: 60, y: -78, size: 3, color: NEON_GLOW, delayMs: 760, durationMs: 1600 },
+    // Ajoute les autres particules comme dans ton code
+  ];
+
+const Particle = React.memo(({ x, y, size, color, delayMs, durationMs }: typeof PARTICLES[number]) => {
+  const opacity = useSharedValue(0);
+  const translateY = useSharedValue(0);
 
   useEffect(() => {
-    // ── Image landing (subtle zoom-out from 1.2 to 1.0) ──
-    imageScale.value = withTiming(1.0, {
-      duration: 2500,
-      easing: Easing.out(Easing.cubic),
-    });
-
-    // Title scale in (bouncy entrance with enhanced glow)
-    titleScale.value = withDelay(
-      400,
-      withTiming(1, { duration: 900, easing: Easing.out(Easing.back(1.4)) })
-    );
-
-    // Sub-line fade in after 900ms
-    subOpacity.value = withDelay(900, withTiming(1, { duration: 800 }));
-
-    // Particle twinkle effect
-    particleOpacity.value = withDelay(
-      500,
+    opacity.value = withDelay(
+      delayMs,
       withRepeat(
         withSequence(
-          withTiming(0.8, { duration: 800, easing: Easing.inOut(Easing.sin) }),
-          withTiming(0.3, { duration: 800, easing: Easing.inOut(Easing.sin) }),
+          withTiming(0.9, { duration: durationMs * 0.5, easing: Easing.inOut(Easing.sin) }),
+          withTiming(0.1, { duration: durationMs * 0.5, easing: Easing.inOut(Easing.sin) })
         ),
         -1,
         true
       )
     );
-
-    // Enhanced neon pulse for the glow
-    glowOpacity.value = withRepeat(
-      withSequence(
-        withTiming(1, { duration: 1000, easing: Easing.inOut(Easing.sin) }),
-        withTiming(0.6, { duration: 1000, easing: Easing.inOut(Easing.sin) }),
-      ),
-      -1,
-      true
+    translateY.value = withDelay(
+      delayMs,
+      withRepeat(
+        withSequence(
+          withTiming(-5, { duration: durationMs, easing: Easing.inOut(Easing.sin) }),
+          withTiming(5, { duration: durationMs, easing: Easing.inOut(Easing.sin) })
+        ),
+        -1,
+        true
+      )
     );
   }, []);
 
-  const imageStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: imageScale.value }],
-  }));
-
-  const titleStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: titleScale.value }],
-  }));
-
-  const subStyle = useAnimatedStyle(() => ({
-    opacity: subOpacity.value,
-  }));
-
-  const bloomStyle = useAnimatedStyle(() => ({
-    opacity: glowOpacity.value,
-  }));
-
-  const separatorStyle = useAnimatedStyle(() => ({
-    opacity: subOpacity.value,
+  const animStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ translateY: translateY.value }],
   }));
 
   return (
     <Animated.View
-      entering={FadeIn.duration(400)}
-      exiting={FadeOut.duration(400)}
-      style={[StyleSheet.absoluteFill, { backgroundColor: '#000000' }]}
-    >
-      {/* Particules animées néon */}
-      <SplashParticles />
+      style={[
+        {
+          position: 'absolute',
+          left: x,
+          top: y,
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          backgroundColor: color,
+          shadowColor: color,
+          shadowOffset: { width: 0, height: 0 },
+          shadowOpacity: 1,
+          shadowRadius: size * 3,
+          elevation: 5,
+        },
+        animStyle,
+      ]}
+    />
+  );
+});
 
-      {/* Background with landing scale animation */}
-      <View style={StyleSheet.absoluteFill}>
-        <Video
-          source={require('../../assets/video/splashVideo.mp4')}
-          style={styles.bgVideo}
-          resizeMode="cover"
-          shouldPlay={true}
-          isLooping={false}
-          rate={1}
-        />
-        {/* Dark overlay */}
-        {/* <View style={styles.overlay} /> */}
+interface LoadingTransitionProps {
+  onVideoFinish?: () => void;
+}
+
+export const LoadingTransition = React.memo(({ onVideoFinish }: LoadingTransitionProps) => {
+  const [videoReady, setVideoReady] = React.useState(false);
+
+  const videoPlayer = useVideoPlayer(videobg, (player) => {
+    player.loop = false;
+    player.muted = false;
+  });
+
+  useEffect(() => {
+    if (!videoPlayer) return;
+
+    let fallbackTimer: NodeJS.Timeout;
+    let isFinished = false;
+
+    const handleVideoFinish = () => {
+      if (isFinished) return;
+      isFinished = true;
+      onVideoFinish?.();
+      clearTimeout(fallbackTimer);
+    };
+
+    // Jouer seulement quand prêt
+    const onStatusChange = ({ status }: { status: string }) => {
+      if (status === 'readyToPlay') {
+        setVideoReady(true);
+        videoPlayer.play();
+        SplashScreen.hideAsync().catch(() => { });
+      }
+    };
+
+    // Check immediately if already ready (race condition fix)
+    if (videoPlayer.status === 'readyToPlay') {
+      onStatusChange({ status: 'readyToPlay' });
+    }
+
+    videoPlayer.addListener('statusChange', onStatusChange);
+    videoPlayer.addListener('playToEnd', handleVideoFinish);
+
+    // Fallback si vidéo freeze ou ne se déclenche pas
+    fallbackTimer = setTimeout(handleVideoFinish, 8000);
+
+    return () => {
+      videoPlayer.removeListener('statusChange', onStatusChange);
+      videoPlayer.removeListener('playToEnd', handleVideoFinish);
+      clearTimeout(fallbackTimer);
+    };
+  }, [videoPlayer, onVideoFinish]);
+
+  return (
+    <Animated.View exiting={FadeOut.duration(400)} style={StyleSheet.absoluteFill}>
+      <StatusBar style="light" />
+      {/* Background noir avant que la vidéo ne soit prête */}
+      {!videoReady && <View style={[StyleSheet.absoluteFill, { backgroundColor: '#000' }]} />}
+      {/* Video */}
+      <View style={[StyleSheet.absoluteFill, { opacity: videoReady ? 1 : 0 }]}>
+        <VideoView player={videoPlayer} style={StyleSheet.absoluteFill} contentFit="cover" nativeControls={false} />
       </View>
 
-      {/* Foreground content */}
+      {/* Particules */}
       <View style={styles.center}>
-        {/* Large glow bloom behind title */}
-        <Animated.View style={[styles.bloom, bloomStyle]} />
+        <View style={styles.particleAnchor} pointerEvents="none">
+          {PARTICLES.map((p, i) => (
+            <Particle key={i} {...p} />
+          ))}
+        </View>
 
-        {/* Secondary bloom for enhanced glow */}
-        <Animated.View style={[styles.bloomSecondary, bloomStyle]} />
-
-        {/* Main neon title with intense glow */}
-        <Animated.Text style={[styles.title, titleStyle]}>
-          HIPSTER-IA
-        </Animated.Text>
-
-        {/* Separator line */}
-        <Animated.View style={[styles.separator, separatorStyle]} />
-
-        {/* First line - emphasized */}
-        <Animated.Text style={[styles.subFirst, subStyle]}>
-          Créer avec l'IA,
-        </Animated.Text>
-
-        {/* Second line */}
-        <Animated.Text style={[styles.subSecond, subStyle]}>
-          perfectionner avec l'agence
-        </Animated.Text>
+        <Animated.Text style={styles.title}>HIPSTER-IA</Animated.Text>
+        <Animated.Text style={styles.subFirst}>Créer avec l'IA,</Animated.Text>
+        <Animated.Text style={styles.subSecond}>perfectionner avec l'agence</Animated.Text>
       </View>
     </Animated.View>
   );
-};
+});
 
 const styles = StyleSheet.create({
-  bgVideo: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    width: '100%',
-    height: '100%',
-  },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-  },
   center: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 400,
+    width: '100%',
+    overflow: 'visible',
   },
-  bloom: {
+  particleAnchor: {
     position: 'absolute',
-    width: 1,
-    height: 1,
-    borderRadius: 1,
-    backgroundColor: 'transparent',
-    shadowColor: NEON_GLOW,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0,
-    shadowRadius: 0,
-    elevation: 0,
-  },
-  bloomSecondary: {
-    position: 'absolute',
-    width: 1,
-    height: 1,
-    borderRadius: 1,
-    backgroundColor: 'transparent',
-    shadowColor: NEON_LIGHT,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0,
-    shadowRadius: 0,
-    elevation: 0,
+    width: 0,
+    height: 0,
+    overflow: 'visible',
+    bottom: 150,
   },
   title: {
     fontSize: 32,
     fontWeight: '900',
     letterSpacing: 8,
     color: '#ffffff',
-    textShadowColor: NEON_BLUE,
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 24,
-  },
-  separator: {
-    marginTop: 12,
-    width: 60,
-    height: 2,
-    backgroundColor: '#ffffff',
-    opacity: 0.8,
-  },
-  sub: {
-    marginTop: 12,
-    fontSize: 13,
-    fontWeight: '500',
-    letterSpacing: 1.5,
-    color: '#ffffff',
-    textAlign: 'center',
-    paddingHorizontal: 20,
-    textTransform: 'uppercase',
+    bottom: -350,
   },
   subFirst: {
     marginTop: 12,
@@ -220,6 +201,7 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     textAlign: 'center',
     paddingHorizontal: 30,
+    bottom: -350,
   },
   subSecond: {
     marginTop: 4,
@@ -230,5 +212,6 @@ const styles = StyleSheet.create({
     textTransform: 'lowercase',
     textAlign: 'center',
     paddingHorizontal: 20,
+    bottom: -350,
   },
 });
