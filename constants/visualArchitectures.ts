@@ -13,6 +13,8 @@ import editionnalGrid from '../assets/EditionnalGridImg.jpeg';
 import DiagonalSplitImg from "../assets/diagonalsiplitdesign.jpeg"
 import studioPoster from '../assets/studioPoster.jpeg';
 import focusCircleImg from '../assets/FocusCircle3.jpeg';
+import editorialReveal from '../assets/focuscircle.jpeg';
+
 export interface VisualArchitecture {
   id: string;
   label: string;
@@ -111,6 +113,15 @@ export const VISUAL_ARCHITECTURES: VisualArchitecture[] = [
   description: 'Affiche studio premium',
   subtitle: 'Design minimaliste et épuré',
   image: studioPoster,
+  color: '#FF9800',
+  type: 'EDITORIAL',
+},
+{
+  id: 'editorial-reveal',
+  label: 'EDITORIAL REVEAL',
+  description: 'Effet de réverbération éditorial premium',
+  subtitle: 'Design avec effet de réverbération',
+  image: editorialReveal,
   color: '#FF9800',
   type: 'EDITORIAL',
 }
