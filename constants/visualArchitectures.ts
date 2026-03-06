@@ -14,6 +14,8 @@ import DiagonalSplitImg from "../assets/diagonalsiplitdesign.jpeg"
 import studioPoster from '../assets/studioPoster.jpeg';
 import focusCircleImg from '../assets/FocusCircle3.jpeg';
 import editorialReveal from '../assets/focuscircle.jpeg';
+import epicBrand from '../assets/epicBrand.jpeg';
+
 
 export interface VisualArchitecture {
   id: string;
@@ -122,6 +124,15 @@ export const VISUAL_ARCHITECTURES: VisualArchitecture[] = [
   description: 'Effet de réverbération éditorial premium',
   subtitle: 'Design avec effet de réverbération',
   image: editorialReveal,
+  color: '#FF9800',
+  type: 'EDITORIAL',
+},
+{
+  id: 'epic-brand',
+  label: 'EPIC BRAND',
+  description: 'Design de marque épique',
+  subtitle: 'Identité visuelle impactante et mémorable',
+  image: epicBrand,
   color: '#FF9800',
   type: 'EDITORIAL',
 }
