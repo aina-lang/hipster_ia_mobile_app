@@ -13,8 +13,13 @@ import editionnalGrid from '../assets/EditionnalGridImg.jpeg';
 import DiagonalSplitImg from '../assets/diagonalsiplitdesign.jpeg';
 import studioPoster from '../assets/studioPoster.jpeg';
 import focusCircleImg from '../assets/FocusCircle3.jpeg';
-import editorialReveal from '../assets/focuscircle.jpeg';
+import editorialReveal from '../assets/editorialReveal.jpeg';
 import epicBrand from '../assets/epicBrand.jpeg';
+import monoAccent from '../assets/monoAccent.jpeg';
+import neonEditorial from '../assets/neonEditorial.jpeg';
+import matteProduct from '../assets/mateProduct.jpeg';
+import professionIcon from '../assets/professionIcon.jpeg';
+
 
 
 export interface VisualArchitecture {
@@ -100,24 +105,24 @@ export const VISUAL_ARCHITECTURES: VisualArchitecture[] = [
     color: '#FF9800',
     type: 'EDITORIAL',
   },
-  {
-    id: 'diagonal-split-design',
-    label: 'DIAGONAL SPLIT DESIGN',
-    description: 'Design split diagonal premium',
-    subtitle: 'Composition diagonale avec lentille circulaire',
-    color: '#FF9800',
-    image: DiagonalSplitImg,
-    type: 'EDITORIAL',
-  },
-  {
-    id: 'studio-poster',
-    label: 'STUDIO POSTER',
-    description: 'Affiche studio premium',
-    subtitle: 'Design minimaliste et épuré',
-    image: studioPoster,
-    color: '#FF9800',
-    type: 'EDITORIAL',
-  },
+  // {
+  //   id: 'diagonal-split-design',
+  //   label: 'DIAGONAL SPLIT DESIGN',
+  //   description: 'Design split diagonal premium',
+  //   subtitle: 'Composition diagonale avec lentille circulaire',
+  //   color: '#FF9800',
+  //   image: DiagonalSplitImg,
+  //   type: 'EDITORIAL',
+  // },
+  // {
+  //   id: 'studio-poster',
+  //   label: 'STUDIO POSTER',
+  //   description: 'Affiche studio premium',
+  //   subtitle: 'Design minimaliste et épuré',
+  //   image: studioPoster,
+  //   color: '#FF9800',
+  //   type: 'EDITORIAL',
+  // },
   {
     id: 'editorial-reveal',
     label: 'EDITORIAL REVEAL',
@@ -132,7 +137,7 @@ export const VISUAL_ARCHITECTURES: VisualArchitecture[] = [
     label: 'MONO ACCENT',
     description: 'Minimaliste noir & blanc avec accent couleur',
     subtitle: 'Design épuré et commercial',
-    image: studioPoster, // Using studioPoster as placeholder if no specific image
+    image: monoAccent, // Using studioPoster as placeholder if no specific image
     color: '#000000',
     type: 'EDITORIAL',
   },
@@ -142,6 +147,33 @@ export const VISUAL_ARCHITECTURES: VisualArchitecture[] = [
   description: 'Design de marque épique',
   subtitle: 'Identité visuelle impactante et mémorable',
   image: epicBrand,
+  color: '#FF9800',
+  type: 'EDITORIAL',
+},
+{
+  id: 'neon-editorial',
+  label: 'NEON EDITORIAL',
+  description: 'Design éditorial néon',
+  subtitle: 'Esthétique futuriste avec néon luminescent',
+  image: neonEditorial,
+  color: '#00FF88',
+  type: 'EDITORIAL',
+},
+{
+  id: 'matte-product',
+  label: 'MATTE PRODUCT',
+  description: 'Affiche produit mat',
+  subtitle: 'Design minimaliste avec finition mate',
+  image: matteProduct,
+  color: '#9800FF',
+  type: 'EDITORIAL',
+},
+{
+  id: 'profession-icon',
+  label: 'PROFESSION ICON',
+  description: 'Icône de profession',
+  subtitle: 'Design avec symbole professionnel',
+  image: professionIcon,
   color: '#FF9800',
   type: 'EDITORIAL',
 }
