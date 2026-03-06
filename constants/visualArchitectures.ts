@@ -136,6 +136,15 @@ export const VISUAL_ARCHITECTURES: VisualArchitecture[] = [
     color: '#000000',
     type: 'EDITORIAL',
   },
+{
+  id: 'epic-brand',
+  label: 'EPIC BRAND',
+  description: 'Design de marque épique',
+  subtitle: 'Identité visuelle impactante et mémorable',
+  image: epicBrand,
+  color: '#FF9800',
+  type: 'EDITORIAL',
+}
 ];
 
 export const getArchitectureById = (id: string): VisualArchitecture | undefined => {
