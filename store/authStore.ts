@@ -510,7 +510,6 @@ export const useAuthStore = create<AuthState>()(
 
           // If no token stored, stay logged out
           if (!accessToken) {
-            console.log('[AuthStore] No access token found, user is logged out');
             // Make sure isAuthenticated is false if no token
             set({
               isAuthenticated: false,

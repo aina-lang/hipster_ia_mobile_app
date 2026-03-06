@@ -114,7 +114,10 @@ export const LoadingTransition = React.memo(({ onVideoFinish }: LoadingTransitio
     const handleVideoFinish = () => {
       if (isFinished) return;
       isFinished = true;
-      onVideoFinish?.();
+      // Ajoute un délai de 2 secondes avant de signaler la fin
+      setTimeout(() => {
+        onVideoFinish?.();
+      }, 2000);
       clearTimeout(fallbackTimer);
     };
 

@@ -19,6 +19,8 @@ import * as Sharing from 'expo-sharing';
 
 import * as SystemUI from 'expo-system-ui';
 
+const initializeAuthRef = { current: false };
+
 export default function RootLayout() {
   const { user, isAuthenticated, hasFinishedOnboarding, isHydrated, initializeAuth } = useAuthStore();
   const segments = useSegments();
@@ -27,38 +29,25 @@ export default function RootLayout() {
   const [isRouting, setIsRouting] = React.useState(true);
   const [isInitialized, setIsInitialized] = React.useState(false);
   const [videoFinished, setVideoFinished] = React.useState(false);
-  const initializeAuthRef = React.useRef(false);
+  const routingRef = React.useRef(false);
 
   // On app startup, verify that stored session is still valid
   useEffect(() => {
     // Set root background to black to prevent white flash
     SystemUI.setBackgroundColorAsync('#000000').catch(() => { });
 
-    if (!isHydrated) {
-      console.log('[RootLayout] Waiting for hydration...');
-      return;
-    }
-
-    // Only run initialization once
-    if (initializeAuthRef.current) {
-      console.log('[RootLayout] Already initialized, skipping...');
+    if (!isHydrated || initializeAuthRef.current) {
       return;
     }
 
     initializeAuthRef.current = true;
-    console.log('[RootLayout] Starting initialization...');
     const auth = useAuthStore.getState();
     const initApp = async () => {
       try {
-        // Verify the stored session is still valid
-        console.log('[RootLayout] Calling initializeAuth()...');
         await auth.initializeAuth();
-        console.log('[RootLayout] initializeAuth() complete');
       } catch (error) {
         console.error('[RootLayout] Initialization error:', error);
       } finally {
-        // Mark initialization as complete so routing can proceed
-        console.log('[RootLayout] Setting isInitialized=true');
         setIsInitialized(true);
       }
     };
@@ -107,11 +96,8 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (!isHydrated || !isInitialized) {
-      console.log(`[RootLayout] Routing blocked - isHydrated=${isHydrated}, isInitialized=${isInitialized}`);
       return;
     }
-
-    console.log(`[RootLayout] Starting routing decision - isAuthenticated=${isAuthenticated}, user=${user?.email}, pathname=${pathname}`);
 
     // Check if we are in specific groups/pages
     const inAuthGroup = segments.some(s => s.includes('(auth)')) || segments.includes('login') || segments.includes('register') || segments.includes('verify-email');
@@ -147,23 +133,21 @@ export default function RootLayout() {
     const normalizedPathname = normalizePath(pathname);
 
     if (targetRoute && normalizedTarget !== normalizedPathname) {
-      console.log(`[RootLayout] Routing to: ${targetRoute} (normalized current: ${normalizedPathname})`);
-
-      // CRITICAL: Only redirect if video is finished
-      if (!videoFinished) {
-        console.log('[RootLayout] Redirect blocked: video not finished');
+      // CRITICAL: Only redirect if video is finished and we haven't started routing yet
+      if (!videoFinished || routingRef.current) {
         return;
       }
 
+      routingRef.current = true;
+      console.log(`[RootLayout] Routing to: ${targetRoute} (normalized current: ${normalizedPathname})`);
       setIsRouting(true);
       router.replace(targetRoute as any);
     } else {
-      console.log(`[RootLayout] No routing needed or arrived at target (normalized: ${normalizedPathname})`);
       setIsRouting(false);
     }
   }, [isAuthenticated, hasFinishedOnboarding, isHydrated, isInitialized, segments, pathname, videoFinished]);
 
-  if (!isHydrated || isRouting || !isInitialized || !videoFinished) {
+  if (!isHydrated || !isInitialized || !videoFinished) {
     return <LoadingTransition onVideoFinish={() => setVideoFinished(true)} />;
   }
 
