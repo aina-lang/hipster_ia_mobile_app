@@ -105,20 +105,32 @@ export const LoadingTransition = React.memo(({ onVideoFinish }: LoadingTransitio
     player.muted = false;
   });
 
+  const isFinishedRef = React.useRef(false);
+  const playbackTimerRef = React.useRef<NodeJS.Timeout | null>(null);
+
   useEffect(() => {
     if (!videoPlayer) return;
 
-    let fallbackTimer: NodeJS.Timeout;
-    let isFinished = false;
-
     const handleVideoFinish = () => {
-      if (isFinished) return;
-      isFinished = true;
-      // Ajoute un délai de 2 secondes avant de signaler la fin
+      if (isFinishedRef.current) return;
+      isFinishedRef.current = true;
+
+      // Cleanup existing playback timer 
+      if (playbackTimerRef.current) {
+        clearTimeout(playbackTimerRef.current);
+        playbackTimerRef.current = null;
+      }
+
+      // Délai final de 2 secondes avant de signaler la fin au layout
       setTimeout(() => {
         onVideoFinish?.();
       }, 2000);
-      clearTimeout(fallbackTimer);
+    };
+
+    const startTracking = () => {
+      if (isFinishedRef.current || playbackTimerRef.current) return;
+      // TRAQUEUR PRÉCIS: On compte exactement 5 secondes de lecture
+      playbackTimerRef.current = setTimeout(handleVideoFinish, 5000);
     };
 
     // Jouer seulement quand prêt
@@ -127,24 +139,37 @@ export const LoadingTransition = React.memo(({ onVideoFinish }: LoadingTransitio
         setVideoReady(true);
         videoPlayer.play();
         SplashScreen.hideAsync().catch(() => { });
+        // Si la lecture démarre suite au play(), on traquera via playingChange
       }
     };
 
-    // Check immediately if already ready (race condition fix)
+    const onPlayingChange = (payload: { isPlaying: boolean }) => {
+      if (payload.isPlaying) {
+        startTracking();
+      }
+    };
+
+    // Check immediately if already ready or playing (race condition fix)
     if (videoPlayer.status === 'readyToPlay') {
-      onStatusChange({ status: 'readyToPlay' });
+      setVideoReady(true);
+      SplashScreen.hideAsync().catch(() => { });
+    }
+
+    if (videoPlayer.playing) {
+      startTracking();
     }
 
     videoPlayer.addListener('statusChange', onStatusChange);
+    videoPlayer.addListener('playingChange', onPlayingChange);
     videoPlayer.addListener('playToEnd', handleVideoFinish);
-
-    // Fallback si vidéo freeze ou ne se déclenche pas
-    fallbackTimer = setTimeout(handleVideoFinish, 8000);
 
     return () => {
       videoPlayer.removeListener('statusChange', onStatusChange);
+      videoPlayer.removeListener('playingChange', onPlayingChange);
       videoPlayer.removeListener('playToEnd', handleVideoFinish);
-      clearTimeout(fallbackTimer);
+      if (playbackTimerRef.current) {
+        clearTimeout(playbackTimerRef.current);
+      }
     };
   }, [videoPlayer, onVideoFinish]);
 
@@ -154,7 +179,7 @@ export const LoadingTransition = React.memo(({ onVideoFinish }: LoadingTransitio
       {/* Background noir avant que la vidéo ne soit prête */}
       {!videoReady && <View style={[StyleSheet.absoluteFill, { backgroundColor: '#000' }]} />}
       {/* Video */}
-      <View style={[StyleSheet.absoluteFill, { opacity: videoReady ? 1 : 0 }]}>
+      <View style={[StyleSheet.absoluteFill]}>
         <VideoView player={videoPlayer} style={StyleSheet.absoluteFill} contentFit="cover" nativeControls={false} />
       </View>
 

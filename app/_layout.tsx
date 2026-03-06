@@ -147,9 +147,9 @@ export default function RootLayout() {
     }
   }, [isAuthenticated, hasFinishedOnboarding, isHydrated, isInitialized, segments, pathname, videoFinished]);
 
-  if (!isHydrated || !isInitialized || !videoFinished) {
-    return <LoadingTransition onVideoFinish={() => setVideoFinished(true)} />;
-  }
+  const handleVideoFinish = React.useCallback(() => {
+    setVideoFinished(true);
+  }, []);
 
   return (
     <SafeAreaProvider>
@@ -167,6 +167,12 @@ export default function RootLayout() {
           </Stack>
 
           <StyledStatusBar theme="dark" translucent={true} />
+
+          <>
+            {(!isHydrated || !isInitialized || !videoFinished) && (
+              <LoadingTransition onVideoFinish={handleVideoFinish} />
+            )}
+          </>
         </StripeProvider>
       </GestureHandlerRootView>
     </SafeAreaProvider>
