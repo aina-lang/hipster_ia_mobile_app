@@ -284,7 +284,7 @@ export default function SubscriptionScreen() {
       const limits = confirmResp.data?.limits;
       const limitsText = limits ? `\n\nVos limites:\n• ${limits.promptsLimit} textes\n• ${limits.imagesLimit} images\n• ${limits.videosLimit} vidéos\n• ${limits.audioLimit} audios` : '';
       showModal('success', 'Succès ! 🎉', `Abonnement activé avec succès.${limitsText}`);
-      setTimeout(() => { setModalVisible(false); router.push('/(onboarding)/welcome'); }, 3000);
+      setTimeout(() => { setModalVisible(false); }, 3000);
     } catch (error) {
       showModal('error', 'Erreur', 'Impossible de sauvegarder votre plan.');
     }
@@ -350,9 +350,9 @@ export default function SubscriptionScreen() {
                 <View style={styles.managementCard}>
                   <View style={styles.managementHeader}>
                     <View style={styles.statusBadge}>
-                      <View style={[styles.statusDot, { backgroundColor: user.subscriptionStatus === 'active' ? '#10b981' : '#f59e0b' }]} />
+                      <View style={[styles.statusDot, { backgroundColor: (user.subscriptionStatus === 'active' || user.subscriptionStatus === 'trialing' || user.subscriptionStatus === 'trial') ? '#10b981' : '#f59e0b' }]} />
                       <Text style={styles.statusText}>
-                        {user.subscriptionStatus === 'active' ? 'Plan Actif' : (user.subscriptionStatus === 'canceled' ? 'Annulé (actif jusqu\'à fin cycle)' : 'En attente')}
+                        {(user.subscriptionStatus === 'active' || user.subscriptionStatus === 'trialing' || user.subscriptionStatus === 'trial') ? 'Plan Actif' : (user.subscriptionStatus === 'canceled' ? 'Annulé (actif jusqu\'à fin cycle)' : 'En attente')}
                       </Text>
                     </View>
                     <Text style={styles.currentPlanTitle}>
@@ -372,7 +372,7 @@ export default function SubscriptionScreen() {
                     </View>
                   </View>
 
-                  {user.subscriptionStatus === 'active' && (
+                  {/* {(user.subscriptionStatus === 'active' || user.subscriptionStatus === 'trialing' || user.subscriptionStatus === 'trial') && (
                     <TouchableOpacity
                       style={styles.cancelLink}
                       onPress={handleCancelSubscription}
@@ -380,7 +380,7 @@ export default function SubscriptionScreen() {
                       <AlertCircle size={14} color={colors.status.error} />
                       <Text style={styles.cancelLinkText}>Annuler mon abonnement</Text>
                     </TouchableOpacity>
-                  )}
+                  )} */}
                 </View>
               )}
 

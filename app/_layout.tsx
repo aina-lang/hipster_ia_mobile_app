@@ -142,8 +142,9 @@ export default function RootLayout() {
       console.log(`[RootLayout] Routing to: ${targetRoute} (normalized current: ${normalizedPathname})`);
       setIsRouting(true);
       router.replace(targetRoute as any);
-    } else {
+    } else if (normalizedTarget === normalizedPathname || (!targetRoute && segments.includes('(drawer)'))) {
       setIsRouting(false);
+      routingRef.current = false; // Allow recovery if we were incorrectly redirected
     }
   }, [isAuthenticated, hasFinishedOnboarding, isHydrated, isInitialized, segments, pathname, videoFinished]);
 
