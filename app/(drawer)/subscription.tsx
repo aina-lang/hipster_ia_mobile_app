@@ -306,25 +306,6 @@ export default function SubscriptionScreen() {
     } catch (e: any) { showModal('error', 'Erreur paiement', e?.message || 'Impossible d\'initialiser le paiement.'); } finally { setLoading(false); }
   };
 
-  const handleCancelSubscription = async () => {
-    try {
-      setLoading(true);
-      await api.post('/ai/payment/cancel');
-      showModal('success', 'Abonnement annulé', 'Votre abonnement a été annulé avec succès. Vous garderez vos accès jusqu\'à la fin de la période en cours.');
-      await updateAiProfile({ subscriptionStatus: 'canceled' });
-      await fetchPlans();
-    } catch (error: any) {
-      showModal('error', 'Erreur d\'annulation', error?.response?.data?.message || 'Impossible d\'annuler l\'abonnement.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const confirmCancellation = () => {
-    showModal('warning', 'Confirmer l\'annulation', 'Êtes-vous sûr de vouloir annuler votre abonnement ? Vous perdrez vos avantages premium à la fin du cycle.', handleCancelSubscription);
-    // Note: Temporary solution: using a separate state or prompt if GenericModal is limited
-    // For now, I'll use a standard Alert in some cases if needed, but I'll stick to logic here
-  };
 
   return (
     <BackgroundGradientOnboarding darkOverlay={true} blurIntensity={2}>
@@ -372,15 +353,6 @@ export default function SubscriptionScreen() {
                     </View>
                   </View>
 
-                  {/* {(user.subscriptionStatus === 'active' || user.subscriptionStatus === 'trialing' || user.subscriptionStatus === 'trial') && (
-                    <TouchableOpacity
-                      style={styles.cancelLink}
-                      onPress={handleCancelSubscription}
-                    >
-                      <AlertCircle size={14} color={colors.status.error} />
-                      <Text style={styles.cancelLinkText}>Annuler mon abonnement</Text>
-                    </TouchableOpacity>
-                  )} */}
                 </View>
               )}
 
@@ -407,7 +379,13 @@ export default function SubscriptionScreen() {
 
         <View style={styles.footer}>
           <NeonButton
-            title={selectedPlan ? (plans.find(p => p.id === selectedPlan)?.isComingSoon ? 'À venir' : 'Confirmer mon choix') : 'Sélectionnez un plan'}
+            title={
+              selectedPlan
+                ? (plans.find((p) => p.id === selectedPlan)?.isComingSoon
+                  ? 'À venir'
+                  : (selectedPlan === user?.planType ? 'Renouveler mon forfait' : 'Confirmer mon choix'))
+                : 'Sélectionnez un plan'
+            }
             onPress={handleUpgrade}
             variant="premium"
             size="lg"
@@ -715,18 +693,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#ffffff',
     fontWeight: '600',
-  },
-  cancelLink: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    alignSelf: 'flex-start',
-    paddingVertical: 5,
-  },
-  cancelLinkText: {
-    fontSize: 13,
-    color: colors.status.error,
-    fontWeight: '600',
-    textDecorationLine: 'underline',
   },
 });
