@@ -384,6 +384,16 @@ export default function HomeScreen() {
       }
     };
     requestInitialPermissions();
+
+    // Real-time check: Refresh user profile every 30 seconds while on Home
+    const refreshInterval = setInterval(() => {
+      console.log('[HomeScreen] Real-time profile refresh...');
+      useAuthStore.getState().aiRefreshUser().catch(console.error);
+    }, 30000);
+
+    return () => {
+      clearInterval(refreshInterval);
+    };
   }, []);
 
   useEffect(() => {

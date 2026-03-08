@@ -418,7 +418,38 @@ function CustomDrawerContent(props: any) {
   );
 }
 
+import { usePathname } from 'expo-router';
+
 export default function DrawerLayout() {
+  const { user } = useAuthStore();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  useEffect(() => {
+    if (!user) return;
+
+    // Subscription Guard
+    const planType = user.planType || 'curieux';
+    const subStatus = user.subscriptionStatus;
+    const stripeId = user.stripeCustomerId;
+    const isSubscriptionActive = subStatus === 'active' || subStatus === 'trialing' || subStatus === 'trial';
+    const isPackCurieux = planType === 'curieux';
+
+    const now = new Date();
+    const endDate = user.subscriptionEndDate ? new Date(user.subscriptionEndDate) : null;
+    const isExpired = endDate && now > endDate;
+
+    const isTrialButNoCard = isPackCurieux && !stripeId;
+    const isInvalid = !isSubscriptionActive || isTrialButNoCard || (isPackCurieux && isExpired);
+
+    // If invalid state, redirect to subscription unless already there
+    // We allow /profile for basic info but usually subscription is the main blocker
+    if (isInvalid && pathname !== '/subscription' && pathname !== '/(drawer)/subscription') {
+      console.log('[DrawerLayout] Blocking access - redirecting to /subscription. Current path:', pathname);
+      router.replace('/subscription');
+    }
+  }, [user, pathname]);
+
   return (
     <Drawer
       drawerContent={(props) => <CustomDrawerContent {...props} />}
