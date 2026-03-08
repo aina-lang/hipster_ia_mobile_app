@@ -256,8 +256,10 @@ export default function SubscriptionScreen() {
       try {
         setLoading(true);
         const response = await api.post('/ai/payment/switch-plan', { newPlanId: plan.id });
-        const data = response.data;
-        console.log('[handleUpgrade] switch-plan response data:', JSON.stringify(data, null, 2));
+
+        // Backend returns { status, statusCode, message, data: { ... } }
+        const data = response.data?.data ?? response.data;
+        console.log('[handleUpgrade] Actual data payload:', JSON.stringify(data, null, 2));
 
         // Si le serveur nous renvoie de quoi ouvrir Stripe (pour un refill/renouvellement)
         if (data.paymentIntentClientSecret) {
