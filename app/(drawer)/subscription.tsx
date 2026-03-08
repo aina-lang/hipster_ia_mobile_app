@@ -257,11 +257,33 @@ export default function SubscriptionScreen() {
         setLoading(true);
         const response = await api.post('/ai/payment/switch-plan', { newPlanId: plan.id });
         const data = response.data;
-        showModal('success', data.isUpgrade ? 'Upgrade effectué !' : 'Downgrade planifié', data.message);
+
+        // Si le serveur nous renvoie de quoi ouvrir Stripe (pour un refill/renouvellement)
+        if (data.paymentIntentClientSecret) {
+          const { error: initError } = await initPaymentSheet({
+            merchantDisplayName: 'Hypster AI',
+            customerId: data.customerId,
+            customerEphemeralKeySecret: data.ephemeralKey,
+            paymentIntentClientSecret: data.paymentIntentClientSecret,
+            allowsDelayedPaymentMethods: false,
+            defaultBillingDetails: { email: user.email },
+          });
+
+          if (initError) throw new Error(initError.message);
+
+          const { error: presentError } = await presentPaymentSheet();
+          if (presentError) {
+            if (presentError.code === 'Canceled') return; // User closed the sheet
+            throw new Error(presentError.message);
+          }
+        }
+
+        const modalTitle = data.isRefill ? 'Renouvellement réussi !' : (data.isUpgrade ? 'Upgrade effectué !' : 'Downgrade planifié');
+        showModal('success', modalTitle, data.message);
         await updateAiProfile({ planType: plan.id });
         await fetchPlans();
       } catch (error: any) {
-        showModal('error', 'Erreur', error?.response?.data?.message || 'Impossible de changer de plan');
+        showModal('error', 'Erreur', error?.message || error?.response?.data?.message || 'Impossible de changer de plan');
       } finally {
         setLoading(false);
       }
