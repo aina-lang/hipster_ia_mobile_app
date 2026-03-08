@@ -257,9 +257,11 @@ export default function SubscriptionScreen() {
         setLoading(true);
         const response = await api.post('/ai/payment/switch-plan', { newPlanId: plan.id });
         const data = response.data;
+        console.log('[handleUpgrade] switch-plan response data:', JSON.stringify(data, null, 2));
 
         // Si le serveur nous renvoie de quoi ouvrir Stripe (pour un refill/renouvellement)
         if (data.paymentIntentClientSecret) {
+          console.log('[handleUpgrade] Initializing Payment Sheet...');
           const { error: initError } = await initPaymentSheet({
             merchantDisplayName: 'Hypster AI',
             customerId: data.customerId,
@@ -269,13 +271,21 @@ export default function SubscriptionScreen() {
             defaultBillingDetails: { email: user.email },
           });
 
-          if (initError) throw new Error(initError.message);
+          if (initError) {
+            console.error('[handleUpgrade] initPaymentSheet error:', initError);
+            throw new Error(initError.message);
+          }
 
+          console.log('[handleUpgrade] Presenting Payment Sheet...');
           const { error: presentError } = await presentPaymentSheet();
           if (presentError) {
+            console.error('[handleUpgrade] presentPaymentSheet error:', presentError);
             if (presentError.code === 'Canceled') return; // User closed the sheet
             throw new Error(presentError.message);
           }
+          console.log('[handleUpgrade] Payment Sheet completed successfully');
+        } else {
+          console.log('[handleUpgrade] No paymentIntentClientSecret found in response');
         }
 
         const modalTitle = data.isRefill ? 'Renouvellement réussi !' : (data.isUpgrade ? 'Upgrade effectué !' : 'Downgrade planifié');
