@@ -53,7 +53,6 @@ import {
 import { useStripe } from '@stripe/stripe-react-native';
 import { BackgroundGradient } from '../../components/ui/BackgroundGradient';
 import { DeerAnimation } from '../../components/ui/DeerAnimation';
-import { UsageBar } from '../../components/UsageBar';
 import { useAuthStore } from '../../store/authStore';
 import { useCreationStore } from '../../store/creationStore';
 import { useChatStore, Message, generateConversationId } from '../../store/chatStore';
@@ -534,8 +533,7 @@ export default function HomeScreen() {
 
     // Check credits
     if (isTextExhausted) {
-      const textLimitMsg = promptLimit >= 999999 ? 'illimitée' : `de ${promptLimit} texte${promptLimit > 1 ? 's' : ''}`;
-      showModal('error', 'Limite textes atteinte', `Vous avez atteint votre limite ${textLimitMsg} ${isPackCurieux ? 'par jour' : 'par mois'}. Vous pouvez encore générer des images !`);
+      showModal('error', 'Limite atteinte', `Vous avez atteint votre limite d'utilisation. Vous pouvez encore générer des images ou passer à un pack supérieur !`);
       return;
     }
 
@@ -821,7 +819,7 @@ export default function HomeScreen() {
                   className="bg-white/3 z-50 mt-80 mb-5 flex-row items-center gap-4 rounded-2xl border border-white/5 p-5"
                   onPress={() => {
                     if (isFullyExhausted) {
-                      showModal('info', 'Limite quotidienne atteinte', 'Vous avez utilisé vos 2 textes et 2 images du jour. Revenez demain !');
+                      showModal('info', 'Limite atteinte', 'Vous avez atteint votre limite d\'utilisation pour cette période. Revenez plus tard ou passez au niveau supérieur !');
                       return;
                     }
 

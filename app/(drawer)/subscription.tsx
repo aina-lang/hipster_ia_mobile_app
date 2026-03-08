@@ -37,8 +37,6 @@ import { useRouter } from 'expo-router';
 import { useStripe } from '@stripe/stripe-react-native';
 import { api } from '../../api/client';
 import { useAuthStore } from '../../store/authStore';
-import { UsageBar } from '../../components/UsageBar';
-import { UsageAlertManager } from '../../components/UsageAlertManager';
 import { useUserCredits } from '../../hooks/useUserCredits';
 import { GenericModal } from '../../components/ui/GenericModal';
 import { BackgroundGradientOnboarding } from '../../components/ui/BackgroundGradientOnboarding';
@@ -391,29 +389,6 @@ export default function SubscriptionScreen() {
                 <Text style={styles.subtitle}>Libérez votre créativité avec nos outils premium</Text>
               </View>
 
-              <View style={{ paddingHorizontal: 24, marginBottom: 24 }}>
-                <Text style={{ color: colors.text.secondary, fontSize: 14, marginBottom: 8, fontWeight: '600' }}>
-                  Votre usage
-                </Text>
-                {credits && (
-                  <UsageAlertManager
-                    usageData={[
-                      { label: 'Textes', used: credits.promptsUsed, limit: credits.promptsLimit },
-                      { label: 'Images', used: credits.imagesUsed, limit: credits.imagesLimit },
-                      { label: 'Vidéos', used: credits.videosUsed, limit: credits.videosLimit },
-                      { label: 'Audio', used: credits.audioUsed, limit: credits.audioLimit },
-                    ]}
-                    onUpgradePress={() => {
-                      // Scroll to plans section or open upgrade directly
-                      const targetPlan = plans.find(p => p.id !== user?.planType && !p.isComingSoon);
-                      if (targetPlan) {
-                        setSelectedPlan(targetPlan.id);
-                      }
-                    }}
-                  />
-                )}
-                <UsageBar />
-              </View>
 
               <View style={styles.plansContainer}>
                 {plans.map((plan) => (
