@@ -252,43 +252,17 @@ export default function SubscriptionScreen() {
     const plan = plans.find((p) => p.id === selectedPlan);
     if (!plan || plan.isComingSoon) return;
 
-    if (user?.stripeSubscriptionId && user?.planType !== 'curieux' && user?.subscriptionStatus === 'active') {
+    const isRefill = selectedPlan === user?.planType;
+
+    // Si c'est un changement de plan (Upgrade/Downgrade) vers un nouveau plan différent
+    if (!isRefill && user?.stripeSubscriptionId && user?.planType !== 'curieux' && user?.subscriptionStatus === 'active') {
       try {
         setLoading(true);
         const response = await api.post('/ai/payment/switch-plan', { newPlanId: plan.id });
 
         // Backend returns { status, statusCode, message, data: { ... } }
         const data = response.data?.data ?? response.data;
-        console.log('[handleUpgrade] Actual data payload:', JSON.stringify(data, null, 2));
-
-        // Si le serveur nous renvoie de quoi ouvrir Stripe (pour un refill/renouvellement)
-        if (data.paymentIntentClientSecret) {
-          console.log('[handleUpgrade] Initializing Payment Sheet...');
-          const { error: initError } = await initPaymentSheet({
-            merchantDisplayName: 'Hypster AI',
-            customerId: data.customerId,
-            customerEphemeralKeySecret: data.ephemeralKey,
-            paymentIntentClientSecret: data.paymentIntentClientSecret,
-            allowsDelayedPaymentMethods: false,
-            defaultBillingDetails: { email: user.email },
-          });
-
-          if (initError) {
-            console.error('[handleUpgrade] initPaymentSheet error:', initError);
-            throw new Error(initError.message);
-          }
-
-          console.log('[handleUpgrade] Presenting Payment Sheet...');
-          const { error: presentError } = await presentPaymentSheet();
-          if (presentError) {
-            console.error('[handleUpgrade] presentPaymentSheet error:', presentError);
-            if (presentError.code === 'Canceled') return; // User closed the sheet
-            throw new Error(presentError.message);
-          }
-          console.log('[handleUpgrade] Payment Sheet completed successfully');
-        } else {
-          console.log('[handleUpgrade] No paymentIntentClientSecret found in response');
-        }
+        console.log('[handleUpgrade] Switch-plan data payload:', JSON.stringify(data, null, 2));
 
         const modalTitle = data.isRefill ? 'Renouvellement réussi !' : (data.isUpgrade ? 'Upgrade effectué !' : 'Downgrade planifié');
         showModal('success', modalTitle, data.message);
@@ -302,11 +276,13 @@ export default function SubscriptionScreen() {
       return;
     }
 
+    // Sinon (Nouveau plan OU Renouvellement/Refill), on ouvre Stripe
     if (plan.stripePriceId === null) {
       await handlePlanConfirmation(plan.id);
       return;
     }
 
+    console.log('[handleUpgrade] Opening Stripe for', isRefill ? 'Refill' : 'New Subscription');
     await initializePaymentSheet(plan.stripePriceId);
   };
 
