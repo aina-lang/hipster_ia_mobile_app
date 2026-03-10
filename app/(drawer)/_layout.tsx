@@ -440,12 +440,33 @@ export default function DrawerLayout() {
     const isExpired = endDate && now > endDate;
 
     const isTrialButNoCard = isPackCurieux && !stripeId;
-    const isInvalid = !isSubscriptionActive || isTrialButNoCard || (isPackCurieux && isExpired);
 
-    // If invalid state, redirect to subscription unless already there
-    // We allow /profile for basic info but usually subscription is the main blocker
-    if (isInvalid && pathname !== '/subscription' && pathname !== '/(drawer)/subscription') {
-      console.log('[DrawerLayout] Blocking access - redirecting to /subscription. Current path:', pathname);
+    // Credit limits for ALL plans (block index only)
+    const promptsLimit = user.promptsLimit || 0;
+    const imagesLimit = user.imagesLimit || 0;
+    const videosLimit = user.videosLimit || 0;
+    const audioLimit = user.audioLimit || 0;
+    const threeDLimit = user.threeDLimit || 0;
+
+    // Check if limits are defined (not 999999) and exceeded
+    const isTextExhausted = promptsLimit > 0 && promptsLimit !== 999999 && (user.promptsUsed || 0) >= promptsLimit;
+    const isImagesExhausted = imagesLimit > 0 && imagesLimit !== 999999 && (user.imagesUsed || 0) >= imagesLimit;
+    const isVideosExhausted = videosLimit > 0 && videosLimit !== 999999 && (user.videosUsed || 0) >= videosLimit;
+    const isAudioExhausted = audioLimit > 0 && audioLimit !== 999999 && (user.audioUsed || 0) >= audioLimit;
+    const isThreeDExhausted = threeDLimit > 0 && threeDLimit !== 999999 && (user.threeDUsed || 0) >= threeDLimit;
+
+    // A user is fully exhausted if they reached the limit for ALL their available credit types
+    const isFullyExhausted = isTextExhausted && isImagesExhausted && isVideosExhausted && isAudioExhausted && isThreeDExhausted;
+
+    // Critical block (expired trial or inactive sub) -> Global
+    const isCriticalInvalid = !isSubscriptionActive || isTrialButNoCard || (isPackCurieux && isExpired);
+
+    // If critical invalid OR (exhausted AND on Home) -> Redirect
+    const shouldBlockHome = isFullyExhausted && (pathname === '/' || pathname === '/(drawer)/' || pathname === '/(drawer)');
+    const isGlobalBlock = isCriticalInvalid;
+
+    if ((isGlobalBlock || shouldBlockHome) && pathname !== '/subscription' && pathname !== '/(drawer)/subscription') {
+      console.log('[DrawerLayout] Blocking access - redirecting to /subscription. Reason: ', { isGlobalBlock, shouldBlockHome });
       router.replace('/subscription');
     }
   }, [user, pathname]);

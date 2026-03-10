@@ -230,10 +230,33 @@ export default function HomeScreen() {
   // Find the effective plan object
   const currentPlanObject = plans.find(p => p.id === effectivePlanId) || plans.find(p => p.id === 'atelier');
 
-  // Logic: Block if subscription is NOT active/trialing OR if Curieux trial hasn't been activated with a card
-  // OR if the trial has expired (even if active in Stripe, our local rule says 7 days).
+  // Global Credit Exhaustion for all plans
+  const promptsLimit = user?.promptsLimit || 0;
+  const promptsUsed = user?.promptsUsed || 0;
+  const imagesLimit = user?.imagesLimit || 0;
+  const imagesUsed = user?.imagesUsed || 0;
+  const videosLimit = user?.videosLimit || 0;
+  const videosUsed = user?.videosUsed || 0;
+  const audioLimit = user?.audioLimit || 0;
+  const audioUsed = user?.audioUsed || 0;
+  const threeDLimit = user?.threeDLimit || 0;
+  const threeDUsed = user?.threeDUsed || 0;
+
+  const textRemaining = Math.max(0, promptsLimit - promptsUsed);
+  const imagesRemaining = Math.max(0, imagesLimit - imagesUsed);
+
+  const isTextExhausted = promptsLimit > 0 && promptsLimit !== 999999 && promptsUsed >= promptsLimit;
+  const isImagesExhausted = imagesLimit > 0 && imagesLimit !== 999999 && imagesUsed >= imagesLimit;
+  const isVideosExhausted = videosLimit > 0 && videosLimit !== 999999 && videosUsed >= videosLimit;
+  const isAudioExhausted = audioLimit > 0 && audioLimit !== 999999 && audioUsed >= audioLimit;
+  const isThreeDExhausted = threeDLimit > 0 && threeDLimit !== 999999 && threeDUsed >= threeDLimit;
+
+  // Fully exhausted if ALL non-infinite limits are reached
+  const isFullyExhausted = isTextExhausted && isImagesExhausted && isVideosExhausted && isAudioExhausted && isThreeDExhausted;
+
   const isTrialButNoCard = isPackCurieux && !stripeId;
-  const isPaidPlanButInactive = !isSubscriptionActive || isTrialButNoCard || (isPackCurieux && isExpired);
+  const isAnyMessageTyping = messages.some(m => m.isTyping);
+  const isPaidPlanButInactive = !isSubscriptionActive || isTrialButNoCard || (isPackCurieux && isExpired) || isFullyExhausted;
 
   const showModal = (type: ModalType, title: string, message: string) => {
     setModalType(type);
@@ -510,22 +533,6 @@ export default function HomeScreen() {
 
   const placeholderText = 'Décrivez votre idée, ajoutez une image ou un audio...';
   const hasMessages = messages.length > 0;
-
-  // Credit and message limit checks
-  const promptLimit = user?.promptsLimit || 0;
-  const promptUsed = user?.promptsUsed || 0;
-  const imagesLimit = user?.imagesLimit || 0;
-  const imagesUsed = user?.imagesUsed || 0;
-
-  const textRemaining = Math.max(0, promptLimit - promptUsed);
-  const imagesRemaining = Math.max(0, imagesLimit - imagesUsed);
-
-  const isTextExhausted = isPackCurieux && promptLimit > 0 && promptLimit !== 999999 && promptUsed >= promptLimit;
-  const isImagesExhausted = isPackCurieux && imagesLimit > 0 && imagesLimit !== 999999 && imagesUsed >= imagesLimit;
-  const isFullyExhausted = isPackCurieux && isTextExhausted && isImagesExhausted;
-
-  // Check if any message is currently typing visually
-  const isAnyMessageTyping = messages.some(m => m.isTyping);
 
   // For the chat input, we only block if BOTH are reached or if currently generating or typing
   const isInputDisabled = isGenerating || isFullyExhausted || isAnyMessageTyping;
