@@ -12,8 +12,36 @@ interface PaymentBlockerProps {
 
 export const PaymentBlocker = ({ plan, onPay, loading }: PaymentBlockerProps) => {
     const isTrial = plan?.id === 'curieux';
+    const promptsLimit = plan?.promptsLimit || 0;
+    const promptsUsed = plan?.promptsUsed || 0;
+    const imagesLimit = plan?.imagesLimit || 0;
+    const imagesUsed = plan?.imagesUsed || 0;
+    const videosLimit = plan?.videosLimit || 0;
+    const videosUsed = plan?.videosUsed || 0;
+    const audioLimit = plan?.audioLimit || 0;
+    const audioUsed = plan?.audioUsed || 0;
+    const threeDLimit = plan?.threeDLimit || 0;
+    const threeDUsed = plan?.threeDUsed || 0;
+
+    // Check if fully exhausted for ALL enabled types
+    const isExhausted = (promptsLimit > 0 && promptsLimit !== 999999 ? promptsUsed >= promptsLimit : true) &&
+        (imagesLimit > 0 && imagesLimit !== 999999 ? imagesUsed >= imagesLimit : true) &&
+        (videosLimit > 0 && videosLimit !== 999999 ? videosUsed >= videosLimit : true) &&
+        (audioLimit > 0 && audioLimit !== 999999 ? audioUsed >= audioLimit : true) &&
+        (threeDLimit > 0 && threeDLimit !== 999999 ? threeDUsed >= threeDLimit : true);
 
     if (!plan) return null;
+
+    const getMessage = () => {
+        if (isExhausted) return "Vous avez atteint votre limite de génération pour cette période. Renouvelez votre forfait ou passez au niveau supérieur pour obtenir de nouveaux crédits immédiatement.";
+        if (isTrial) return "Démarrez votre essai gratuit pour accéder à tout. Carte requise (0€). Passage automatique au pack Atelier (9,90€/mois) après 7 jours.";
+        return "Veuillez finaliser votre abonnement pour débloquer toutes les fonctionnalités de votre plan.";
+    };
+
+    const getTitle = () => {
+        if (isExhausted) return "Limite atteinte";
+        return "Action requise";
+    };
 
     return (
         <View className=" mb-5 overflow-hidden rounded-3xl border border-white/10 bg-slate-900/90 shadow-2xl">
@@ -21,11 +49,9 @@ export const PaymentBlocker = ({ plan, onPay, loading }: PaymentBlockerProps) =>
                 <View className="mb-4 h-16 w-16 items-center justify-center rounded-2xl bg-primary/20">
                     <Lock size={32} color={colors.primary.main} />
                 </View>
-                <Text className="text-center text-xl font-bold text-white">Action requise</Text>
+                <Text className="text-center text-xl font-bold text-white">{getTitle()}</Text>
                 <Text className="mt-2 text-center text-sm text-white/60">
-                    {isTrial
-                        ? "Démarrez votre essai gratuit pour accéder à tout. Carte requise (0€). Passage automatique au pack Atelier (9,90€/mois) après 7 jours."
-                        : "Veuillez finaliser votre abonnement pour débloquer toutes les fonctionnalités de votre plan."}
+                    {getMessage()}
                 </Text>
             </View>
 

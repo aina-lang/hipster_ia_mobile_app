@@ -55,6 +55,7 @@ interface User {
   imagesUsed?: number;
   videosUsed?: number;
   audioUsed?: number;
+  threeDUsed?: number;
   type?: 'ai' | 'standard';
   name?: string;
   professionalEmail?: string;
