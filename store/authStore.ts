@@ -95,6 +95,9 @@ interface AuthState {
   uploadLogo: (profileId: number, imageUri: string) => Promise<string>;
   aiRefreshUser: () => Promise<void>;
   initializeAuth: () => Promise<void>;
+  forgotPassword: (email: string) => Promise<void>;
+  verifyResetCode: (email: string, code: string) => Promise<void>;
+  resetPassword: (email: string, code: string, password?: string) => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -285,6 +288,67 @@ export const useAuthStore = create<AuthState>()(
           set({ isLoading: false });
         } catch (error: any) {
           const message = extractErrorMessage(error, 'Erreur lors du changement de mot de passe.');
+          set({ error: message, isLoading: false });
+          throw error;
+        }
+      },
+
+      forgotPassword: async (email) => {
+        set({ isLoading: true, error: null });
+        try {
+          // Attempt AI first, fallback to standard if not found
+          try {
+            await api.post('/ai/auth/forgot-password', { email });
+          } catch (e: any) {
+            if (e.response?.status === 404) {
+              await api.post('/forgot-password', { email });
+            } else {
+              throw e;
+            }
+          }
+          set({ isLoading: false });
+        } catch (error: any) {
+          const message = extractErrorMessage(error, 'Erreur lors de la demande de réinitialisation.');
+          set({ error: message, isLoading: false });
+          throw error;
+        }
+      },
+
+      verifyResetCode: async (email, code) => {
+        set({ isLoading: true, error: null });
+        try {
+          try {
+            await api.post('/ai/auth/verify-reset-code', { email, code });
+          } catch (e: any) {
+            if (e.response?.status === 404 || e.response?.data?.message === 'Utilisateur introuvable.') {
+              await api.post('/verify-reset-code', { email, code });
+            } else {
+              throw e;
+            }
+          }
+          set({ isLoading: false });
+        } catch (error: any) {
+          const message = extractErrorMessage(error, 'Code de vérification invalide ou expiré.');
+          set({ error: message, isLoading: false });
+          throw error;
+        }
+      },
+
+      resetPassword: async (email, code, password) => {
+        set({ isLoading: true, error: null });
+        try {
+          try {
+            await api.post('/ai/auth/reset-password', { email, code, password });
+          } catch (e: any) {
+            if (e.response?.status === 404 || e.response?.data?.message === 'Utilisateur introuvable.') {
+              await api.post('/reset-password', { email, code, password });
+            } else {
+              throw e;
+            }
+          }
+          set({ isLoading: false });
+        } catch (error: any) {
+          const message = extractErrorMessage(error, 'Erreur lors de la réinitialisation du mot de passe.');
           set({ error: message, isLoading: false });
           throw error;
         }
