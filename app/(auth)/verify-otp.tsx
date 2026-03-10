@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
     View,
     StyleSheet,
@@ -8,7 +8,9 @@ import {
     Platform,
     TouchableOpacity,
     Keyboard,
-    TouchableWithoutFeedback
+    TouchableWithoutFeedback,
+    NativeSyntheticEvent,
+    TextInputKeyPressEventData
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -19,10 +21,13 @@ import { GenericModal } from '../../components/ui/GenericModal';
 import { colors } from '../../theme/colors';
 import { useAuthStore } from '../../store/authStore';
 
+const OTP_LENGTH = 6;
+
 export default function VerifyOtpScreen() {
     const { email } = useLocalSearchParams();
-    const [code, setCode] = useState('');
+    const [otp, setOtp] = useState<string[]>(Array(OTP_LENGTH).fill(''));
     const [isLoading, setIsLoading] = useState(false);
+    const inputRefs = useRef<(TextInput | null)[]>([]);
 
     // Modal State
     const [modalVisible, setModalVisible] = useState(false);
@@ -39,11 +44,53 @@ export default function VerifyOtpScreen() {
         setModalVisible(true);
     };
 
+    const handleChange = (text: string, index: number) => {
+        // Handle paste: if text length > 1, distribute across cells
+        if (text.length > 1) {
+            const digits = text.replace(/[^0-9]/g, '').slice(0, OTP_LENGTH);
+            const newOtp = [...otp];
+            for (let i = 0; i < digits.length; i++) {
+                newOtp[index + i] = digits[i];
+                if (index + i >= OTP_LENGTH - 1) break;
+            }
+            setOtp(newOtp);
+            const nextIndex = Math.min(index + digits.length, OTP_LENGTH - 1);
+            inputRefs.current[nextIndex]?.focus();
+            return;
+        }
+
+        const digit = text.replace(/[^0-9]/g, '');
+        const newOtp = [...otp];
+        newOtp[index] = digit;
+        setOtp(newOtp);
+
+        // Auto-focus next input
+        if (digit && index < OTP_LENGTH - 1) {
+            inputRefs.current[index + 1]?.focus();
+        }
+    };
+
+    const handleKeyPress = (
+        e: NativeSyntheticEvent<TextInputKeyPressEventData>,
+        index: number
+    ) => {
+        if (e.nativeEvent.key === 'Backspace') {
+            if (!otp[index] && index > 0) {
+                const newOtp = [...otp];
+                newOtp[index - 1] = '';
+                setOtp(newOtp);
+                inputRefs.current[index - 1]?.focus();
+            }
+        }
+    };
+
     const handleVerifyCode = async () => {
         Keyboard.dismiss();
 
-        if (!code) {
-            showModal('warning', 'Code manquant', 'Veuillez entrer le code de vérification.');
+        const code = otp.join('');
+
+        if (code.length < OTP_LENGTH) {
+            showModal('warning', 'Code incomplet', 'Veuillez entrer les 6 chiffres du code de vérification.');
             return;
         }
 
@@ -56,7 +103,6 @@ export default function VerifyOtpScreen() {
             setIsLoading(false);
             setModalVisible(false);
 
-            // Navigate to reset password with email and code
             router.replace({ pathname: '/(auth)/reset-password', params: { email, code } });
 
         } catch (e: any) {
@@ -84,22 +130,34 @@ export default function VerifyOtpScreen() {
 
                         <Animated.View entering={FadeInDown.duration(800)} style={styles.content}>
                             <Text style={styles.title}>Vérification OTP</Text>
-                            <Text style={styles.subtitle}>Un code a été envoyé à {email}. Veuillez l'entrer ci-dessous pour continuer.</Text>
+                            <Text style={styles.subtitle}>
+                                Un code a été envoyé à {email}. Veuillez l'entrer ci-dessous pour continuer.
+                            </Text>
 
                             <View style={styles.form}>
 
-                                <View style={styles.inputContainer}>
-                                    <Text style={styles.label}>Code de vérification</Text>
-                                    <TextInput
-                                        style={styles.input}
-                                        placeholder="123456"
-                                        placeholderTextColor={colors.text.muted}
-                                        value={code}
-                                        onChangeText={setCode}
-                                        autoCapitalize="none"
-                                        keyboardType="number-pad"
-                                        maxLength={6}
-                                    />
+                                {/* OTP Input Boxes */}
+                                <View style={styles.otpContainer}>
+                                    {otp.map((digit, index) => (
+                                        <TextInput
+                                            key={index}
+                                            ref={(ref) => { inputRefs.current[index] = ref; }}
+                                            style={[
+                                                styles.otpInput,
+                                                digit ? styles.otpInputFilled : null,
+                                            ]}
+                                            value={digit}
+                                            onChangeText={(text) => handleChange(text, index)}
+                                            onKeyPress={(e) => handleKeyPress(e, index)}
+                                            keyboardType="number-pad"
+                                            maxLength={1}
+                                            selectTextOnFocus
+                                            caretHidden={true}
+                                            textAlign="center"
+                                            placeholderTextColor={colors.text.muted}
+                                            placeholder="•"
+                                        />
+                                    ))}
                                 </View>
 
                                 <NeonButton
@@ -161,32 +219,36 @@ const styles = StyleSheet.create({
     subtitle: {
         fontSize: 15,
         color: colors.text.secondary,
-        marginBottom: 30,
+        marginBottom: 36,
         lineHeight: 22,
     },
     form: {
         width: '100%',
     },
-    inputContainer: {
-        marginBottom: 20,
+   otpContainer: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        marginBottom: 32,
+        gap: 8,
     },
-    label: {
-        fontSize: 14,
-        color: colors.text.secondary,
-        marginBottom: 8,
-        fontWeight: '500',
-    },
-    input: {
+    otpInput: {
+        width: 44,
+        height: 48,
         backgroundColor: 'rgba(15,23,42,0.9)',
-        borderRadius: 12,
-        padding: 16,
+        borderRadius: 10,
+        borderWidth: 1.5,
+        borderColor: 'rgba(255, 255, 255, 0.15)',
         color: colors.text.primary,
-        borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.1)',
-        fontSize: 16,
+        fontSize: 20,
+        fontWeight: '600',
+        textAlign: 'center',
+    },
+    otpInputFilled: {
+        borderColor: 'rgba(255, 255, 255, 0.45)',
+        backgroundColor: 'rgba(255, 255, 255, 0.07)',
     },
     submitButton: {
         width: '100%',
-        marginTop: 12,
+        marginTop: 4,
     },
 });
