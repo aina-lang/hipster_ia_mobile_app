@@ -6,6 +6,8 @@ export interface WorkflowQuestion {
   options?: string[];
 }
 
+
+// test
 const COMMON_FUNCTIONS: Record<string, WorkflowQuestion[]> = {
   'Contenu réseaux': [
     {
