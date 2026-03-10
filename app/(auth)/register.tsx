@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { Eye, EyeOff } from 'lucide-react-native';
+import { Eye, EyeOff, Gift } from 'lucide-react-native';
 import { BackgroundGradientOnboarding } from '../../components/ui/BackgroundGradientOnboarding';
 import { StepIndicator } from '../../components/ui/StepIndicator';
 import { NeonButton } from '../../components/ui/NeonButton';
@@ -36,6 +36,7 @@ export default function RegisterScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [referralCode, setReferralCode] = useState('');
 
   // Modal State
   const [modalVisible, setModalVisible] = useState(false);
@@ -77,6 +78,7 @@ export default function RegisterScreen() {
         planId: selectedPlan || 'curieux',
         brandingColor,
         job,
+        referralCode: referralCode.trim() || undefined,
       });
 
       // Handle both wrapped and unwrapped response formats
@@ -189,6 +191,22 @@ export default function RegisterScreen() {
                       if (error) clearError();
                     }}
                     secureTextEntry={!showConfirmPassword}
+                  />
+                </View>
+              </View>
+              {/* Referral Code - optional */}
+              <View style={styles.inputContainer}>
+                <Text style={styles.label}>Code de parrainage <Text style={styles.optional}>(optionnel)</Text></Text>
+                <View style={styles.referralWrapper}>
+                  <Gift size={18} color={colors.text.muted} style={styles.referralIcon} />
+                  <TextInput
+                    style={[styles.input, styles.referralInput]}
+                    placeholder="Ex : REF-USR-ABCD"
+                    placeholderTextColor={colors.text.muted}
+                    value={referralCode}
+                    onChangeText={(text) => setReferralCode(text.toUpperCase())}
+                    autoCapitalize="characters"
+                    autoCorrect={false}
                   />
                 </View>
               </View>
@@ -312,5 +330,29 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
     fontSize: 14,
     fontWeight: '600',
+  },
+  optional: {
+    color: colors.text.muted,
+    fontWeight: '400',
+    fontSize: 12,
+  },
+  referralWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(15,23,42,0.9)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(59,130,246,0.3)',
+    paddingLeft: 14,
+  },
+  referralIcon: {
+    marginRight: 8,
+  },
+  referralInput: {
+    flex: 1,
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    paddingLeft: 4,
+    letterSpacing: 1,
   },
 });

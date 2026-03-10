@@ -131,14 +131,14 @@ export default function ReferralScreen() {
               </View>
               <View style={styles.ambassadorInfo}>
                 <Text style={styles.ambassadorTitle}>Statut Ambassadeur Actif</Text>
-                <Text style={styles.ambassadorText}>Tu profites de -50% sur ton abonnement à vie !</Text>
+                <Text style={styles.ambassadorText}>Atelier 9,90€/mois · Studio 22€/mois en permanence</Text>
               </View>
             </View>
           ) : (
             <View style={styles.infoCard}>
               <Star size={20} color={colors.primary.main} />
               <Text style={styles.infoText}>
-                Deviens <Text style={styles.highlight}>Ambassadeur</Text> avec 10 filleuls payants et obtiens <Text style={styles.highlight}>-50% à vie</Text> sur ton abonnement.
+                Deviens <Text style={styles.highlight}>Ambassadeur</Text> avec 10 filleuls payants et profite d'un <Text style={styles.highlight}>tarif préférentiel permanent</Text> sur tous les packs.
               </Text>
             </View>
           )}
