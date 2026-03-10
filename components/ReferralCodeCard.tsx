@@ -1,18 +1,27 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Share, Clipboard } from 'react-native';
 import { Copy, Share2 } from 'lucide-react-native';
 import { colors } from '../theme/colors';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
+import { GenericModal } from './ui/GenericModal';
 
 interface ReferralCodeCardProps {
   code: string;
 }
 
 export const ReferralCodeCard: React.FC<ReferralCodeCardProps> = ({ code }) => {
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalConfig, setModalConfig] = useState({ type: 'success' as any, title: '', message: '' });
+
+  const showModal = (type: any, title: string, message: string) => {
+    setModalConfig({ type, title, message });
+    setModalVisible(true);
+  };
+
   const handleCopy = () => {
     Clipboard.setString(code);
-    alert('Code copié !');
+    showModal('success', 'Copié !', 'Le code a été copié dans le presse-papiers.');
   };
 
   const handleShare = async () => {
@@ -21,32 +30,42 @@ export const ReferralCodeCard: React.FC<ReferralCodeCardProps> = ({ code }) => {
         message: `Rejoins-moi sur Hipster IA et profite d'avantages exclusifs avec mon code de parrainage : ${code}\n\nTélécharge l'app ici : https://hipster-api.fr`,
       });
     } catch (error: any) {
-      console.error('Error sharing code:', error.message);
+      showModal('error', 'Erreur', "Impossible de partager le code pour l'instant.");
     }
   };
 
   return (
-    <View style={styles.container}>
-      <BlurView intensity={60} tint="dark" style={styles.blur}>
-        <LinearGradient
-          colors={['rgba(59, 130, 246, 0.1)', 'rgba(59, 130, 246, 0.05)']}
-          style={styles.gradient}
-        >
-          <Text style={styles.label}>TON CODE DE PARRAINAGE</Text>
-          <View style={styles.codeContainer}>
-            <Text style={styles.codeText}>{code}</Text>
-            <View style={styles.actions}>
-              <TouchableOpacity onPress={handleCopy} style={styles.actionButton}>
-                <Copy size={20} color={colors.primary.main} />
-              </TouchableOpacity>
-              <TouchableOpacity onPress={handleShare} style={styles.actionButton}>
-                <Share2 size={20} color={colors.primary.main} />
-              </TouchableOpacity>
+    <>
+      <View style={styles.container}>
+        <BlurView intensity={60} tint="dark" style={styles.blur}>
+          <LinearGradient
+            colors={['rgba(59, 130, 246, 0.1)', 'rgba(59, 130, 246, 0.05)']}
+            style={styles.gradient}
+          >
+            <Text style={styles.label}>TON CODE DE PARRAINAGE</Text>
+            <View style={styles.codeContainer}>
+              <Text style={styles.codeText}>{code}</Text>
+              <View style={styles.actions}>
+                <TouchableOpacity onPress={handleCopy} style={styles.actionButton}>
+                  <Copy size={20} color={colors.primary.main} />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={handleShare} style={styles.actionButton}>
+                  <Share2 size={20} color={colors.primary.main} />
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
-        </LinearGradient>
-      </BlurView>
-    </View>
+          </LinearGradient>
+        </BlurView>
+      </View>
+
+      <GenericModal
+        visible={modalVisible}
+        type={modalConfig.type}
+        title={modalConfig.title}
+        message={modalConfig.message}
+        onClose={() => setModalVisible(false)}
+      />
+    </>
   );
 };
 
