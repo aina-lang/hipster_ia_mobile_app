@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useFocusEffect } from 'expo-router';
 import { ArrowLeft, Users, Gift, Star, ChevronRight } from 'lucide-react-native';
 import { colors } from '../../theme/colors';
 import { BackgroundGradientOnboarding } from '../../components/ui/BackgroundGradientOnboarding';
@@ -50,6 +51,16 @@ export default function ReferralScreen() {
   useEffect(() => {
     fetchStats();
   }, []);
+
+  // Refresh when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      fetchStats();
+      // Poll every 30 seconds while screen is focused
+      const interval = setInterval(fetchStats, 30000);
+      return () => clearInterval(interval);
+    }, [])
+  );
 
   const onRefresh = () => {
     setRefreshing(true);
