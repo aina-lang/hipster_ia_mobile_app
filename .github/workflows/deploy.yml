@@ -17,8 +17,15 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
-            cd ~/hipster_ia_mobile_app
+            APP_DIR=~/hipster_ia_mobile_app
+
+            cd $APP_DIR
             git fetch origin
             git reset --hard origin/main
-            tmux send-keys -t dev C-c
-            tmux send-keys -t dev "cd ~/hipster_ia_mobile_app && EXPO_TUNNEL_SUBDOMAIN=hipsteria npx expo start --tunnel" Enter
+
+            if tmux has-session -t dev 2>/dev/null; then
+              tmux send-keys -t dev C-c
+            else
+              tmux new-session -d -s dev
+            fi
+            tmux send-keys -t dev "cd $APP_DIR && EXPO_TUNNEL_SUBDOMAIN=hipsteria npx expo start --tunnel" Enter
