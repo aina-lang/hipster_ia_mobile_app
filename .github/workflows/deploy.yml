@@ -10,22 +10,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Deploy to VPS
+      - name: Update code on VPS
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
-            APP_DIR=~/hipster_ia_mobile_app
-
-            cd $APP_DIR
+            cd ~/hipster_ia_mobile_app
             git fetch origin
             git reset --hard origin/main
-
-            if tmux has-session -t dev 2>/dev/null; then
-              tmux send-keys -t dev C-c
-            else
-              tmux new-session -d -s dev
-            fi
-            tmux send-keys -t dev "cd $APP_DIR && EXPO_TUNNEL_SUBDOMAIN=hipsteria npx expo start --tunnel" Enter
