@@ -68,6 +68,10 @@ interface User {
   siret?: string;
   vatNumber?: string;
   websiteUrl?: string;
+  referralCode?: string;
+  referredBy?: string;
+  isAmbassador?: boolean;
+  freeMonthsPending?: number;
 }
 
 interface AuthState {

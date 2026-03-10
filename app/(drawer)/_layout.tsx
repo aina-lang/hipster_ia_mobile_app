@@ -18,6 +18,7 @@ import {
   Layout,
   Cpu,
   GalleryHorizontal,
+  Users,
 } from 'lucide-react-native';
 import { useAuthStore } from '../../store/authStore';
 import { AiService } from '../../api/ai.service';
@@ -523,6 +524,14 @@ export default function DrawerLayout() {
         options={{
           drawerLabel: 'Abonnement',
           drawerIcon: ({ color }) => <Sparkles size={22} color={color} />,
+        }}
+      />
+
+      <Drawer.Screen
+        name="referral"
+        options={{
+          drawerLabel: 'Parrainage',
+          drawerIcon: ({ color }) => <Users size={22} color={color} />,
         }}
       />
     </Drawer>

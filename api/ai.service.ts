@@ -322,4 +322,26 @@ export const AiService = {
       throw error;
     }
   },
+
+  getReferralStats: async () => {
+    console.log('[AiService] getReferralStats called');
+    try {
+      const response = await api.get('/referral/stats');
+      return response.data.data?.data || response.data.data || response.data;
+    } catch (error: any) {
+      console.error('[AiService] getReferralStats error:', error?.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  applyReferralCode: async (code: string) => {
+    console.log('[AiService] applyReferralCode called with:', code);
+    try {
+      const response = await api.post('/referral/apply', { code });
+      return response.data.data?.data || response.data.data || response.data;
+    } catch (error: any) {
+      console.error('[AiService] applyReferralCode error:', error?.response?.data || error.message);
+      throw error;
+    }
+  },
 };

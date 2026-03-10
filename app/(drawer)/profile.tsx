@@ -34,6 +34,7 @@ import {
   Globe,
   ChevronDown,
   ArrowLeft,
+  Users,
 } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { GenericModal, ModalType } from '../../components/ui/GenericModal';
@@ -478,6 +479,11 @@ export default function ProfileScreen() {
 
           {/* Security & Logout */}
           <View style={styles.securitySection}>
+            <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/(drawer)/referral')}>
+              <Users size={20} color={colors.text.muted} />
+              <Text style={styles.menuItemText}>Parrainage & Récompenses</Text>
+              <ChevronRight size={20} color={colors.text.muted} />
+            </TouchableOpacity>
             <TouchableOpacity style={styles.menuItem} onPress={() => setShowPasswordModal(true)}>
               <Lock size={20} color={colors.text.muted} />
               <Text style={styles.menuItemText}>Modifier le mot de passe</Text>
