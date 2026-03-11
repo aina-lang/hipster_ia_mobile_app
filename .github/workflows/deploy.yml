@@ -17,15 +17,45 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
-            APP_DIR=~/hipster_ia_mobile_app
+            set -e
 
-            cd $APP_DIR
+            APP_DIR="$HOME/hipster_ia_mobile_app"
+            SESSION="dev"
+            LOG_FILE="$APP_DIR/expo.log"
+
+            cd "$APP_DIR"
             git fetch origin
             git reset --hard origin/main
 
-            if tmux has-session -t dev 2>/dev/null; then
-              tmux send-keys -t dev C-c
-            else
-              tmux new-session -d -s dev
+            # Vérifie Node/npm si besoin
+            node -v
+            npm -v
+
+            # Dépendances projet
+            npm install
+
+            # Installer le helper ngrok Expo si absent
+            if ! command -v expo-ngrok >/dev/null 2>&1; then
+              npm install -g @expo/ngrok
             fi
-            tmux send-keys -t dev "cd $APP_DIR && EXPO_TUNNEL_SUBDOMAIN=hipsteria npx expo start --tunnel" Enter
+
+            # Supprimer complètement l'ancienne session tmux
+            if tmux has-session -t "$SESSION" 2>/dev/null; then
+              tmux kill-session -t "$SESSION"
+              sleep 2
+            fi
+
+            # Nettoyage ancien état Expo
+            rm -rf .expo
+
+            # Lancer une nouvelle session tmux avec logs
+            tmux new-session -d -s "$SESSION" \
+              "cd '$APP_DIR' && unset EXPO_TUNNEL_SUBDOMAIN && npx expo start -c --tunnel >> '$LOG_FILE' 2>&1"
+
+            sleep 8
+
+            echo "==== tmux sessions ===="
+            tmux ls || true
+
+            echo "==== Expo log (last 60 lines) ===="
+            tail -n 60 "$LOG_FILE" || true
