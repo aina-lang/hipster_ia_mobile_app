@@ -155,7 +155,12 @@ export default function ReferralScreen() {
           )}
 
           {/* Apply Code Section */}
-          {!user?.referredBy && (
+          {stats?.isReferred ? (
+            <View style={styles.referredBadge}>
+              <Gift size={18} color={colors.status.success} />
+              <Text style={styles.referredText}>Tu as déjà un parrain — code appliqué ✓</Text>
+            </View>
+          ) : (
             <View style={styles.applySection}>
               <Text style={styles.sectionTitle}>Tu as été parrainé ?</Text>
               <Text style={styles.sectionSubtitle}>Entre le code de ton parrain pour le remercier.</Text>
