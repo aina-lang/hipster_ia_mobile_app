@@ -32,19 +32,19 @@ export default function RootLayout() {
   const [videoFinished, setVideoFinished] = React.useState(false);
   const routingRef = React.useRef(false);
 
-  const [fontsLoaded] = useFonts({
+  const [fontsLoaded, fontError] = useFonts({
     'Arimo-Regular': require('../assets/fonts/Arimo/Arimo-Regular.ttf'),
     'Arimo-Bold': require('../assets/fonts/Arimo/Arimo-Bold.ttf'),
     'Brittany-Signature': require('../assets/fonts/Brittany/BrittanySignature.ttf')
   });
 
   useEffect(() => {
-    if (fontsLoaded) {
-      console.log('✅ Polices chargées avec succès !');
-    } else {
-      console.log('⏳ Chargement des polices...');
+    if (fontsLoaded && isHydrated && isInitialized) {
+      SplashScreen.hideAsync();
     }
-  }, [fontsLoaded]);
+  }, [fontsLoaded, isHydrated, isInitialized]);
+
+  
 
   // On app startup, verify that stored session is still valid
   useEffect(() => {
@@ -166,6 +166,10 @@ export default function RootLayout() {
   const handleVideoFinish = React.useCallback(() => {
     setVideoFinished(true);
   }, []);
+
+  if (!fontsLoaded && !fontError) {
+    return null;
+  }
 
   return (
     <SafeAreaProvider>
