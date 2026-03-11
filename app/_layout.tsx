@@ -116,7 +116,7 @@ export default function RootLayout() {
 
     // Check if we are in specific groups/pages
     const inAuthGroup = segments.some(s => s.includes('(auth)')) || segments.includes('login') || segments.includes('register') || segments.includes('verify-email');
-    const inOnboardingGroup = segments.some(s => s.includes('(onboarding)')) || segments.includes('setup') || segments.includes('branding') || segments.includes('packs') || segments.includes('welcome') || segments.includes('payment');
+    const inOnboardingGroup = segments.some(s => s.includes('(onboarding)')) || segments.includes('setup') || segments.includes('branding') || segments.includes('packs') || segments.includes('payment');
 
     let targetRoute: string | null = null;
 
@@ -135,9 +135,9 @@ export default function RootLayout() {
         targetRoute = '/(drawer)';
       }
     } else {
-      // If not authenticated, always land on Welcome if not already in auth/onboarding
+      // If not authenticated, redirect to packs (onboarding) if not already in auth/onboarding
       if (!inAuthGroup && !inOnboardingGroup) {
-        targetRoute = '/(onboarding)/welcome';
+        targetRoute = '/(onboarding)/packs';
       }
     }
 

@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { Linking } from 'react-native';
 import { View, StyleSheet, Pressable } from 'react-native';
 import { Text } from './Text';
 import { StatusBar } from 'expo-status-bar';
@@ -14,6 +15,7 @@ import Animated, {
   Easing,
   interpolate,
   Extrapolate,
+  SharedValue,
 } from 'react-native-reanimated';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { useAuthStore } from '../../store/authStore';
@@ -28,7 +30,16 @@ const NEON_LIGHT = '#66e5ff';
 
 const videobg = require('../../assets/video/splashVideo-fixed-mobile.mp4');
 
-const PARTICLES = [
+interface ParticleConfig {
+  x: number;
+  y: number;
+  size: number;
+  color: string;
+  delayMs: number;
+  durationMs: number;
+}
+
+const PARTICLES: ParticleConfig[] = [
   { x: 0, y: -80, size: 2.5, color: NEON_BLUE, delayMs: 500, durationMs: 1700 },
   { x: -30, y: -85, size: 2, color: NEON_LIGHT, delayMs: 620, durationMs: 1300 },
   { x: 30, y: -85, size: 2, color: NEON_LIGHT, delayMs: 540, durationMs: 1500 },
@@ -36,7 +47,9 @@ const PARTICLES = [
   { x: 60, y: -78, size: 3, color: NEON_GLOW, delayMs: 760, durationMs: 1600 },
 ];
 
-const Particle = React.memo(({ x, y, size, color, delayMs, durationMs }) => {
+interface ParticleProps extends ParticleConfig {}
+
+const Particle = React.memo(({ x, y, size, color, delayMs, durationMs }: ParticleProps) => {
   const opacity = useSharedValue(0);
   const translateY = useSharedValue(0);
 
@@ -93,11 +106,17 @@ const Particle = React.memo(({ x, y, size, color, delayMs, durationMs }) => {
   );
 });
 
-interface LoadingTransitionProps {
+export interface LoadingTransitionProps {
   onVideoFinish?: () => void;
 }
 
-const TopBar = ({ textAnimProgress, isAuthenticated, userName }) => {
+interface TopBarProps {
+  textAnimProgress: SharedValue<number>;
+  isAuthenticated: boolean;
+  userName: string | undefined;
+}
+
+const TopBar = ({ textAnimProgress, isAuthenticated, userName }: TopBarProps) => {
   const insets = useSafeAreaInsets();
   
   const animStyle = useAnimatedStyle(() => {
@@ -128,18 +147,33 @@ const TopBar = ({ textAnimProgress, isAuthenticated, userName }) => {
       style={[
         styles.topBar, 
         { 
-          height: 60 + insets.top, 
+          height: isAuthenticated ? 60 + insets.top : 110 + insets.top, 
           paddingTop: insets.top - 10 
         },
         animStyle
       ]}
     >
       <Text h1>{title}</Text>
+      {!isAuthenticated && (
+        <>
+          <Animated.Text style={styles.topBarSubText}>
+            L'agence marketing automatisée
+          </Animated.Text>
+          <Animated.Text style={styles.subLineTextTop}>
+            Dans votre poche.
+          </Animated.Text>
+        </>
+      )}
     </Animated.View>
   );
 };
 
-const SubTextAnimation = React.memo(({ textAnimProgress, isAuthenticated }) => {
+interface SubTextAnimationProps {
+  textAnimProgress: SharedValue<number>;
+  isAuthenticated: boolean;
+}
+
+const SubTextAnimation = React.memo(({ textAnimProgress, isAuthenticated }: SubTextAnimationProps) => {
   const animStyle = useAnimatedStyle(() => {
     const translateY = interpolate(
       textAnimProgress?.value ?? 0, 
@@ -171,13 +205,18 @@ const SubTextAnimation = React.memo(({ textAnimProgress, isAuthenticated }) => {
 
   return (
     <Animated.View style={animStyle}>
-      <Animated.Text style={styles.mainSubText}>L'agence marketing automatisée.</Animated.Text>
-      <Animated.Text style={styles.subLineText}>Dans votre poche.</Animated.Text>
+      <Animated.Text style={styles.mainSubText}>Créez vos affiches, promotions et publications en quelques secondes.</Animated.Text>
     </Animated.View>
   );
 });
 
-const BottomAuthSection = React.memo(({ isAuthenticated, onVideoFinish, textAnimProgress }) => {
+interface BottomAuthSectionProps {
+  isAuthenticated: boolean;
+  onVideoFinish?: () => void;
+  textAnimProgress: SharedValue<number>;
+}
+
+const BottomAuthSection = React.memo(({ isAuthenticated, onVideoFinish, textAnimProgress }: BottomAuthSectionProps) => {
   const router = useRouter();
 
   const animStyle = useAnimatedStyle(() => ({
@@ -196,7 +235,7 @@ const BottomAuthSection = React.memo(({ isAuthenticated, onVideoFinish, textAnim
       <Pressable
         onPress={() => {
           onVideoFinish?.();
-          router.push('/(onboarding)/welcome');
+          router.push('/(onboarding)/packs');
         }}
         style={styles.primaryButton}
       >
@@ -221,8 +260,15 @@ const BottomAuthSection = React.memo(({ isAuthenticated, onVideoFinish, textAnim
       <View style={styles.trial}>
         <FontAwesome5 name="angellist" size={18} style={styles.glowIcon} />
         <Text small>
-          <Text style={styles.highlight}>7 jours</Text> d'essai gratuit · Transformez votre business
+          <Text style={styles.highlight}>7 jours</Text> d'essai gratuit
         </Text>
+        <Text style={styles.separator}>·</Text>
+        <Pressable
+          onPress={() => Linking.openURL('mailto:contact@hipster-ia.fr').catch(() => {})}
+          style={styles.contactLink}
+        >
+          <Text style={styles.contactText}>Besoin d'aide ?</Text>
+        </Pressable>
       </View>
 
     </Animated.View>
@@ -275,7 +321,7 @@ export const LoadingTransition = React.memo(({ onVideoFinish }: LoadingTransitio
       playbackTimerRef.current = setTimeout(handleVideoFinish, 5000);
     };
 
-    const onStatusChange = ({ status }) => {
+    const onStatusChange = ({ status }: { status: 'idle' | 'loading' | 'readyToPlay' | 'error' }) => {
       if (status === 'readyToPlay') {
         setVideoReady(true);
         videoPlayer.play();
@@ -283,7 +329,7 @@ export const LoadingTransition = React.memo(({ onVideoFinish }: LoadingTransitio
       }
     };
 
-    const onPlayingChange = (payload) => {
+    const onPlayingChange = (payload: { isPlaying: boolean }) => {
       if (payload.isPlaying) startTracking();
     };
 
@@ -373,30 +419,37 @@ const styles = StyleSheet.create({
     right: 0,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#09080E',
+    backgroundColor: '#000000',
   },
   mainSubText: {
-    fontSize: 32,
-    fontWeight : 700,
+    fontSize: 18,
+    fontWeight: '700',
+    fontFamily: 'Arimo-Bold',
+    color: 'rgba(255, 255, 255, 0.8)',
+    textAlign: 'center',
+    bottom: -520,
+    lineHeight: 30,
+    paddingHorizontal: 20,
+  },
+  subLineTextTop: {
+    fontSize: 18,
+    fontFamily: 'Brittany-Signature',
+    color: 'rgba(255, 255, 255, 0.7)',
+    textAlign: 'center',
+    marginTop: -2,
+  },
+  topBarSubText: {
+    fontSize: 18,
+    fontWeight: '700',
     fontFamily: 'Arimo-Bold',
     color: '#ffffff',
     textAlign: 'center',
-    bottom: -460,
+    marginTop: 5,
     textShadowColor: '#00d4ff',
     textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 12,
-  },
-  subLineText: {
-    paddingTop: 10,
-    paddingBottom: 50,
-    fontSize: 32,
-    fontFamily: 'Brittany-Signature',
-    color: '#ffffff',
-    textAlign: 'center',
-    bottom: -460,
-    textShadowColor: '#000000',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 4,
+    textShadowRadius: 10,
+    lineHeight: 24,
+    paddingHorizontal: 20,
   },
   globalOverlay: {
     position: 'absolute',
@@ -407,7 +460,8 @@ const styles = StyleSheet.create({
   },
   container: {
     position: 'absolute',
-    bottom: 10,
+    // top: 0,
+    bottom: 0,
     left: 0,
     right: 0,
     alignItems: 'center',
@@ -418,6 +472,7 @@ const styles = StyleSheet.create({
   primaryButton: {
     width: '70%',
     overflow: 'hidden',
+
   },
   gradient: {
     paddingVertical: 14,
@@ -431,7 +486,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     letterSpacing: 1,
-    textAlign : 'center',
+    textAlign: 'center',
     color: '#ffffff',
   },
   row: {
@@ -441,11 +496,11 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   trial: {
-    marginTop : 40,
+    marginTop: 20,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
+    gap: 4,
   },
   link: {
     color: '#00a8cc',
@@ -461,16 +516,25 @@ const styles = StyleSheet.create({
   },
   highlight: {
     fontWeight: '700',
-    color: '#00d4ff',
+    color: '#ffffff',
     fontSize: 14,
-    textShadowColor: '#00eaff',
+    textShadowColor: '#00d4ff',
     textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 8
+    textShadowRadius: 12,
+    overflow: 'visible',
   },
   glowIcon: {
-    color: '#00d4ff',
+    color: '#ffffff',
     textShadowColor: '#00eaff',
     textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 8
+    textShadowRadius: 8,
+  },
+  contactLink: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  contactText: {
+    color: 'rgba(255, 255, 255, 0.4)',
+    fontSize: 12,
   },
 });
