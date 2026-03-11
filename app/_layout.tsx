@@ -10,6 +10,7 @@ import { StyledStatusBar } from '../components/ui/StyledStatusBar';
 import * as MediaLibrary from 'expo-media-library';
 import * as Notifications from 'expo-notifications';
 import * as SplashScreen from 'expo-splash-screen';
+import { useFonts } from 'expo-font';
 
 SplashScreen.preventAutoHideAsync();
 import * as ImagePicker from 'expo-image-picker';
@@ -30,6 +31,20 @@ export default function RootLayout() {
   const [isInitialized, setIsInitialized] = React.useState(false);
   const [videoFinished, setVideoFinished] = React.useState(false);
   const routingRef = React.useRef(false);
+
+  const [fontsLoaded, fontError] = useFonts({
+    'Arimo-Regular': require('../assets/fonts/Arimo/Arimo-Regular.ttf'),
+    'Arimo-Bold': require('../assets/fonts/Arimo/Arimo-Bold.ttf'),
+    'Brittany-Signature': require('../assets/fonts/Brittany/BrittanySignature.ttf')
+  });
+
+  useEffect(() => {
+    if (fontsLoaded && isHydrated && isInitialized) {
+      SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded, isHydrated, isInitialized]);
+
+  
 
   // On app startup, verify that stored session is still valid
   useEffect(() => {
@@ -151,6 +166,10 @@ export default function RootLayout() {
   const handleVideoFinish = React.useCallback(() => {
     setVideoFinished(true);
   }, []);
+
+  if (!fontsLoaded && !fontError) {
+    return null;
+  }
 
   return (
     <SafeAreaProvider>

@@ -1,0 +1,55 @@
+export const fonts = {
+  arimo: {
+    regular: 'Arimo-Regular',
+    bold: 'Arimo-Bold',
+  },
+  brittany: {
+    regular: 'Brittany-Regular',
+  },
+};
+
+export const textStyles = {
+  h1: {
+    fontFamily: fonts.arimo,
+    fontSize: 32,
+    fontWeight : 500,
+    lineHeight: 40,
+    color : '#ffffff'
+  },
+  h2: {
+    fontFamily: fonts.arimo.bold,
+    fontSize: 28,
+    lineHeight: 36,
+    color : '#ffffff'
+  },
+  h3: {
+    fontFamily: fonts.arimo.bold,
+    fontSize: 24,
+    lineHeight: 32,
+    color : '#ffffff'
+  },
+  body: {
+    fontFamily: fonts.arimo.regular,
+    fontSize: 16,
+    lineHeight: 24,
+    color : '#ffffff'
+  },
+  bodyBold: {
+    fontFamily: fonts.arimo.bold,
+    fontSize: 16,
+    lineHeight: 24,
+    color : '#ffffff'
+  },
+  small: {
+    fontFamily: fonts.arimo.regular,
+    fontSize: 14,
+    lineHeight: 20,
+    color : '#ffffff'
+  },
+  signature: {
+    fontFamily: fonts.brittany.regular,
+    fontSize: 24,
+    lineHeight: 32,
+    color : '#ffffff'
+  },
+};
