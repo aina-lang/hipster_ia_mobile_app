@@ -97,18 +97,6 @@ const UNIVERSAL_FUNCTIONS: JobFunction[] = [
     icon: FileText,
     image: flyerImg
   },
-  {
-    label: 'Aperçu avant impression',
-    category: 'Image',
-    icon: Ticket,
-    image: apercuImg
-  },
-  {
-    label: 'Page web / SEO',
-    category: 'Texte',
-    icon: Globe,
-    image: ordiBlancImage
-  },
 ];
 
 

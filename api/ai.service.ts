@@ -8,8 +8,7 @@ export type TextGenerationType =
   | 'email'
   | 'video'
   | 'text'
-  | 'texte'
-  | 'seo';
+  | 'texte';
 export type ImageStyle =
   | 'Premium'
   | 'Hero Studio'

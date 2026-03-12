@@ -51,20 +51,6 @@ const COMMON_FUNCTIONS: Record<string, WorkflowQuestion[]> = {
       options: ['Persuasif', 'Informatif', 'Amical', 'Urgent'],
     },
   ],
-  'Page web / SEO': [
-    {
-      id: 'section',
-      label: 'Section du site',
-      type: 'choice',
-      options: ["Page d'accueil", 'Services', 'Blog', 'À propos'],
-    },
-    {
-      id: 'tone',
-      label: 'Ton du texte',
-      type: 'choice',
-      options: ['Expert', 'Accueillant', 'Persuasif', 'Informatif'],
-    },
-  ],
   Email: [
     {
       id: 'goal',
