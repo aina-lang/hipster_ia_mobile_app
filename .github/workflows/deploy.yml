@@ -36,7 +36,7 @@ jobs:
 
             # Installer le helper ngrok Expo si absent
             if ! command -v expo-ngrok >/dev/null 2>&1; then
-              npm install -g @expo/ngrok
+              npm install --save-dev @expo/ngrok
             fi
 
             # Supprimer complètement l'ancienne session tmux
