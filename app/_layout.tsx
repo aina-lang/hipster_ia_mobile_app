@@ -126,6 +126,11 @@ export default function RootLayout() {
           targetRoute = '/(auth)/verify-email';
         }
       }
+      else if (user && !user.job) {
+        if (!segments.includes('job')) {
+          targetRoute = '/(onboarding)/job';
+        }
+      }
       else if (user && !user.isSetupComplete) {
         if (!segments.includes('branding')) {
           targetRoute = '/(onboarding)/branding';
