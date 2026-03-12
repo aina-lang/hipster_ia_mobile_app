@@ -50,7 +50,7 @@ jobs:
 
             # Lancer une nouvelle session tmux avec logs
             tmux new-session -d -s "$SESSION" \
-              "cd '$APP_DIR' && unset EXPO_TUNNEL_SUBDOMAIN && npx expo start -c --tunnel >> '$LOG_FILE' 2>&1"
+              "cd '$APP_DIR' && EXPO_TUNNEL_SUBDOMAIN=hipsteria npx expo start --tunnel >> '$LOG_FILE' 2>&1"
 
             sleep 8
 
