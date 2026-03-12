@@ -95,9 +95,9 @@ export default function VerifyEmailScreen() {
       // Allow navigation after success
       allowNavRef.current = true;
 
-      // 2. Proceed to BRANDING (Color, Logo, etc.)
+      // 2. Proceed to JOB SELECTION (Then Branding)
       router.replace({
-        pathname: '/(onboarding)/branding',
+        pathname: '/(onboarding)/job',
         params: { userId, planId }
       });
 

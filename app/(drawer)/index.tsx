@@ -49,12 +49,16 @@ import {
   ExternalLink,
   MessageSquare,
   ArrowUpRight,
+  Smartphone,
+  FileText,
+  Globe,
+  Ticket,
 } from 'lucide-react-native';
 import { useStripe } from '@stripe/stripe-react-native';
 import { BackgroundGradient } from '../../components/ui/BackgroundGradient';
 import { DeerAnimation } from '../../components/ui/DeerAnimation';
 import { useAuthStore } from '../../store/authStore';
-import { useCreationStore } from '../../store/creationStore';
+import { useCreationStore, CreationCategory } from '../../store/creationStore';
 import { useChatStore, Message, generateConversationId } from '../../store/chatStore';
 import { AiService } from '../../api/ai.service';
 import { api } from '../../api/client';
@@ -66,6 +70,46 @@ import { MediaDisplay } from '../../components/MediaDisplay';
 import { TypingMessage, TypingPlaceholder } from '../../components/TypingMessage';
 import { PaymentBlocker } from '../../components/PaymentBlocker';
 import { ChatInput } from '../../components/ChatInput';
+import { JobTypeCard } from '../../components/ui/JobTypeCard';
+
+const ordiBlancImage = require('../../assets/ordi_blanc_bg.jpeg');
+import socialImg from '../../assets/social.jpeg';
+import flyerImg from '../../assets/flyer.jpeg';
+import apercuImg from '../../assets/apercu.jpeg';
+
+interface JobFunction {
+  label: string;
+  category: CreationCategory;
+  icon: any;
+  image: any;
+}
+
+const UNIVERSAL_FUNCTIONS: JobFunction[] = [
+  {
+    label: 'Contenu réseaux',
+    category: 'Social',
+    icon: Smartphone,
+    image: socialImg
+  },
+  {
+    label: 'Flyers',
+    category: 'Document',
+    icon: FileText,
+    image: flyerImg
+  },
+  {
+    label: 'Aperçu avant impression',
+    category: 'Image',
+    icon: Ticket,
+    image: apercuImg
+  },
+  {
+    label: 'Page web / SEO',
+    category: 'Texte',
+    icon: Globe,
+    image: ordiBlancImage
+  },
+];
 
 
 
@@ -82,6 +126,7 @@ export default function HomeScreen() {
 
   const [inputValue, setInputValue] = useState('');
   const { messages, setMessages, conversationId, setConversationId, resetChat: clearChatStore } = useChatStore();
+  const { setFunction, selectedFunction, setJob } = useCreationStore();
   const resetCreationStore = useCreationStore((state) => state.reset);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isBackendConnected, setIsBackendConnected] = useState<boolean | null>(null);
@@ -386,7 +431,12 @@ export default function HomeScreen() {
       }
     };
     checkConnection();
-    useAuthStore.getState().aiRefreshUser().catch(console.error);
+    useAuthStore.getState().aiRefreshUser().then(() => {
+      const currentUser = useAuthStore.getState().user;
+      if (currentUser?.job) {
+        setJob(currentUser.job);
+      }
+    }).catch(console.error);
 
     // Request permissions upfront
     const requestInitialPermissions = async () => {
@@ -743,6 +793,11 @@ export default function HomeScreen() {
     clearChatStore();
     setInputValue('');
     setConversationId(null);
+    resetCreationStore();
+    const currentUser = useAuthStore.getState().user;
+    if (currentUser?.job) {
+      setJob(currentUser.job);
+    }
     console.log('[DEBUG] Starting new conversation');
   };
 
@@ -788,7 +843,10 @@ export default function HomeScreen() {
               <TouchableOpacity
                 onPress={() => {
                   resetCreationStore();
-                  router.push('/(guided)/step1-job');
+                  if (user?.job) {
+                    useCreationStore.getState().setJob(user.job);
+                  }
+                  router.push('/(guided)/step2-type');
                 }}
                 style={{
                   flexDirection: 'row',
@@ -833,37 +891,42 @@ export default function HomeScreen() {
                     {getGreetingByTime()}{' '}
                     {user?.name || 'Utilisateur'}
                   </Text>
-                  <Text className="text-center text-2xl font-bold leading-9 text-slate-300">
-                    {'Que créons-nous aujourd\'hui ?'}
+                  <Text className="text-center text-3xl font-bold leading-9 text-slate-100">
+                    {'Que souhaitez-vous produire ?'}
                   </Text>
+
+                  {user?.job && (
+                    <View className="mt-2 flex-row items-center gap-2">
+                      <Text style={{ fontSize: 16, fontWeight: '600', color: colors.primary.main }}>
+                        {user.job}
+                      </Text>
+                    </View>
+                  )}
                 </View>
 
+                <View className="mt-10 gap-3 pb-10">
+                  {UNIVERSAL_FUNCTIONS.map((fn, index) => (
+                    <JobTypeCard
+                      key={index}
+                      label={fn.label}
+                      icon={fn.icon}
+                      image={fn.image}
+                      selected={selectedFunction === fn.label}
+                      onPress={() => {
+                        setFunction(fn.label, fn.category);
+                        setTimeout(() => {
+                          if (fn.category === 'Document') {
+                            router.push('/(guided)/step3-directions');
+                          } else {
+                            router.push('/(guided)/step4-personalize');
+                          }
+                        }, 300);
+                      }}
+                    />
+                  ))}
+                </View>
 
-                <TouchableOpacity
-                  className="bg-white/3 z-50 mt-80 mb-5 flex-row items-center gap-4 rounded-2xl border border-white/5 p-5"
-                  onPress={() => {
-                    if (isFullyExhausted) {
-                      showModal('info', 'Limite atteinte', 'Vous avez atteint votre limite d\'utilisation pour cette période. Revenez plus tard ou passez au niveau supérieur !');
-                      return;
-                    }
-
-                    useCreationStore.getState().reset();
-                    router.push('/(guided)/step1-job');
-                  }}
-                  activeOpacity={0.8}
-                  style={{ opacity: isFullyExhausted ? 0.5 : 1 }}>
-                  <View className="w-15 h-15 items-center justify-center rounded-lg">
-                    <Compass size={32} color={colors.text.primary} />
-                  </View>
-                  <View className="flex-1">
-                    <Text className="mb-1 text-lg font-bold text-slate-300">Mode Guidé</Text>
-                    <Text className="text-sm leading-5 text-slate-500">
-                      Laissez-vous accompagner étape par étape pour une création professionnelle.
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-
-                <View className="my-5 mb-0 flex-row items-center gap-4 opacity-40">
+                <View className="mb-5 flex-row items-center gap-4 opacity-40">
                   <View className="h-px flex-1 bg-white/10" />
                   <Text className="text-xs font-semibold tracking-wider text-slate-500">
                     OU MODE LIBRE

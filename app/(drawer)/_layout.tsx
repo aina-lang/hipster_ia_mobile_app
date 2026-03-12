@@ -284,7 +284,7 @@ function CustomDrawerContent(props: any) {
           <DrawerItemList {...props} />
 
           <NeonButton
-            title="Nouvelle discussion"
+            title="Nouveau Projet"
             icon={Plus}
             variant="premium"
             onPress={() => {
@@ -498,7 +498,6 @@ export default function DrawerLayout() {
         options={{
           drawerLabel: 'Accueil',
           drawerIcon: ({ color }) => <Home size={22} color={color} />,
-
         }}
       />
 
@@ -534,6 +533,7 @@ export default function DrawerLayout() {
           drawerIcon: ({ color }) => <Users size={22} color={color} />,
         }}
       />
+
     </Drawer>
   );
 }

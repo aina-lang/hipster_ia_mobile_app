@@ -69,6 +69,7 @@ export default function ProfileScreen() {
   const [vatNumber, setVatNumber] = useState(user?.vatNumber || '');
   const [websiteUrl, setWebsiteUrl] = useState(user?.websiteUrl || '');
   const [logoUrl, setLogoUrl] = useState(user?.logoUrl || '');
+  const [job, setJob] = useState(user?.job || '');
   const [showCountryPicker, setShowCountryPicker] = useState(false);
   const [selectedCountry, setSelectedCountry] = useState<any>(null);
 
@@ -121,6 +122,7 @@ export default function ProfileScreen() {
       setVatNumber(user.vatNumber || '');
       setWebsiteUrl(user.websiteUrl || '');
       setLogoUrl(user.logoUrl || '');
+      setJob(user.job || '');
 
       const userCountry = user.country;
       const initialCountry = userCountry ? getCountryByName(userCountry) : getCountryByName('France');
@@ -148,6 +150,7 @@ export default function ProfileScreen() {
         name, professionalEmail, professionalAddress, city, postalCode, country,
         professionalPhone: fullPhone1, professionalPhone2: fullPhone2,
         siret, vatNumber, websiteUrl, logoUrl,
+        job,
       });
       setIsEditing(false);
       showFeedback('success', 'Succès', 'Profil mis à jour avec succès.');
@@ -173,6 +176,7 @@ export default function ProfileScreen() {
       setVatNumber(user.vatNumber || '');
       setWebsiteUrl(user.websiteUrl || '');
       setLogoUrl(user.logoUrl || '');
+      setJob(user.job || '');
     }
   };
 
@@ -288,6 +292,14 @@ export default function ProfileScreen() {
                 value={name}
                 onChangeText={setName}
                 placeholder="Ex: Hipster Marketing"
+                editable={isEditing}
+              />
+              <InputField
+                label="Métier / Secteur d'activité"
+                icon={<Briefcase size={16} color={colors.text.muted} />}
+                value={job}
+                onChangeText={setJob}
+                placeholder="Ex: Coiffeur, Restaurateur..."
                 editable={isEditing}
               />
               <InputField
