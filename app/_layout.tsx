@@ -136,7 +136,7 @@ export default function RootLayout() {
           targetRoute = '/(onboarding)/branding';
         }
       }
-      else if (inAuthGroup || inOnboardingGroup || !segments.length || segments[0] === '') {
+      else if (inAuthGroup || inOnboardingGroup || !segments.length || segments[0] === '' || segments[0] === 'welcome') {
         targetRoute = '/(drawer)';
       }
     } else {
