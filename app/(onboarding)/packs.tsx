@@ -366,15 +366,15 @@ btnWrapper: {
   neonWrapper: { position: 'relative' },
   neonClip: {
     position: 'absolute',
-    top: -2, left: -2, right: -2, bottom: -2,
-    borderRadius: 22,
+    top: -1, left: -1, right: -1, bottom: -0.5,
+    borderRadius: 21,
     overflow: 'hidden',
     zIndex: 2,
   },
   neonTrack: { position: 'absolute', top: 0, bottom: 0, left: 0 },
   neonMask: {
     position: 'absolute',
-    top: 2, left: 2, right: 2, bottom: 2,
+    top: 1, left: 1, right: 1, bottom: 0.5,
     borderRadius: 20,
     zIndex: 1,
   },
