@@ -1,52 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import { api } from '../../api/client';
+import React, { useState, useEffect, useRef } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Dimensions,
-  Platform,
-  ActivityIndicator,
+  View, Text, StyleSheet, ScrollView, TouchableOpacity,
+  Platform, ActivityIndicator, Image, Animated as RNAnimated,
+  Easing, Pressable,
 } from 'react-native';
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-} from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { useRouter, useFocusEffect } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Crown, Image as ImageIcon, FileText, Video, Music, Download, Box, CheckCircle2, XCircle } from 'lucide-react-native';
+
+import { api } from '../../api/client';
 import { useOnboardingStore } from '../../store/onboardingStore';
 import { colors } from '../../theme/colors';
-import {
-  Shield,
-  Sparkles,
-  Zap,
-  Crown,
-  Image,
-  FileText,
-  Video,
-  Music,
-  Download,
-  LucideIcon,
-  Box,
-  CheckCircle2,
-  XCircle,
-} from 'lucide-react-native';
 import { BackgroundGradientOnboarding } from '../../components/ui/BackgroundGradientOnboarding';
-import { NeonButton } from '../../components/ui/NeonButton';
-import { StepIndicator } from '../../components/ui/StepIndicator';
-
-const { height } = Dimensions.get('window');
-
-/* ================= TYPES ================= */
-
-type FeatureType = 'image' | 'text' | 'video' | 'audio' | 'export';
-
-interface Feature {
-  label: string;
-  type: FeatureType;
-}
 
 interface Plan {
   id: string;
@@ -54,201 +20,248 @@ interface Plan {
   price: string | number;
   description?: string;
   features: string[];
-  icon: LucideIcon;
   popular?: boolean;
   isComingSoon?: boolean;
 }
 
-const planIcons: Record<string, LucideIcon> = {
-  curieux: Shield,
-  atelier: Sparkles,
-  studio: Zap,
-  agence: Crown,
+const PLAN_IMAGES: Record<string, any> = {
+  curieux: require('../../assets/images/packs/curieux.png'),
+  atelier: require('../../assets/images/packs/atelier.png'),
+  studio:  require('../../assets/images/packs/studio.png'),
 };
 
-const getFeatureIcon = (feature: string): LucideIcon => {
+const COMING_SOON_IDS = new Set(['studio', 'agence']);
+const CARD_W = 340;
+
+function getFeatureIcon(feature: string) {
   const f = feature.toLowerCase();
-  if (f.includes('image')) return Image;
-  if (f.includes('texte')) return FileText;
-  if (f.includes('vidéo')) return Video;
-  if (f.includes('sonore') || f.includes('audio')) return Music;
-  if (f.includes('3d') || f.includes('sketch')) return Box;
-  if (f.includes('export')) return f.includes('pas') ? XCircle : Download;
-  if (f.includes('accompagnement') || f.includes('hipster')) return Crown;
+  if (f.includes('image'))                                    return ImageIcon;
+  if (f.includes('texte'))                                    return FileText;
+  if (f.includes('vidéo'))                                    return Video;
+  if (f.includes('sonore') || f.includes('audio'))            return Music;
+  if (f.includes('3d') || f.includes('sketch'))               return Box;
+  if (f.includes('export'))                                   return f.includes('pas') ? XCircle : Download;
+  if (f.includes('accompagnement') || f.includes('hipster'))  return Crown;
   return CheckCircle2;
-};
+}
 
+function formatPrice(price: string | number) {
+  return typeof price === 'number' ? `${price.toFixed(2)}€` : price;
+}
 
-/* ================= SCREEN ================= */
+function PlanIcon({ planId, size = 56, color, isSelected }: { planId: string; size?: number; color?: string; isSelected?: boolean }) {
+  const glow = isSelected ? s.planIconGlow : undefined;
+  if (planId === 'agence') return <Crown size={size} color={isSelected ? '#00eaff' : color} style={glow} />;
+  const source = PLAN_IMAGES[planId];
+  if (!source) return null;
+  return (
+    <View style={glow}>
+      <Image source={source} style={{ width: size, height: size, tintColor: isSelected ? '#00eaff' : color }} resizeMode="contain" />
+    </View>
+  );
+}
 
-/* ================= COMPONENTS ================= */
+function FeatureItem({ feature, isSelected }: { feature: string; isSelected?: boolean }) {
+  const Icon     = getFeatureIcon(feature);
+  const isAgency = feature.toLowerCase().includes('accompagnement');
+  const iconColor = isSelected
+    ? '#00eaff'
+    : isAgency ? colors.text.primary : colors.text.muted;
+  return (
+    <View style={[s.featureRow, isAgency && s.agencyRow]}>
+      <Icon
+        size={14}
+        color={iconColor}
+        style={isSelected ? s.featureIconGlow : undefined}
+      />
+      <Text style={[s.featureText, isAgency && s.agencyText, isSelected && s.featureTextSelected]}>
+        {feature}
+      </Text>
+    </View>
+  );
+}
 
-const PlanCard = ({ plan, isSelected, onSelect, submitting }: {
-  plan: Plan;
-  isSelected: boolean;
-  onSelect: () => void;
-  submitting: boolean;
-}) => {
-  const isComingSoon = plan.isComingSoon;
+function NeonBorderCard({ children, isSelected, cardBg = '#030814' }: {
+  children: React.ReactNode; isSelected: boolean; cardBg?: string;
+}) {
+  const translateX = useRef(new RNAnimated.Value(0)).current;
+  const loopRef    = useRef<RNAnimated.CompositeAnimation | null>(null);
 
-  const scale = useSharedValue(1);
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
-
-  const handlePressIn = () => { if (!submitting) scale.value = withSpring(0.97, { damping: 15 }); };
-  const handlePressOut = () => { if (!submitting) scale.value = withSpring(1, { damping: 15 }); };
-
-  const FeatureIcon = plan.icon;
+  useEffect(() => {
+    loopRef.current?.stop();
+    if (isSelected) {
+      translateX.setValue(0);
+      loopRef.current = RNAnimated.loop(
+        RNAnimated.timing(translateX, {
+          toValue: -CARD_W,
+          duration: 3000,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        }),
+        { resetBeforeIteration: true }
+      );
+      loopRef.current.start();
+    } else {
+      translateX.setValue(0);
+    }
+    return () => { loopRef.current?.stop(); };
+  }, [isSelected]);
 
   return (
-    <Animated.View style={[styles.planWrapper, animatedStyle]}>
+    <View style={s.neonWrapper}>
+      {isSelected && (
+        <View style={s.neonClip} pointerEvents="none">
+          <RNAnimated.View style={[s.neonTrack, { transform: [{ translateX }] }]}>
+            <LinearGradient
+              colors={['transparent', '#00eaff', '#1e9bff', 'transparent', 'transparent', '#00eaff', '#1e9bff', 'transparent']}
+              locations={[0.05, 0.2, 0.3, 0.45, 0.55, 0.7, 0.8, 0.95]}
+              start={{ x: 0, y: 0.5 }}
+              end={{ x: 1, y: 0.5 }}
+              style={{ width: CARD_W * 2, height: '100%' }}
+            />
+          </RNAnimated.View>
+          <View style={[s.neonMask, { backgroundColor: cardBg }]} />
+        </View>
+      )}
+      {isSelected && (
+        <>
+          <View style={s.bloomFar}  pointerEvents="none" />
+          <View style={s.bloomMid}  pointerEvents="none" />
+          <View style={s.floorGlow} pointerEvents="none" />
+        </>
+      )}
+      {children}
+    </View>
+  );
+}
+
+function ContinuerButton({ onPress, loading, disabled }: {
+  onPress: () => void; loading: boolean; disabled: boolean;
+}) {
+  const scale    = useRef(new RNAnimated.Value(1)).current;
+  const pressIn  = () => RNAnimated.spring(scale, { toValue: 0.96, useNativeDriver: true, speed: 40 }).start();
+  const pressOut = () => RNAnimated.spring(scale, { toValue: 1,    useNativeDriver: true, speed: 20 }).start();
+
+  return (
+    <RNAnimated.View style={[s.btnWrapper, { transform: [{ scale }] }]}>
+      <Pressable onPress={onPress} onPressIn={pressIn} onPressOut={pressOut} disabled={disabled} style={s.btnPressable}>
+        <LinearGradient
+          colors={['#264F8C', '#0a1628', '#040612']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          locations={[0, 0.46, 1]}
+          style={s.btnGradient}
+        >
+          {loading
+            ? <ActivityIndicator color="#ffffff" size="small" />
+            : <Text style={s.btnText}>Continuer</Text>
+          }
+        </LinearGradient>
+      </Pressable>
+    </RNAnimated.View>
+  );
+}
+
+function PlanCard({ plan, isSelected, onSelect, submitting }: {
+  plan: Plan; isSelected: boolean; onSelect: () => void; submitting: boolean;
+}) {
+  const scale  = useSharedValue(1);
+  const aStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+  const spring = (v: number) => withSpring(v, { damping: 15 });
+
+  return (
+    <Animated.View style={[s.planWrapper, aStyle]}>
       <TouchableOpacity
         onPress={onSelect}
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
+        onPressIn={() => { if (!submitting) scale.value = spring(0.97); }}
+        onPressOut={() => { if (!submitting) scale.value = spring(1); }}
         activeOpacity={0.9}
-        disabled={submitting || isComingSoon}
-        style={[styles.touchableArea, isComingSoon && { opacity: 0.5 }]}
+        disabled={submitting || plan.isComingSoon}
+        style={[s.touchableArea, plan.isComingSoon && { opacity: 0.5 }]}
       >
-        {/* Glow layers */}
-        {isSelected && (
-          <>
-            <View style={styles.bloomFar} pointerEvents="none" />
-            <View style={styles.bloomMid} pointerEvents="none" />
-            <View style={styles.borderGlow} pointerEvents="none" />
-            <View style={styles.floorGlow} pointerEvents="none" />
-          </>
-        )}
+        <NeonBorderCard isSelected={isSelected}>
+          <View style={[s.planCard, isSelected && s.planCardSelected, submitting && { opacity: 0.8 }]}>
 
-        {/* Main card container */}
-        <View style={[
-          styles.planCard,
-          isSelected && styles.selectedPlanCard,
-          submitting && { opacity: 0.8 }
-        ]}>
-          {plan.popular && !isComingSoon && (
-            <View style={styles.popularBadge}>
-              <Text style={styles.popularBadgeText}>CONSEILLÉ</Text>
-            </View>
-          )}
+            {plan.popular && !plan.isComingSoon && (
+              <View style={s.badge}><Text style={s.badgeText}>CONSEILLÉ</Text></View>
+            )}
+            {plan.isComingSoon && (
+              <View style={[s.badge, { backgroundColor: '#334155' }]}><Text style={s.badgeText}>À VENIR</Text></View>
+            )}
 
-          {isComingSoon && (
-            <View style={[styles.popularBadge, { backgroundColor: '#334155' }]}>
-              <Text style={styles.popularBadgeText}>À VENIR</Text>
-            </View>
-          )}
-
-          <View style={styles.planHeader}>
-            <View style={[
-              styles.iconContainer,
-              isSelected && styles.iconContainerActive,
-            ]}>
-              <FeatureIcon
-                size={28}
-                color={isSelected ? '#ffffff' : (isComingSoon ? colors.text.muted : colors.text.muted)}
-              />
-            </View>
-
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.planName, isSelected && styles.selectedPlanName, isComingSoon && { color: colors.text.muted }]}>{plan.name}</Text>
-              <Text style={[styles.planPrice, isSelected && styles.selectedPlanPrice, isComingSoon && { color: colors.text.muted }]}>{plan.price}</Text>
-
-              {plan.description && (
-                <Text style={styles.planDescription}>
-                  {plan.description}
+            <View style={s.planHeader}>
+              <View style={[s.iconBox, isSelected && s.iconBoxActive]}>
+                <PlanIcon planId={plan.id} size={56} color={isSelected ? '#ffffff' : colors.text.muted} isSelected={isSelected} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[s.planName, isSelected && s.planNameSelected, plan.isComingSoon && { color: colors.text.muted }]}>
+                  {plan.name}
                 </Text>
-              )}
+                <Text style={[s.planPrice, isSelected && s.planPriceSelected, plan.isComingSoon && { color: colors.text.muted }]}>
+                  {plan.price}
+                </Text>
+                {plan.description && <Text style={s.planDesc}>{plan.description}</Text>}
+              </View>
+            </View>
+
+            <View style={s.featuresList}>
+              {plan.features.map((f, i) => <FeatureItem key={i} feature={f} isSelected={isSelected} />)}
             </View>
           </View>
-
-          <View style={styles.featuresList}>
-            {plan.features.map((feature, idx) => {
-              const Icon = getFeatureIcon(feature);
-              const isAccompagnement = feature.toLowerCase().includes('accompagnement');
-              return (
-                <View key={idx} style={[styles.featureRow, isAccompagnement && styles.agencyRow]}>
-                  <Icon size={14} color={isAccompagnement ? colors.text.primary : colors.text.muted} />
-                  <Text style={[styles.featureText, isAccompagnement && styles.agencyText]}>
-                    {feature}
-                  </Text>
-                </View>
-              );
-            })}
-          </View>
-        </View>
+        </NeonBorderCard>
       </TouchableOpacity>
     </Animated.View>
   );
-};
-
-/* ================= SCREEN ================= */
+}
 
 export default function PacksScreen() {
   const router = useRouter();
-  const [plans, setPlans] = useState<Plan[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
   const { selectedPlan, setPlan } = useOnboardingStore();
+  const [plans, setPlans]           = useState<Plan[]>([]);
+  const [loading, setLoading]       = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
-  useFocusEffect(
-    React.useCallback(() => {
-      setSubmitting(false);
-    }, [])
-  );
+  useFocusEffect(React.useCallback(() => { setSubmitting(false); }, []));
+  useEffect(() => { fetchPlans(); }, []);
 
-  useEffect(() => {
-    fetchPlans();
-  }, []);
-
-  const fetchPlans = async () => {
+  async function fetchPlans() {
     try {
       setLoading(true);
       const resp = await api.get('/ai/payment/plans');
-      const backendPlans = resp.data?.data ?? resp.data ?? [];
-
-      const mappedPlans: Plan[] = backendPlans.map((p: any) => ({
+      const raw: any[] = resp.data?.data ?? resp.data ?? [];
+      const mapped: Plan[] = raw.map(p => ({
         ...p,
-        price: typeof p.price === 'number' ? `${p.price.toFixed(2)}€` : p.price,
-        icon: planIcons[p.id] || Shield,
-        isComingSoon: p.id === 'studio' || p.id === 'agence',
+        price: formatPrice(p.price),
+        isComingSoon: COMING_SOON_IDS.has(p.id),
       }));
-
-      setPlans(mappedPlans);
-      if (mappedPlans.length > 0 && !selectedPlan) {
-        setPlan(mappedPlans[1]?.id || mappedPlans[0].id);
-      }
-    } catch (error) {
-      console.error('Error fetching plans in packs.tsx:', error);
+      setPlans(mapped);
+      if (mapped.length > 0 && !selectedPlan) setPlan(mapped[1]?.id ?? mapped[0].id);
+    } catch (e) {
+      console.error('PacksScreen – fetchPlans:', e);
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleContinue = () => {
-    setSubmitting(true);
-    router.push('/(auth)/register');
-  };
+  }
 
   return (
-    <BackgroundGradientOnboarding darkOverlay={true}>
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Choisissez votre pack</Text>
-          <Text style={styles.subtitle}>
-            Sélectionnez l'offre qui vous correspond
-          </Text>
+    <BackgroundGradientOnboarding darkOverlay>
+      <View style={s.screen}>
+
+        <View style={s.header}>
+          <Text style={s.titleSub}>Choisissez</Text>
+          <Text style={s.titleScript}>votre pack</Text>
+          <Text style={s.subtitle}>Sélectionnez l'offre qui vous correspond</Text>
         </View>
 
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <ScrollView contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false}>
           {loading ? (
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 100 }}>
+            <View style={s.loader}>
               <ActivityIndicator color={colors.primary.main} size="large" />
-              <Text style={{ color: colors.text.secondary, marginTop: 16 }}>Chargement des plans...</Text>
+              <Text style={s.loaderText}>Chargement des plans…</Text>
             </View>
           ) : (
-            <View style={styles.plansContainer}>
-              {plans.map((plan) => (
+            <View style={s.plansContainer}>
+              {plans.map(plan => (
                 <PlanCard
                   key={plan.id}
                   plan={plan}
@@ -261,208 +274,171 @@ export default function PacksScreen() {
           )}
         </ScrollView>
 
-        <View style={styles.footer}>
-          <NeonButton
-            onPress={handleContinue}
-            title="Continuer"
-            size="lg"
-            variant="premium"
+        <View style={s.footer}>
+          <ContinuerButton
+            onPress={() => { setSubmitting(true); router.push('/(auth)/register'); }}
             loading={submitting}
             disabled={submitting}
           />
         </View>
+
       </View>
     </BackgroundGradientOnboarding>
   );
 }
 
-/* ================= STYLES ================= */
+const s = StyleSheet.create({
+  screen:         { flex: 1, paddingTop: 60 },
+  scrollContent:  { paddingHorizontal: 24, paddingTop: 8, paddingBottom: 40 },
+  loader:         { flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 100 },
+  loaderText:     { color: colors.text.secondary, marginTop: 16, fontFamily: 'Arimo-Regular' },
+  plansContainer: { gap: 16 },
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    paddingTop: 100,
-  },
   header: {
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 24,
+    paddingHorizontal: 24,
   },
-  title: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: colors.text.primary,
+  titleSub: {
+    fontFamily: 'Arimo-Bold',
+    fontSize: 15,
+    letterSpacing: 3,
+    textTransform: 'uppercase',
+    color: 'rgba(255,255,255,0.45)',
+    marginBottom: 2,
+  },
+  titleScript: {
+    fontFamily: 'Brittany-Signature',
+    fontSize: 42,
+    color: '#ffffff',
+    textShadowColor: '#00eaff',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 18,
+    lineHeight: 48,
+    marginBottom: 4,
+    includeFontPadding: false,
+    paddingLeft: 16,
+    paddingRight: 16,
   },
   subtitle: {
-    fontSize: 16,
-    color: colors.text.secondary,
+    fontFamily: 'Arimo-Regular',
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.45)',
+    textAlign: 'center',
+    letterSpacing: 0.3,
   },
-  scrollContent: {
-    paddingHorizontal: 24,
-    paddingBottom: 40,
-  },
-  plansContainer: {
-    gap: 16,
-  },
-  planWrapper: {
-    flex: 1,
-    position: 'relative',
-    marginBottom: 12,
-  },
-  touchableArea: {
-    flex: 1,
-  },
-  planCard: {
-    backgroundColor: 'rgba(15,23,42,0.92)',
-    borderRadius: 20,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
-    minHeight: 120,
-    // Ombre de profondeur
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 2,
-    overflow: 'hidden',
-  },
-  selectedPlanCard: {
-    borderWidth: 2,
-    borderColor: '#1e9bff',
-    backgroundColor: '#030814',
-  },
-  popularBadge: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    backgroundColor: '#1e9bff',
-    paddingHorizontal: 15,
-    paddingVertical: 6,
-    borderBottomLeftRadius: 15,
-    zIndex: 10,
-  },
-  popularBadgeText: {
-    fontSize: 10,
-    fontWeight: '900',
-    color: '#ffffff',
-    letterSpacing: 0.5,
-  },
-  planHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-    marginBottom: 16,
-  },
-  iconContainer: {
-    width: 52,
-    height: 52,
-    borderRadius: 14,
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  iconContainerActive: {
-    backgroundColor: 'rgba(30,155,255,0.15)',
-    borderWidth: 1,
-    borderColor: 'rgba(30,155,255,0.4)',
-  },
-  planName: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: colors.text.secondary,
-  },
-  selectedPlanName: {
-    color: '#ffffff',
-    fontWeight: '800',
-  },
-  planPrice: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: colors.text.primary,
-  },
-  selectedPlanPrice: {
-    color: '#1e9bff',
-  },
-  planDescription: {
-    fontSize: 12,
-    color: colors.text.muted,
-    marginTop: 2,
-  },
-  featuresList: {
-    gap: 8,
-    paddingLeft: 4,
-  },
-  featureRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  featureText: {
-    fontSize: 13,
-    color: colors.text.secondary,
-  },
-  agencyRow: {
-    marginTop: 8,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.08)',
-  },
-  agencyText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: colors.text.primary,
-  },
+
   footer: {
     padding: 24,
     paddingBottom: Platform.OS === 'ios' ? 40 : 24,
   },
-  // ── Neon Glow Layers ──
-  borderGlow: {
-    position: 'absolute',
-    top: 0, left: 0, right: 0, bottom: 0,
-    borderRadius: 20,
-    backgroundColor: 'transparent',
-    shadowColor: '#1a8fff',
+
+  btnWrapper: {
+    width: '100%',
+    shadowColor: '#1e9bff',
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 1,
-    shadowRadius: 28,
-    elevation: 14,
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
+    elevation: 10,
+  },
+  btnPressable: {
+    borderRadius: 5,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.42)',
+  },
+  btnGradient: {
+    paddingVertical: 15,
+    paddingHorizontal: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 52,
+  },
+  btnText: {
+    fontFamily: 'Arimo-Bold',
+    fontSize: 15,
+    fontWeight: '600',
+    letterSpacing: 0.6,
+    color: '#ffffff',
+  },
+
+  neonWrapper: { position: 'relative' },
+  neonClip: {
+    position: 'absolute',
+    top: -2, left: -2, right: -2, bottom: -2,
+    borderRadius: 22,
+    overflow: 'hidden',
+    zIndex: 2,
+  },
+  neonTrack: { position: 'absolute', top: 0, bottom: 0, left: 0 },
+  neonMask: {
+    position: 'absolute',
+    top: 2, left: 2, right: 2, bottom: 2,
+    borderRadius: 20,
+    zIndex: 1,
   },
   bloomMid: {
-    position: 'absolute',
-    top: -4, left: -4, right: -4, bottom: -4,
-    borderRadius: 24,
-    backgroundColor: 'transparent',
-    shadowColor: '#0f60e0',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 20,
-    elevation: 8,
+    position: 'absolute', top: -4, left: -4, right: -4, bottom: -4,
+    borderRadius: 24, backgroundColor: 'transparent',
+    shadowColor: '#00eaff', shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.45, shadowRadius: 18, elevation: 8,
   },
   bloomFar: {
-    position: 'absolute',
-    top: -8, left: -8, right: -8, bottom: -8,
-    borderRadius: 28,
-    backgroundColor: 'transparent',
-    shadowColor: '#0840bb',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.3,
-    shadowRadius: 30,
-    elevation: 4,
+    position: 'absolute', top: -8, left: -8, right: -8, bottom: -8,
+    borderRadius: 28, backgroundColor: 'transparent',
+    shadowColor: '#1e9bff', shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.25, shadowRadius: 28, elevation: 4,
   },
   floorGlow: {
-    position: 'absolute',
-    bottom: -20,
-    alignSelf: 'center',
-    width: '80%',
-    height: 30,
-    borderRadius: 50,
-    backgroundColor: 'transparent',
-    shadowColor: '#1a6fff',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.75,
-    shadowRadius: 18,
-    elevation: 16,
+    position: 'absolute', bottom: -16, alignSelf: 'center',
+    width: '80%', height: 24, borderRadius: 50, backgroundColor: 'transparent',
+    shadowColor: '#00eaff', shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6, shadowRadius: 16, elevation: 12,
   },
-});
 
+  planWrapper:   { flex: 1, position: 'relative', marginBottom: 12 },
+  touchableArea: { flex: 1 },
+  planCard: {
+    backgroundColor: 'rgba(15,23,42,0.92)',
+    borderRadius: 20, padding: 16,
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
+    minHeight: 120,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15, shadowRadius: 6, elevation: 2,
+    zIndex: 3,
+  },
+  planCardSelected: { backgroundColor: '#030814', borderWidth: 0 },
+
+  badge: {
+    position: 'absolute', top: 0, right: 0, zIndex: 10,
+    backgroundColor: '#1e9bff',
+    paddingHorizontal: 15, paddingVertical: 6, borderBottomLeftRadius: 15,
+  },
+  badgeText: { fontSize: 10, fontWeight: '900', color: '#ffffff', letterSpacing: 0.5 },
+
+  planHeader:   { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 16 },
+  iconBox: {
+    width: 72, height: 72, borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  iconBoxActive: {
+    backgroundColor: 'rgba(30,155,255,0.15)',
+    borderWidth: 1, borderColor: 'rgba(30,155,255,0.4)',
+  },
+
+  planName:          { fontFamily: 'Arimo-Bold', fontSize: 17, fontWeight: '700', color: colors.text.secondary },
+  planNameSelected:  { color: '#ffffff', fontWeight: '800' },
+  planPrice:         { fontFamily: 'Arimo-Bold', fontSize: 20, fontWeight: '800', color: colors.text.primary },
+  planPriceSelected: { color: '#ffffff', textShadowColor: '#00eaff', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 8 },
+  planDesc:          { fontFamily: 'Arimo-Regular', fontSize: 12, color: colors.text.muted, marginTop: 2 },
+
+  featuresList:       { gap: 8, paddingLeft: 4 },
+  planIconGlow:       { shadowColor: '#00eaff', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 12, elevation: 6 },
+  featureIconGlow:    { shadowColor: '#00eaff', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 6, elevation: 4 },
+  featureRow:   { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  featureText:         { fontFamily: 'Arimo-Regular', fontSize: 13, color: colors.text.secondary },
+  featureTextSelected: { color: 'rgba(255,255,255,0.85)' },
+  agencyRow:    { marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.08)' },
+  agencyText:   { fontFamily: 'Arimo-Bold', fontSize: 13, fontWeight: '700', color: colors.text.primary },
+});
