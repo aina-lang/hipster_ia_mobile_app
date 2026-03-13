@@ -329,18 +329,19 @@ const s = StyleSheet.create({
   },
 
   footer: {
-    padding: 24,
-    paddingBottom: Platform.OS === 'ios' ? 40 : 24,
-  },
+  padding: 24,
+  paddingBottom: Platform.OS === 'ios' ? 40 : 24,
+  alignItems: 'center',
+},
 
-  btnWrapper: {
-    width: '100%',
-    shadowColor: '#1e9bff',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.4,
-    shadowRadius: 16,
-    elevation: 10,
-  },
+btnWrapper: {
+  width: '60%',
+  shadowColor: '#1e9bff',
+  shadowOffset: { width: 0, height: 0 },
+  shadowOpacity: 0.4,
+  shadowRadius: 16,
+  elevation: 10,
+},
   btnPressable: {
     borderRadius: 5,
     overflow: 'hidden',
