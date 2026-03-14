@@ -27,7 +27,7 @@ export function BackgroundGradientOnboarding({
   return (
     <View style={styles.container}>
       <Image
-        source={require('../../assets/bg-onboarding.png')}
+        source={require('../../assets/images/background.jpg')}
         style={[styles.image, { width, height }]}
         resizeMode="cover"
       />
