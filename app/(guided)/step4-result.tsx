@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  ActivityIndicator,
   Image,
   Platform,
   Animated,
@@ -35,6 +34,7 @@ import {
   Paperclip,
   Mic,
 } from 'lucide-react-native';
+import { Video, ResizeMode } from 'expo-av';
 
 import { colors } from '../../theme/colors';
 import { DeerAnimation } from '../../components/ui/DeerAnimation';
@@ -64,7 +64,6 @@ const { width } = Dimensions.get('window');
 export default function Step4ResultScreen() {
   const router = useRouter();
 
-  // Direct store values for rendering (reactive)
   const {
     userQuery,
     selectedJob,
@@ -101,7 +100,6 @@ export default function Step4ResultScreen() {
   const isImagesExhausted = isPackCurieux && imagesLimit > 0 && imagesUsed >= imagesLimit && imagesLimit !== 999999;
   const isFullyExhausted = isPackCurieux && isTextExhausted && isImagesExhausted;
 
-  // Check Expiration
   const now = new Date();
   const endDate = user?.subscriptionEndDate ? new Date(user.subscriptionEndDate) : null;
   const isExpired = endDate && now > endDate;
@@ -118,9 +116,6 @@ export default function Step4ResultScreen() {
   const [modalMessage, setModalMessage] = useState('');
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
-  // Animation for skeleton text
-  const [pulseAnim] = useState(new Animated.Value(0.3));
-
   const [permissionResponse, requestPermission] = MediaLibrary.usePermissions({
     granularPermissions: ['photo'],
   });
@@ -131,36 +126,6 @@ export default function Step4ResultScreen() {
     setModalMessage(message);
     setModalVisible(true);
   };
-
-  useEffect(() => {
-    let animation: Animated.CompositeAnimation | null = null;
-
-    if (loading) {
-      animation = Animated.loop(
-        Animated.sequence([
-          Animated.timing(pulseAnim, {
-            toValue: 1,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-          Animated.timing(pulseAnim, {
-            toValue: 0.3,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-        ])
-      );
-      animation.start();
-    } else {
-      pulseAnim.setValue(1);
-    }
-
-    return () => {
-      if (animation) {
-        animation.stop();
-      }
-    };
-  }, [loading, pulseAnim]);
 
   useEffect(() => {
     setLocalQuery(userQuery || '');
@@ -350,7 +315,7 @@ export default function Step4ResultScreen() {
     let textArr: string[] = [];
 
     const processValue = (key: string, val: any) => {
-      if (key === 'corps_de_texte' || key === 'message_principal') return; // Skip main message
+      if (key === 'corps_de_texte' || key === 'message_principal') return;
       const label = key.replace(/_/g, ' ').toUpperCase();
 
       if (typeof val === 'string') {
@@ -385,7 +350,6 @@ export default function Step4ResultScreen() {
     overrideQuery?: string,
     mode: 'text' | 'image' | 'both' = 'both'
   ) => {
-    // CRITICAL: Get latest state from store to avoid stale closures
     const state = useCreationStore.getState();
     const {
       selectedCategory,
@@ -407,20 +371,12 @@ export default function Step4ResultScreen() {
     let effectiveCategory = selectedCategory;
     let effectiveFunction = selectedFunction;
 
-    // Fallback logic if store is partially empty (e.g. after refresh)
     if (!effectiveCategory && effectiveFunction) {
       if (effectiveFunction.includes('Flyers')) effectiveCategory = 'Document';
       else if (effectiveFunction.includes('réseaux')) effectiveCategory = 'Social';
       else if (effectiveFunction.includes('Visuel')) effectiveCategory = 'Image';
       else if (effectiveFunction.includes('SEO') || effectiveFunction.includes('Email')) effectiveCategory = 'Texte';
     }
-
-    console.log('[DEBUG] generateContent START', {
-      mode,
-      effectiveCategory,
-      effectiveFunction,
-      selectedArchitecture
-    });
 
     if (!effectiveCategory) {
       console.error('[CRITICAL] effectiveCategory is null in generateContent');
@@ -429,14 +385,10 @@ export default function Step4ResultScreen() {
       return;
     }
 
-    const needsText = mode === 'text' || mode === 'both';
-    const needsImage = mode === 'image' || mode === 'both';
-
     setLoading(true);
     setRegenMode(mode);
 
     try {
-      // If we are regenerating only one part, don't clear the other
       if (mode === 'text' || mode === 'both') setResult('');
       if (mode === 'image' || mode === 'both') setImageUrl('');
       setShowRegeneratePanel(false);
@@ -460,16 +412,12 @@ export default function Step4ResultScreen() {
         params.textPromo = storeTextPromo;
         if (storeSubject && !storeImage) {
           params.subject = storeSubject;
-          // We can also append it to the userQuery so the backend LLM uses it intuitively
           params.userQuery = params.userQuery ? `${params.userQuery} - Sujet: ${storeSubject}` : `Sujet: ${storeSubject}`;
         }
       } else {
         params.style = selectedStyle;
       }
 
-      console.log('[DEBUG] Generating Content with params:', JSON.stringify(params), 'Seed:', seed);
-
-      // Specialized prompts per category
       if (effectiveCategory === 'Social') {
         const socialResponse = await AiService.generateSocial(params, seed);
         if (mode === 'text' || mode === 'both') setResult(socialResponse.text || socialResponse.content || '');
@@ -604,29 +552,17 @@ export default function Step4ResultScreen() {
   };
 
   useEffect(() => {
-    // Robust mount handling for persistent store
     const checkStoreAndGenerate = () => {
       const state = useCreationStore.getState();
-      console.log('[DEBUG] Step4ResultScreen MOUNT CHECK', {
-        hasHydrated: useCreationStore.persist.hasHydrated(),
-        selectedCategory: state.selectedCategory,
-        selectedFunction: state.selectedFunction,
-        selectedArchitecture: state.selectedArchitecture
-      });
 
       if (state.selectedCategory || state.selectedFunction) {
         generateContent();
       } else {
-        console.warn('[DEBUG] Delaying generateContent: store not ready or empty');
         const timer = setTimeout(() => {
           const latestState = useCreationStore.getState();
           if (latestState.selectedCategory || latestState.selectedFunction) {
             generateContent();
           } else {
-            console.error('[DEBUG] Store STILL not ready after 2s', {
-              latestState,
-              hasHydrated: useCreationStore.persist.hasHydrated()
-            });
             setLoading(false);
             setResult('Erreur : Session expirée ou données manquantes.');
           }
@@ -635,27 +571,21 @@ export default function Step4ResultScreen() {
       }
     };
 
-    // If already hydrated, check immediately. Otherwise wait for hydration.
     if (useCreationStore.persist.hasHydrated()) {
       checkStoreAndGenerate();
     } else {
       const unsub = useCreationStore.persist.onFinishHydration(() => {
-        console.log('[DEBUG] Store hydration finished');
         checkStoreAndGenerate();
       });
       return () => unsub();
     }
-  }, []); // Explicitly mount only
+  }, []);
 
   useEffect(() => {
     const requestPermissions = async () => {
       try {
-        try {
-          await MediaLibrary.requestPermissionsAsync();
-        } catch (e) { }
-        try {
-          await Notifications.requestPermissionsAsync();
-        } catch (e) { }
+        try { await MediaLibrary.requestPermissionsAsync(); } catch (e) { }
+        try { await Notifications.requestPermissionsAsync(); } catch (e) { }
       } catch (e) { }
     };
     requestPermissions();
@@ -673,12 +603,6 @@ export default function Step4ResultScreen() {
   };
 
   const handleSaveToGallery = async () => {
-    // if (isRestricted) {
-    //   showModal('error', 'Pack Curieux', 'La sauvegarde est indisponible avec le Pack Curieux.');
-    //   return;
-    // }
-    // if (!imageUrl) return;
-
     try {
       if (permissionResponse?.status !== 'granted') {
         const permission = await requestPermission();
@@ -758,20 +682,25 @@ export default function Step4ResultScreen() {
             icon={<Home size={16} color={colors.primary.main} />}
           />
         </View>
-      }>
+      }
+      headerGradient>
+      {loading && (
+        <>
+          <Video
+            source={require('../../assets/video/loadingVideoFinal.mp4')}
+            style={styles.loadingVideo}
+            resizeMode={ResizeMode.COVER}
+            isLooping
+            shouldPlay
+            isMuted
+          />
+          <View style={styles.loadingOverlay} />
+        </>
+      )}
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
         <View style={styles.content}>
           <View style={styles.header}>
-            {loading ? (
-              <View style={styles.skeletonWrapper}>
-                <Animated.View style={[styles.skeletonImage, { opacity: pulseAnim }]} />
-                <Animated.View style={[styles.skeletonTitle, { opacity: pulseAnim }]} />
-                <Animated.View style={[styles.skeletonLine, { opacity: pulseAnim, width: '90%' }]} />
-                <Animated.View style={[styles.skeletonLine, { opacity: pulseAnim, width: '75%' }]} />
-                <Animated.View style={[styles.skeletonLine, { opacity: pulseAnim, width: '60%' }]} />
-                <Text style={styles.skeletonLabel}>Hipster•IA génère votre contenu...</Text>
-              </View>
-            ) : (
+            {!loading && (
               <>
                 <View style={styles.successIcon}>
                   <Check size={32} color={colors.background.dark} />
@@ -902,17 +831,34 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { paddingHorizontal: 20 },
   header: { alignItems: 'center', marginTop: 20, marginBottom: 32 },
-  skeletonWrapper: { width: '100%', paddingHorizontal: 4, gap: 12 },
-  skeletonImage: { width: '100%', height: 220, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.08)' },
-  skeletonTitle: { width: '55%', height: 20, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.12)', alignSelf: 'center' },
-  skeletonLine: { height: 14, borderRadius: 6, backgroundColor: 'rgba(255,255,255,0.07)' },
-  skeletonLabel: { marginTop: 8, textAlign: 'center', fontSize: 13, color: colors.text.muted },
+  loadingVideo: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: '100%',
+    height: '100%',
+    zIndex: 999,
+    flex: 1,
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: '100%',
+    height: '100%',
+    zIndex: 1000,
+    background: 'linear-gradient(180deg, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0) 50%, rgba(0,0,0,0.2) 100%)',
+  },
   successIcon: { width: 64, height: 64, borderRadius: 32, backgroundColor: colors.primary.main, justifyContent: 'center', alignItems: 'center', marginBottom: 16 },
   title: { fontSize: 24, fontWeight: '700', color: colors.text.primary },
   resultCard: { backgroundColor: 'rgba(255, 255, 255, 0.05)', borderRadius: 24, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.1)' },
   socialCard: { width: '100%', backgroundColor: 'rgba(255, 255, 255, 0.02)' },
   socialHeader: { flexDirection: 'row', alignItems: 'center', padding: 16, gap: 12 },
-  socialAvatar: { width: 36, height: 36, borderRadius: 18, backgroundColor: `${colors.primary.main}20`, alignItems: 'center', justifyContent: 'center', borderWidt: 1, borderColor: `${colors.primary.main}40` },
+  socialAvatar: { width: 36, height: 36, borderRadius: 18, backgroundColor: `${colors.primary.main}20`, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: `${colors.primary.main}40` },
   socialUser: { fontSize: 14, fontWeight: '700', color: colors.text.primary },
   socialTime: { fontSize: 11, color: colors.text.secondary },
   socialImageSection: { width: '100%', backgroundColor: '#000' },
@@ -956,4 +902,5 @@ const styles = StyleSheet.create({
   imageLabel: { fontSize: 14, fontWeight: '600', color: colors.primary.main },
   imageWrapper: { width: '100%', aspectRatio: 0.8, backgroundColor: colors.background.primary, justifyContent: 'center', alignItems: 'center' },
   flyerImage: { width: '100%', height: '100%' },
+  imageSeparator: {},
 });
