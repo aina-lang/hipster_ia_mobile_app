@@ -84,20 +84,52 @@ interface JobFunction {
   image: any;
 }
 
-const UNIVERSAL_FUNCTIONS: JobFunction[] = [
-  {
-    label: 'Contenu réseaux',
-    category: 'Social',
-    icon: Smartphone,
-    image: socialImg
-  },
-  {
-    label: 'Flyers',
-    category: 'Document',
-    icon: FileText,
-    image: flyerImg
-  },
-];
+const getUniversalFunctions = (planType: string): JobFunction[] => {
+  if (planType === 'studio') {
+    return [
+      {
+        label: 'Réseaux sociaux',
+        category: 'Social',
+        icon: Smartphone,
+        image: socialImg
+      },
+      {
+        label: 'Textes libres',
+        category: 'Social',
+        icon: FileText,
+        image: socialImg
+      },
+      {
+        label: 'Flyer / Affiche',
+        category: 'Document',
+        icon: FileText,
+        image: flyerImg
+      },
+      {
+        label: 'Format impression HD',
+        category: 'Document',
+        icon: FileText,
+        image: flyerImg
+      },
+    ];
+  }
+  
+  // Default for Atelier and other plans
+  return [
+    {
+      label: 'Contenu réseaux',
+      category: 'Social',
+      icon: Smartphone,
+      image: socialImg
+    },
+    {
+      label: 'Flyers',
+      category: 'Document',
+      icon: FileText,
+      image: flyerImg
+    },
+  ];
+};
 
 
 
@@ -893,7 +925,7 @@ export default function HomeScreen() {
                 </View>
 
                 <View className="mt-10 gap-3 pb-10">
-                  {UNIVERSAL_FUNCTIONS.map((fn, index) => (
+                  {getUniversalFunctions(planType).map((fn, index) => (
                     <JobTypeCard
                       key={index}
                       label={fn.label}
