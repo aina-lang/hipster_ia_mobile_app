@@ -30,6 +30,7 @@ export default function RegisterScreen() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [referralCode, setReferralCode] = useState('');
   const [focusedField, setFocusedField] = useState<string | null>(null);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   const [modalVisible, setModalVisible] = useState(false);
   const [modalType, setModalType] = useState<any>('info');
@@ -57,6 +58,11 @@ export default function RegisterScreen() {
   const handleRegister = async () => {
     if (!email || !password || !confirmPassword || !fullName) {
       showModal('warning', 'Champs manquants', 'Veuillez remplir tous les champs.');
+      return;
+    }
+
+    if (!acceptedTerms) {
+      showModal('warning', 'Conditions non acceptées', 'Vous devez accepter les conditions d\'utilisation pour continuer.');
       return;
     }
 
@@ -234,6 +240,30 @@ export default function RegisterScreen() {
                 </View>
               </View>
             </View>
+
+            <View style={styles.termsContainer}>
+              <View style={styles.checkboxWrapper}>
+                <TouchableOpacity 
+                  style={styles.checkboxTouchable}
+                  onPress={() => setAcceptedTerms(!acceptedTerms)}
+                >
+                  <View style={[styles.checkbox, acceptedTerms && styles.checkboxChecked]}>
+                    {acceptedTerms && (
+                      <Text style={styles.checkMark}>✓</Text>
+                    )}
+                  </View>
+                </TouchableOpacity>
+                <Text style={styles.termsText}>
+                  J'accepte les{' '}
+                  <Text 
+                    style={styles.termsLink}
+                    onPress={() => router.push('/(auth)/privacy-policy')}
+                  >
+                    conditions d'utilisation
+                  </Text>
+                </Text>
+              </View>
+            </View>
           </Animated.View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -387,5 +417,58 @@ const styles = StyleSheet.create({
     borderWidth: 0,
     paddingLeft: 4,
     letterSpacing: 1,
+  },
+  termsContainer: {
+    marginBottom: 20,
+    paddingHorizontal: 0,
+  },
+  checkboxWrapper: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    paddingVertical: 8,
+  },
+  checkboxTouchable: {
+    marginRight: 14,
+    marginTop: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkbox: {
+    width: 26,
+    height: 26,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(15, 23, 42, 0.8)',
+  },
+  checkboxChecked: {
+    backgroundColor: colors.neon,
+    borderColor: colors.neon,
+    shadowColor: colors.neon,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.7,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  checkMark: {
+    fontSize: 16,
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    marginTop: -1,
+  },
+  termsText: {
+    fontSize: 14,
+    color: colors.text.primary,
+    lineHeight: 20,
+    fontWeight: '500',
+    flex: 1,
+  },
+  termsLink: {
+    fontSize: 14,
+    color: colors.neon,
+    fontWeight: '700',
+    textDecorationLine: 'underline',
   },
 });
