@@ -30,7 +30,7 @@ const PLAN_IMAGES: Record<string, any> = {
   studio:  require('../../assets/images/packs/studio.png'),
 };
 
-const COMING_SOON_IDS = new Set(['studio', 'agence']);
+const COMING_SOON_IDS = new Set(['agence']);
 const CARD_W = 340;
 
 function getFeatureIcon(feature: string) {

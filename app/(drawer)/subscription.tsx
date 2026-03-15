@@ -224,7 +224,7 @@ export default function SubscriptionScreen() {
         ...p,
         price: typeof p.price === 'number' ? `${p.price.toFixed(2)}€` : p.price,
         icon: planIcons[p.id] || Shield,
-        isComingSoon: p.id === 'studio' || p.id === 'agence',
+        isComingSoon: p.id === 'agence',
       }));
 
       const visiblePlans = (user?.subscriptionStatus === 'canceled' && user?.planType)
