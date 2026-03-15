@@ -34,7 +34,7 @@ export const PaymentBlocker = ({ plan, onPay, loading }: PaymentBlockerProps) =>
 
     const getMessage = () => {
         if (isExhausted) return "Vous avez atteint votre limite de génération pour cette période. Renouvelez votre forfait ou passez au niveau supérieur pour obtenir de nouveaux crédits immédiatement.";
-        if (isTrial) return "Démarrez votre essai gratuit pour accéder à tout. Carte requise (0€). Passage automatique au pack Atelier (9,90€/mois) après 7 jours.";
+        if (isTrial) return "Essai gratuit de 7 jours ! Nous avons besoin de votre empreinte digitale ou de votre carte bancaire pour vérifier votre identité. Aucun prélèvement n'est effectué pour le pack Curieux.";
         return "Veuillez finaliser votre abonnement pour débloquer toutes les fonctionnalités de votre plan.";
     };
 
