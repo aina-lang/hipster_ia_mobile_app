@@ -72,6 +72,7 @@ interface User {
   referredBy?: string;
   isAmbassador?: boolean;
   freeMonthsPending?: number;
+  isFirstTime?: boolean; // Track if this is user's first time using the app
 }
 
 interface AuthState {
@@ -102,6 +103,7 @@ interface AuthState {
   forgotPassword: (email: string) => Promise<void>;
   verifyResetCode: (email: string, code: string) => Promise<void>;
   resetPassword: (email: string, code: string, password?: string) => Promise<void>;
+  setFirstTimeUsed: () => void; // Mark user as having used the app
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -496,6 +498,7 @@ export const useAuthStore = create<AuthState>()(
             user: {
               ...resData.user,
               type: 'ai',
+              isFirstTime: true, // Mark as first time user
             },
             isAuthenticated: true,
             accessToken: resData.access_token,
@@ -655,6 +658,13 @@ export const useAuthStore = create<AuthState>()(
             refreshToken: null,
           });
         }
+      },
+
+      setFirstTimeUsed: () => {
+        // Mark user as no longer on first time - they've used the app
+        set((state) => ({
+          user: state.user ? { ...state.user, isFirstTime: false } : null,
+        }));
       },
     }),
     {

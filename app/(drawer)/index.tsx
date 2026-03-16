@@ -175,6 +175,13 @@ export default function HomeScreen() {
     fetchPlans();
   }, []);
 
+  useEffect(() => {
+    // Mark first time user as having accessed the app
+    if (user?.isFirstTime === true) {
+      useAuthStore.getState().setFirstTimeUsed();
+    }
+  }, [user?.isFirstTime]);
+
   const fetchPlans = async () => {
     try {
       setLoadingPlans(true);

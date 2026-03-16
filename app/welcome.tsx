@@ -29,6 +29,8 @@ const NEON_GLOW = '#0099ff';
 const NEON_LIGHT = '#66e5ff';
 
 const videobg = require('../assets/video/splashVideo-fixed-mobile.mp4');
+const loadingVideo = require('../assets/video/loadingVideo.mp4');
+const reloadingScreen = require('../assets/video/reloadignScreen.mp4');
 
 interface ParticleConfig {
   x: number;
@@ -297,7 +299,11 @@ export default React.memo(function WelcomeScreen({ onVideoFinish, setIsRouting }
   const videoMarginTop = useSharedValue(0);
   const { isAuthenticated, user, isHydrated } = useAuthStore();
 
-  const videoPlayer = useVideoPlayer(videobg, (player) => {
+  // Select video based on whether this is user's first time
+  const isFirstTime = user?.isFirstTime !== false;
+  const selectedVideo = isFirstTime ? loadingVideo : reloadingScreen;
+
+  const videoPlayer = useVideoPlayer(selectedVideo, (player) => {
     player.loop = false;
     player.muted = true;
   });
