@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
   View, StyleSheet, Text, TextInput, KeyboardAvoidingView,
-  Platform, TouchableOpacity, ScrollView, Animated as RNAnimated,
-  Easing, Pressable, ActivityIndicator,
+  Platform, TouchableOpacity, ScrollView, Pressable,
+  ActivityIndicator, Animated as RNAnimated, Easing,
 } from 'react-native';
 import { router } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -58,12 +58,12 @@ function NeonBorderInput({ children, isActive }: { children: React.ReactNode; is
 }
 
 const nb = StyleSheet.create({
-  wrapper:   { position: 'relative' },
-  clip:      { position: 'absolute', top: -1, left: -1, right: -1, bottom: -0.5, borderRadius: 13, overflow: 'hidden', zIndex: 2 },
-  track:     { position: 'absolute', top: 0, bottom: 0, left: 0 },
-  mask:      { position: 'absolute', top: 1, left: 1, right: 1, bottom: 0.5, borderRadius: 12, zIndex: 1, backgroundColor: '#030814' },
-  bloomMid:  { position: 'absolute', top: -4, left: -4, right: -4, bottom: -4, borderRadius: 16, backgroundColor: 'transparent', shadowColor: '#00eaff', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.45, shadowRadius: 14, elevation: 8 },
-  bloomFar:  { position: 'absolute', top: -8, left: -8, right: -8, bottom: -8, borderRadius: 20, backgroundColor: 'transparent', shadowColor: '#1e9bff', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.22, shadowRadius: 24, elevation: 4 },
+  wrapper:  { position: 'relative' },
+  clip:     { position: 'absolute', top: -1, left: -1, right: -1, bottom: -0.5, borderRadius: 13, overflow: 'hidden', zIndex: 2 },
+  track:    { position: 'absolute', top: 0, bottom: 0, left: 0 },
+  mask:     { position: 'absolute', top: 1, left: 1, right: 1, bottom: 0.5, borderRadius: 12, zIndex: 1, backgroundColor: '#030814' },
+  bloomMid: { position: 'absolute', top: -4, left: -4, right: -4, bottom: -4, borderRadius: 16, backgroundColor: 'transparent', shadowColor: '#00eaff', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.45, shadowRadius: 14, elevation: 8 },
+  bloomFar: { position: 'absolute', top: -8, left: -8, right: -8, bottom: -8, borderRadius: 20, backgroundColor: 'transparent', shadowColor: '#1e9bff', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.22, shadowRadius: 24, elevation: 4 },
 });
 
 function NeonSubmitButton({ onPress, loading, disabled }: { onPress: () => void; loading: boolean; disabled: boolean }) {
@@ -82,47 +82,42 @@ function NeonSubmitButton({ onPress, loading, disabled }: { onPress: () => void;
 }
 
 const btn = StyleSheet.create({
-  wrapper:   { alignSelf: 'center', width: '60%', shadowColor: '#1e9bff', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.4, shadowRadius: 16, elevation: 10, marginBottom: 16 },
+  wrapper:   { alignSelf: 'center', width: '60%', marginBottom: 16 },
   pressable: { borderRadius: 5, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.42)' },
-  gradient:  { paddingVertical: 16, paddingHorizontal: 19, alignItems: 'center', justifyContent: 'center', minHeight: 54 },
-  text:      { fontFamily: 'Arimo-Bold', fontSize: 15, fontWeight: '600', letterSpacing: 0.6, color: '#fff' },
+  gradient:  { paddingVertical: 15, paddingHorizontal: 15, alignItems: 'center', justifyContent: 'center' },
+  text:      { fontFamily: 'Arimo-Bold', fontSize: 14, fontWeight: '600', letterSpacing: 0.6, color: '#fff' },
 });
 
 export default function RegisterScreen() {
   const { selectedPlan } = useOnboardingStore();
-
-  const [fullName, setFullName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [referralCode, setReferralCode] = useState('');
-  const [focusedField, setFocusedField] = useState<string | null>(null);
-  const [acceptedTerms, setAcceptedTerms] = useState(false);
-
-  const [modalVisible, setModalVisible] = useState(false);
-  const [modalType, setModalType] = useState<any>('info');
-  const [modalTitle, setModalTitle] = useState('');
-  const [modalMessage, setModalMessage] = useState('');
-
   const { aiRegister, error, clearError } = useAuthStore();
-  const [showConfirm, setShowConfirm]         = useState(false);
-  const [focused, setFocused]                 = useState<string | null>(null);
-  const [loading, setLoading]                 = useState(false);
-  const [modal, setModal]                     = useState({ visible: false, type: 'info' as any, title: '', message: '' });
+
+  const [fullName, setFullName]             = useState('');
+  const [email, setEmail]                   = useState('');
+  const [password, setPassword]             = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [referralCode, setReferralCode]     = useState('');
+  const [acceptedTerms, setAcceptedTerms]   = useState(false);
+  const [showConfirm, setShowConfirm]       = useState(false);
+  const [focused, setFocused]               = useState<string | null>(null);
+  const [loading, setLoading]               = useState(false);
+  const [modal, setModal]                   = useState({ visible: false, type: 'info' as any, title: '', message: '' });
 
   const showModal = (type: any, title: string, message = '') =>
     setModal({ visible: true, type, title, message });
+
+  const f = (name: string) => ({
+    onFocus: () => setFocused(name),
+    onBlur:  () => setFocused(null),
+  });
 
   const handleRegister = async () => {
     if (!fullName || !email || !password || !confirmPassword) {
       showModal('warning', 'Champs manquants', 'Veuillez remplir tous les champs.');
       return;
     }
-
     if (!acceptedTerms) {
-      showModal('warning', 'Conditions non acceptées', 'Vous devez accepter les conditions d\'utilisation pour continuer.');
+      showModal('warning', "Conditions non acceptées", "Vous devez accepter les conditions d'utilisation pour continuer.");
       return;
     }
     if (password !== confirmPassword) {
@@ -151,12 +146,18 @@ export default function RegisterScreen() {
     }
   };
 
-  const f = (name: string) => ({ onFocus: () => setFocused(name), onBlur: () => setFocused(null) });
-
   return (
     <BackgroundGradientOnboarding darkOverlay>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={s.container}>
-        <ScrollView contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={s.kav}
+      >
+        <ScrollView
+          contentContainerStyle={s.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          bounces={false}
+        >
           <Animated.View entering={FadeInDown.duration(800)}>
 
             <View style={s.header}>
@@ -164,7 +165,7 @@ export default function RegisterScreen() {
                 <Text style={s.titleSub}>Créer un</Text>
                 <Text style={s.titleScript}>compte</Text>
               </View>
-              <Text style={s.subtitle}>Finalisez votre inscription pour accéder à Hipster IA.</Text>
+              <Text style={s.subtitle}>Accédez à toute la puissance de Hipster IA.</Text>
             </View>
 
             <View style={s.form}>
@@ -208,12 +209,9 @@ export default function RegisterScreen() {
                       placeholderTextColor={colors.text.muted}
                       value={password}
                       onChangeText={t => { setPassword(t); if (error) clearError(); }}
-                      secureTextEntry={!showPassword}
+                      secureTextEntry={true}
                       {...f('password')}
                     />
-                    <TouchableOpacity style={s.eyeIcon} onPress={() => setShowPassword(v => !v)}>
-                      {showPassword ? <EyeOff size={20} color={colors.text.muted} /> : <Eye size={20} color={colors.text.muted} />}
-                    </TouchableOpacity>
                   </View>
                 </NeonBorderInput>
               </View>
@@ -243,10 +241,9 @@ export default function RegisterScreen() {
                   Code de parrainage <Text style={s.optional}>(optionnel)</Text>
                 </Text>
                 <NeonBorderInput isActive={focused === 'referral'}>
-                  <View style={[s.referralWrapper, focused === 'referral' && s.inputActive]}>
-                    <Gift size={18} color={colors.text.muted} style={{ marginRight: 8 }} />
+                  <View style={s.passwordWrapper}>
                     <TextInput
-                      style={[s.input, s.referralInput]}
+                      style={[s.input, s.passwordInput, focused === 'referral' && s.inputActive]}
                       placeholder="Ex : REF-USR-ABCD"
                       placeholderTextColor={colors.text.muted}
                       value={referralCode}
@@ -255,47 +252,44 @@ export default function RegisterScreen() {
                       autoCorrect={false}
                       {...f('referral')}
                     />
+                    <View style={s.eyeIcon} pointerEvents="none">
+                      <Gift size={18} color={colors.text.muted} />
+                    </View>
                   </View>
                 </NeonBorderInput>
               </View>
-            </View>
 
-            <View style={s.termsContainer}>
-              <View style={s.checkboxWrapper}>
-                <TouchableOpacity 
-                  style={s.checkboxTouchable}
-                  onPress={() => setAcceptedTerms(!acceptedTerms)}
+              <View style={s.termsContainer}>
+                <TouchableOpacity
+                  style={s.checkboxWrapper}
+                  onPress={() => setAcceptedTerms(v => !v)}
+                  activeOpacity={0.8}
                 >
                   <View style={[s.checkbox, acceptedTerms && s.checkboxChecked]}>
-                    {acceptedTerms && (
-                      <Text style={s.checkMark}>✓</Text>
-                    )}
+                    {acceptedTerms && <Text style={s.checkMark}>✓</Text>}
                   </View>
-                </TouchableOpacity>
-                <Text style={s.termsText}>
-                  J'accepte les{' '}
-                  <Text 
-                    style={s.termsLink}
-                    onPress={() => router.push('/(auth)/privacy-policy')}
-                  >
-                    conditions d'utilisation
+                  <Text style={s.termsText}>
+                    J'accepte les{' '}
+                    <Text style={s.termsLink} onPress={() => router.push('/(auth)/privacy-policy')}>
+                      conditions d'utilisation
+                    </Text>
                   </Text>
-                </Text>
+                </TouchableOpacity>
+              </View>
+
+              <NeonSubmitButton onPress={handleRegister} loading={loading} disabled={loading} />
+
+              <View style={s.footer}>
+                <Text style={s.footerText}>Déjà un compte ? </Text>
+                <TouchableOpacity onPress={() => router.push('/(auth)/login')}>
+                  <Text style={s.neonLink}>Se connecter</Text>
+                </TouchableOpacity>
               </View>
             </View>
+
           </Animated.View>
         </ScrollView>
       </KeyboardAvoidingView>
-
-      <View style={s.footer}>
-        <NeonSubmitButton onPress={handleRegister} loading={loading} disabled={loading} />
-        <View style={s.loginRow}>
-          <Text style={s.loginRowText}>Déjà un compte ? </Text>
-          <TouchableOpacity onPress={() => router.push('/(auth)/login')}>
-            <Text style={s.neonLink}>Se connecter</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
 
       <GenericModal
         visible={modal.visible}
@@ -309,39 +303,62 @@ export default function RegisterScreen() {
 }
 
 const s = StyleSheet.create({
-  container:       { flex: 1, paddingHorizontal: 24 },
-  scrollContent:   { paddingTop: 60, paddingBottom: 200 },
+  kav:            { flex: 1 },
+  // padding horizontal augmenté pour que les bloom des inputs ne soient pas coupés
+  scrollContent:  { flexGrow: 1, paddingHorizontal: 28, paddingTop: 60, paddingBottom: 60 },
 
-  header:          { alignItems: 'flex-start', marginBottom: 28, paddingTop: 16 },
-  titleRow:        { flexDirection: 'row', alignItems: 'flex-end' },
-  titleSub:        { fontFamily: 'Arimo-Bold', fontSize: 15, letterSpacing: 3, textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)', marginBottom: 15 },
-  titleScript:     { fontFamily: 'Brittany-Signature', fontSize: 48, color: '#fff', textShadowColor: '#00eaff', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 18, paddingHorizontal: 5 },
-  titleScriptWrap: {},
-  subtitle:        { fontFamily: 'Arimo-Regular', fontSize: 14, color: 'rgba(255,255,255,0.45)', textAlign: 'left', letterSpacing: 0.3, marginTop: 4 },
+  header:          { alignItems: 'center', marginBottom: 36, paddingHorizontal: 8, paddingVertical: 10 },
+  titleRow:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 10 },
+  titleSub:        { fontFamily: 'Arimo-Bold', fontSize: 16, letterSpacing: 3, textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)', marginTop: 10 },
+  titleScript:     { fontFamily: 'Brittany-Signature', paddingLeft: 1, fontSize: 36, color: '#fff', textShadowColor: '#00eaff', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 18, lineHeight: 48, includeFontPadding: false },
+  subtitle:        { fontFamily: 'Arimo-Regular', fontSize: 14, color: 'rgba(255,255,255,0.45)', textAlign: 'center', letterSpacing: 0.3, marginTop: 4 },
 
-  form:            { width: '100%' },
-  inputContainer:  { marginBottom: 20 },
-  label:           { fontFamily: 'Arimo-Bold', fontSize: 13, color: colors.text.secondary, marginBottom: 8, fontWeight: '600', letterSpacing: 0.3 },
-  optional:        { fontFamily: 'Arimo-Regular', fontSize: 12, color: colors.text.muted, fontWeight: '400' },
-  input:           { backgroundColor: 'rgba(15,23,42,0.9)', borderRadius: 12, padding: 16, fontFamily: 'Arimo-Regular', color: colors.text.primary, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', zIndex: 3 },
-  inputActive:     { borderColor: 'transparent', backgroundColor: '#030814' },
-  passwordWrapper: { position: 'relative', justifyContent: 'center' },
-  passwordInput:   { paddingRight: 50 },
-  eyeIcon:         { position: 'absolute', right: 16, height: '100%', justifyContent: 'center', zIndex: 4 },
-  referralWrapper: { flexDirection: 'row', alignItems: 'center', borderRadius: 12, paddingLeft: 14, overflow: 'hidden' },
-  referralInput:   { flex: 1, backgroundColor: 'transparent', borderWidth: 0, paddingLeft: 4, letterSpacing: 1 },
+  form:           { width: '100%' },
+  inputContainer: { marginBottom: 20 },
+  label:          { fontFamily: 'Arimo-Bold', fontSize: 13, color: colors.text.secondary, marginBottom: 8, fontWeight: '600', letterSpacing: 0.3 },
+  optional:       { fontFamily: 'Arimo-Regular', fontSize: 12, color: colors.text.muted, fontWeight: '400' },
+  input:          { backgroundColor: 'rgba(15,23,42,0.9)', borderRadius: 12, padding: 16, fontFamily: 'Arimo-Regular', color: colors.text.primary, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', zIndex: 3 },
+  inputActive:    { borderColor: 'transparent', backgroundColor: '#030814' },
+  passwordWrapper:{ position: 'relative', justifyContent: 'center' },
+  passwordInput:  { paddingRight: 50 },
+  eyeIcon:        { position: 'absolute', right: 16, height: '100%', justifyContent: 'center', zIndex: 4 },
+  referralWrapper:{ flexDirection: 'row', alignItems: 'center', borderRadius: 12, paddingLeft: 14, overflow: 'hidden' },
+  referralInput:  { flex: 1, backgroundColor: 'transparent', borderWidth: 0, paddingLeft: 4, letterSpacing: 1 },
 
-  termsContainer:  { marginBottom: 20, paddingHorizontal: 0 },
-  checkboxWrapper: { flexDirection: 'row', alignItems: 'flex-start', paddingVertical: 8 },
-  checkboxTouchable: { marginRight: 14, marginTop: 2, justifyContent: 'center', alignItems: 'center' },
-  checkbox:        { width: 26, height: 26, borderRadius: 6, borderWidth: 2, borderColor: 'rgba(255, 255, 255, 0.3)', justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(15, 23, 42, 0.8)' },
-  checkboxChecked: { backgroundColor: colors.neon, borderColor: colors.neon, shadowColor: colors.neon, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.7, shadowRadius: 10, elevation: 6 },
-  checkMark:       { fontSize: 16, color: '#FFFFFF', fontWeight: 'bold', marginTop: -1 },
-  termsText:       { fontSize: 14, color: colors.text.primary, lineHeight: 20, fontWeight: '500', flex: 1 },
-  termsLink:       { fontSize: 14, color: colors.neon, fontWeight: '700', textDecorationLine: 'underline' },
+  termsContainer:  { marginBottom: 24 },
+checkboxWrapper: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8 },
+checkbox: {
+  width: 22, height: 22,
+  borderRadius: 6,
+  borderWidth: 2,
+  borderColor: 'rgba(255,255,255,0.5)',     // ← plus visible
+  justifyContent: 'center',
+  alignItems: 'center',
+  backgroundColor: 'rgba(15,23,42,0.95)',   // ← fond plus opaque
+  marginRight: 12,
+  flexShrink: 0,
+},
+checkboxChecked: {
+  backgroundColor: colors.neon,
+  borderColor: colors.neon,
+  // shadow sans elevation qui déplace le layout
+  shadowColor: colors.neon,
+  shadowOffset: { width: 0, height: 0 },
+  shadowOpacity: 0.7,
+  shadowRadius: 8,
+  elevation: 0,   // ← était 6, cause le "hover" sur Android
+},
+checkMark: { 
+  fontSize: 12, 
+  color: '#fff', 
+  fontWeight: '900',
+  includeFontPadding: false,
+  lineHeight: 14,
+},
+termsText:       { fontSize: 14, color: colors.text.primary, lineHeight: 20, flex: 1 },
+termsLink:       { fontFamily: 'Arimo-Regular', fontSize: 14, color: '#fff', textShadowColor: '#00eaff', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 8, textDecorationLine: 'underline' },
 
-  footer:          { position: 'absolute', bottom: 40, left: 24, right: 24, zIndex: 10, alignItems: 'center' },
-  loginRow:        { flexDirection: 'row', justifyContent: 'center', marginTop: 4 },
-  loginRowText:    { fontFamily: 'Arimo-Regular', color: colors.text.secondary, fontSize: 14 },
-  neonLink:        { fontFamily: 'Arimo-Bold', fontSize: 14, color: '#fff', textShadowColor: '#00eaff', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 8 },
+  footer:          { flexDirection: 'row', justifyContent: 'center' },
+  footerText:      { fontFamily: 'Arimo-Regular', color: colors.text.secondary, fontSize: 14 },
+  neonLink:        { fontFamily: 'Arimo-Regular', fontSize: 14, color: '#fff', textShadowColor: '#00eaff', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 8 },
 });

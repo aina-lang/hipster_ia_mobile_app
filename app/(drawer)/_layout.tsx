@@ -1,32 +1,22 @@
-// --- VERSION OPTIMISÉE DU DRAWER --- //
+// --- VERSION OPTIMISÉE DU DRAWER v2 --- //
 
-import React, { useEffect, useState } from 'react';
-import { View, Text, Image, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
+import React, { useEffect, useState, useRef } from 'react';
+import {
+  View, Text, Image, TouchableOpacity, ActivityIndicator,
+  StyleSheet, Animated as RNAnimated, Easing, Pressable, Platform,
+} from 'react-native';
 import { Drawer } from 'expo-router/drawer';
 import { DrawerContentScrollView, DrawerItemList, useDrawerStatus } from '@react-navigation/drawer';
 import { colors } from '../../theme/colors';
 import {
-  Home,
-  History as HistoryIcon,
-  User,
-  Sparkles,
-  MessageCircle,
-  Plus,
-  LogOut,
-  Trash2,
-  Zap,
-  Layout,
-  Cpu,
-  GalleryHorizontal,
-  Users,
+  Home, History as HistoryIcon, User, Sparkles, MessageCircle,
+  Plus, LogOut, Trash2, Users,
 } from 'lucide-react-native';
 import { useAuthStore } from '../../store/authStore';
 import { AiService } from '../../api/ai.service';
 import { GenericModal } from '../../components/ui/GenericModal';
 import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from 'expo-blur';
 import { useRouter } from 'expo-router';
-import { NeonButton } from '../../components/ui/NeonButton';
 import { useChatStore } from '../../store/chatStore';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -34,6 +24,13 @@ import 'dayjs/locale/fr';
 
 dayjs.extend(relativeTime);
 dayjs.locale('fr');
+
+/* ─── CONSTANTS (identiques à packs + accueil) ─── */
+const NEON_BLUE  = '#00d4ff';
+const NEON_GLOW  = '#0099ff';
+const NEON_LIGHT = '#1e9bff';
+const AVATAR_SIZE = 190;
+const CARD_W = 260; // largeur approximative du drawer pour le trail
 
 interface HistoryItem {
   id: string;
@@ -45,24 +42,155 @@ interface HistoryItem {
   attributes?: any;
 }
 
-const CreditsDisplay = ({ user }: { user: any }) => {
-  // Credits display hidden in drawer
-  return null;
-};
+/* ─────────────────────────────────────────────
+   NEON BORDER AVATAR  (même logique que NeonBorderCard dans packs)
+   - Fine bordure circulaire avec un "trail" lumineux qui tourne
+───────────────────────────────────────────── */
+function AvatarNeonBorder({ children, size }: { children: React.ReactNode; size: number }) {
+  const translateX = useRef(new RNAnimated.Value(0)).current;
+  const loopRef    = useRef<RNAnimated.CompositeAnimation | null>(null);
 
+  // Circonférence ≈ π * diamètre → on anime sur cette distance
+  const TRACK_W = size * Math.PI;
+
+  useEffect(() => {
+    loopRef.current?.stop();
+    translateX.setValue(0);
+    loopRef.current = RNAnimated.loop(
+      RNAnimated.timing(translateX, {
+        toValue: -TRACK_W,
+        duration: 3000,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      }),
+      { resetBeforeIteration: true }
+    );
+    loopRef.current.start();
+    return () => { loopRef.current?.stop(); };
+  }, []);
+
+  const outer   = size + 6;   // conteneur légèrement plus grand
+  const BORDER  = 2;           // épaisseur de la bordure
+
+  return (
+    <View style={{ width: outer, height: outer, alignItems: 'center', justifyContent: 'center' }}>
+      {/* ── Couche neon qui tourne ── */}
+      <View
+        style={{
+          position: 'absolute',
+          top: 0, left: 0,
+          width: outer, height: outer,
+          borderRadius: outer / 2,
+          overflow: 'hidden',
+        }}
+        pointerEvents="none"
+      >
+        <RNAnimated.View
+          style={{
+            position: 'absolute',
+            top: 0, bottom: 0,
+            left: 0,
+            width: TRACK_W * 2,
+            transform: [{ translateX }],
+          }}
+        >
+          <LinearGradient
+            colors={[
+              'transparent',
+              NEON_BLUE,
+              NEON_LIGHT,
+              'transparent',
+              'transparent',
+              NEON_BLUE,
+              NEON_LIGHT,
+              'transparent',
+            ]}
+            locations={[0.05, 0.2, 0.3, 0.45, 0.55, 0.7, 0.8, 0.95]}
+            start={{ x: 0, y: 0.5 }}
+            end={{ x: 1, y: 0.5 }}
+            style={{ width: TRACK_W * 2, height: '100%' }}
+          />
+        </RNAnimated.View>
+        {/* masque intérieur pour créer l'anneau */}
+        <View
+          style={{
+            position: 'absolute',
+            top: BORDER,
+            left: BORDER,
+            right: BORDER,
+            bottom: BORDER,
+            borderRadius: (outer - BORDER * 2) / 2,
+            backgroundColor: '#0d0d0d',
+          }}
+        />
+      </View>
+
+      {/* ── Bloom / glow ── */}
+      <View
+        style={{
+          position: 'absolute',
+          top: -4, left: -4, right: -4, bottom: -4,
+          borderRadius: (outer + 8) / 2,
+          backgroundColor: 'transparent',
+          shadowColor: NEON_BLUE,
+          shadowOffset: { width: 0, height: 0 },
+          shadowOpacity: 0.45,
+          shadowRadius: 14,
+          elevation: 8,
+        }}
+        pointerEvents="none"
+      />
+
+      {/* ── Avatar enfant centré ── */}
+      {children}
+    </View>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   BOUTON "NOUVEAU PROJET"  (même style que ContinuerButton dans packs)
+───────────────────────────────────────────── */
+function NouveauProjetButton({ onPress }: { onPress: () => void }) {
+  const scale    = useRef(new RNAnimated.Value(1)).current;
+  const pressIn  = () => RNAnimated.spring(scale, { toValue: 0.96, useNativeDriver: true, speed: 40 }).start();
+  const pressOut = () => RNAnimated.spring(scale, { toValue: 1,    useNativeDriver: true, speed: 20 }).start();
+
+  return (
+    <RNAnimated.View style={[styles.nouveauBtnWrapper, { transform: [{ scale }] }]}>
+      <Pressable
+        onPress={onPress}
+        onPressIn={pressIn}
+        onPressOut={pressOut}
+        style={styles.nouveauBtnPressable}
+      >
+        <LinearGradient
+          colors={['#264F8C', '#0a1628', '#040612']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          locations={[0, 0.46, 1]}
+          style={styles.nouveauBtnGradient}
+        >
+          <Plus size={16} color="#ffffff" />
+          <Text style={styles.nouveauBtnText}>Nouveau Projet</Text>
+        </LinearGradient>
+      </Pressable>
+    </RNAnimated.View>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   CUSTOM DRAWER CONTENT
+───────────────────────────────────────────── */
 function CustomDrawerContent(props: any) {
   const { user, logout } = useAuthStore();
   const router = useRouter();
 
-  const [history, setHistory] = useState<any[]>([]);
-  const [allHistory, setAllHistory] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
+  const [history, setHistory]           = useState<any[]>([]);
+  const [allHistory, setAllHistory]     = useState<any[]>([]);
+  const [loading, setLoading]           = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
-  const [displayedCount, setDisplayedCount] = useState(5);
+  const [displayedCount, setDisplayedCount]   = useState(5);
   const [historyError, setHistoryError] = useState<string | null>(null);
-
-  // Delete Logic
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
 
@@ -73,27 +201,18 @@ function CustomDrawerContent(props: any) {
   };
 
   const handleDeleteItem = async () => {
-    console.log('[Drawer] handleDeleteItem triggered. itemToDelete:', itemToDelete);
     if (itemToDelete) {
       try {
-        console.log('[Drawer] Calling AiService.deleteGeneration with ID:', itemToDelete);
-        const result = await AiService.deleteGeneration(itemToDelete);
-        console.log('[Drawer] Deletion result from API:', result);
-        setAllHistory((prev) => prev.filter((i) => i.id !== itemToDelete));
-        setHistory((prev) => prev.filter((i) => i.id !== itemToDelete));
-
-        // If the deleted conversation is the currently active one in the chat screen,
-        // navigate to index with reset=true to clear it
+        await AiService.deleteGeneration(itemToDelete);
+        setAllHistory(prev => prev.filter(i => i.id !== itemToDelete));
+        setHistory(prev => prev.filter(i => i.id !== itemToDelete));
         const activeConversationId = useChatStore.getState().conversationId;
-        console.log('[Drawer] Active conversationId in store:', activeConversationId, '| Deleted:', itemToDelete);
         if (activeConversationId === itemToDelete) {
-          console.log('[Drawer] Deleted active conversation, resetting chat screen...');
           props.navigation.closeDrawer();
           router.push({ pathname: '/(drawer)', params: { reset: 'true' } });
         }
-      } catch (e) {
-        console.error('[Drawer] Failed to delete item', e);
-        alert("Erreur lors de la suppression. Veuillez réessayer.");
+      } catch {
+        alert('Erreur lors de la suppression. Veuillez réessayer.');
       } finally {
         setShowDeleteModal(false);
         setItemToDelete(null);
@@ -102,109 +221,24 @@ function CustomDrawerContent(props: any) {
   };
 
   const loadMore = () => {
-    setLoadingMore(true);
     setTimeout(() => {
-      setDisplayedCount((prev) => Math.min(prev + 15, allHistory.length));
-      setLoadingMore(false);
+      setDisplayedCount(prev => Math.min(prev + 15, allHistory.length));
     }, 300);
   };
 
-  /** ============================
-   *   FETCH HISTORY
-   * ============================ */
   const isDrawerOpen = useDrawerStatus() === 'open';
 
   useEffect(() => {
-    if (user?.type === 'ai' && isDrawerOpen) {
-      loadHistory();
-    }
+    if (user?.type === 'ai' && isDrawerOpen) loadHistory();
   }, [user, isDrawerOpen]);
-
-  const generateTitle = (item: any): string => {
-    // Priority 1: explicit title (if exists and not "Sans titre")
-    if (item.title && item.title.trim() && item.title !== 'Sans titre') {
-      return item.title;
-    }
-
-    // Priority 2: Use prompt (main source for new data)
-    let textToProcess = (item.prompt || item.result || '').trim();
-
-    // JSON Handling for unified chat
-    if (textToProcess.startsWith('[') || textToProcess.startsWith('{')) {
-      try {
-        const parsed = JSON.parse(textToProcess);
-        if (Array.isArray(parsed)) {
-          const firstUser = parsed.find((m: any) => m.role === 'user');
-          if (firstUser) textToProcess = firstUser.content;
-          else if (parsed.length > 0) textToProcess = parsed[0].content;
-        }
-      } catch (e) { /* fallback */ }
-    }
-
-    if (textToProcess && textToProcess.length > 0) {
-      // Extract meaningful phrase - respect original case and language
-      const cleaned = textToProcess.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
-      const maxLength = 50;
-      if (cleaned.length > maxLength) {
-        return cleaned.substring(0, maxLength).trim() + '...';
-      }
-      return cleaned;
-    }
-
-    // Priority 3: Fallback to attributes for old data without prompt
-    let attrs = item.attributes;
-    if (typeof attrs === 'string') {
-      try {
-        attrs = JSON.parse(attrs);
-      } catch (e) {
-        attrs = {};
-      }
-    }
-
-    // Try to construct a title from attributes
-    const funcLabel = attrs?.function?.split('(')?.[0]?.trim() || '';
-    const jobLabel = attrs?.job?.trim() || '';
-    const style = attrs?.selectedStyle?.trim() || '';
-    const userQuery = attrs?.userQuery?.trim() || '';
-
-    if (userQuery) {
-      const cleaned = userQuery.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
-      const maxLength = 50;
-      if (cleaned.length > maxLength) {
-        return cleaned.substring(0, maxLength).trim() + '...';
-      }
-      return cleaned;
-    }
-
-    if (funcLabel) {
-      if (style) {
-        return `${funcLabel} • ${style}`;
-      }
-      if (jobLabel) {
-        return `${jobLabel} • ${funcLabel}`;
-      }
-      return funcLabel;
-    }
-
-    if (jobLabel && style) {
-      return `${jobLabel} • ${style}`;
-    }
-
-    if (style) {
-      return style;
-    }
-
-    return 'Sans titre';
-  };
 
   const loadHistory = async () => {
     try {
       setLoading(true);
       setHistoryError(null);
       const data = await AiService.getGroupedConversations();
-      console.log('[DRAWER] Conversations loaded:', data?.length, 'items');
       if (data && Array.isArray(data)) {
-        const mappedData: HistoryItem[] = data.map((item: any) => ({
+        const mapped: HistoryItem[] = data.map((item: any) => ({
           id: item.id.toString(),
           type: 'chat',
           title: item.title || 'Sans titre',
@@ -213,15 +247,13 @@ function CustomDrawerContent(props: any) {
           imageUrl: item.imageUrl,
           attributes: item,
         }));
-        setAllHistory(mappedData);
-        setHistory(mappedData.slice(0, 5));
+        setAllHistory(mapped);
+        setHistory(mapped.slice(0, 5));
         setDisplayedCount(5);
-        console.log('[DRAWER] Displayed:', mappedData.slice(0, 5).length, 'conversations');
       }
     } catch (err: any) {
-      console.error('Failed to fetch drawer history', err);
-      const errorMsg = err?.response?.data?.message || err?.message || 'Impossible de charger l\'historique';
-      setHistoryError(errorMsg);
+      const msg = err?.response?.data?.message || err?.message || "Impossible de charger l'historique";
+      setHistoryError(msg);
       setAllHistory([]);
       setHistory([]);
     } finally {
@@ -229,83 +261,62 @@ function CustomDrawerContent(props: any) {
     }
   };
 
-  // Update displayed history when displayedCount changes
   useEffect(() => {
-    if (allHistory.length > 0) {
-      setHistory(allHistory.slice(0, displayedCount));
-    }
+    if (allHistory.length > 0) setHistory(allHistory.slice(0, displayedCount));
   }, [displayedCount, allHistory]);
 
-  /** ============================
-   *   USER SAFE DATA
-   * ============================ */
-
-
-  const userName = user?.name || 'Utilisateur';
-
+  const userName   = user?.name || 'Utilisateur';
   const userAvatar = (user?.logoUrl || user?.avatarUrl)
     ? `https://hipster-api.fr${user.logoUrl || user.avatarUrl}`
     : `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=random`;
 
-  console.log(userAvatar);
-
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background.primary }}>
-      <DrawerContentScrollView {...props} contentContainerStyle={{ paddingTop: 0, backgroundColor: colors.background.primary }}>
-        {/* ============================
-            HEADER
-        ============================ */}
+    <View style={{ flex: 1, backgroundColor: '#0d0d0d' }}>
+      <DrawerContentScrollView
+        {...props}
+        contentContainerStyle={{ paddingTop: 0, backgroundColor: '#0d0d0d' }}
+      >
+        {/* ── HEADER ── */}
         <View style={styles.headerWrapper}>
           <LinearGradient
-            colors={['rgba(59, 130, 246, 0.15)', 'transparent']}
+            colors={['rgba(0,212,255,0.08)', 'transparent']}
             style={styles.headerGradient}
           />
           <View style={styles.headerContainer}>
-            <View style={styles.avatarWrapper}>
-              <View style={styles.avatarGlow} />
+
+            {/* Avatar avec bordure neon animée */}
+            <AvatarNeonBorder size={AVATAR_SIZE}>
               <Image source={{ uri: userAvatar }} style={styles.avatar} />
               <View style={styles.statusBadge} />
-            </View>
+            </AvatarNeonBorder>
+
+            {/* Infos user */}
             <View style={styles.userInfo}>
+              {/* Nom en Brittany-Signature comme packs */}
               <Text style={styles.userName} numberOfLines={1}>{userName}</Text>
               <Text style={styles.userEmail} numberOfLines={1}>{user?.email}</Text>
             </View>
           </View>
-
-          <CreditsDisplay user={user} />
         </View>
 
         <View style={styles.separator} />
 
-        {/* ============================
-            NAVIGATION
-        ============================ */}
+        {/* ── NAVIGATION ── */}
         <View style={styles.menuContainer}>
           <DrawerItemList {...props} />
 
-          <NeonButton
-            title="Nouveau Projet"
-            icon={Plus}
-            variant="premium"
+          {/* Bouton style packs, aligné à gauche */}
+          <NouveauProjetButton
             onPress={() => {
               props.navigation.closeDrawer();
-              router.push({
-                pathname: '/(drawer)',
-                params: { reset: 'true' }
-              });
+              router.push({ pathname: '/(drawer)', params: { reset: 'true' } });
             }}
-            style={styles.newChatNeonButton}
           />
         </View>
 
         <View style={styles.separator} />
 
-        {/* ============================
-            RECENT HISTORY
-        ============================ */}
-        {/* ============================
-            RECENT HISTORY (AI ONLY)
-        ============================ */}
+        {/* ── HISTORY (AI only) ── */}
         {user?.type === 'ai' && (
           <View style={styles.historySection}>
             <View style={styles.historyHeader}>
@@ -316,77 +327,57 @@ function CustomDrawerContent(props: any) {
             </View>
 
             {loading ? (
-              <ActivityIndicator size="small" color={colors.text.muted} style={{ marginTop: 20 }} />
+              <ActivityIndicator size="small" color={NEON_BLUE} style={{ marginTop: 20 }} />
             ) : historyError ? (
-              <View style={{ marginTop: 20, padding: 12, backgroundColor: 'rgba(239, 68, 68, 0.1)', borderRadius: 8, borderLeftWidth: 3, borderLeftColor: colors.status.error }}>
-                <Text style={{ fontSize: 12, color: colors.status.error, fontWeight: '500' }}>
-                  {historyError}
-                </Text>
+              <View style={styles.historyErrorBox}>
+                <Text style={styles.historyErrorText}>{historyError}</Text>
               </View>
             ) : (
               <View style={{ marginTop: 10, width: '100%' }}>
-                {history.map((item, index) => {
-                  const attr = item.attributes || {};
-
-                  // For grouped conversations, the label is the title
-                  const label = item.title || 'Sans titre';
-
-                  // All items are now chats (conversations), so use MessageCircle icon
-                  const IconComponent = MessageCircle;
-
-                  return (
-                    <View key={item.id || index} style={styles.historyRowContainer}>
-                      <TouchableOpacity
-                        style={styles.historyItem}
-                        onPress={() =>
-                          router.push({
-                            pathname: '/(drawer)',
-                            params: { conversationId: item.id },
-                          })
-                        }>
-                        <View style={{ width: 24, alignItems: 'center' }}>
-                          <IconComponent size={16} color={colors.text.muted} />
-                        </View>
-                        <View style={{ flex: 1 }}>
-                          <Text numberOfLines={1} style={styles.historyItemText}>
-                            {label}
-                          </Text>
-                          <Text numberOfLines={1} style={styles.historyItemSubtext}>
-                            {item.preview} • {item.date}
-                          </Text>
-                        </View>
-                      </TouchableOpacity>
-
-                      <TouchableOpacity
-                        style={styles.deleteMiniButton}
-                        onPress={() => {
-                          setItemToDelete(item.id);
-                          setShowDeleteModal(true);
-                        }}>
-                        <Trash2 size={16} color={colors.text.muted} />
-                      </TouchableOpacity>
-                    </View>
-                  );
-                })}
+                {history.map((item, index) => (
+                  <View key={item.id || index} style={styles.historyRowContainer}>
+                    <TouchableOpacity
+                      style={styles.historyItem}
+                      onPress={() =>
+                        router.push({
+                          pathname: '/(drawer)',
+                          params: { conversationId: item.id },
+                        })
+                      }
+                    >
+                      <View style={{ width: 24, alignItems: 'center' }}>
+                        <MessageCircle size={16} color={colors.text.muted} />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text numberOfLines={1} style={styles.historyItemText}>{item.title || 'Sans titre'}</Text>
+                        <Text numberOfLines={1} style={styles.historyItemSubtext}>{item.preview} • {item.date}</Text>
+                      </View>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.deleteMiniButton}
+                      onPress={() => { setItemToDelete(item.id); setShowDeleteModal(true); }}
+                    >
+                      <Trash2 size={16} color={colors.text.muted} />
+                    </TouchableOpacity>
+                  </View>
+                ))}
 
                 {displayedCount < allHistory.length && (
-                  <TouchableOpacity
-                    style={styles.loadMoreButton}
-                    onPress={loadMore}>
-                    <Text style={styles.loadMoreText}>
-                      Voir plus
-                    </Text>
+                  <TouchableOpacity style={styles.loadMoreButton} onPress={loadMore}>
+                    <Text style={styles.loadMoreText}>Voir plus</Text>
                   </TouchableOpacity>
                 )}
 
-                {!history.length && <Text style={styles.emptyHistory}>Aucun historique récent</Text>}
+                {!history.length && (
+                  <Text style={styles.emptyHistory}>Aucun historique récent</Text>
+                )}
               </View>
             )}
           </View>
         )}
 
-        {/* Footer Logout */}
-        <View style={{ padding: 20, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)' }}>
+        {/* ── LOGOUT ── */}
+        <View style={styles.logoutWrapper}>
           <TouchableOpacity style={styles.logoutButton} onPress={() => setShowLogoutModal(true)}>
             <LogOut size={20} color={colors.status.error} />
             <Text style={styles.logoutText}>Se déconnecter</Text>
@@ -404,7 +395,6 @@ function CustomDrawerContent(props: any) {
         onClose={() => setShowLogoutModal(false)}
         onConfirm={handleLogout}
       />
-
       <GenericModal
         visible={showDeleteModal}
         type="warning"
@@ -419,55 +409,41 @@ function CustomDrawerContent(props: any) {
   );
 }
 
+/* ─────────────────────────────────────────────
+   DRAWER LAYOUT
+───────────────────────────────────────────── */
 import { usePathname } from 'expo-router';
 
 export default function DrawerLayout() {
   const { user } = useAuthStore();
-  const router = useRouter();
+  const router   = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
     if (!user) return;
-
-    // Subscription Guard
-    const planType = user.planType || 'curieux';
+    const planType  = user.planType || 'curieux';
     const subStatus = user.subscriptionStatus;
-    const stripeId = user.stripeCustomerId;
+    const stripeId  = user.stripeCustomerId;
     const isSubscriptionActive = subStatus === 'active' || subStatus === 'trialing' || subStatus === 'trial';
-    const isPackCurieux = planType === 'curieux';
-
-    const now = new Date();
+    const isPackCurieux        = planType === 'curieux';
+    const now     = new Date();
     const endDate = user.subscriptionEndDate ? new Date(user.subscriptionEndDate) : null;
-    const isExpired = endDate && now > endDate;
-
-    const isTrialButNoCard = isPackCurieux && !stripeId;
-
-    // Credit limits for ALL plans (block index only)
+    const isExpired          = endDate && now > endDate;
+    const isTrialButNoCard   = isPackCurieux && !stripeId;
     const promptsLimit = user.promptsLimit || 0;
-    const imagesLimit = user.imagesLimit || 0;
-    const videosLimit = user.videosLimit || 0;
-    const audioLimit = user.audioLimit || 0;
-    const threeDLimit = user.threeDLimit || 0;
-
-    // Check if limits are defined (not 999999) and exceeded
-    const isTextExhausted = promptsLimit > 0 && promptsLimit !== 999999 && (user.promptsUsed || 0) >= promptsLimit;
-    const isImagesExhausted = imagesLimit > 0 && imagesLimit !== 999999 && (user.imagesUsed || 0) >= imagesLimit;
-    const isVideosExhausted = videosLimit > 0 && videosLimit !== 999999 && (user.videosUsed || 0) >= videosLimit;
-    const isAudioExhausted = audioLimit > 0 && audioLimit !== 999999 && (user.audioUsed || 0) >= audioLimit;
-    const isThreeDExhausted = threeDLimit > 0 && threeDLimit !== 999999 && (user.threeDUsed || 0) >= threeDLimit;
-
-    // A user is fully exhausted if they reached the limit for ALL their available credit types
-    const isFullyExhausted = isTextExhausted && isImagesExhausted && isVideosExhausted && isAudioExhausted && isThreeDExhausted;
-
-    // Critical block (expired trial or inactive sub) -> Global
+    const imagesLimit  = user.imagesLimit  || 0;
+    const videosLimit  = user.videosLimit  || 0;
+    const audioLimit   = user.audioLimit   || 0;
+    const threeDLimit  = user.threeDLimit  || 0;
+    const isTextExhausted   = promptsLimit > 0 && promptsLimit !== 999999 && (user.promptsUsed || 0) >= promptsLimit;
+    const isImagesExhausted = imagesLimit  > 0 && imagesLimit  !== 999999 && (user.imagesUsed  || 0) >= imagesLimit;
+    const isVideosExhausted = videosLimit  > 0 && videosLimit  !== 999999 && (user.videosUsed  || 0) >= videosLimit;
+    const isAudioExhausted  = audioLimit   > 0 && audioLimit   !== 999999 && (user.audioUsed   || 0) >= audioLimit;
+    const isThreeDExhausted = threeDLimit  > 0 && threeDLimit  !== 999999 && (user.threeDUsed  || 0) >= threeDLimit;
+    const isFullyExhausted  = isTextExhausted && isImagesExhausted && isVideosExhausted && isAudioExhausted && isThreeDExhausted;
     const isCriticalInvalid = !isSubscriptionActive || isTrialButNoCard || (isPackCurieux && isExpired);
-
-    // If critical invalid OR (exhausted AND on Home) -> Redirect
-    const shouldBlockHome = isFullyExhausted && (pathname === '/' || pathname === '/(drawer)/' || pathname === '/(drawer)');
-    const isGlobalBlock = isCriticalInvalid;
-
-    if ((isGlobalBlock || shouldBlockHome) && pathname !== '/subscription' && pathname !== '/(drawer)/subscription') {
-      console.log('[DrawerLayout] Blocking access - redirecting to /subscription. Reason: ', { isGlobalBlock, shouldBlockHome });
+    const shouldBlockHome   = isFullyExhausted && (pathname === '/' || pathname === '/(drawer)/' || pathname === '/(drawer)');
+    if ((isCriticalInvalid || shouldBlockHome) && pathname !== '/subscription' && pathname !== '/(drawer)/subscription') {
       router.replace('/subscription');
     }
   }, [user, pathname]);
@@ -481,75 +457,49 @@ export default function DrawerLayout() {
         drawerStyle: {
           backgroundColor: '#0d0d0d',
           borderRightWidth: 1,
-          borderRightColor: 'rgba(255,255,255,0.08)',
+          borderRightColor: 'rgba(255,255,255,0.06)',
           width: '80%',
         },
-        drawerActiveBackgroundColor: 'rgba(255,255,255,0.08)',
-        drawerActiveTintColor: colors.primary.main,
-        drawerInactiveTintColor: colors.text.secondary,
+        drawerActiveBackgroundColor: 'rgba(0,212,255,0.08)',
+        drawerActiveTintColor: NEON_BLUE,
+        drawerInactiveTintColor: 'rgba(255,255,255,0.55)',
         drawerLabelStyle: {
-          marginLeft: 15,
+          marginLeft: 8,
           fontSize: 15,
           fontWeight: '600',
+          fontFamily: 'Arimo-Bold',
+          letterSpacing: 0.3,
         },
-      }}>
-      <Drawer.Screen
-        name="index"
-        options={{
-          drawerLabel: 'Accueil',
-          drawerIcon: ({ color }) => <Home size={22} color={color} />,
-        }}
-      />
-
-      <Drawer.Screen
-        name="profile"
-        options={{
-          drawerLabel: 'Mon Profil',
-
-          drawerIcon: ({ color }) => <User size={22} color={color} />,
-        }}
-      />
-
-      <Drawer.Screen
-        name="history"
-        options={{
-          drawerLabel: 'Historique',
-          drawerIcon: ({ color }) => <HistoryIcon size={22} color={color} />,
-        }}
-      />
-
-      <Drawer.Screen
-        name="subscription"
-        options={{
-          drawerLabel: 'Abonnement',
-          drawerIcon: ({ color }) => <Sparkles size={22} color={color} />,
-        }}
-      />
-
-      <Drawer.Screen
-        name="referral"
-        options={{
-          drawerLabel: 'Parrainage',
-          drawerIcon: ({ color }) => <Users size={22} color={color} />,
-        }}
-      />
-
+        drawerItemStyle: {
+          borderRadius: 12,
+          marginHorizontal: 10,
+          marginVertical: 2,
+        },
+      }}
+    >
+      <Drawer.Screen name="index"        options={{ drawerLabel: 'Accueil',    drawerIcon: ({ color }) => <Home         size={20} color={color} /> }} />
+      <Drawer.Screen name="profile"      options={{ drawerLabel: 'Mon Profil', drawerIcon: ({ color }) => <User         size={20} color={color} /> }} />
+      <Drawer.Screen name="history"      options={{ drawerLabel: 'Historique', drawerIcon: ({ color }) => <HistoryIcon  size={20} color={color} /> }} />
+      <Drawer.Screen name="subscription" options={{ drawerLabel: 'Abonnement', drawerIcon: ({ color }) => <Sparkles     size={20} color={color} /> }} />
+      <Drawer.Screen name="referral"     options={{ drawerLabel: 'Parrainage', drawerIcon: ({ color }) => <Users        size={20} color={color} /> }} />
     </Drawer>
   );
 }
 
+/* ─────────────────────────────────────────────
+   STYLES
+───────────────────────────────────────────── */
 const styles = StyleSheet.create({
-  /* ----- HEADER ----- */
+
+  /* ── HEADER ── */
   headerWrapper: {
     paddingBottom: 10,
     overflow: 'hidden',
   },
   headerGradient: {
     position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 300,
+    top: 0, left: 0, right: 0,
+    height: 320,
   },
   headerContainer: {
     paddingHorizontal: 20,
@@ -557,114 +507,52 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
     alignItems: 'center',
   },
-  avatarWrapper: {
-    position: 'relative',
-    padding: 3,
-  },
-  avatarGlow: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    borderRadius: 170,
-    backgroundColor: colors.primary.main,
-    opacity: 0.2,
-    transform: [{ scale: 1.1 }],
-  },
+
+  /* ── AVATAR ── */
   avatar: {
-    width: 190,
-    height: 190,
-    borderRadius: 145,
-    borderWidth: 2,
-    borderColor: colors.primary.main,
+    width: AVATAR_SIZE,
+    height: AVATAR_SIZE,
+    borderRadius: AVATAR_SIZE / 2,
     backgroundColor: colors.background.tertiary,
   },
   statusBadge: {
     position: 'absolute',
-    bottom: 10,
-    right: 15,
+    bottom: 8,
+    right: 8,
     width: 16,
     height: 16,
     borderRadius: 8,
     backgroundColor: colors.status.success,
     borderWidth: 3,
-    borderColor: colors.background.primary,
+    borderColor: '#0d0d0d',
+    zIndex: 2,
   },
+
+  /* ── USER INFO ── */
   userInfo: {
     alignItems: 'center',
-    marginTop: 12,
+    marginTop: 14,
   },
   userName: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: colors.text.primary,
-    letterSpacing: -0.5,
+    // Brittany-Signature comme dans packs + glow neon comme accueil
+    fontFamily: 'Brittany-Signature',
+    fontSize: 28,
+    color: '#ffffff',
+    textShadowColor: '#00d4ff',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 12,
+    lineHeight: 38,
+    marginBottom : 10,
+    includeFontPadding: false,
   },
   userEmail: {
-    fontSize: 13,
+    fontSize: 12,
+    fontFamily: 'Arimo-Regular',
     color: colors.text.muted,
     marginTop: 2,
   },
 
-  /* ----- CREDITS ----- */
-  creditsContainer: {
-    paddingHorizontal: 15,
-    marginBottom: 10,
-  },
-  creditsBlur: {
-    borderRadius: 20,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(59, 130, 246, 0.2)',
-  },
-  creditsGradient: {
-    flexDirection: 'row',
-    padding: 12,
-    alignItems: 'center',
-    justifyContent: 'space-around',
-  },
-  creditItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  creditIconBadge: {
-    width: 32,
-    height: 32,
-    borderRadius: 10,
-    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  creditValue: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: colors.text.primary,
-  },
-  creditLabel: {
-    fontSize: 10,
-    color: colors.text.muted,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    marginTop: -2,
-  },
-  creditDivider: {
-    width: 1,
-    height: 30,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-  },
-
-  /* ----- MENU ----- */
-  menuContainer: {
-    paddingVertical: 10,
-    gap: 5,
-  },
-  newChatNeonButton: {
-    marginHorizontal: 15,
-    marginTop: 10,
-  },
-
+  /* ── SEPARATOR ── */
   separator: {
     height: 1,
     backgroundColor: 'rgba(255,255,255,0.06)',
@@ -672,7 +560,43 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
   },
 
-  /* ----- HISTORY ----- */
+  /* ── MENU ── */
+  menuContainer: {
+    paddingVertical: 8,
+  },
+
+  /* ── BOUTON NOUVEAU PROJET (style packs, aligné gauche) ── */
+  nouveauBtnWrapper: {
+    // aligné à gauche avec le même indent que les items de menu
+    marginHorizontal: 14,
+    marginTop: 12,
+    alignSelf: 'stretch',
+  },
+  nouveauBtnPressable: {
+    borderRadius: 10,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.42)',
+  },
+  nouveauBtnGradient: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+      paddingVertical: 12,
+      paddingHorizontal: 18,
+      minHeight: 44,
+  },
+  nouveauBtnText: {
+    fontFamily: 'Arimo-Bold',
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign : 'center',
+    letterSpacing: 0.4,
+    color: '#ffffff',
+  },
+
+  /* ── HISTORY ── */
   historySection: {
     paddingHorizontal: 20,
     paddingVertical: 10,
@@ -690,30 +614,43 @@ const styles = StyleSheet.create({
     letterSpacing: 1.5,
     fontSize: 11,
     textTransform: 'uppercase',
+    fontFamily : 'Arimo-regular'
   },
   historySeeAll: {
-    color: colors.primary.main,
+    color: '#ffffff',
     fontWeight: '700',
     fontSize: 12,
+    textShadowColor: '#00d4ff',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 6,
+  },
+  historyErrorBox: {
+    marginTop: 20,
+    padding: 12,
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    borderRadius: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: colors.status.error,
+  },
+  historyErrorText: {
+    fontSize: 12,
+    color: colors.status.error,
+    fontWeight: '500',
   },
   historyRowContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.02)',
-    paddingRight: 5,
-  },
-  deleteMiniButton: {
-    padding: 10,
-    opacity: 0.5,
+    marginBottom: 6,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.02)',
+    paddingRight: 4,
   },
   historyItem: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    padding: 12,
+    gap: 10,
+    padding: 10,
   },
   historyItemText: {
     color: colors.text.primary,
@@ -726,18 +663,22 @@ const styles = StyleSheet.create({
     fontSize: 11,
     marginTop: 2,
   },
+  deleteMiniButton: {
+    padding: 10,
+    opacity: 0.45,
+  },
   emptyHistory: {
     marginTop: 20,
     color: colors.text.muted,
     fontSize: 13,
     textAlign: 'center',
-    fontStyle: 'italic',
+    fontFamily : 'Arimo-Regular'
   },
   loadMoreButton: {
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 12,
-    marginTop: 10,
+    marginTop: 8,
   },
   loadMoreText: {
     color: colors.text.muted,
@@ -746,20 +687,28 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 1,
   },
+
+  /* ── LOGOUT ── */
+  logoutWrapper: {
+    padding: 20,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.05)',
+  },
   logoutButton: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    paddingVertical: 15,
+    paddingVertical: 14,
     justifyContent: 'center',
     backgroundColor: 'rgba(239, 68, 68, 0.05)',
-    borderRadius: 16,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.1)',
+    borderColor: 'rgba(239, 68, 68, 0.12)',
   },
   logoutText: {
-    color: colors.rose[400],
+    color: colors.rose?.[400] ?? '#f87171',
     fontSize: 15,
     fontWeight: '700',
+    fontFamily : 'Arimo-Regular'
   },
 });
