@@ -169,7 +169,7 @@ export default function RootLayout() {
 
     // DEBUG: Only log if there's a potential redirection or routing in progress
     if (targetRoute || isRouting) {
-      console.log(`[RootLayout] Redirection: auth=${isAuthenticated}, path=${pathname}, target=${targetRoute}, normPath=${normalizedPathname}, normTarget=${normalizedTarget}, isRouting=${isRouting}`);
+      console.log(`[RootLayout] Redirection: auth=${isAuthenticated}, path=${pathname}, target=${targetRoute}, isRouting=${isRouting}`);
     }
 
     if (targetRoute && normalizedTarget !== normalizedPathname) {
@@ -191,8 +191,21 @@ export default function RootLayout() {
   }, [isAuthenticated, hasFinishedOnboarding, isHydrated, isInitialized, segments, pathname, videoFinished]);
 
   const handleVideoFinish = React.useCallback(() => {
+    console.log('[RootLayout] handleVideoFinish called. Setting videoFinished=true');
     setVideoFinished(true);
   }, []);
+
+  // Safety fallback: If we are stuck in isRouting for too long, force it to false
+  useEffect(() => {
+    if (isRouting) {
+      const timer = setTimeout(() => {
+        console.warn('[RootLayout] Safety timeout triggered: clearing isRouting hang');
+        setIsRouting(false);
+        routingRef.current = false;
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [isRouting]);
 
   if (!fontsLoaded && !fontError) {
     return null;

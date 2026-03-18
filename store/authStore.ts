@@ -73,6 +73,7 @@ interface User {
   isAmbassador?: boolean;
   freeMonthsPending?: number;
   isFirstTime?: boolean; // Track if this is user's first time using the app
+  isStripeVerified?: boolean; 
 }
 
 interface AuthState {

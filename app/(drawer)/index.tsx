@@ -9,6 +9,7 @@ import {
   Platform,
   ActivityIndicator,
   Image,
+  StyleSheet,
 } from 'react-native';
 import { Audio } from 'expo-av';
 import * as MediaLibrary from 'expo-media-library';
@@ -166,6 +167,7 @@ export default function HomeScreen() {
 
   const [isPaymentLoading, setIsPaymentLoading] = useState(false);
   const { initPaymentSheet, presentPaymentSheet } = useStripe();
+  const [hasAutoOpenedStripe, setHasAutoOpenedStripe] = useState(false);
 
   // Audio Recording
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
@@ -326,7 +328,7 @@ export default function HomeScreen() {
   // Fully exhausted if ALL non-infinite limits are reached
   const isFullyExhausted = isTextExhausted && isImagesExhausted && isVideosExhausted && isAudioExhausted && isThreeDExhausted;
 
-  const isTrialButNoCard = isPackCurieux && !stripeId;
+  const isTrialButNoCard = isPackCurieux && !user?.isStripeVerified;
   const isAnyMessageTyping = messages.some(m => m.isTyping);
   const isPaidPlanButInactive = !isSubscriptionActive || isTrialButNoCard || (isPackCurieux && isExpired) || isFullyExhausted;
 
@@ -427,16 +429,21 @@ export default function HomeScreen() {
 
       // Success
       await api.post('/ai/payment/confirm-plan', {
-        planId: planType,
-        subscriptionId: subscriptionId
+        planId: currentPlanObject?.id,
+        paymentIntentId: data.paymentIntent?.id,
       });
 
-      // Update local store
+      setIsPaymentLoading(false);
+
+      // Update local store with verified flag
       await useAuthStore.getState().updateAiProfile({
+        isStripeVerified: true,
         subscriptionStatus: (planType === 'curieux' ? 'trial' : 'active') as any,
         stripeCustomerId: customerId,
         stripeSubscriptionId: subscriptionId
       });
+
+      await useAuthStore.getState().aiRefreshUser();
 
       showModal('success', 'Félicitations !', 'Votre abonnement est maintenant actif.');
     } catch (e: any) {
@@ -446,6 +453,21 @@ export default function HomeScreen() {
       setIsPaymentLoading(false);
     }
   };
+
+  // Auto-open Stripe for Pack Curieux without banking info "en première fois"
+  useEffect(() => {
+    const isPackCurieux = user?.planType === 'curieux';
+    const hasNoStripe = !user?.stripeCustomerId; // AuthStore shows it uses stripeCustomerId
+
+    if (isHydrated && isPackCurieux && hasNoStripe && !hasAutoOpenedStripe && !isPaymentLoading && !isLoadingConversation) {
+      console.log('[HomeScreen] Auto-triggering Stripe Payment Sheet for Pack Curieux...');
+      setHasAutoOpenedStripe(true);
+      const timer = setTimeout(() => {
+        handleStripePayment();
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [isHydrated, user?.planType, user?.stripeCustomerId, hasAutoOpenedStripe, isPaymentLoading, isLoadingConversation]);
 
   useEffect(() => {
     const checkConnection = async () => {
@@ -852,7 +874,7 @@ export default function HomeScreen() {
             className="flex-row items-center justify-between px-5 pb-2"
             style={{ paddingTop: insets.top + 10 }}
           >
-            {isHydrated && (
+            {isHydrated && !isPaidPlanButInactive && (
               <View
                 className="flex-row items-center justify-between px-5 pb-2"
                 style={{ paddingTop: insets.top + 10 }}
@@ -1039,11 +1061,7 @@ export default function HomeScreen() {
             )}
 
             {isPaidPlanButInactive ? (
-              <PaymentBlocker
-                plan={currentPlanObject} // Pass full plan object
-                onPay={handleStripePayment}
-                loading={isPaymentLoading}
-              />
+              <View className="h-20" /> // Placeholder to keep layout stable
             ) : (
               <ChatInput
                 inputValue={inputValue}
@@ -1060,6 +1078,55 @@ export default function HomeScreen() {
             )}
           </View>
         </KeyboardAvoidingView>
+        
+        {/* Freezing Overlay when payment is required */}
+        {isPaidPlanButInactive && (
+          <View 
+            style={[StyleSheet.absoluteFill, { zIndex: 999 }]} 
+            pointerEvents="box-none"
+          >
+            {/* Dark semi-transparent background */}
+            <View 
+              style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.65)' }]} 
+              pointerEvents="auto"
+            />
+
+            {/* Accessible Drawer Button on top of overlay */}
+            <View 
+              style={{ 
+                position: 'absolute', 
+                top: insets.top + 10, 
+                left: 20,
+                zIndex: 1001 
+              }}
+            >
+              <TouchableOpacity
+                className="rounded-lg bg-white/10 p-2"
+                onPress={() => navigation.openDrawer()}>
+                <Menu size={24} color={colors.text.primary} />
+              </TouchableOpacity>
+            </View>
+            
+            {/* Blocker on top at the bottom */}
+            <View 
+              style={{ 
+                position: 'absolute', 
+                bottom: 0, 
+                left: 0, 
+                right: 0, 
+                paddingHorizontal: 20,
+                paddingBottom: (Platform.OS === 'ios' ? insets.bottom : 0) + 20
+              }}
+              pointerEvents="box-none"
+            >
+              <PaymentBlocker
+                plan={currentPlanObject} 
+                onPay={handleStripePayment}
+                loading={isPaymentLoading}
+              />
+            </View>
+          </View>
+        )}
       </View>
       <GenericModal
         visible={modalVisible}

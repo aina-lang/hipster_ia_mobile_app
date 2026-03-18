@@ -317,11 +317,11 @@ export default function DrawerLayout() {
       exhausted(user.audioUsed   || 0, user.audioLimit   || 0) &&
       exhausted(user.threeDUsed  || 0, user.threeDLimit  || 0);
 
-    const isCritical     = !isActive || (planType === 'curieux' && (!user.stripeCustomerId || isExpired));
+    const isCritical     = !isActive || (planType === 'curieux' && isExpired);
     const isBlockedHome  = isFullyExhausted && (pathname === '/' || pathname === '/(drawer)/' || pathname === '/(drawer)');
     const onSubPage      = pathname === '/subscription' || pathname === '/(drawer)/subscription';
 
-    if ((isCritical || isBlockedHome) && !onSubPage) router.replace('/subscription');
+    if ((isCritical || isBlockedHome) && !onSubPage && planType !== 'curieux') router.replace('/subscription');
   }, [user, pathname]);
 
   return (

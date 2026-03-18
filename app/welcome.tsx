@@ -295,6 +295,7 @@ const BottomAuthSection = React.memo(({ isAuthenticated, onVideoFinish, setIsRou
 
 export default React.memo(function WelcomeScreen({ onVideoFinish, setIsRouting }: WelcomeScreenProps) {
   const [videoReady, setVideoReady] = React.useState(false);
+  const [hasFinishedAnimations, setHasFinishedAnimations] = React.useState(false);
   const textAnimProgress = useSharedValue(0);
   const videoMarginTop = useSharedValue(0);
   const { isAuthenticated, user, isHydrated } = useAuthStore();
@@ -334,7 +335,7 @@ export default React.memo(function WelcomeScreen({ onVideoFinish, setIsRouting }
       });
 
       setTimeout(() => {
-        if (isHydrated && isAuthenticated) onVideoFinish?.();
+        setHasFinishedAnimations(true);
       }, 2000);
     };
 
@@ -372,6 +373,14 @@ export default React.memo(function WelcomeScreen({ onVideoFinish, setIsRouting }
       if (playbackTimerRef.current) clearTimeout(playbackTimerRef.current);
     };
   }, [videoPlayer, onVideoFinish, isHydrated, isAuthenticated]);
+
+  // Handle automatic redirection when BOTH animations are finished AND user is authenticated
+  useEffect(() => {
+    if (hasFinishedAnimations && isHydrated && isAuthenticated) {
+      console.log('[Welcome] Redirection triggered: Anim finished & Auth ready');
+      onVideoFinish?.();
+    }
+  }, [hasFinishedAnimations, isHydrated, isAuthenticated, onVideoFinish]);
 
   const videoAnimatedStyle = useAnimatedStyle(() => ({
     marginTop: videoMarginTop.value,
