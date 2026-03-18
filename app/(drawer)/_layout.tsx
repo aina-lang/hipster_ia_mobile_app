@@ -179,8 +179,8 @@ function CustomDrawerContent(props: any) {
     : `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=random`;
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background.primary }}>
-      <DrawerContentScrollView {...props} contentContainerStyle={{ paddingTop: 0, backgroundColor: colors.background.primary }}>
+    <View style={{ flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.9)' }}>
+      <DrawerContentScrollView {...props} contentContainerStyle={{ paddingTop: 0, backgroundColor: 'rgba(15, 23, 42, 0.9)' }}>
 
         <View style={s.headerWrapper}>
           <LinearGradient colors={[colors.primary.main + '14', 'transparent']} style={s.headerGradient} />
@@ -351,11 +351,71 @@ export default function DrawerLayout() {
         },
       }}
     >
-      <Drawer.Screen name="index"        options={{ drawerLabel: 'Accueil',    drawerIcon: ({ color }) => <Home        size={20} color={color} /> }} />
-      <Drawer.Screen name="profile"      options={{ drawerLabel: 'Mon Profil', drawerIcon: ({ color }) => <User        size={20} color={color} /> }} />
-      <Drawer.Screen name="history"      options={{ drawerLabel: 'Historique', drawerIcon: ({ color }) => <HistoryIcon size={20} color={color} /> }} />
-      <Drawer.Screen name="subscription" options={{ drawerLabel: 'Abonnement', drawerIcon: ({ color }) => <Sparkles    size={20} color={color} /> }} />
-      <Drawer.Screen name="referral"     options={{ drawerLabel: 'Parrainage', drawerIcon: ({ color }) => <Users       size={20} color={color} /> }} />
+     <Drawer.Screen
+  name="index"
+  options={{
+    drawerIcon: ({ color, focused }) => (
+      <Home size={20} color={focused ? '#ffffff' : color} style={focused ? { shadowColor: '#00eaff', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 8, elevation: 4 } : undefined} />
+    ),
+    drawerLabel: ({ focused, color }) => (
+      <Text style={{ fontFamily: 'Arimo-Bold', fontSize: 15, letterSpacing: 0.3, color: focused ? '#ffffff' : color, textShadowColor: focused ? '#00eaff' : 'transparent', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: focused ? 8 : 0 }}>
+        Accueil
+      </Text>
+    ),
+  }}
+/>
+<Drawer.Screen
+  name="profile"
+  options={{
+    drawerIcon: ({ color, focused }) => (
+      <User size={20} color={focused ? '#ffffff' : color} style={focused ? { shadowColor: '#00eaff', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 8, elevation: 4 } : undefined} />
+    ),
+    drawerLabel: ({ focused, color }) => (
+      <Text style={{ fontFamily: 'Arimo-Bold', fontSize: 15, letterSpacing: 0.3, color: focused ? '#ffffff' : color, textShadowColor: focused ? '#00eaff' : 'transparent', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: focused ? 8 : 0 }}>
+        Mon Profil
+      </Text>
+    ),
+  }}
+/>
+<Drawer.Screen
+  name="history"
+  options={{
+    drawerIcon: ({ color, focused }) => (
+      <HistoryIcon size={20} color={focused ? '#ffffff' : color} style={focused ? { shadowColor: '#00eaff', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 8, elevation: 4 } : undefined} />
+    ),
+    drawerLabel: ({ focused, color }) => (
+      <Text style={{ fontFamily: 'Arimo-Bold', fontSize: 15, letterSpacing: 0.3, color: focused ? '#ffffff' : color, textShadowColor: focused ? '#00eaff' : 'transparent', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: focused ? 8 : 0 }}>
+        Historique
+      </Text>
+    ),
+  }}
+/>
+<Drawer.Screen
+  name="subscription"
+  options={{
+    drawerIcon: ({ color, focused }) => (
+      <Sparkles size={20} color={focused ? '#ffffff' : color} style={focused ? { shadowColor: '#00eaff', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 8, elevation: 4 } : undefined} />
+    ),
+    drawerLabel: ({ focused, color }) => (
+      <Text style={{ fontFamily: 'Arimo-Bold', fontSize: 15, letterSpacing: 0.3, color: focused ? '#ffffff' : color, textShadowColor: focused ? '#00eaff' : 'transparent', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: focused ? 8 : 0 }}>
+        Abonnement
+      </Text>
+    ),
+  }}
+/>
+<Drawer.Screen
+  name="referral"
+  options={{
+    drawerIcon: ({ color, focused }) => (
+      <Users size={20} color={focused ? '#ffffff' : color} style={focused ? { shadowColor: '#00eaff', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 8, elevation: 4 } : undefined} />
+    ),
+    drawerLabel: ({ focused, color }) => (
+      <Text style={{ fontFamily: 'Arimo-Bold', fontSize: 15, letterSpacing: 0.3, color: focused ? '#ffffff' : color, textShadowColor: focused ? '#00eaff' : 'transparent', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: focused ? 8 : 0 }}>
+        Parrainage
+      </Text>
+    ),
+  }}
+/>
     </Drawer>
   );
 }

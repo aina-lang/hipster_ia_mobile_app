@@ -49,8 +49,8 @@ export function NeonActionButton({ onPress, loading, disabled, label, icon, smal
 
 const s = StyleSheet.create({
   btnWrapper: {
-    alignSelf: 'stretch',
-    width: '100%',
+    alignSelf: 'center',
+    width: '70%',
   },
   wrapperSmall: {
     width: '70%',

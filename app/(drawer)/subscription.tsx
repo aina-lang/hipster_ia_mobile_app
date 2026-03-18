@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,17 +7,8 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Platform,
-  Animated as RNAnimated,
-  Easing,
-  Pressable,
 } from 'react-native';
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-} from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import { colors } from '../../theme/colors';
 import {
   ArrowLeft,
@@ -34,7 +25,6 @@ import {
   Box,
   CheckCircle2,
   XCircle,
-  Calendar,
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useStripe } from '@stripe/stripe-react-native';
@@ -46,10 +36,8 @@ import { BackgroundGradientOnboarding } from '../../components/ui/BackgroundGrad
 import { PlanCard, Plan } from '../../components/subscription/PlanCard';
 import { ManagementCard } from '../../components/subscription/ManagementCard';
 import { NeonActionButton } from '../../components/ui/NeonActionButton';
-import { NeonBorderCard } from '../../components/ui/NeonBorderCard';
 
-const NEON_BLUE  = colors.neon.primary;
-const NEON_LIGHT = colors.primary.light;
+const NEON_BLUE = colors.neon.primary;
 
 const planIcons: Record<string, LucideIcon> = {
   curieux: Shield,
@@ -58,19 +46,6 @@ const planIcons: Record<string, LucideIcon> = {
   agence:  Crown,
 };
 
-const getFeatureIcon = (feature: string): LucideIcon => {
-  const f = feature.toLowerCase();
-  if (f.includes('image'))                                   return Image;
-  if (f.includes('texte'))                                   return FileText;
-  if (f.includes('vidéo'))                                   return Video;
-  if (f.includes('sonore') || f.includes('audio'))           return Music;
-  if (f.includes('3d') || f.includes('sketch'))              return Box;
-  if (f.includes('export'))                                  return f.includes('pas') ? XCircle : Download;
-  if (f.includes('accompagnement') || f.includes('hipster')) return Crown;
-  return CheckCircle2;
-};
-
-/* ─── Écran principal ─── */
 export default function SubscriptionScreen() {
   const router = useRouter();
   const [loading, setLoading]           = useState(false);
@@ -113,7 +88,7 @@ export default function SubscriptionScreen() {
 
       setPlans(visiblePlans);
 
-      const currentPlan    = user?.planType;
+      const currentPlan = user?.planType;
       const defaultToSelect =
         visiblePlans.find(p => p.id === currentPlan && !p.isComingSoon)?.id ||
         visiblePlans.find(p => p.id === 'atelier'   && !p.isComingSoon)?.id ||
@@ -206,15 +181,14 @@ export default function SubscriptionScreen() {
           bounces={false}
           keyboardShouldPersistTaps="handled"
         >
-
-          {/* ── HEADER (style profile.tsx) ── */}
+          {/* ── HEADER ── */}
           <View style={s.header}>
             <TouchableOpacity style={s.backButton} onPress={() => router.back()}>
               <ArrowLeft size={22} color={colors.text.primary} />
             </TouchableOpacity>
             <View style={s.headerCenter}>
               <View style={s.titleRow}>
-                <Text style={s.titleSub}>Plans d'abonnement</Text>
+                <Text style={s.titleLabel}>Plans d'abonnement</Text>
               </View>
             </View>
           </View>
@@ -226,7 +200,6 @@ export default function SubscriptionScreen() {
             </View>
           ) : (
             <>
-              {/* ── Carte de gestion abonnement actif ── */}
               {user?.planType && user.planType !== 'curieux' && (
                 <ManagementCard
                   subscriptionStatus={user.subscriptionStatus}
@@ -235,12 +208,10 @@ export default function SubscriptionScreen() {
                 />
               )}
 
-              {/* ── Sous-titre ── */}
               <View style={s.topSection}>
                 <Text style={s.subtitle}>Sélectionnez l'offre qui vous correspond</Text>
               </View>
 
-              {/* ── Liste des plans ── */}
               <View style={s.plansContainer}>
                 {plans.map(plan => (
                   <PlanCard
@@ -287,7 +258,7 @@ const s = StyleSheet.create({
     paddingBottom: 40,
   },
 
-  /* Header (profil style) */
+  /* Header */
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -315,14 +286,19 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    paddingVertical: 10,
   },
-  titleSub: {
+  titleLabel: {
     fontFamily: 'Arimo-Bold',
     fontSize: 16,
     textTransform: 'uppercase',
-    color: '#ffffff',
-    marginBottom: 2,
+    color: 'rgba(255,255,255,0.45)'
+  },
+  titleScript: {
+    fontFamily: 'Brittany-Signature',
+    fontSize: 28,
+    color: '#fff',
+    
+    
   },
 
   loader: {
@@ -337,70 +313,6 @@ const s = StyleSheet.create({
     fontFamily: 'Arimo-Regular',
   },
 
-  /* Management card */
-  managementCard: {
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(0,212,255,0.12)',
-    padding: 20,
-    marginBottom: 24,
-    overflow: 'hidden',
-    backgroundColor: colors.background.secondary + '99', // 60% alpha
-  },
-  managementHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  statusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 20,
-    gap: 6,
-  },
-  statusDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  statusText: {
-    fontFamily: 'Arimo-Bold',
-    fontSize: 11,
-    color: colors.text.secondary,
-    letterSpacing: 0.3,
-    textTransform: 'uppercase',
-  },
-  currentPlanTitle: {
-    fontFamily: 'Brittany-Signature',
-    fontSize: 22,
-    color: '#fff',
-    textShadowColor: NEON_BLUE,
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 8,
-    paddingLeft: 4,
-  },
-  managementRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  managementLabel: {
-    fontFamily: 'Arimo-Regular',
-    fontSize: 14,
-    color: colors.text.muted,
-    flex: 1,
-  },
-  managementValue: {
-    fontFamily: 'Arimo-Bold',
-    fontSize: 14,
-    color: '#ffffff',
-  },
-
-  /* Top section */
   topSection: {
     alignItems: 'center',
     marginBottom: 24,
@@ -417,182 +329,6 @@ const s = StyleSheet.create({
     gap: 16,
   },
 
-  /* Neon border card */
-  neonWrapper: { position: 'relative' },
-  neonClip: {
-    position: 'absolute',
-    top: -1, left: -1, right: -1, bottom: -0.5,
-    borderRadius: 21,
-    overflow: 'hidden',
-    zIndex: 2,
-  },
-  neonTrack: { position: 'absolute', top: 0, bottom: 0, left: 0 },
-  neonMask: {
-    position: 'absolute',
-    top: 1, left: 1, right: 1, bottom: 0.5,
-    borderRadius: 20,
-    zIndex: 1,
-  },
-  bloomMid: {
-    position: 'absolute', top: -4, left: -4, right: -4, bottom: -4,
-    borderRadius: 24, backgroundColor: 'transparent',
-    shadowColor: NEON_BLUE, shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.45, shadowRadius: 18, elevation: 8,
-  },
-  bloomFar: {
-    position: 'absolute', top: -8, left: -8, right: -8, bottom: -8,
-    borderRadius: 28, backgroundColor: 'transparent',
-    shadowColor: NEON_LIGHT, shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.25, shadowRadius: 28, elevation: 4,
-  },
-  floorGlow: {
-    position: 'absolute', bottom: -16, alignSelf: 'center',
-    width: '80%', height: 24, borderRadius: 50, backgroundColor: 'transparent',
-    shadowColor: NEON_BLUE, shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.6, shadowRadius: 16, elevation: 12,
-  },
-
-  /* Plan card */
-  planWrapper:   { flex: 1, position: 'relative', marginBottom: 12 },
-  touchableArea: { flex: 1 },
-  planCard: {
-    backgroundColor: colors.background.secondary + 'eb', // 92% alpha
-    borderRadius: 20,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
-    zIndex: 3,
-  },
-  planCardSelected: {
-    backgroundColor: '#030814',
-    borderWidth: 0,
-  },
-  badge: {
-    position: 'absolute', top: 0, right: 0, zIndex: 20,
-    paddingHorizontal: 15, paddingVertical: 6,
-    borderBottomLeftRadius: 15,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.25)',
-    borderTopRightRadius: 20,
-  },
-  badgeText: {
-    fontSize: 10,
-    fontWeight: '900',
-    color: '#ffffff',
-    letterSpacing: 0.5,
-  },
-  planHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-    marginBottom: 16,
-  },
-  iconBox: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  iconBoxActive: {
-    backgroundColor: 'rgba(30,155,255,0.15)',
-    borderWidth: 1,
-    borderColor: 'rgba(30,155,255,0.4)',
-  },
-  planName: {
-    fontFamily: 'Arimo-Bold',
-    fontSize: 17,
-    fontWeight: '700',
-    color: colors.text.secondary,
-  },
-  planNameSelected: {
-    color: '#ffffff',
-    fontWeight: '800',
-  },
-  planPrice: {
-    fontFamily: 'Arimo-Bold',
-    fontSize: 20,
-    fontWeight: '800',
-    color: colors.text.primary,
-  },
-  planPriceSelected: {
-    color: '#ffffff',
-    textShadowColor: NEON_BLUE,
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 8,
-  },
-  pricePeriod: {
-    fontFamily: 'Arimo-Regular',
-    fontSize: 14,
-    color: '#ffffff',
-    textShadowColor: NEON_BLUE,
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 8,
-  },
-  planDesc: {
-    fontFamily: 'Arimo-Regular',
-    fontSize: 12,
-    color: colors.text.muted,
-    marginTop: 2,
-  },
-  featuresList: {
-    gap: 8,
-    paddingLeft: 4,
-  },
-  featureRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  featureText: {
-    fontFamily: 'Arimo-Regular',
-    fontSize: 13,
-    color: colors.text.secondary,
-  },
-  featureTextSelected: {
-    color: 'rgba(255,255,255,0.85)',
-  },
-  agencyRow: {
-    marginTop: 8,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.08)',
-  },
-  agencyText: {
-    fontFamily: 'Arimo-Bold',
-    fontSize: 13,
-    fontWeight: '700',
-    color: colors.text.primary,
-  },
-
-  /* Bouton */
-  btnWrapper: {
-    alignSelf: 'center',
-    width: '70%',
-  },
-  btnPressable: {
-    borderRadius: 12,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.42)',
-  },
-  btnGradient: {
-    paddingVertical: 15,
-    paddingHorizontal: 15,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  btnText: {
-    fontFamily: 'Arimo-Bold',
-    fontSize: 14,
-    fontWeight: '600',
-    letterSpacing: 0.6,
-    color: '#fff',
-  },
-
-  /* Footer */
   footer: {
     padding: 24,
     paddingBottom: Platform.OS === 'ios' ? 40 : 24,

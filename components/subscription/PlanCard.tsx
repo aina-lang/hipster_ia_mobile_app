@@ -1,11 +1,11 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { 
   LucideIcon, 
   CheckCircle2, 
-  Image, 
+  Image as ImageIcon,
   FileText, 
   Video, 
   Music, 
@@ -19,6 +19,11 @@ import { NeonBorderCard } from '../ui/NeonBorderCard';
 
 const NEON_BLUE = '#00d4ff';
 
+const PLAN_IMAGES: Record<string, any> = {
+  atelier: require('../../assets/images/packs/atelier.png'),
+  studio:  require('../../assets/images/packs/studio.png'),
+};
+
 export interface Plan {
   id: string;
   name: string;
@@ -31,14 +36,42 @@ export interface Plan {
   isComingSoon?: boolean;
 }
 
+function PlanIcon({ planId, size = 40, isSelected, isComingSoon }: {
+  planId: string;
+  size?: number;
+  isSelected: boolean;
+  isComingSoon?: boolean;
+}) {
+  const active = isSelected && !isComingSoon;
+  const color  = active ? '#00eaff' : colors.text.muted;
+  const glow   = active ? s.planIconGlow : undefined;
+
+  if (planId === 'agence') {
+    return <Crown size={size} color={color} style={glow} />;
+  }
+
+  const source = PLAN_IMAGES[planId];
+  if (!source) return null;
+
+  return (
+    <View style={glow}>
+      <Image
+        source={source}
+        style={{ width: size, height: size, tintColor: active ? '#00eaff' : colors.text.muted }}
+        resizeMode="contain"
+      />
+    </View>
+  );
+}
+
 const getFeatureIcon = (feature: string): LucideIcon => {
   const f = feature.toLowerCase();
-  if (f.includes('image')) return Image;
-  if (f.includes('texte')) return FileText;
-  if (f.includes('vidéo')) return Video;
-  if (f.includes('sonore') || f.includes('audio')) return Music;
-  if (f.includes('3d') || f.includes('sketch')) return Box;
-  if (f.includes('export')) return f.includes('pas') ? XCircle : Download;
+  if (f.includes('image'))                                   return ImageIcon;
+  if (f.includes('texte'))                                   return FileText;
+  if (f.includes('vidéo'))                                   return Video;
+  if (f.includes('sonore') || f.includes('audio'))           return Music;
+  if (f.includes('3d') || f.includes('sketch'))              return Box;
+  if (f.includes('export'))                                  return f.includes('pas') ? XCircle : Download;
   if (f.includes('accompagnement') || f.includes('hipster')) return Crown;
   return CheckCircle2;
 };
@@ -55,10 +88,10 @@ export function PlanCard({ plan, isSelected, onSelect, loading }: PlanCardProps)
   const scale = useSharedValue(1);
   const animatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 
-  const handlePressIn = () => { if (!loading && !isComingSoon) scale.value = withSpring(0.97, { damping: 15 }); };
-  const handlePressOut = () => { if (!loading && !isComingSoon) scale.value = withSpring(1, { damping: 15 }); };
+  const handlePressIn  = () => { if (!loading && !isComingSoon) scale.value = withSpring(0.97, { damping: 15 }); };
+  const handlePressOut = () => { if (!loading && !isComingSoon) scale.value = withSpring(1,    { damping: 15 }); };
 
-  const PlanIcon = plan.icon;
+  const active = isSelected && !isComingSoon;
 
   return (
     <Animated.View style={[s.planWrapper, animatedStyle]}>
@@ -71,7 +104,7 @@ export function PlanCard({ plan, isSelected, onSelect, loading }: PlanCardProps)
         style={[s.touchableArea, isComingSoon && { opacity: 0.5 }]}
       >
         <NeonBorderCard isSelected={isSelected}>
-          <View style={[s.planCard, isSelected && !isComingSoon && s.planCardSelected]}>
+          <View style={[s.planCard, active && s.planCardSelected]}>
 
             {plan.popular && !isComingSoon && (
               <LinearGradient
@@ -91,30 +124,30 @@ export function PlanCard({ plan, isSelected, onSelect, loading }: PlanCardProps)
             )}
 
             <View style={s.planHeader}>
-              <View style={[s.iconBox, isSelected && !isComingSoon && s.iconBoxActive]}>
-                {PlanIcon && (
-                  <PlanIcon
-                    size={24}
-                    color={isSelected && !isComingSoon ? '#ffffff' : colors.text.muted}
-                  />
-                )}
+              <View style={[s.iconBox, active && s.iconBoxActive]}>
+                <PlanIcon
+                  planId={plan.id}
+                  size={40}
+                  isSelected={isSelected}
+                  isComingSoon={isComingSoon}
+                />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[
                   s.planName,
-                  isSelected && !isComingSoon && s.planNameSelected,
+                  active && s.planNameSelected,
                   isComingSoon && { color: colors.text.muted },
                 ]}>
                   {plan.name}
                 </Text>
                 <Text style={[
                   s.planPrice,
-                  isSelected && !isComingSoon && s.planPriceSelected,
+                  active && s.planPriceSelected,
                   isComingSoon && { color: colors.text.muted },
                 ]}>
                   {plan.price}
                   {typeof plan.price === 'string' && plan.price.toLowerCase().includes('€') ? (
-                    <Text style={s.pricePeriod}>/mois</Text>
+                    <Text style={[s.pricePeriod, active && s.pricePeriodSelected]}>/mois</Text>
                   ) : null}
                 </Text>
                 {plan.description && (
@@ -125,18 +158,24 @@ export function PlanCard({ plan, isSelected, onSelect, loading }: PlanCardProps)
 
             <View style={s.featuresList}>
               {plan.features.map((feature, idx) => {
-                const FeatureIcon = getFeatureIcon(feature);
+                const FeatureIcon      = getFeatureIcon(feature);
                 const isAccompagnement = feature.toLowerCase().includes('accompagnement');
                 return (
                   <View key={idx} style={[s.featureRow, isAccompagnement && s.agencyRow]}>
-                    <FeatureIcon
-                      size={14}
-                      color={isSelected && !isComingSoon ? NEON_BLUE : (isAccompagnement ? colors.text.primary : colors.text.muted)}
-                    />
+                    <View style={active ? s.featureIconGlow : undefined}>
+                      <FeatureIcon
+                        size={14}
+                        color={
+                          active
+                            ? '#ffffff'
+                            : isAccompagnement ? colors.text.primary : colors.text.muted
+                        }
+                      />
+                    </View>
                     <Text style={[
                       s.featureText,
                       isAccompagnement && s.agencyText,
-                      isSelected && !isComingSoon && s.featureTextSelected,
+                      active && s.featureTextSelected,
                     ]}>
                       {feature}
                     </Text>
@@ -144,6 +183,7 @@ export function PlanCard({ plan, isSelected, onSelect, loading }: PlanCardProps)
                 );
               })}
             </View>
+
           </View>
         </NeonBorderCard>
       </TouchableOpacity>
@@ -200,11 +240,27 @@ const s = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(30,155,255,0.4)',
   },
+  planIconGlow: {
+    shadowColor: '#ffffff',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 1,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  // Même style que planPriceSelected mais pour les icônes features
+  featureIconGlow: {
+    shadowColor: NEON_BLUE,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
   planName: {
-    fontFamily: 'Arimo-Bold',
-    fontSize: 17,
+    fontFamily: 'Brittany-Signature',
+    fontSize: 26,
     fontWeight: '700',
     color: colors.text.secondary,
+    paddingBottom: 5,
   },
   planNameSelected: {
     color: '#ffffff',
@@ -225,6 +281,9 @@ const s = StyleSheet.create({
   pricePeriod: {
     fontFamily: 'Arimo-Regular',
     fontSize: 14,
+    color: colors.text.muted,
+  },
+  pricePeriodSelected: {
     color: '#ffffff',
     textShadowColor: NEON_BLUE,
     textShadowOffset: { width: 0, height: 0 },
