@@ -1,32 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
-  View,
-  Text,
-  FlatList,
-  TouchableOpacity,
-  Image,
-  ActivityIndicator,
-  StyleSheet,
-  Platform,
+  View, Text, ScrollView, TouchableOpacity,
+  Image, ActivityIndicator, StyleSheet, RefreshControl,
 } from 'react-native';
-import { BlurView } from 'expo-blur';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import {
-  FileText,
-  Image as ImageIcon,
-  FileSpreadsheet,
-  ChevronRight,
-  Search,
-  MessageSquare,
-  ArrowLeft,
-  Trash2,
-} from 'lucide-react-native';
+import { ChevronRight, Search, MessageSquare, ArrowLeft, Trash2 } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { AiService } from '../../api/ai.service';
-import { useCallback } from 'react';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/fr';
+
+import { AiService } from '../../api/ai.service';
 import { colors } from '../../theme/colors';
 import { GenericModal } from '../../components/ui/GenericModal';
 import { BackgroundGradientOnboarding } from '../../components/ui/BackgroundGradientOnboarding';
@@ -34,305 +19,163 @@ import { BackgroundGradientOnboarding } from '../../components/ui/BackgroundGrad
 dayjs.extend(relativeTime);
 dayjs.locale('fr');
 
-type HistoryType = 'text' | 'image' | 'document' | 'chat';
+const NEON_BLUE = '#00d4ff';
 
 interface HistoryItem {
   id: string;
-  type: HistoryType;
   title: string;
   date: string;
   preview: string;
   imageUrl?: string;
 }
-
-interface ConversationGroup {
-  id: string;
-  title: string;
-  date: string;
-  count: number;
-  preview: string;
-  imageUrl?: string;
-}
-
-const FILTERS: { label: string; value: HistoryType | 'all' }[] = [
-  { label: 'Tout', value: 'all' },
-  { label: 'Textes', value: 'text' },
-  { label: 'Images', value: 'image' },
-  { label: 'Documents', value: 'document' },
-  { label: 'Chats', value: 'chat' },
-];
 
 export default function HistoryScreen() {
   const router = useRouter();
-  const [activeFilter, setActiveFilter] = useState<HistoryType | 'all'>('all');
-  const [history, setHistory] = useState<HistoryItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  // Delete states
-  const [showClearModal, setShowClearModal] = useState(false);
+  const [history, setHistory]                 = useState<HistoryItem[]>([]);
+  const [loading, setLoading]                 = useState(true);
+  const [refreshing, setRefreshing]           = useState(false);
+  const [error, setError]                     = useState<string | null>(null);
+  const [showClearModal, setShowClearModal]   = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [itemToDelete, setItemToDelete] = useState<string | null>(null);
-
-  const generateTitle = (item: any): string => {
-    if (item.title && item.title.trim() && item.title !== 'Sans titre') {
-      return item.title;
-    }
-
-    let textToProcess = (item.prompt || item.result || '').trim();
-
-    // JSON Handling for unified chat
-    if (textToProcess.startsWith('[') || textToProcess.startsWith('{')) {
-      try {
-        const parsed = JSON.parse(textToProcess);
-        if (Array.isArray(parsed)) {
-          const firstUser = parsed.find(m => m.role === 'user');
-          if (firstUser) textToProcess = firstUser.content;
-          else if (parsed.length > 0) textToProcess = parsed[0].content;
-        }
-      } catch (e) { /* fallback to raw */ }
-    }
-
-    if (textToProcess && textToProcess.length > 0) {
-      const cleaned = textToProcess.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
-      const maxLength = 50;
-      if (cleaned.length > maxLength) {
-        return cleaned.substring(0, maxLength).trim() + '...';
-      }
-      return cleaned;
-    }
-    return 'Sans titre';
-  };
-
-  const generatePreview = (item: any): string => {
-    let result = (item.result || item.prompt || '').trim();
-
-    if (typeof result === 'string' && (result.includes('ERROR') || result.includes('error'))) {
-      return '';
-    }
-
-    // JSON Handling for unified chat
-    if (result.startsWith('[') || result.startsWith('{')) {
-      try {
-        const parsed = JSON.parse(result);
-        if (Array.isArray(parsed)) {
-          // Get last assistant message
-          const lastAI = [...parsed].reverse().find(m => m.role === 'assistant');
-          if (lastAI) result = lastAI.content;
-          else if (parsed.length > 0) result = parsed[parsed.length - 1].content;
-        }
-      } catch (e) { /* fallback to raw */ }
-    }
-
-    if (result && result.length > 0) {
-      const cleaned = result.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
-      const maxLength = 120;
-      if (cleaned.length > maxLength) {
-        return cleaned.substring(0, maxLength).trim() + '...';
-      }
-      return cleaned;
-    }
-    return '';
-  };
+  const [itemToDelete, setItemToDelete]       = useState<string | null>(null);
 
   const fetchHistory = async () => {
     try {
-      setLoading(true);
       setError(null);
       const data = await AiService.getGroupedConversations();
       if (data && Array.isArray(data)) {
-        const mappedData: ConversationGroup[] = data.map((item: any) => ({
+        setHistory(data.map((item: any) => ({
           id: item.id,
           title: item.title || 'Sans titre',
           date: dayjs(item.date || item.items?.[0]?.date).fromNow(),
-          count: item.count || item.items?.length || 1,
           preview: `${item.count || item.items?.length || 1} message${(item.count || item.items?.length || 1) > 1 ? 's' : ''}`,
           imageUrl: item.imageUrl || item.items?.[0]?.imageUrl,
-        }));
-        setHistory(mappedData as any);
+        })));
       }
     } catch (err: any) {
-      const errorMsg = err?.response?.data?.message || err?.message || 'Une erreur est survenue';
-      setError(errorMsg);
+      setError(err?.response?.data?.message || err?.message || 'Une erreur est survenue');
       setHistory([]);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
-  useFocusEffect(
-    useCallback(() => {
-      fetchHistory();
-    }, [])
-  );
+  useFocusEffect(useCallback(() => { fetchHistory(); }, []));
+
+  const onRefresh = () => { setRefreshing(true); fetchHistory(); };
 
   const handleClearHistory = async () => {
     try {
       await AiService.clearHistory();
       setHistory([]);
       setShowClearModal(false);
-    } catch (error) {
-      console.error('Failed to clear history', error);
+    } catch (err) {
+      console.error('Failed to clear history', err);
     }
   };
 
   const handleDeleteItem = async () => {
-    console.log('[HistoryScreen] handleDeleteItem triggered. itemToDelete:', itemToDelete);
-    if (itemToDelete) {
-      try {
-        console.log('[HistoryScreen] Calling AiService.deleteGeneration with ID:', itemToDelete);
-        const result = await AiService.deleteGeneration(itemToDelete);
-        console.log('[HistoryScreen] Deletion result from API:', result);
-        setHistory((prev) => prev.filter((i) => i.id !== itemToDelete));
-        setItemToDelete(null);
-        setShowDeleteModal(false);
-      } catch (error) {
-        console.error('[HistoryScreen] Failed to delete item', error);
-        alert("Erreur lors de la suppression. Veuillez réessayer.");
-      }
+    if (!itemToDelete) return;
+    try {
+      await AiService.deleteGeneration(itemToDelete);
+      setHistory(prev => prev.filter(i => i.id !== itemToDelete));
+    } catch (err) {
+      console.error('Failed to delete item', err);
+    } finally {
+      setItemToDelete(null);
+      setShowDeleteModal(false);
     }
   };
 
-  const filteredData = history; // Show all conversations since they're already grouped
-
-  const getIcon = () => {
-    return <MessageSquare size={22} color="#8b5cf6" />;
-  };
-
-  const renderItem = ({ item }: { item: any }) => {
-    // console.log('[HistoryScreen] Rendering item:', item.id, item.title);
-    return (
-      <View style={styles.itemWrapper}>
-        <TouchableOpacity
-          style={styles.itemCard}
-          onPress={() => {
-            console.log('[HistoryScreen] Navigating to conversation:', item.id);
-            router.push({ pathname: '/(drawer)', params: { conversationId: item.id } });
-          }}
-          activeOpacity={0.7}
-        >
-          <BlurView intensity={20} style={StyleSheet.absoluteFill} tint="light" />
-          <View style={styles.iconContainer}>
-            {item.imageUrl ? (
-              <Image
-                source={{ uri: item.imageUrl.startsWith('http') ? item.imageUrl : `https://hipster-api.fr/${item.imageUrl}` }}
-                style={styles.thumbnail}
-                resizeMode="cover"
-              />
-            ) : (
-              getIcon()
-            )}
-          </View>
-          <View style={styles.itemContent}>
-            <View style={styles.itemHeader}>
-              <Text style={styles.itemTitle} numberOfLines={1}>{item.title}</Text>
-              <Text style={styles.itemDate}>{item.date}</Text>
-            </View>
-            <Text style={styles.itemPreview} numberOfLines={2}>
-              {item.preview || 'Conversation'}
-            </Text>
-          </View>
-          <ChevronRight size={18} color={colors.text.muted} />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.deleteButton}
-          onPress={() => {
-            console.log('[HistoryScreen] User clicked delete icon for ID:', item.id);
-            setItemToDelete(item.id);
-            setShowDeleteModal(true);
-          }}>
-          <Trash2 size={18} color={colors.status.error} />
-        </TouchableOpacity>
-      </View>
-    );
-  };
-
   return (
-    <BackgroundGradientOnboarding darkOverlay={true} blurIntensity={90} imageSource="splash">
-      <SafeAreaView style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <ArrowLeft size={22} color={colors.text.primary} />
-          </TouchableOpacity>
-          <View style={styles.headerTextContainer}>
-            <Text style={styles.title}>Historique</Text>
-            <Text style={styles.subtitle}>Retrouvez toutes vos créations</Text>
+    <BackgroundGradientOnboarding darkOverlay>
+      <SafeAreaView style={{ flex: 1 }}>
+        <ScrollView
+          contentContainerStyle={s.scrollContent}
+          showsVerticalScrollIndicator={false}
+          bounces={false}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={NEON_BLUE} />}
+        >
+          <View style={s.header}>
+            <TouchableOpacity style={s.backButton} onPress={() => router.back()}>
+              <ArrowLeft size={22} color={colors.text.primary} />
+            </TouchableOpacity>
+            <View style={s.headerCenter}>
+              <Text style={s.titleSub}>Historique</Text>
+            </View>
+            <View style={{ width: 42 }} />
           </View>
-          <View style={styles.headerRight}>
-            {history.length > 0 && (
-              <TouchableOpacity
-                style={styles.clearButton}
-                onPress={() => setShowClearModal(true)}>
-                <Trash2 size={16} color={colors.status.error} />
-                <Text style={styles.clearButtonText}>Effacer</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
 
-        {/* Filters - Disabled for grouped conversations */}
-        {/* <View style={styles.filtersWrapper}>
-          <FlatList
-            horizontal
-            data={FILTERS}
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.filtersContent}
-            keyExtractor={(item) => item.value}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                onPress={() => setActiveFilter(item.value)}
-                style={[
-                  styles.filterChip,
-                  activeFilter === item.value && styles.activeFilterChip
-                ]}>
-                {activeFilter === item.value && (
-                  <BlurView intensity={30} style={StyleSheet.absoluteFill} tint="light" />
-                )}
-                <Text
-                  style={[
-                    styles.filterText,
-                    activeFilter === item.value && styles.activeFilterText
-                  ]}>
-                  {item.label}
-                </Text>
-              </TouchableOpacity>
-            )}
-          />
-        </View> */}
+          <Text style={s.subtitle}>Retrouvez toutes vos créations</Text>
 
-        {/* List */}
-        <View style={{ flex: 1 }}>
-          <FlatList
-            data={filteredData}
-            keyExtractor={(item) => item.id}
-            renderItem={renderItem}
-            contentContainerStyle={styles.listContent}
-            showsVerticalScrollIndicator={false}
-            onRefresh={fetchHistory}
-            refreshing={loading}
-            ListEmptyComponent={
-              loading ? (
-                <View style={styles.emptyContainer}>
-                  <ActivityIndicator size="large" color="#1e9bff" />
-                </View>
-              ) : error ? (
-                <View style={styles.emptyContainer}>
-                  <Text style={styles.errorText}>{error}</Text>
-                  <TouchableOpacity style={styles.retryButton} onPress={fetchHistory}>
-                    <Text style={styles.retryText}>Réessayer</Text>
+          {history.length > 0 && (
+            <TouchableOpacity style={s.clearButton} onPress={() => setShowClearModal(true)}>
+              <Trash2 size={14} color={colors.status.error} />
+              <Text style={s.clearButtonText}>Tout effacer l'historique</Text>
+            </TouchableOpacity>
+          )}
+
+          {loading ? (
+            <View style={s.emptyContainer}>
+              <ActivityIndicator size="large" color={NEON_BLUE} />
+            </View>
+          ) : error ? (
+            <View style={s.emptyContainer}>
+              <Text style={s.errorText}>{error}</Text>
+              <TouchableOpacity style={s.retryButton} onPress={fetchHistory}>
+                <Text style={s.retryText}>Réessayer</Text>
+              </TouchableOpacity>
+            </View>
+          ) : history.length === 0 ? (
+            <View style={s.emptyContainer}>
+              <View style={s.emptyIconBox}>
+                <Search size={28} color={NEON_BLUE} />
+              </View>
+              <Text style={s.emptyText}>Aucun résultat trouvé</Text>
+            </View>
+          ) : (
+            <View style={s.list}>
+              {history.map(item => (
+                <View key={item.id} style={s.itemWrapper}>
+                  <TouchableOpacity
+                    style={s.itemCard}
+                    onPress={() => router.push({ pathname: '/(drawer)', params: { conversationId: item.id } })}
+                    activeOpacity={0.7}
+                  >
+                    <LinearGradient colors={['rgba(0,212,255,0.04)', 'transparent']} style={StyleSheet.absoluteFill} />
+                    <View style={s.iconContainer}>
+                      {item.imageUrl ? (
+                        <Image
+                          source={{ uri: item.imageUrl.startsWith('http') ? item.imageUrl : `https://hipster-api.fr/${item.imageUrl}` }}
+                          style={s.thumbnail}
+                          resizeMode="cover"
+                        />
+                      ) : (
+                        <MessageSquare size={20} color={NEON_BLUE} />
+                      )}
+                    </View>
+                    <View style={s.itemContent}>
+                      <View style={s.itemHeader}>
+                        <Text style={s.itemTitle} numberOfLines={1}>{item.title}</Text>
+                        <Text style={s.itemDate}>{item.date}</Text>
+                      </View>
+                      <Text style={s.itemPreview} numberOfLines={2}>{item.preview || 'Conversation'}</Text>
+                    </View>
+                    <ChevronRight size={16} color={colors.text.muted} />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={s.deleteButton}
+                    onPress={() => { setItemToDelete(item.id); setShowDeleteModal(true); }}
+                  >
+                    <Trash2 size={16} color={colors.status.error} />
                   </TouchableOpacity>
                 </View>
-              ) : (
-                <View style={styles.emptyContainer}>
-                  <Search size={48} color={colors.text.muted} />
-                  <Text style={styles.emptyText}>Aucun résultat trouvé</Text>
-                </View>
-              )
-            }
-          />
-        </View>
+              ))}
+            </View>
+          )}
+        </ScrollView>
 
         <GenericModal
           visible={showDeleteModal}
@@ -344,7 +187,6 @@ export default function HistoryScreen() {
           onClose={() => setShowDeleteModal(false)}
           onConfirm={handleDeleteItem}
         />
-
         <GenericModal
           visible={showClearModal}
           type="warning"
@@ -360,96 +202,67 @@ export default function HistoryScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: 'transparent',
+const s = StyleSheet.create({
+  scrollContent: {
+    paddingHorizontal: 24,
+    paddingTop: 16,
+    paddingBottom: 40,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    marginBottom: 8,
+    marginBottom: 28,
   },
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
-  headerTextContainer: {
+  headerCenter: {
     flex: 1,
     alignItems: 'center',
+    paddingVertical: 10,
   },
-  headerRight: {
-    minWidth: 40,
-    alignItems: 'flex-end',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: colors.text.primary,
-    letterSpacing: -0.5,
+  titleSub: {
+    fontFamily: 'Arimo-Bold',
+    fontSize: 16,
+    textTransform: 'uppercase',
+    color: '#ffffff',
   },
   subtitle: {
-    fontSize: 14,
-    color: colors.text.muted,
-    marginTop: 2,
+    fontFamily: 'Arimo-Regular',
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.35)',
+    letterSpacing: 0.3,
+    textAlign: 'center',
+    marginBottom: 20,
   },
   clearButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    alignSelf: 'center',
+    gap: 7,
+    backgroundColor: 'rgba(239,68,68,0.06)',
+    paddingHorizontal: 20,
+    paddingVertical: 9,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.2)',
+    borderColor: 'rgba(239,68,68,0.15)',
+    marginBottom: 20,
   },
   clearButtonText: {
-    color: '#ef4444',
+    fontFamily: 'Arimo-Bold',
+    color: colors.status.error,
     fontSize: 12,
-    fontWeight: '700',
+    letterSpacing: 0.4,
   },
-  filtersWrapper: {
-    marginBottom: 16,
-  },
-  filtersContent: {
-    paddingHorizontal: 20,
+  list: {
     gap: 10,
-    paddingBottom: 4,
-  },
-  filterChip: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.03)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
-    overflow: 'hidden',
-  },
-  activeFilterChip: {
-    backgroundColor: 'rgba(30, 155, 255, 0.15)',
-    borderColor: 'rgba(30, 155, 255, 0.4)',
-  },
-  filterText: {
-    color: colors.text.muted,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  activeFilterText: {
-    color: '#1e9bff',
-  },
-  listContent: {
-    padding: 20,
-    gap: 12,
-    paddingBottom: 40,
   },
   itemWrapper: {
     flexDirection: 'row',
@@ -463,27 +276,27 @@ const styles = StyleSheet.create({
     padding: 14,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
-    backgroundColor: 'rgba(255, 255, 255, 0.02)',
+    borderColor: 'rgba(0,212,255,0.1)',
+    backgroundColor: 'rgba(15,23,42,0.6)',
     overflow: 'hidden',
+    gap: 12,
   },
   iconContainer: {
-    width: 44,
-    height: 44,
+    width: 42,
+    height: 42,
     borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    backgroundColor: 'rgba(0,212,255,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(0,212,255,0.15)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 14,
   },
   thumbnail: {
     width: '100%',
     height: '100%',
-    borderRadius: 12,
+    borderRadius: 11,
   },
-  itemContent: {
-    flex: 1,
-  },
+  itemContent: { flex: 1 },
   itemHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -492,26 +305,29 @@ const styles = StyleSheet.create({
   },
   itemTitle: {
     flex: 1,
-    fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Arimo-Bold',
+    fontSize: 14,
     color: colors.text.primary,
     marginRight: 8,
   },
   itemDate: {
-    fontSize: 11,
+    fontFamily: 'Arimo-Regular',
+    fontSize: 10,
     color: colors.text.muted,
+    letterSpacing: 0.2,
   },
   itemPreview: {
-    fontSize: 13,
+    fontFamily: 'Arimo-Regular',
+    fontSize: 12,
     color: colors.text.muted,
-    lineHeight: 18,
+    lineHeight: 17,
   },
   deleteButton: {
-    width: 52,
-    borderRadius: 16,
-    backgroundColor: 'rgba(239, 68, 68, 0.05)',
+    width: 48,
+    borderRadius: 14,
+    backgroundColor: 'rgba(239,68,68,0.05)',
     borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.1)',
+    borderColor: 'rgba(239,68,68,0.12)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -521,12 +337,23 @@ const styles = StyleSheet.create({
     paddingTop: 60,
     gap: 16,
   },
+  emptyIconBox: {
+    width: 64,
+    height: 64,
+    borderRadius: 20,
+    backgroundColor: 'rgba(0,212,255,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(0,212,255,0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   emptyText: {
-    fontSize: 16,
+    fontFamily: 'Arimo-Regular',
+    fontSize: 15,
     color: colors.text.muted,
-    fontWeight: '500',
   },
   errorText: {
+    fontFamily: 'Arimo-Regular',
     color: colors.status.error,
     textAlign: 'center',
     paddingHorizontal: 20,
@@ -534,16 +361,14 @@ const styles = StyleSheet.create({
   retryButton: {
     paddingHorizontal: 20,
     paddingVertical: 10,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: 'rgba(0,212,255,0.08)',
     borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(0,212,255,0.15)',
   },
   retryText: {
-    color: colors.text.primary,
-    fontWeight: '600',
+    fontFamily: 'Arimo-Bold',
+    color: NEON_BLUE,
+    fontSize: 13,
   },
 });
-
-
-
-
-

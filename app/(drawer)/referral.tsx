@@ -1,71 +1,134 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TextInput,
-  TouchableOpacity,
-  ActivityIndicator,
-  RefreshControl,
+  View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity,
+  ActivityIndicator, RefreshControl, Animated as RNAnimated, Easing, Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import { useFocusEffect } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import { ArrowLeft, Users, Gift, Star, ChevronRight } from 'lucide-react-native';
+
 import { colors } from '../../theme/colors';
 import { BackgroundGradientOnboarding } from '../../components/ui/BackgroundGradientOnboarding';
 import { ReferralCodeCard } from '../../components/ReferralCodeCard';
 import { AiService } from '../../api/ai.service';
-import { useAuthStore } from '../../store/authStore';
-import { NeonButton } from '../../components/ui/NeonButton';
 import { GenericModal, ModalType } from '../../components/ui/GenericModal';
+
+const NEON_BLUE  = '#00d4ff';
+const NEON_LIGHT = '#1e9bff';
+
+function NeonBorderInput({ children, isActive }: { children: React.ReactNode; isActive: boolean }) {
+  const translateX = useRef(new RNAnimated.Value(0)).current;
+  const loop = useRef<RNAnimated.CompositeAnimation | null>(null);
+
+  useEffect(() => {
+    loop.current?.stop();
+    if (isActive) {
+      translateX.setValue(0);
+      loop.current = RNAnimated.loop(
+        RNAnimated.timing(translateX, { toValue: -800, duration: 2400, easing: Easing.linear, useNativeDriver: true }),
+        { resetBeforeIteration: true }
+      );
+      loop.current.start();
+    } else {
+      translateX.setValue(0);
+    }
+    return () => loop.current?.stop();
+  }, [isActive]);
+
+  return (
+    <View style={nb.wrapper}>
+      {isActive && (
+        <>
+          <View style={nb.clip} pointerEvents="none">
+            <RNAnimated.View style={[nb.track, { transform: [{ translateX }] }]}>
+              <LinearGradient
+                colors={['transparent', NEON_BLUE, NEON_LIGHT, 'transparent', 'transparent', NEON_BLUE, NEON_LIGHT, 'transparent']}
+                locations={[0.05, 0.2, 0.3, 0.45, 0.55, 0.7, 0.8, 0.95]}
+                start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }}
+                style={{ width: 1600, height: '100%' }}
+              />
+            </RNAnimated.View>
+            <View style={nb.mask} />
+          </View>
+          <View style={nb.bloomMid} pointerEvents="none" />
+          <View style={nb.bloomFar} pointerEvents="none" />
+        </>
+      )}
+      {children}
+    </View>
+  );
+}
+
+const nb = StyleSheet.create({
+  wrapper:  { position: 'relative' },
+  clip:     { position: 'absolute', top: -1, left: -1, right: -1, bottom: -0.5, borderRadius: 13, overflow: 'hidden', zIndex: 2 },
+  track:    { position: 'absolute', top: 0, bottom: 0, left: 0 },
+  mask:     { position: 'absolute', top: 1, left: 1, right: 1, bottom: 0.5, borderRadius: 12, zIndex: 1, backgroundColor: '#030814' },
+  bloomMid: { position: 'absolute', top: -4, left: -4, right: -4, bottom: -4, borderRadius: 16, backgroundColor: 'transparent', shadowColor: NEON_BLUE, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.45, shadowRadius: 14, elevation: 8 },
+  bloomFar: { position: 'absolute', top: -8, left: -8, right: -8, bottom: -8, borderRadius: 20, backgroundColor: 'transparent', shadowColor: NEON_LIGHT, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.22, shadowRadius: 24, elevation: 4 },
+});
+
+function SectionTitle({ title }: { title: string }) {
+  return (
+    <View style={s.sectionRow}>
+      <Text style={s.sectionText}>{title}</Text>
+    </View>
+  );
+}
+
+function StatCard({ icon, label, value }: { icon: any; label: string; value: number | string }) {
+  return (
+    <View style={s.statCard}>
+      <LinearGradient colors={['rgba(0,212,255,0.06)', 'transparent']} style={StyleSheet.absoluteFill} />
+      <View style={s.statIcon}>{icon}</View>
+      <Text style={s.statValue}>{value}</Text>
+      <Text style={s.statLabel}>{label}</Text>
+    </View>
+  );
+}
+
+function RuleItem({ number, text }: { number: string; text: string }) {
+  return (
+    <View style={s.ruleItem}>
+      <LinearGradient colors={[NEON_BLUE, NEON_LIGHT]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.ruleNumber}>
+        <Text style={s.ruleNumberText}>{number}</Text>
+      </LinearGradient>
+      <Text style={s.ruleText}>{text}</Text>
+    </View>
+  );
+}
 
 export default function ReferralScreen() {
   const router = useRouter();
-  const { user } = useAuthStore();
-  const [stats, setStats] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const [stats, setStats]                         = useState<any>(null);
+  const [loading, setLoading]                     = useState(true);
+  const [refreshing, setRefreshing]               = useState(false);
   const [referralCodeInput, setReferralCodeInput] = useState('');
-  const [applying, setApplying] = useState(false);
-
-  // Modal State
-  const [modalVisible, setModalVisible] = useState(false);
-  const [modalConfig, setModalConfig] = useState<{ type: ModalType; title: string; message: string }>({
-    type: 'info', title: '', message: '',
-  });
+  const [applying, setApplying]                   = useState(false);
+  const [inputFocused, setInputFocused]           = useState(false);
+  const [modalVisible, setModalVisible]           = useState(false);
+  const [modalConfig, setModalConfig]             = useState<{ type: ModalType; title: string; message: string }>({ type: 'info', title: '', message: '' });
 
   const fetchStats = async () => {
     try {
       const data = await AiService.getReferralStats();
       setStats(data);
-    } catch (error) {
-      console.error('Error fetching referral stats:', error);
+    } catch (err) {
+      console.error('Error fetching referral stats:', err);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   };
 
-  useEffect(() => {
-    fetchStats();
-  }, []);
+  useEffect(() => { fetchStats(); }, []);
 
-  // Refresh when screen comes into focus
-  useFocusEffect(
-    useCallback(() => {
-      fetchStats();
-      // Poll every 30 seconds while screen is focused
-      const interval = setInterval(fetchStats, 30000);
-      return () => clearInterval(interval);
-    }, [])
-  );
-
-  const onRefresh = () => {
-    setRefreshing(true);
+  useFocusEffect(useCallback(() => {
     fetchStats();
-  };
+    const interval = setInterval(fetchStats, 30000);
+    return () => clearInterval(interval);
+  }, []));
 
   const showFeedback = (type: ModalType, title: string, message: string) => {
     setModalConfig({ type, title, message });
@@ -74,16 +137,14 @@ export default function ReferralScreen() {
 
   const handleApplyCode = async () => {
     if (!referralCodeInput.trim()) return;
-    
     setApplying(true);
     try {
       await AiService.applyReferralCode(referralCodeInput.trim());
       showFeedback('success', 'Félicitations !', 'Le code de parrainage a été appliqué avec succès.');
       setReferralCodeInput('');
-      fetchStats(); // Refresh to show we are referred
+      fetchStats();
     } catch (error: any) {
-      const errorMsg = error?.response?.data?.message || "Impossible d'appliquer ce code.";
-      showFeedback('error', 'Erreur', errorMsg);
+      showFeedback('error', 'Erreur', error?.response?.data?.message || "Impossible d'appliquer ce code.");
     } finally {
       setApplying(false);
     }
@@ -91,121 +152,106 @@ export default function ReferralScreen() {
 
   if (loading && !refreshing) {
     return (
-      <BackgroundGradientOnboarding darkOverlay blurIntensity={90} imageSource="splash">
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary.main} />
+      <BackgroundGradientOnboarding darkOverlay>
+        <View style={s.loadingContainer}>
+          <ActivityIndicator size="large" color={NEON_BLUE} />
         </View>
       </BackgroundGradientOnboarding>
     );
   }
 
   return (
-    <BackgroundGradientOnboarding darkOverlay blurIntensity={90} imageSource="splash">
-      <SafeAreaView style={styles.container}>
-        <ScrollView 
-          contentContainerStyle={styles.scrollContent}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary.main} />
-          }
+    <BackgroundGradientOnboarding darkOverlay>
+      <SafeAreaView style={{ flex: 1 }}>
+        <ScrollView
+          contentContainerStyle={s.scrollContent}
+          showsVerticalScrollIndicator={false}
+          bounces={false}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchStats(); }} tintColor={NEON_BLUE} />}
         >
-          {/* Header */}
-          <View style={styles.header}>
-            <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <View style={s.header}>
+            <TouchableOpacity style={s.backButton} onPress={() => router.back()}>
               <ArrowLeft size={22} color={colors.text.primary} />
             </TouchableOpacity>
-            <Text style={styles.title}>Parrainage</Text>
-            <Text style={styles.subtitle}>Invite tes amis et gagne des mois gratuits</Text>
+            <View style={s.headerCenter}>
+              <Text style={s.titleSub}>Parrainage</Text>
+            </View>
           </View>
 
-          {/* Referral Code */}
+          <Text style={s.heroSubtitleText}>Invite tes amis et gagne des mois gratuits</Text>
+
           {stats?.referralCode && <ReferralCodeCard code={stats.referralCode} />}
 
-          {/* Stats Grid */}
-          <View style={styles.statsGrid}>
-            <StatCard 
-              icon={<Users size={20} color={colors.primary.light} />}
-              label="Filleuls"
-              value={stats?.totalReferred || 0}
-            />
-            <StatCard 
-              icon={<Gift size={20} color={colors.primary.light} />}
-              label="Mois offerts"
-              value={stats?.freeMonthsPending || 0}
-            />
+          <View style={s.statsGrid}>
+            <StatCard icon={<Users size={20} color={NEON_BLUE} />} label="Filleuls" value={stats?.totalReferred || 0} />
+            <StatCard icon={<Gift size={20} color={NEON_BLUE} />} label="Mois offerts" value={stats?.freeMonthsPending || 0} />
           </View>
 
-          {/* Ambassador Status */}
           {stats?.isAmbassador ? (
-            <View style={styles.ambassadorCard}>
-              <View style={styles.ambassadorIcon}>
-                <Star size={24} color="#FFD700" fill="#FFD700" />
+            <View style={s.ambassadorCard}>
+              <LinearGradient colors={['rgba(255,215,0,0.08)', 'transparent']} style={StyleSheet.absoluteFill} />
+              <View style={s.ambassadorIcon}>
+                <Star size={22} color="#FFD700" fill="#FFD700" />
               </View>
-              <View style={styles.ambassadorInfo}>
-                <Text style={styles.ambassadorTitle}>Statut Ambassadeur Actif</Text>
-                <Text style={styles.ambassadorText}>Atelier 9,90€/mois · Studio 22€/mois en permanence</Text>
+              <View style={s.ambassadorInfo}>
+                <Text style={s.ambassadorTitle}>Statut Ambassadeur Actif</Text>
+                <Text style={s.ambassadorText}>Atelier 9,90€/mois · Studio 22€/mois en permanence</Text>
               </View>
             </View>
           ) : (
-            <View style={styles.infoCard}>
-              <Star size={20} color={colors.primary.main} />
-              <Text style={styles.infoText}>
-                Deviens <Text style={styles.highlight}>Ambassadeur</Text> avec 10 filleuls payants et profite d'un <Text style={styles.highlight}>tarif préférentiel permanent</Text> sur tous les packs.
+            <View style={s.infoCard}>
+              <LinearGradient colors={['rgba(0,212,255,0.06)', 'transparent']} style={StyleSheet.absoluteFill} />
+              <Star size={18} color={NEON_BLUE} />
+              <Text style={s.infoText}>
+                Deviens <Text style={s.highlight}>Ambassadeur</Text> avec 10 filleuls payants et profite d'un{' '}
+                <Text style={s.highlight}>tarif préférentiel permanent</Text> sur tous les packs.
               </Text>
             </View>
           )}
 
-          {/* Apply Code Section */}
-          {stats?.isReferred ? (
-            <View style={styles.referredBadge}>
-              <Gift size={18} color={colors.status.success} />
-              <Text style={styles.referredText}>Tu as déjà un parrain — code appliqué ✓</Text>
-            </View>
-          ) : (
-            <View style={styles.applySection}>
-              <Text style={styles.sectionTitle}>Tu as été parrainé ?</Text>
-              <Text style={styles.sectionSubtitle}>Entre le code de ton parrain pour le remercier.</Text>
-              
-              <View style={styles.inputContainer}>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Code de parrainage (ex: REF-USR-123)"
-                  placeholderTextColor={colors.text.muted}
-                  value={referralCodeInput}
-                  onChangeText={setReferralCodeInput}
-                  autoCapitalize="characters"
-                />
-                <TouchableOpacity 
-                  style={[styles.applyButton, !referralCodeInput && styles.applyButtonDisabled]}
-                  onPress={handleApplyCode}
-                  disabled={applying || !referralCodeInput}
-                >
-                  {applying ? (
-                    <ActivityIndicator size="small" color="#000" />
-                  ) : (
-                    <ChevronRight size={24} color="#000" />
-                  )}
-                </TouchableOpacity>
+          <View style={s.card}>
+            {stats?.isReferred ? (
+              <View style={s.referredBadge}>
+                <Gift size={18} color={colors.status.success} />
+                <Text style={s.referredText}>Tu as déjà un parrain — code appliqué ✓</Text>
               </View>
-            </View>
-          )}
-
-          {/* How it works */}
-          <View style={styles.rulesCard}>
-            <Text style={styles.rulesTitle}>Comment ça marche ?</Text>
-            <RuleItem 
-              number="1" 
-              text="Partage ton code unique avec tes amis." 
-            />
-            <RuleItem 
-              number="2" 
-              text="Ton ami s'inscrit et s'abonne à un pack Hipster IA." 
-            />
-            <RuleItem 
-              number="3" 
-              text="Tu gagnes 1 mois gratuit pour chaque nouvel abonné !" 
-            />
+            ) : (
+              <>
+                <SectionTitle title="Tu as été parrainé ?" />
+                <Text style={s.cardSubtitle}>Entre le code de ton parrain pour le remercier.</Text>
+                <NeonBorderInput isActive={inputFocused}>
+                  <View style={[s.inputContainer, inputFocused && s.inputContainerActive]}>
+                    <TextInput
+                      style={s.input}
+                      placeholder="Ex: REF-USR-123"
+                      placeholderTextColor={colors.text.muted}
+                      value={referralCodeInput}
+                      onChangeText={setReferralCodeInput}
+                      autoCapitalize="characters"
+                      onFocus={() => setInputFocused(true)}
+                      onBlur={() => setInputFocused(false)}
+                    />
+                    <TouchableOpacity
+                      style={[s.applyButton, (!referralCodeInput || applying) && s.applyButtonDisabled]}
+                      onPress={handleApplyCode}
+                      disabled={applying || !referralCodeInput}
+                    >
+                      {applying
+                        ? <ActivityIndicator size="small" color="#fff" />
+                        : <ChevronRight size={20} color="#fff" />}
+                    </TouchableOpacity>
+                  </View>
+                </NeonBorderInput>
+              </>
+            )}
           </View>
 
+          <View style={s.card}>
+            <SectionTitle title="Comment ça marche ?" />
+            <RuleItem number="1" text="Partage ton code unique avec tes amis." />
+            <RuleItem number="2" text="Ton ami s'inscrit et s'abonne à un pack Hipster IA." />
+            <RuleItem number="3" text="Tu gagnes 1 mois gratuit pour chaque nouvel abonné !" />
+          </View>
         </ScrollView>
       </SafeAreaView>
 
@@ -220,83 +266,49 @@ export default function ReferralScreen() {
   );
 }
 
-function StatCard({ icon, label, value }: { icon: any; label: string; value: number | string }) {
-  return (
-    <View style={styles.statCard}>
-      <View style={styles.statIcon}>{icon}</View>
-      <Text style={styles.statValue}>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
-    </View>
-  );
-}
-
-function RuleItem({ number, text }: { number: string; text: string }) {
-  return (
-    <View style={styles.ruleItem}>
-      <View style={styles.ruleNumber}><Text style={styles.ruleNumberText}>{number}</Text></View>
-      <Text style={styles.ruleText}>{text}</Text>
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  container: { flex: 1 },
+const s = StyleSheet.create({
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  scrollContent: { padding: 20, paddingBottom: 100 },
-  header: { alignItems: 'center', marginBottom: 32, marginTop: 10 },
-  backButton: {
-    position: 'absolute', left: 0, top: -4, width: 44, height: 44,
-    backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 22,
-    justifyContent: 'center', alignItems: 'center',
-  },
-  title: { fontSize: 24, fontWeight: '800', color: colors.text.primary, marginBottom: 8 },
-  subtitle: { fontSize: 14, color: colors.text.secondary, textAlign: 'center' },
-  
+  scrollContent:    { paddingHorizontal: 24, paddingTop: 16, paddingBottom: 40 },
+
+  header:       { flexDirection: 'row', alignItems: 'center', marginBottom: 28 },
+  backButton:   { width: 42, height: 42, borderRadius: 21, backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center', marginRight: 16 },
+  headerCenter: { flex: 1, alignItems: 'center', marginRight: 58, paddingVertical: 10 },
+  titleSub:     { fontFamily: 'Arimo-Bold', fontSize: 16, textTransform: 'uppercase', color: '#ffffff' },
+
+  heroSubtitleText: { fontFamily: 'Arimo-Regular', fontSize: 14, color: 'rgba(255,255,255,0.45)', textAlign: 'center', letterSpacing: 0.3, marginBottom: 28 },
+
   statsGrid: { flexDirection: 'row', gap: 16, marginBottom: 20 },
-  statCard: {
-    flex: 1, backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 20,
-    padding: 20, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)',
-  },
-  statIcon: { marginBottom: 12, opacity: 0.8 },
-  statValue: { fontSize: 24, fontWeight: '800', color: colors.text.primary, marginBottom: 4 },
-  statLabel: { fontSize: 11, fontWeight: '700', color: colors.text.muted, textTransform: 'uppercase' },
+  statCard:  { flex: 1, borderRadius: 20, padding: 20, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(0,212,255,0.12)', backgroundColor: 'rgba(15,23,42,0.6)', overflow: 'hidden' },
+  statIcon:  { marginBottom: 10 },
+  statValue: { fontFamily: 'Arimo-Bold', fontSize: 28, color: '#ffffff', marginBottom: 4, textShadowColor: NEON_BLUE, textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 8 },
+  statLabel: { fontFamily: 'Arimo-Bold', fontSize: 10, color: colors.text.muted, textTransform: 'uppercase', letterSpacing: 1 },
 
-  ambassadorCard: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255, 215, 0, 0.1)',
-    borderRadius: 20, padding: 20, borderWidth: 1, borderColor: 'rgba(255, 215, 0, 0.3)',
-    marginBottom: 24,
-  },
-  ambassadorIcon: { width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(255, 215, 0, 0.2)', justifyContent: 'center', alignItems: 'center', marginRight: 16 },
-  ambassadorInfo: { flex: 1 },
-  ambassadorTitle: { fontSize: 16, fontWeight: '800', color: '#FFD700', marginBottom: 2 },
-  ambassadorText: { fontSize: 13, color: '#FFD700', opacity: 0.8 },
+  ambassadorCard:  { flexDirection: 'row', alignItems: 'center', borderRadius: 20, padding: 20, borderWidth: 1, borderColor: 'rgba(255,215,0,0.25)', backgroundColor: 'rgba(15,23,42,0.6)', marginBottom: 20, overflow: 'hidden', gap: 16 },
+  ambassadorIcon:  { width: 46, height: 46, borderRadius: 23, backgroundColor: 'rgba(255,215,0,0.15)', justifyContent: 'center', alignItems: 'center' },
+  ambassadorInfo:  { flex: 1 },
+  ambassadorTitle: { fontFamily: 'Arimo-Bold', fontSize: 15, color: '#FFD700', marginBottom: 3 },
+  ambassadorText:  { fontFamily: 'Arimo-Regular', fontSize: 12, color: '#FFD700', opacity: 0.8 },
 
-  infoCard: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(59, 130, 246, 0.05)',
-    borderRadius: 20, padding: 16, borderWidth: 1, borderColor: 'rgba(59, 130, 246, 0.2)',
-    marginBottom: 24, gap: 12,
-  },
-  infoText: { flex: 1, fontSize: 13, color: colors.text.secondary, lineHeight: 18 },
-  highlight: { color: colors.primary.main, fontWeight: '700' },
+  infoCard:  { flexDirection: 'row', alignItems: 'center', borderRadius: 20, padding: 16, borderWidth: 1, borderColor: 'rgba(0,212,255,0.15)', backgroundColor: 'rgba(15,23,42,0.6)', marginBottom: 20, overflow: 'hidden', gap: 14 },
+  infoText:  { flex: 1, fontFamily: 'Arimo-Regular', fontSize: 13, color: colors.text.secondary, lineHeight: 18 },
+  highlight: { fontFamily: 'Arimo-Bold', color: NEON_BLUE },
 
-  applySection: { marginBottom: 32 },
-  sectionTitle: { fontSize: 16, fontWeight: '800', color: colors.text.primary, marginBottom: 4 },
-  sectionSubtitle: { fontSize: 13, color: colors.text.muted, marginBottom: 16 },
-  inputContainer: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 16, padding: 4, paddingLeft: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)',
-  },
-  input: { flex: 1, height: 48, color: colors.text.primary, fontSize: 15, fontWeight: '600' },
-  applyButton: {
-    width: 44, height: 44, borderRadius: 12, backgroundColor: colors.primary.main,
-    justifyContent: 'center', alignItems: 'center',
-  },
-  applyButtonDisabled: { backgroundColor: colors.text.muted, opacity: 0.5 },
+  card:        { backgroundColor: 'rgba(15,23,42,0.6)', borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.07)', padding: 20, gap: 14, marginBottom: 20 },
+  sectionRow:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+  sectionText: { fontFamily: 'Arimo-Bold', fontSize: 12, letterSpacing: 2, textTransform: 'uppercase', color: 'rgba(255,255,255,0.28)' },
+  cardSubtitle: { fontFamily: 'Arimo-Regular', fontSize: 13, color: colors.text.muted, textAlign: 'center' },
 
-  rulesCard: { backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 24, padding: 24 },
-  rulesTitle: { fontSize: 16, fontWeight: '800', color: colors.text.primary, marginBottom: 20 },
-  ruleItem: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 16, gap: 16 },
-  ruleNumber: { width: 24, height: 24, borderRadius: 12, backgroundColor: colors.primary.main, justifyContent: 'center', alignItems: 'center' },
-  ruleNumberText: { fontSize: 12, fontWeight: '900', color: '#000' },
-  ruleText: { flex: 1, fontSize: 14, color: colors.text.secondary, lineHeight: 20 },
+  inputContainer:       { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(15,23,42,0.9)', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 4, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', zIndex: 3 },
+  inputContainerActive: { borderColor: 'transparent', backgroundColor: '#030814' },
+  input:                { flex: 1, height: 48, fontFamily: 'Arimo-Bold', fontSize: 14, color: colors.text.primary, letterSpacing: 1 },
+  applyButton:          { width: 38, height: 38, borderRadius: 10, backgroundColor: NEON_BLUE, justifyContent: 'center', alignItems: 'center' },
+  applyButtonDisabled:  { backgroundColor: 'rgba(255,255,255,0.1)' },
+
+  referredBadge: { flexDirection: 'row', alignItems: 'center', gap: 10, justifyContent: 'center', paddingVertical: 8 },
+  referredText:  { fontFamily: 'Arimo-Bold', fontSize: 14, color: colors.status.success },
+
+  ruleItem:       { flexDirection: 'row', alignItems: 'flex-start', gap: 14 },
+  ruleNumber:     { width: 24, height: 24, borderRadius: 12, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  ruleNumberText: { fontFamily: 'Arimo-Bold', fontSize: 11, color: '#000' },
+  ruleText:       { flex: 1, fontFamily: 'Arimo-Regular', fontSize: 14, color: colors.text.secondary, lineHeight: 20 },
 });

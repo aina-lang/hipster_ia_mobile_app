@@ -183,7 +183,15 @@ function PlanCard({ plan, isSelected, onSelect, submitting }: {
           <View style={[s.planCard, isSelected && s.planCardSelected, submitting && { opacity: 0.8 }]}>
 
             {plan.popular && !plan.isComingSoon && (
-              <View style={s.badge}><Text style={s.badgeText}>CONSEILLÉ</Text></View>
+              <LinearGradient
+                colors={['#264F8C', '#0a1628', '#040612']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                locations={[0, 0.46, 1]}
+                style={s.badge}
+              >
+                <Text style={s.badgeText}>CONSEILLÉ</Text>
+              </LinearGradient>
             )}
             {plan.isComingSoon && (
               <View style={[s.badge, { backgroundColor: '#334155' }]}><Text style={s.badgeText}>À VENIR</Text></View>
@@ -248,8 +256,10 @@ export default function PacksScreen() {
       <View style={s.screen}>
 
         <View style={s.header}>
-          <Text style={s.titleSub}>Choisissez</Text>
-          <Text style={s.titleScript}>votre pack</Text>
+          <View style={s.titleRow}>
+            <Text style={s.titleSub}>Choisissez</Text>
+            <Text style={s.titleScript}>votre pack</Text>
+          </View>
           <Text style={s.subtitle}>Sélectionnez l'offre qui vous correspond</Text>
         </View>
 
@@ -294,39 +304,11 @@ const s = StyleSheet.create({
   loaderText:     { color: colors.text.secondary, marginTop: 16, fontFamily: 'Arimo-Regular' },
   plansContainer: { gap: 16 },
 
-  header: {
-    alignItems: 'center',
-    marginBottom: 24,
-    paddingHorizontal: 24,
-  },
-  titleSub: {
-    fontFamily: 'Arimo-Bold',
-    fontSize: 15,
-    letterSpacing: 3,
-    textTransform: 'uppercase',
-    color: 'rgba(255,255,255,0.45)',
-    marginBottom: 2,
-  },
-  titleScript: {
-    fontFamily: 'Brittany-Signature',
-    fontSize: 42,
-    color: '#ffffff',
-    textShadowColor: '#00eaff',
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 18,
-    lineHeight: 48,
-    marginBottom: 4,
-    includeFontPadding: false,
-    paddingLeft: 16,
-    paddingRight: 16,
-  },
-  subtitle: {
-    fontFamily: 'Arimo-Regular',
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.45)',
-    textAlign: 'center',
-    letterSpacing: 0.3,
-  },
+  header:          { alignItems: 'center', marginBottom: 20, paddingHorizontal: 10, paddingVertical: 10 },
+  titleRow:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 5 },
+  titleSub:        { fontFamily: 'Arimo-Bold', fontSize: 16, letterSpacing: 3, textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)', marginTop: 10 },
+  titleScript:     { fontFamily: 'Brittany-Signature', paddingLeft: 1, fontSize: 36, color: '#fff', textShadowColor: '#00eaff', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 18, lineHeight: 48, includeFontPadding: false },
+  subtitle:        { fontFamily: 'Arimo-Regular', fontSize: 14, color: 'rgba(255,255,255,0.45)', textAlign: 'center', letterSpacing: 0.3, marginTop: 4 },
 
   footer: {
   padding: 24,
@@ -335,12 +317,7 @@ const s = StyleSheet.create({
 },
 
 btnWrapper: {
-  width: '60%',
-  shadowColor: '#1e9bff',
-  shadowOffset: { width: 0, height: 0 },
-  shadowOpacity: 0.4,
-  shadowRadius: 16,
-  elevation: 10,
+  width: '60%'
 },
   btnPressable: {
     borderRadius: 5,
@@ -350,14 +327,13 @@ btnWrapper: {
   },
   btnGradient: {
     paddingVertical: 15,
-    paddingHorizontal: 19,
+    paddingHorizontal: 15,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 52,
   },
   btnText: {
     fontFamily: 'Arimo-Bold',
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600',
     letterSpacing: 0.6,
     color: '#ffffff',
@@ -411,9 +387,13 @@ btnWrapper: {
   planCardSelected: { backgroundColor: '#030814', borderWidth: 0 },
 
   badge: {
-    position: 'absolute', top: 0, right: 0, zIndex: 10,
-    backgroundColor: '#1e9bff',
-    paddingHorizontal: 15, paddingVertical: 6, borderBottomLeftRadius: 15,
+    position: 'absolute', top: 0, right: 0, zIndex: 20,
+    paddingHorizontal: 15, paddingVertical: 6,
+    borderBottomLeftRadius: 15,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.25)',
+    borderTopRightRadius: 20,
   },
   badgeText: { fontSize: 10, fontWeight: '900', color: '#ffffff', letterSpacing: 0.5 },
 
