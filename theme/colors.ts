@@ -1,6 +1,6 @@
 // ══════════════════════════════════════════════════════════════
 // HIPSTER IA — Neon Dark Theme
-// Deep black backgrounds + Tailwind Blue neon primary + Electric accents
+// Deep black backgrounds + Tailwind Blue neon primary (Pure Blue)
 // ══════════════════════════════════════════════════════════════
 
 // Tailwind CSS exact blue scale
@@ -18,24 +18,8 @@ const blue = {
   950: '#172554',
 };
 
-// Electric violet for secondary highlights
-const violet = {
-  400: '#a78bfa', // violet-400
-  500: '#8b5cf6', // violet-500
-  600: '#7c3aed',
-  700: '#6d28d9',
-};
-
-// Neon pink / rose for alerts & destructive
-const rose = {
-  400: '#fb7185', // rose-400
-  500: '#f43f5e', // rose-500
-};
-
 export const colors = {
   blue,
-  violet,
-  rose,
 
   // Background — pure deep black
   background: {
@@ -54,11 +38,11 @@ export const colors = {
     glow: blue[400], // used for shadow / glow effects
   },
 
-  // Neon accents
+  // Neon accents - All Blue
   neon: {
     primary: blue[500], // main neon blue
-    accent: violet[500], // electric violet secondary
-    pink: rose[500], // neon rose for alerts
+    accent: blue[400], // lighter neon blue
+    pink: blue[300], // replaced pink with very light blue
   },
 
   // Text — soft off-white, easy on the eyes against deep black
@@ -69,21 +53,21 @@ export const colors = {
     accent: blue[400], // neon blue for links / highlights
   },
 
-  // Gradients
+  // Gradients - Blue Mono
   gradient: {
-    primary: [blue[600], violet[600]] as const, // blue → violet
+    primary: [blue[700], blue[500]] as const, // deep blue → bright blue
     hero: ['#e2e8f0', '#c0c8d8'] as const,
-    glass: ['rgba(59, 130, 246, 0.08)', 'rgba(139, 92, 246, 0.06)'] as const,
+    glass: ['rgba(59, 130, 246, 0.12)', 'rgba(59, 130, 246, 0.04)'] as const,
     card: ['rgba(9, 9, 15, 0.95)', 'rgba(5, 5, 8, 0.98)'] as const,
     dark: ['#09090f', '#050508'] as const,
-    premiumButton: [blue[500], violet[500]] as const, // blue → violet CTA
+    premiumButton: [blue[600], blue[400]] as const, // blue gradient for CTA
   },
 
   // Status Colors
   status: {
     success: '#10b981', // emerald-500
     warning: '#f59e0b', // amber-500
-    error: rose[500], // neon rose
+    error: '#ef4444', // red-500 (kept red for errors as it's standard, or should it be blue too? "uniquement du blue" usually applies to theme accents)
     info: blue[400],
   },
 
