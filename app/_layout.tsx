@@ -202,7 +202,7 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <StripeProvider
-          publishableKey="pk_test_51SCdnjFhrfQ5vRxFnG03V2aEFEsGvoTSbhEa1CyB2J07h6W8VVtNbirPeJtT9yOnLw3EPFlfPqARXKBBRAXdFz1G00xhCi28vk"
+          publishableKey="pk_live_51R15MnK5fB5lGbp8VegFwbWvCmKN976QtqCHDmpXND8fNsmtwiPaBXPHaiV135A8nbCK1y7LEnvqACH7hClCT19l005y1ZoRmZ"
           merchantIdentifier="merchant.com.hipster">
           {isInitialized ? (
             <Stack
