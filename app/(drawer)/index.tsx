@@ -301,8 +301,9 @@ export default function HomeScreen() {
   // If Curieux and expired => force Studio for blocker display
   const effectivePlanId = (isPackCurieux && isExpired) ? 'studio' : planType;
 
-  // Find the effective plan object
-  const currentPlanObject = plans.find(p => p.id === effectivePlanId) || plans.find(p => p.id === 'atelier');
+  // Find the effective plan object - Fallback to a default object if plans aren't loaded yet
+  const fallbackPlan = { id: 'curieux', name: 'Pack Curieux', price: 'Gratuit (7 jours)' };
+  const currentPlanObject = plans.find(p => p.id === effectivePlanId) || plans.find(p => p.id === 'atelier') || fallbackPlan;
 
   // Global Credit Exhaustion for all plans
   const promptsLimit = user?.promptsLimit || 0;
@@ -328,9 +329,9 @@ export default function HomeScreen() {
   // Fully exhausted if ALL non-infinite limits are reached
   const isFullyExhausted = isTextExhausted && isImagesExhausted && isVideosExhausted && isAudioExhausted && isThreeDExhausted;
 
-  const isTrialButNoCard = isPackCurieux && !user?.isStripeVerified;
+  const isTrialButNoCard = isPackCurieux && (!user?.isStripeVerified || !user?.stripeCustomerId);
   const isAnyMessageTyping = messages.some(m => m.isTyping);
-  const isPaidPlanButInactive = !isSubscriptionActive || isTrialButNoCard || (isPackCurieux && isExpired) || isFullyExhausted;
+  const isPaidPlanButInactive = isHydrated && (!isSubscriptionActive || isTrialButNoCard || (isPackCurieux && isExpired) || isFullyExhausted);
 
   const showModal = (type: ModalType, title: string, message: string) => {
     setModalType(type);
@@ -874,17 +875,12 @@ export default function HomeScreen() {
             className="flex-row items-center justify-between px-5 pb-2"
             style={{ paddingTop: insets.top + 10 }}
           >
-            {isHydrated && !isPaidPlanButInactive && (
-              <View
-                className="flex-row items-center justify-between px-5 pb-2"
-                style={{ paddingTop: insets.top + 10 }}
-              >
-                <TouchableOpacity
-                  className="rounded-lg bg-white/5 p-2"
-                  onPress={() => navigation.openDrawer()}>
-                  <Menu size={24} color={colors.text.primary} />
-                </TouchableOpacity>
-              </View>
+            {!isPaidPlanButInactive && (
+              <TouchableOpacity
+                className="rounded-lg bg-white/5 p-2"
+                onPress={() => navigation.openDrawer()}>
+                <Menu size={24} color={colors.text.primary} />
+              </TouchableOpacity>
             )}
 
             {/* Mode Guidé shortcut — visible uniquement quand une conversation est active */}

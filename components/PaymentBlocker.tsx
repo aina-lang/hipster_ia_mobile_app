@@ -30,11 +30,11 @@ export const PaymentBlocker = ({ plan, onPay, loading }: PaymentBlockerProps) =>
         (audioLimit > 0 && audioLimit !== 999999 ? audioUsed >= audioLimit : true) &&
         (threeDLimit > 0 && threeDLimit !== 999999 ? threeDUsed >= threeDLimit : true);
 
-    if (!plan) return null;
+    // if (!plan) return null;
 
     const getMessage = () => {
         if (isExhausted) return "Vous avez atteint votre limite de génération pour cette période. Renouvelez votre forfait ou passez au niveau supérieur pour obtenir de nouveaux crédits immédiatement.";
-        if (isTrial) return "Profitez de 7 jours d'essais gratuit. Aucun prélèvement immédiat : votre carte estt simplement securisée. A l'issue de l'essai,sans résiliation ,l'abonnement  atelier sera automatiquement lané.";
+        if (isTrial) return "Profitez de 7 jours d'essais gratuit.\n Aucun prélèvement immédiat :\n votre carte est simplement securisée. \n A l'issue de l'essai,sans résiliation ,l'abonnement  atelier sera automatiquement lancé.";
         return "Veuillez finaliser votre abonnement pour débloquer toutes les fonctionnalités de votre plan.";
     };
 

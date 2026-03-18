@@ -231,7 +231,7 @@ export default function RootLayout() {
           <StyledStatusBar theme="dark" translucent={true} />
 
           <>
-            {(!isHydrated || !isInitialized || !videoFinished || isRouting) && (
+            {(!isHydrated || !isInitialized || !videoFinished) && (
               <WelcomeScreen 
                 onVideoFinish={handleVideoFinish} 
                 setIsRouting={setIsRouting}
