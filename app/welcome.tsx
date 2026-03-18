@@ -23,22 +23,24 @@ import { useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FontAwesome5 } from '@expo/vector-icons';
+import { Particle, ParticleConfig } from '../components/welcome/Particle';
+import { TopBar } from '../components/welcome/TopBar';
+import { SubTextAnimation } from '../components/welcome/SubTextAnimation';
+import { BottomAuthSection } from '../components/welcome/BottomAuthSection';
 
-const NEON_BLUE = '#00d4ff';
-const NEON_GLOW = '#0099ff';
-const NEON_LIGHT = '#66e5ff';
+import { colors } from '../theme/colors';
+
+const NEON_BLUE = colors.neon.primary;
+const NEON_GLOW = colors.primary.glow;
+const NEON_LIGHT = colors.primary.light;
 
 const videobg = require('../assets/video/splashVideo-fixed-mobile.mp4');
 const loadingVideo = require('../assets/video/loadingVideo.mp4');
 const reloadingScreen = require('../assets/video/reloadignScreen.mp4');
 
-interface ParticleConfig {
-  x: number;
-  y: number;
-  size: number;
-  color: string;
-  delayMs: number;
-  durationMs: number;
+export interface WelcomeScreenProps {
+  onVideoFinish?: () => void;
+  setIsRouting?: (routing: boolean) => void;
 }
 
 const PARTICLES: ParticleConfig[] = [
@@ -48,250 +50,6 @@ const PARTICLES: ParticleConfig[] = [
   { x: -60, y: -78, size: 3, color: NEON_GLOW, delayMs: 700, durationMs: 1800 },
   { x: 60, y: -78, size: 3, color: NEON_GLOW, delayMs: 760, durationMs: 1600 },
 ];
-
-interface ParticleProps extends ParticleConfig {}
-
-const Particle = React.memo(({ x, y, size, color, delayMs, durationMs }: ParticleProps) => {
-  const opacity = useSharedValue(0);
-  const translateY = useSharedValue(0);
-
-  useEffect(() => {
-    opacity.value = withDelay(
-      delayMs,
-      withRepeat(
-        withSequence(
-          withTiming(0.9, { duration: durationMs * 0.5, easing: Easing.inOut(Easing.sin) }),
-          withTiming(0.1, { duration: durationMs * 0.5, easing: Easing.inOut(Easing.sin) })
-        ),
-        -1,
-        true
-      )
-    );
-    translateY.value = withDelay(
-      delayMs,
-      withRepeat(
-        withSequence(
-          withTiming(-5, { duration: durationMs, easing: Easing.inOut(Easing.sin) }),
-          withTiming(5, { duration: durationMs, easing: Easing.inOut(Easing.sin) })
-        ),
-        -1,
-        true
-      )
-    );
-  }, []);
-
-  const animStyle = useAnimatedStyle(() => ({
-    opacity: opacity.value,
-    transform: [{ translateY: translateY.value }],
-  }));
-
-  return (
-    <Animated.View
-      style={[
-        {
-          position: 'absolute',
-          left: x,
-          top: y,
-          width: size,
-          height: size,
-          borderRadius: size / 2,
-          backgroundColor: color,
-          shadowColor: color,
-          shadowOffset: { width: 0, height: 0 },
-          shadowOpacity: 1,
-          shadowRadius: size * 3,
-          elevation: 5,
-        },
-        animStyle,
-      ]}
-    />
-  );
-});
-
-export interface WelcomeScreenProps {
-  onVideoFinish?: () => void;
-  setIsRouting?: (routing: boolean) => void;
-}
-
-interface TopBarProps {
-  textAnimProgress: SharedValue<number>;
-  isAuthenticated: boolean;
-  userName: string | undefined;
-}
-
-const TopBar = ({ textAnimProgress, isAuthenticated, userName }: TopBarProps) => {
-  const insets = useSafeAreaInsets();
-  
-  const animStyle = useAnimatedStyle(() => {
-    const opacity = interpolate(
-      textAnimProgress?.value ?? 0,
-      [0, 0.5, 1],
-      [0, 0, 1],
-      Extrapolate.CLAMP
-    );
-    
-    const translateY = interpolate(
-      textAnimProgress?.value ?? 0,
-      [0, 1],
-      [-30, 0],
-      Extrapolate.CLAMP
-    );
-    
-    return {
-      opacity,
-      transform: [{ translateY }],
-    };
-  });
-
-  const title = isAuthenticated ? `Bienvenue${userName ? `, ${userName}` : ''}` : 'HIPSTER IA';
-
-  return (
-    <Animated.View 
-      style={[
-        styles.topBar, 
-        { 
-          height: isAuthenticated ? 60 + insets.top : 110 + insets.top, 
-          paddingTop: insets.top - 10 
-        },
-        animStyle
-      ]}
-    >
-      <Text h1>{title}</Text>
-      {!isAuthenticated && (
-        <>
-          <Animated.Text style={styles.topBarSubText}>
-            L'agence marketing automatisée
-          </Animated.Text>
-          <Animated.Text style={styles.subLineTextTop}>
-            Dans votre poche.
-          </Animated.Text>
-        </>
-      )}
-    </Animated.View>
-  );
-};
-
-interface SubTextAnimationProps {
-  textAnimProgress: SharedValue<number>;
-  isAuthenticated: boolean;
-}
-
-const SubTextAnimation = React.memo(({ textAnimProgress, isAuthenticated }: SubTextAnimationProps) => {
-  const animStyle = useAnimatedStyle(() => {
-    const translateY = interpolate(
-      textAnimProgress?.value ?? 0, 
-      [0, 1], 
-      [0, -300], 
-      Extrapolate.CLAMP
-    );
-    
-    const opacity = interpolate(
-      textAnimProgress?.value ?? 0,
-      [0, 0.5, 1],
-      [0, 0, 1],
-      Extrapolate.CLAMP
-    );
-    
-    return { 
-      transform: [{ translateY }],
-      opacity 
-    };
-  });
-
-  if (isAuthenticated) {
-    return (
-      <Animated.View style={animStyle}>
-        <Animated.Text style={styles.mainSubText}>CONTENT DE TE REVOIR</Animated.Text>
-      </Animated.View>
-    );
-  }
-
-  return (
-    <Animated.View style={animStyle}>
-      <Animated.Text style={styles.mainSubText}>Créez vos affiches, promotions et publications en quelques secondes.</Animated.Text>
-    </Animated.View>
-  );
-});
-
-interface BottomAuthSectionProps {
-  isAuthenticated: boolean;
-  onVideoFinish?: () => void;
-  setIsRouting?: (routing: boolean) => void;
-  textAnimProgress: SharedValue<number>;
-}
-
-const BottomAuthSection = React.memo(({ isAuthenticated, onVideoFinish, setIsRouting, textAnimProgress }: BottomAuthSectionProps) => {
-  const router = useRouter();
-
-  const animStyle = useAnimatedStyle(() => ({
-    transform: [
-      {
-        translateY: interpolate(textAnimProgress?.value ?? 0, [0, 1], [350, 0], Extrapolate.CLAMP),
-      },
-    ],
-    opacity: interpolate(textAnimProgress?.value ?? 0, [0, 0.4, 1], [0, 0, 1], Extrapolate.CLAMP),
-  }));
-
-  if (isAuthenticated) return null;
-
-  return (
-    <Animated.View style={[styles.container, animStyle]}>
-      <Pressable
-        onPress={() => {
-          console.log('[Welcome] Commencer clicked');
-          setIsRouting?.(true);
-          onVideoFinish?.();
-          router.replace('/(onboarding)/packs');
-        }}
-        style={styles.primaryButton}
-      >
-        <LinearGradient
-          colors={['#000000', '#0a1628', '#264F8C']}
-          start={{ x: 0, y: 0.5 }}
-          end={{ x: 1, y: 0.5 }}
-          locations={[0, 0.6, 1]}
-          style={styles.gradient}
-        >
-          <Text style={styles.primaryButtonText}>Commencer maintenant</Text>
-        </LinearGradient>
-      </Pressable>
-
-      <View style={styles.row}>
-        <Text small>Déjà un compte ?</Text>
-        <Pressable 
-          onPress={() => { 
-            console.log('[Welcome] Login clicked');
-            setIsRouting?.(true);
-            onVideoFinish?.(); 
-            router.replace('/(auth)/login'); 
-          }}
-          style={({ pressed }) => ({
-            padding: 10,
-            opacity: pressed ? 0.7 : 1,
-            margin: -10, // Negative margin to balance the padding without shifting layout
-          })}
-        >
-          <Text small style={styles.highlight}>Se connecter</Text>
-        </Pressable>
-      </View>
-
-      <View style={styles.trial}>
-        <FontAwesome5 name="angellist" size={18} style={styles.glowIcon} />
-        <Text small>
-          <Text style={styles.highlight}>7 jours</Text> d'essai gratuit
-        </Text>
-        <Text style={styles.separator}>·</Text>
-        <Pressable
-          onPress={() => Linking.openURL('mailto:contact@hipster-ia.fr').catch(() => {})}
-          style={styles.contactLink}
-        >
-          <Text style={styles.contactText}>Besoin d'aide ?</Text>
-        </Pressable>
-      </View>
-
-    </Animated.View>
-  );
-});
 
 export default React.memo(function WelcomeScreen({ onVideoFinish, setIsRouting }: WelcomeScreenProps) {
   const [videoReady, setVideoReady] = React.useState(false);
@@ -396,7 +154,7 @@ export default React.memo(function WelcomeScreen({ onVideoFinish, setIsRouting }
       </Animated.View>
 
       <LinearGradient
-        colors={['transparent', 'rgba(0,0,0,0.5)', 'rgba(0,0,0,0.8)']}
+        colors={['transparent', 'rgba(0,0,0,0.4)', colors.overlay]}
         locations={[0, 0.5, 1]}
         start={{ x: 0.5, y: 0 }}
         end={{ x: 0.5, y: 1 }}
@@ -444,130 +202,11 @@ const styles = StyleSheet.create({
     height: 0,
     bottom: 150,
   },
-  topBar: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#000000',
-  },
-  mainSubText: {
-    fontSize: 18,
-    fontWeight: '700',
-    fontFamily: 'Arimo-Bold',
-    color: 'rgba(255, 255, 255, 0.8)',
-    textAlign: 'center',
-    bottom: -520,
-    lineHeight: 30,
-    paddingHorizontal: 20,
-  },
-  subLineTextTop: {
-    fontSize: 18,
-    fontFamily: 'Brittany-Signature',
-    color: 'rgba(255, 255, 255, 0.7)',
-    textAlign: 'center',
-    marginTop: -2,
-  },
-  topBarSubText: {
-    fontSize: 18,
-    fontWeight: '700',
-    fontFamily: 'Arimo-Bold',
-    color: '#ffffff',
-    textAlign: 'center',
-    marginTop: 5,
-    textShadowColor: '#00d4ff',
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 10,
-    lineHeight: 24,
-    paddingHorizontal: 20,
-  },
   globalOverlay: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
     height: '70%',
-  },
-  container: {
-    position: 'absolute',
-    // top: 0,
-    bottom: 0,
-    left: 0,
-    right: 0,
-    alignItems: 'center',
-    gap: 12,
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-  },
-  primaryButton: {
-    width: '70%',
-    overflow: 'hidden',
-
-  },
-  gradient: {
-    width: '100%',
-    paddingVertical: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(160, 220, 255, 0.6)',
-    borderRadius: 14,
-  },
-  primaryButtonText: {
-    fontSize: 14,
-    fontWeight: '700',
-    letterSpacing: 1,
-    textAlign: 'center',
-    color: '#ffffff',
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-  },
-  trial: {
-    marginTop: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-  },
-  link: {
-    color: '#00a8cc',
-  },
-  separator: {
-    color: 'rgba(255,255,255,0.3)',
-    fontSize: 12,
-    marginHorizontal: 4,
-  },
-  helpText: {
-    color: 'rgba(255,255,255,0.5)',
-    fontSize: 12,
-  },
-  highlight: {
-    fontWeight: '700',
-    color: '#ffffff',
-    fontSize: 14,
-    textShadowColor: '#00d4ff',
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 12,
-    overflow: 'visible',
-  },
-  glowIcon: {
-    color: '#ffffff',
-    textShadowColor: '#00eaff',
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 8,
-  },
-  contactLink: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  contactText: {
-    color: 'rgba(255, 255, 255, 0.4)',
-    fontSize: 12,
   },
 });

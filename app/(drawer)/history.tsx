@@ -19,7 +19,6 @@ import { BackgroundGradientOnboarding } from '../../components/ui/BackgroundGrad
 dayjs.extend(relativeTime);
 dayjs.locale('fr');
 
-const NEON_BLUE = '#00d4ff';
 
 interface HistoryItem {
   id: string;
@@ -95,7 +94,7 @@ export default function HistoryScreen() {
           contentContainerStyle={s.scrollContent}
           showsVerticalScrollIndicator={false}
           bounces={false}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={NEON_BLUE} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.neon.primary} />}
         >
           <View style={s.header}>
             <TouchableOpacity style={s.backButton} onPress={() => router.back()}>
@@ -118,7 +117,7 @@ export default function HistoryScreen() {
 
           {loading ? (
             <View style={s.emptyContainer}>
-              <ActivityIndicator size="large" color={NEON_BLUE} />
+              <ActivityIndicator size="large" color={colors.neon.primary} />
             </View>
           ) : error ? (
             <View style={s.emptyContainer}>
@@ -130,7 +129,7 @@ export default function HistoryScreen() {
           ) : history.length === 0 ? (
             <View style={s.emptyContainer}>
               <View style={s.emptyIconBox}>
-                <Search size={28} color={NEON_BLUE} />
+                <Search size={28} color={colors.neon.primary} />
               </View>
               <Text style={s.emptyText}>Aucun résultat trouvé</Text>
             </View>
@@ -143,7 +142,7 @@ export default function HistoryScreen() {
                     onPress={() => router.push({ pathname: '/(drawer)', params: { conversationId: item.id } })}
                     activeOpacity={0.7}
                   >
-                    <LinearGradient colors={['rgba(0,212,255,0.04)', 'transparent']} style={StyleSheet.absoluteFill} />
+                    <LinearGradient colors={[colors.primary.main + '0a', 'transparent']} style={StyleSheet.absoluteFill} />
                     <View style={s.iconContainer}>
                       {item.imageUrl ? (
                         <Image
@@ -152,7 +151,7 @@ export default function HistoryScreen() {
                           resizeMode="cover"
                         />
                       ) : (
-                        <MessageSquare size={20} color={NEON_BLUE} />
+                        <MessageSquare size={20} color={colors.neon.primary} />
                       )}
                     </View>
                     <View style={s.itemContent}>
@@ -276,8 +275,8 @@ const s = StyleSheet.create({
     padding: 14,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(0,212,255,0.1)',
-    backgroundColor: 'rgba(15,23,42,0.6)',
+    borderColor: colors.primary.main + '1a',
+    backgroundColor: colors.background.secondary + '99', // 60% alpha
     overflow: 'hidden',
     gap: 12,
   },
@@ -285,9 +284,9 @@ const s = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 12,
-    backgroundColor: 'rgba(0,212,255,0.08)',
+    backgroundColor: colors.primary.main + '14',
     borderWidth: 1,
-    borderColor: 'rgba(0,212,255,0.15)',
+    borderColor: colors.primary.main + '26',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -368,7 +367,7 @@ const s = StyleSheet.create({
   },
   retryText: {
     fontFamily: 'Arimo-Bold',
-    color: NEON_BLUE,
+    color: colors.neon.primary,
     fontSize: 13,
   },
 });

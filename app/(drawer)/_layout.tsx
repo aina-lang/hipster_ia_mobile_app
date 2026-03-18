@@ -24,8 +24,8 @@ import { GenericModal } from '../../components/ui/GenericModal';
 dayjs.extend(relativeTime);
 dayjs.locale('fr');
 
-const NEON_BLUE  = '#00d4ff';
-const NEON_LIGHT = '#1e9bff';
+const NEON_BLUE  = colors.neon.primary;
+const NEON_LIGHT = colors.primary.light;
 const AVATAR_SIZE = 190;
 
 interface HistoryItem {
@@ -69,7 +69,7 @@ function AvatarNeonBorder({ children, size }: { children: React.ReactNode; size:
             style={{ width: TRACK_W * 2, height: '100%' }}
           />
         </RNAnimated.View>
-        <View style={{ position: 'absolute', top: BORDER, left: BORDER, right: BORDER, bottom: BORDER, borderRadius: (outer - BORDER * 2) / 2, backgroundColor: '#0d0d0d' }} />
+        <View style={{ position: 'absolute', top: BORDER, left: BORDER, right: BORDER, bottom: BORDER, borderRadius: (outer - BORDER * 2) / 2, backgroundColor: colors.background.premium }} />
       </View>
       <View
         style={{ position: 'absolute', top: -4, left: -4, right: -4, bottom: -4, borderRadius: (outer + 8) / 2, backgroundColor: 'transparent', shadowColor: NEON_BLUE, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.45, shadowRadius: 14, elevation: 8 }}
@@ -179,11 +179,11 @@ function CustomDrawerContent(props: any) {
     : `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=random`;
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#0d0d0d' }}>
-      <DrawerContentScrollView {...props} contentContainerStyle={{ paddingTop: 0, backgroundColor: '#0d0d0d' }}>
+    <View style={{ flex: 1, backgroundColor: colors.background.primary }}>
+      <DrawerContentScrollView {...props} contentContainerStyle={{ paddingTop: 0, backgroundColor: colors.background.primary }}>
 
         <View style={s.headerWrapper}>
-          <LinearGradient colors={['rgba(0,212,255,0.08)', 'transparent']} style={s.headerGradient} />
+          <LinearGradient colors={[colors.primary.main + '14', 'transparent']} style={s.headerGradient} />
           <View style={s.headerContainer}>
             <AvatarNeonBorder size={AVATAR_SIZE}>
               <Image source={{ uri: userAvatar }} style={s.avatar} />
@@ -330,14 +330,14 @@ export default function DrawerLayout() {
       screenOptions={{
         headerShown: false,
         drawerStyle: {
-          backgroundColor: '#0d0d0d',
+          backgroundColor: colors.background.primary,
           borderRightWidth: 1,
-          borderRightColor: 'rgba(255,255,255,0.06)',
+          borderRightColor: colors.border,
           width: '80%',
         },
-        drawerActiveBackgroundColor: 'rgba(0,212,255,0.08)',
-        drawerActiveTintColor: NEON_BLUE,
-        drawerInactiveTintColor: 'rgba(255,255,255,0.55)',
+        drawerActiveBackgroundColor: colors.primary.main + '14',
+        drawerActiveTintColor: colors.neon.primary,
+        drawerInactiveTintColor: colors.text.muted,
         drawerLabelStyle: {
           marginLeft: 8,
           fontSize: 15,
@@ -389,7 +389,7 @@ const s = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: colors.status.success,
     borderWidth: 3,
-    borderColor: '#0d0d0d',
+    borderColor: colors.background.primary,
     zIndex: 2,
   },
   userInfo: {

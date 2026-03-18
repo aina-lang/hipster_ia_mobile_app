@@ -21,61 +21,10 @@ import { colors } from '../../theme/colors';
 import { useAuthStore } from '../../store/authStore';
 import { getCountryByName, Country } from '../../api/countries';
 
-const NEON_BLUE  = '#00d4ff';
-const NEON_LIGHT = '#1e9bff';
+import { NeonBorderInput } from '../../components/ui/NeonBorderInput';
+import { NeonActionButton } from '../../components/ui/NeonActionButton';
+
 const AVATAR_SIZE = 110;
-
-function NeonBorderInput({ children, isActive }: { children: React.ReactNode; isActive: boolean }) {
-  const translateX = useRef(new RNAnimated.Value(0)).current;
-  const loop = useRef<RNAnimated.CompositeAnimation | null>(null);
-
-  useEffect(() => {
-    loop.current?.stop();
-    if (isActive) {
-      translateX.setValue(0);
-      loop.current = RNAnimated.loop(
-        RNAnimated.timing(translateX, { toValue: -800, duration: 2400, easing: Easing.linear, useNativeDriver: true }),
-        { resetBeforeIteration: true }
-      );
-      loop.current.start();
-    } else {
-      translateX.setValue(0);
-    }
-    return () => loop.current?.stop();
-  }, [isActive]);
-
-  return (
-    <View style={nb.wrapper}>
-      {isActive && (
-        <>
-          <View style={nb.clip} pointerEvents="none">
-            <RNAnimated.View style={[nb.track, { transform: [{ translateX }] }]}>
-              <LinearGradient
-                colors={['transparent', NEON_BLUE, NEON_LIGHT, 'transparent', 'transparent', NEON_BLUE, NEON_LIGHT, 'transparent']}
-                locations={[0.05, 0.2, 0.3, 0.45, 0.55, 0.7, 0.8, 0.95]}
-                start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }}
-                style={{ width: 1600, height: '100%' }}
-              />
-            </RNAnimated.View>
-            <View style={nb.mask} />
-          </View>
-          <View style={nb.bloomMid} pointerEvents="none" />
-          <View style={nb.bloomFar} pointerEvents="none" />
-        </>
-      )}
-      {children}
-    </View>
-  );
-}
-
-const nb = StyleSheet.create({
-  wrapper:  { position: 'relative' },
-  clip:     { position: 'absolute', top: -1, left: -1, right: -1, bottom: -0.5, borderRadius: 13, overflow: 'hidden', zIndex: 2 },
-  track:    { position: 'absolute', top: 0, bottom: 0, left: 0 },
-  mask:     { position: 'absolute', top: 1, left: 1, right: 1, bottom: 0.5, borderRadius: 12, zIndex: 1, backgroundColor: '#030814' },
-  bloomMid: { position: 'absolute', top: -4, left: -4, right: -4, bottom: -4, borderRadius: 16, backgroundColor: 'transparent', shadowColor: NEON_BLUE, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.45, shadowRadius: 14, elevation: 8 },
-  bloomFar: { position: 'absolute', top: -8, left: -8, right: -8, bottom: -8, borderRadius: 20, backgroundColor: 'transparent', shadowColor: NEON_LIGHT, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.22, shadowRadius: 24, elevation: 4 },
-});
 
 function AvatarNeonBorder({ children, size }: { children: React.ReactNode; size: number }) {
   const translateX = useRef(new RNAnimated.Value(0)).current;
@@ -97,52 +46,20 @@ function AvatarNeonBorder({ children, size }: { children: React.ReactNode; size:
       <View style={{ position: 'absolute', top: 0, left: 0, width: outer, height: outer, borderRadius: outer / 2, overflow: 'hidden' }} pointerEvents="none">
         <RNAnimated.View style={{ position: 'absolute', top: 0, bottom: 0, left: 0, width: TRACK_W * 2, transform: [{ translateX }] }}>
           <LinearGradient
-            colors={['transparent', NEON_BLUE, NEON_LIGHT, 'transparent', 'transparent', NEON_BLUE, NEON_LIGHT, 'transparent']}
+            colors={['transparent', colors.neon.primary, colors.primary.light, 'transparent', 'transparent', colors.neon.primary, colors.primary.light, 'transparent']}
             locations={[0.05, 0.2, 0.3, 0.45, 0.55, 0.7, 0.8, 0.95]}
             start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }}
             style={{ width: TRACK_W * 2, height: '100%' }}
           />
         </RNAnimated.View>
-        <View style={{ position: 'absolute', top: BORDER, left: BORDER, right: BORDER, bottom: BORDER, borderRadius: (outer - BORDER * 2) / 2, backgroundColor: '#0d0d0d' }} />
+        <View style={{ position: 'absolute', top: BORDER, left: BORDER, right: BORDER, bottom: BORDER, borderRadius: (outer - BORDER * 2) / 2, backgroundColor: colors.background.tertiary }} />
       </View>
-      <View style={{ position: 'absolute', top: -6, left: -6, right: -6, bottom: -6, borderRadius: (outer + 12) / 2, backgroundColor: 'transparent', shadowColor: NEON_BLUE, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.5, shadowRadius: 16, elevation: 10 }} pointerEvents="none" />
+      <View style={{ position: 'absolute', top: -6, left: -6, right: -6, bottom: -6, borderRadius: (outer + 12) / 2, backgroundColor: 'transparent', shadowColor: colors.neon.primary, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.5, shadowRadius: 16, elevation: 10 }} pointerEvents="none" />
       {children}
     </View>
   );
 }
 
-function NeonActionButton({ onPress, loading, disabled, label, icon, small, align = 'center' }: {
-  onPress: () => void; loading: boolean; disabled: boolean; label: string; icon?: React.ReactNode; small?: boolean; align?: 'center' | 'left';
-}) {
-  const scale = useRef(new RNAnimated.Value(1)).current;
-  const spring = (v: number, speed: number) => RNAnimated.spring(scale, { toValue: v, useNativeDriver: true, speed }).start();
-
-  return (
-    <RNAnimated.View style={[btn.wrapper, small && (align === 'left' ? btn.wrapperSmallLeft : btn.wrapperSmall), { transform: [{ scale }] }]}>
-      <Pressable onPress={onPress} onPressIn={() => spring(0.96, 40)} onPressOut={() => spring(1, 20)} disabled={disabled} style={btn.pressable}>
-        <LinearGradient colors={['#264F8C', '#0a1628', '#040612']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} locations={[0, 0.46, 1]} style={btn.gradient}>
-          {loading ? (
-            <ActivityIndicator color="#fff" size="small" />
-          ) : (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              {icon}
-              <Text style={btn.text}>{label}</Text>
-            </View>
-          )}
-        </LinearGradient>
-      </Pressable>
-    </RNAnimated.View>
-  );
-}
-
-const btn = StyleSheet.create({
-  wrapper:      { alignSelf: 'stretch', width: '100%' },
-  wrapperSmall:     { width: '70%', alignSelf: 'center' },
-  wrapperSmallLeft: { width: '70%', alignSelf: 'center' },
-  pressable:    { borderRadius: 12, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.42)' },
-  gradient:     { paddingVertical: 15, paddingHorizontal: 15, alignItems: 'center', justifyContent: 'center' },
-  text:         { fontFamily: 'Arimo-Bold', fontSize: 14, letterSpacing: 0.6, color: '#fff' },
-});
 
 function InputField({
   label, icon, value, onChangeText, placeholder, editable = true, dimmed = false,
@@ -390,7 +307,7 @@ export default function ProfileScreen() {
               <View style={s.progressSection}>
                 <Text style={s.progressLabel}>Profil complété à {completion}%</Text>
                 <View style={s.progressBar}>
-                  <LinearGradient colors={[NEON_BLUE, NEON_LIGHT]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={[s.progressFill, { width: `${completion}%` as any }]} />
+                  <LinearGradient colors={[colors.neon.primary, colors.primary.light]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={[s.progressFill, { width: `${completion}%` as any }]} />
                 </View>
               </View>
             </View>
@@ -546,28 +463,28 @@ const s = StyleSheet.create({
   headerCenter:    { flex: 1, alignItems: 'center', marginRight: 58 },
   titleSub:        { fontFamily: 'Arimo-Bold', fontSize: 16,  textTransform: 'uppercase', color: '#ffffff' },
 
-  heroCard:          { borderRadius: 24, borderWidth: 1, borderColor: 'rgba(0,212,255,0.12)', alignItems: 'center', paddingVertical: 32, paddingHorizontal: 24, marginBottom: 20, overflow: 'hidden', backgroundColor: 'rgba(15,23,42,0.6)' },
+  heroCard:          { borderRadius: 24, borderWidth: 1, borderColor: colors.primary.main + '1f', alignItems: 'center', paddingVertical: 32, paddingHorizontal: 24, marginBottom: 20, overflow: 'hidden', backgroundColor: colors.background.secondary + '99' },
   heroAvatarWrapper: { position: 'relative', marginBottom: 16 },
   heroAvatar:        { width: AVATAR_SIZE, height: AVATAR_SIZE, borderRadius: AVATAR_SIZE / 2, backgroundColor: colors.background.tertiary },
-  heroCameraBtn:     { position: 'absolute', bottom: 0, right: 0, width: 32, height: 32, borderRadius: 16, backgroundColor: NEON_BLUE, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#0d0d0d' },
-  heroName:          { fontFamily: 'Brittany-Signature', fontSize: 26, color: '#fff', textShadowColor: NEON_BLUE, textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 12, lineHeight: 36, marginBottom: 4, paddingLeft: 6 },
+  heroCameraBtn:     { position: 'absolute', bottom: 0, right: 0, width: 32, height: 32, borderRadius: 16, backgroundColor: colors.neon.primary, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: colors.background.primary },
+  heroName:          { fontFamily: 'Brittany-Signature', fontSize: 26, color: '#fff', textShadowColor: colors.neon.primary, textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 12, lineHeight: 36, marginBottom: 4, paddingLeft: 6 },
   heroEmail:         { fontFamily: 'Arimo-Regular', fontSize: 13, color: colors.text.muted, marginBottom: 16 },
-  heroBadge:         { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 16, paddingVertical: 8, backgroundColor: 'rgba(0,212,255,0.08)', borderRadius: 20, borderWidth: 1, borderColor: 'rgba(0,212,255,0.2)', marginBottom: 20 },
-  heroBadgeStar:     { fontSize: 13, color: NEON_BLUE, fontWeight: '800' },
-  heroBadgeText:     { fontFamily: 'Arimo-Bold', fontSize: 12, color: NEON_BLUE, letterSpacing: 0.3 },
+  heroBadge:         { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 16, paddingVertical: 8, backgroundColor: colors.primary.main + '14', borderRadius: 20, borderWidth: 1, borderColor: colors.primary.main + '33', marginBottom: 20 },
+  heroBadgeStar:     { fontSize: 13, color: colors.neon.primary, fontWeight: '800' },
+  heroBadgeText:     { fontFamily: 'Arimo-Bold', fontSize: 12, color: colors.neon.primary, letterSpacing: 0.3 },
   progressSection:   { width: '100%', gap: 8 },
   progressLabel:     { fontFamily: 'Arimo-Regular', fontSize: 11, color: colors.text.muted, textAlign: 'center', letterSpacing: 0.4, textTransform: 'uppercase' },
   progressBar:       { width: '100%', height: 4, backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 2, overflow: 'hidden' },
   progressFill:      { height: '100%', borderRadius: 2 },
 
-  card:        { backgroundColor: 'rgba(15,23,42,0.6)', borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.07)', padding: 20, gap: 16, marginBottom: 20 },
+  card:        { backgroundColor: colors.background.secondary + '99', borderRadius: 20, borderWidth: 1, borderColor: colors.white + '12', padding: 20, gap: 16, marginBottom: 20 },
   sectionRow:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, marginTop: 20, marginBottom: 12 },
   sectionText: { fontFamily: 'Arimo-Bold', fontSize: 12, letterSpacing: 2, textTransform: 'uppercase', color: 'rgba(255,255,255,0.28)' },
 
   inputGroup:     { gap: 8 },
   inputRow:       { flexDirection: 'row', gap: 12 },
   label:          { fontFamily: 'Arimo-Bold', fontSize: 12, color: colors.text.secondary, letterSpacing: 0.3 },
-  inputContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(15,23,42,0.9)', borderRadius: 12, padding: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', zIndex: 3 },
+  inputContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.background.secondary + 'e6', borderRadius: 12, padding: 14, borderWidth: 1, borderColor: colors.white + '14', zIndex: 3 },
   inputActive:    { borderColor: 'transparent', backgroundColor: '#030814' },
   inputDimmed:    { opacity: 0.5 },
   input:          { flex: 1, fontFamily: 'Arimo-Regular', fontSize: 14, color: colors.text.primary },
@@ -582,11 +499,11 @@ const s = StyleSheet.create({
   cancelBtnText: { fontFamily: 'Arimo-Bold', color: colors.text.secondary, fontSize: 14 },
 
   planRow:       { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  planName:      { fontFamily: 'Brittany-Signature', fontSize: 24, color: '#fff', textShadowColor: NEON_BLUE, textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 8, paddingLeft: 4, paddingVertical: 10 },
+  planName:      { fontFamily: 'Brittany-Signature', fontSize: 24, color: '#fff', textShadowColor: colors.neon.primary, textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 8, paddingLeft: 4, paddingVertical: 10 },
   planDesc:      { fontFamily: 'Arimo-Regular', fontSize: 13, color: colors.text.secondary, marginTop: 2 },
   planBadge:     { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.08)' },
-  planBadgeActive: { backgroundColor: 'rgba(0,212,255,0.12)', borderWidth: 1, borderColor: 'rgba(0,212,255,0.25)' },
-  planBadgeText: { fontFamily: 'Arimo-Bold', fontSize: 12, color: NEON_BLUE, letterSpacing: 0.3 },
+  planBadgeActive: { backgroundColor: colors.primary.main + '1f', borderWidth: 1, borderColor: colors.primary.main + '40' },
+  planBadgeText: { fontFamily: 'Arimo-Bold', fontSize: 12, color: colors.neon.primary, letterSpacing: 0.3 },
 
   menuItem:     { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)' },
   menuItemText: { flex: 1, fontFamily: 'Arimo-Regular', fontSize: 15, color: colors.text.primary },

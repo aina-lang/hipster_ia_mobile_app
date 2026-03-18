@@ -43,22 +43,13 @@ import { useAuthStore } from '../../store/authStore';
 import { useUserCredits } from '../../hooks/useUserCredits';
 import { GenericModal } from '../../components/ui/GenericModal';
 import { BackgroundGradientOnboarding } from '../../components/ui/BackgroundGradientOnboarding';
+import { PlanCard, Plan } from '../../components/subscription/PlanCard';
+import { ManagementCard } from '../../components/subscription/ManagementCard';
+import { NeonActionButton } from '../../components/ui/NeonActionButton';
+import { NeonBorderCard } from '../../components/ui/NeonBorderCard';
 
-const NEON_BLUE  = '#00d4ff';
-const NEON_LIGHT = '#1e9bff';
-const CARD_W     = 340;
-
-interface Plan {
-  id: string;
-  name: string;
-  price: number | string;
-  description: string;
-  features: string[];
-  stripePriceId: string | null;
-  icon?: LucideIcon;
-  popular?: boolean;
-  isComingSoon?: boolean;
-}
+const NEON_BLUE  = colors.neon.primary;
+const NEON_LIGHT = colors.primary.light;
 
 const planIcons: Record<string, LucideIcon> = {
   curieux: Shield,
@@ -77,205 +68,6 @@ const getFeatureIcon = (feature: string): LucideIcon => {
   if (f.includes('export'))                                  return f.includes('pas') ? XCircle : Download;
   if (f.includes('accompagnement') || f.includes('hipster')) return Crown;
   return CheckCircle2;
-};
-
-/* ─── Neon border animée sur les cartes (même logique que packs.tsx) ─── */
-function NeonBorderCard({ children, isSelected, cardBg = '#030814' }: {
-  children: React.ReactNode; isSelected: boolean; cardBg?: string;
-}) {
-  const translateX = useRef(new RNAnimated.Value(0)).current;
-  const loopRef    = useRef<RNAnimated.CompositeAnimation | null>(null);
-
-  useEffect(() => {
-    loopRef.current?.stop();
-    if (isSelected) {
-      translateX.setValue(0);
-      loopRef.current = RNAnimated.loop(
-        RNAnimated.timing(translateX, {
-          toValue: -CARD_W,
-          duration: 3000,
-          easing: Easing.linear,
-          useNativeDriver: true,
-        }),
-        { resetBeforeIteration: true }
-      );
-      loopRef.current.start();
-    } else {
-      translateX.setValue(0);
-    }
-    return () => { loopRef.current?.stop(); };
-  }, [isSelected]);
-
-  return (
-    <View style={s.neonWrapper}>
-      {isSelected && (
-        <View style={s.neonClip} pointerEvents="none">
-          <RNAnimated.View style={[s.neonTrack, { transform: [{ translateX }] }]}>
-            <LinearGradient
-              colors={['transparent', NEON_BLUE, NEON_LIGHT, 'transparent', 'transparent', NEON_BLUE, NEON_LIGHT, 'transparent']}
-              locations={[0.05, 0.2, 0.3, 0.45, 0.55, 0.7, 0.8, 0.95]}
-              start={{ x: 0, y: 0.5 }}
-              end={{ x: 1, y: 0.5 }}
-              style={{ width: CARD_W * 2, height: '100%' }}
-            />
-          </RNAnimated.View>
-          <View style={[s.neonMask, { backgroundColor: cardBg }]} />
-        </View>
-      )}
-      {isSelected && (
-        <>
-          <View style={s.bloomFar}  pointerEvents="none" />
-          <View style={s.bloomMid}  pointerEvents="none" />
-          <View style={s.floorGlow} pointerEvents="none" />
-        </>
-      )}
-      {children}
-    </View>
-  );
-}
-
-/* ─── Bouton neon principal (même style que profile.tsx) ─── */
-function NeonActionButton({ onPress, loading, disabled, label, icon }: {
-  onPress: () => void; loading: boolean; disabled: boolean; label: string; icon?: React.ReactNode;
-}) {
-  const scale = useRef(new RNAnimated.Value(1)).current;
-  const spring = (v: number, speed: number) =>
-    RNAnimated.spring(scale, { toValue: v, useNativeDriver: true, speed }).start();
-
-  return (
-    <RNAnimated.View style={[s.btnWrapper, { transform: [{ scale }] }]}>
-      <Pressable
-        onPress={onPress}
-        onPressIn={() => spring(0.96, 40)}
-        onPressOut={() => spring(1, 20)}
-        disabled={disabled}
-        style={s.btnPressable}
-      >
-        <LinearGradient
-          colors={['#264F8C', '#0a1628', '#040612']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          locations={[0, 0.46, 1]}
-          style={s.btnGradient}
-        >
-          {loading ? (
-            <ActivityIndicator color="#fff" size="small" />
-          ) : (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              {icon}
-              <Text style={s.btnText}>{label}</Text>
-            </View>
-          )}
-        </LinearGradient>
-      </Pressable>
-    </RNAnimated.View>
-  );
-}
-
-/* ─── Carte plan avec neon border ─── */
-const PlanCard = ({
-  plan, isSelected, onSelect, loading,
-}: {
-  plan: Plan; isSelected: boolean; onSelect: () => void; loading: boolean;
-}) => {
-  const isComingSoon = plan.isComingSoon;
-  const scale        = useSharedValue(1);
-  const animatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
-
-  const handlePressIn  = () => { if (!loading && !isComingSoon) scale.value = withSpring(0.97, { damping: 15 }); };
-  const handlePressOut = () => { if (!loading && !isComingSoon) scale.value = withSpring(1, { damping: 15 }); };
-
-  const PlanIcon = plan.icon;
-
-  return (
-    <Animated.View style={[s.planWrapper, animatedStyle]}>
-      <TouchableOpacity
-        onPress={onSelect}
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
-        activeOpacity={0.9}
-        disabled={loading || isComingSoon}
-        style={[s.touchableArea, isComingSoon && { opacity: 0.5 }]}
-      >
-        <NeonBorderCard isSelected={isSelected}>
-          <View style={[s.planCard, isSelected && !isComingSoon && s.planCardSelected]}>
-
-            {plan.popular && !isComingSoon && (
-              <LinearGradient
-                colors={['#264F8C', '#0a1628', '#040612']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                locations={[0, 0.46, 1]}
-                style={s.badge}
-              >
-                <Text style={s.badgeText}>CONSEILLÉ</Text>
-              </LinearGradient>
-            )}
-            {isComingSoon && (
-              <View style={[s.badge, { backgroundColor: '#334155' }]}>
-                <Text style={s.badgeText}>À VENIR</Text>
-              </View>
-            )}
-
-            <View style={s.planHeader}>
-              <View style={[s.iconBox, isSelected && !isComingSoon && s.iconBoxActive]}>
-                {PlanIcon && (
-                  <PlanIcon
-                    size={24}
-                    color={isSelected && !isComingSoon ? '#ffffff' : colors.text.muted}
-                  />
-                )}
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={[
-                  s.planName,
-                  isSelected && !isComingSoon && s.planNameSelected,
-                  isComingSoon && { color: colors.text.muted },
-                ]}>
-                  {plan.name}
-                </Text>
-                <Text style={[
-                  s.planPrice,
-                  isSelected && !isComingSoon && s.planPriceSelected,
-                  isComingSoon && { color: colors.text.muted },
-                ]}>
-                  {plan.price}
-                  {typeof plan.price === 'string' && plan.price.toLowerCase().includes('€') ? (
-                    <Text style={s.pricePeriod}>/mois</Text>
-                  ) : null}
-                </Text>
-                {plan.description && (
-                  <Text style={s.planDesc}>{plan.description}</Text>
-                )}
-              </View>
-            </View>
-
-            <View style={s.featuresList}>
-              {plan.features.map((feature, idx) => {
-                const FeatureIcon      = getFeatureIcon(feature);
-                const isAccompagnement = feature.toLowerCase().includes('accompagnement');
-                return (
-                  <View key={idx} style={[s.featureRow, isAccompagnement && s.agencyRow]}>
-                    <FeatureIcon
-                      size={14}
-                      color={isSelected && !isComingSoon ? NEON_BLUE : (isAccompagnement ? colors.text.primary : colors.text.muted)}
-                    />
-                    <Text style={[
-                      s.featureText,
-                      isAccompagnement && s.agencyText,
-                      isSelected && !isComingSoon && s.featureTextSelected,
-                    ]}>
-                      {feature}
-                    </Text>
-                  </View>
-                );
-              })}
-            </View>
-          </View>
-        </NeonBorderCard>
-      </TouchableOpacity>
-    </Animated.View>
-  );
 };
 
 /* ─── Écran principal ─── */
@@ -436,38 +228,11 @@ export default function SubscriptionScreen() {
             <>
               {/* ── Carte de gestion abonnement actif ── */}
               {user?.planType && user.planType !== 'curieux' && (
-                <View style={s.managementCard}>
-                  <LinearGradient colors={['rgba(0,212,255,0.06)', 'transparent']} style={StyleSheet.absoluteFill} />
-                  <View style={s.managementHeader}>
-                    <View style={s.statusBadge}>
-                      <View style={[s.statusDot, {
-                        backgroundColor: ['active','trialing','trial'].includes(user.subscriptionStatus || '')
-                          ? '#10b981' : '#f59e0b',
-                      }]} />
-                      <Text style={s.statusText}>
-                        {['active','trialing','trial'].includes(user.subscriptionStatus || '')
-                          ? 'Plan Actif'
-                          : user.subscriptionStatus === 'canceled'
-                            ? "Annulé (actif jusqu'à fin cycle)"
-                            : 'En attente'}
-                      </Text>
-                    </View>
-                    <Text style={s.currentPlanTitle}>
-                      {plans.find(p => p.id === user.planType)?.name || 'Pack Premium'}
-                    </Text>
-                  </View>
-                  <View style={s.managementRow}>
-                    <Calendar size={16} color={colors.text.muted} />
-                    <Text style={s.managementLabel}>
-                      {user.subscriptionStatus === 'canceled' ? 'Expire le' : 'Prochain renouvellement'}
-                    </Text>
-                    <Text style={s.managementValue}>
-                      {user.subscriptionEndDate
-                        ? new Date(user.subscriptionEndDate).toLocaleDateString('fr-FR')
-                        : 'Non défini'}
-                    </Text>
-                  </View>
-                </View>
+                <ManagementCard
+                  subscriptionStatus={user.subscriptionStatus}
+                  subscriptionEndDate={user.subscriptionEndDate}
+                  planName={plans.find(p => p.id === user.planType)?.name || 'Pack Premium'}
+                />
               )}
 
               {/* ── Sous-titre ── */}
@@ -580,7 +345,7 @@ const s = StyleSheet.create({
     padding: 20,
     marginBottom: 24,
     overflow: 'hidden',
-    backgroundColor: 'rgba(15,23,42,0.6)',
+    backgroundColor: colors.background.secondary + '99', // 60% alpha
   },
   managementHeader: {
     flexDirection: 'row',
@@ -691,7 +456,7 @@ const s = StyleSheet.create({
   planWrapper:   { flex: 1, position: 'relative', marginBottom: 12 },
   touchableArea: { flex: 1 },
   planCard: {
-    backgroundColor: 'rgba(15,23,42,0.92)',
+    backgroundColor: colors.background.secondary + 'eb', // 92% alpha
     borderRadius: 20,
     padding: 20,
     borderWidth: 1,

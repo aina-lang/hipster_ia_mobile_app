@@ -901,9 +901,9 @@ export default function HomeScreen() {
                   flexDirection: 'row',
                   alignItems: 'center',
                   gap: 6,
-                  backgroundColor: 'rgba(59, 130, 246, 0.12)',
+                  backgroundColor: colors.primary.main + '1f', // 12% alpha
                   borderWidth: 1,
-                  borderColor: 'rgba(59, 130, 246, 0.3)',
+                  borderColor: colors.primary.main + '4d', // 30% alpha
                   paddingHorizontal: 12,
                   paddingVertical: 6,
                   borderRadius: 20,
@@ -999,8 +999,8 @@ export default function HomeScreen() {
                         style={
                           msg.sender === 'user'
                             ? {
-                              backgroundColor: 'rgba(44, 70, 155, 0.2)',
-                              borderColor: 'rgba(44, 70, 155, 0.4)',
+                              backgroundColor: colors.primary.main + '33', // 20% alpha
+                              borderColor: colors.primary.main + '66', // 40% alpha
                               alignSelf: 'flex-end',
                               borderBottomRightRadius: 4,
                             }
@@ -1087,7 +1087,7 @@ export default function HomeScreen() {
           >
             {/* Dark semi-transparent background */}
             <View 
-              style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.65)' }]} 
+              style={[StyleSheet.absoluteFill, { backgroundColor: colors.overlay }]} 
               pointerEvents="auto"
             />
 
