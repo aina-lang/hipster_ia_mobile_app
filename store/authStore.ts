@@ -81,6 +81,7 @@ interface AuthState {
   hasFinishedOnboarding: boolean;
   isLoading: boolean;
   isHydrated: boolean;
+  isFirstTime: boolean; // Track if this is user's first time using the app (independent of auth)
   error: string | null;
   accessToken: string | null;
   refreshToken: string | null;
@@ -114,6 +115,7 @@ export const useAuthStore = create<AuthState>()(
       hasFinishedOnboarding: false,
       isLoading: false,
       isHydrated: false,
+      isFirstTime: true, // Default to first time until proven otherwise
       error: null,
       accessToken: null,
       refreshToken: null,
@@ -661,17 +663,52 @@ export const useAuthStore = create<AuthState>()(
       },
 
       setFirstTimeUsed: () => {
+        console.log('[AuthStore] setFirstTimeUsed() called - marking user as non-first-time');
+        
         // Mark user as no longer on first time - they've used the app
-        set((state) => ({
-          user: state.user ? { ...state.user, isFirstTime: false } : null,
-        }));
+        const currentUser = get().user;
+        const updatePayload: { isFirstTime: boolean; user?: User } = { isFirstTime: false };
+        
+        if (currentUser) {
+          updatePayload.user = { ...currentUser, isFirstTime: false };
+        }
+        
+        set(updatePayload);
+        console.log('[AuthStore] Store state updated: isFirstTime = false');
+        
+        // Save isFirstTime to AsyncStorage immediately to persist across app closes
+        AsyncStorage.setItem('auth-storage', JSON.stringify({ 
+          isFirstTime: false,
+          user: currentUser,
+          isAuthenticated: get().isAuthenticated,
+          hasFinishedOnboarding: get().hasFinishedOnboarding,
+          accessToken: get().accessToken,
+          refreshToken: get().refreshToken,
+        })).then(() => {
+          console.log('[AuthStore] Successfully persisted isFirstTime to AsyncStorage');
+        }).catch(e => {
+          console.warn('[AuthStore] Failed to persist isFirstTime to AsyncStorage:', e);
+        });
+        
+        // Try to persist to backend if user is authenticated
+        const state = get();
+        if (state.user && state.accessToken) {
+          const endpoint = state.user.type === 'ai' ? `/profiles/ai/${state.user.id}` : `/users/${state.user.id}`;
+          api.patch(endpoint, { isFirstTime: false }).catch((e) => {
+            console.warn('[AuthStore] Failed to persist isFirstTime to backend:', e);
+            // Continue anyway - local state is updated
+          });
+        }
       },
     }),
     {
       name: 'auth-storage',
       storage: createJSONStorage(() => AsyncStorage),
       onRehydrateStorage: (state) => {
+        console.log('[AuthStore] Hydrating from AsyncStorage:', { isFirstTime: state?.isFirstTime });
         return () => {
+          const finalState = useAuthStore.getState();
+          console.log('[AuthStore] Hydration complete:', { isFirstTime: finalState.isFirstTime });
           useAuthStore.setState({ isHydrated: true });
         };
       },
@@ -679,6 +716,7 @@ export const useAuthStore = create<AuthState>()(
         user: state.user,
         isAuthenticated: state.isAuthenticated,
         hasFinishedOnboarding: state.hasFinishedOnboarding,
+        isFirstTime: state.isFirstTime,
         accessToken: state.accessToken,
         refreshToken: state.refreshToken,
       }),

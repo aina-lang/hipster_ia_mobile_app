@@ -339,10 +339,10 @@ checkbox: {
   flexShrink: 0,
 },
 checkboxChecked: {
-  backgroundColor: colors.neon,
-  borderColor: colors.neon,
+  backgroundColor: colors.neon.primary,
+  borderColor: colors.neon.primary,
   // shadow sans elevation qui déplace le layout
-  shadowColor: colors.neon,
+  shadowColor: colors.neon.primary,
   shadowOffset: { width: 0, height: 0 },
   shadowOpacity: 0.7,
   shadowRadius: 8,

@@ -28,7 +28,8 @@ const NEON_BLUE = '#00d4ff';
 const NEON_GLOW = '#0099ff';
 const NEON_LIGHT = '#66e5ff';
 
-const videobg = require('../../assets/video/splashVideo-fixed-mobile.mp4');
+const loadingVideo = require('../../assets/video/splashVideo-fixed-mobile.mp4');
+const reloadingVideo = require('../../assets/video/reloadignScreen.mp4');
 
 interface ParticleConfig {
   x: number;
@@ -279,9 +280,13 @@ export const LoadingTransition = React.memo(({ onVideoFinish }: LoadingTransitio
   const [videoReady, setVideoReady] = React.useState(false);
   const textAnimProgress = useSharedValue(0);
   const videoMarginTop = useSharedValue(0);
-  const { isAuthenticated, user, isHydrated } = useAuthStore();
+  const { isAuthenticated, user, isHydrated, isFirstTime } = useAuthStore();
 
-  const videoPlayer = useVideoPlayer(videobg, (player) => {
+  const selectedVideo = isFirstTime ? loadingVideo : reloadingVideo;
+  
+  console.log('LoadingTransition - Video selection:', { isHydrated, isFirstTime, usingReloading: !isFirstTime });
+
+  const videoPlayer = useVideoPlayer(selectedVideo, (player) => {
     player.loop = false;
     player.muted = true;
   });

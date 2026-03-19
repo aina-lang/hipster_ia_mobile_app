@@ -218,9 +218,10 @@ interface BottomAuthSectionProps {
   onVideoFinish?: () => void;
   setIsRouting?: (routing: boolean) => void;
   textAnimProgress: SharedValue<number>;
+  setFirstTimeUsed?: () => void;
 }
 
-const BottomAuthSection = React.memo(({ isAuthenticated, onVideoFinish, setIsRouting, textAnimProgress }: BottomAuthSectionProps) => {
+const BottomAuthSection = React.memo(({ isAuthenticated, onVideoFinish, setIsRouting, textAnimProgress, setFirstTimeUsed }: BottomAuthSectionProps) => {
   const router = useRouter();
 
   const animStyle = useAnimatedStyle(() => ({
@@ -238,7 +239,9 @@ const BottomAuthSection = React.memo(({ isAuthenticated, onVideoFinish, setIsRou
     <Animated.View style={[styles.container, animStyle]}>
       <Pressable
         onPress={() => {
-          console.log('[Welcome] Commencer clicked');
+          console.log('[Welcome] Commencer clicked - calling setFirstTimeUsed()');
+          setFirstTimeUsed?.(); // Mark user as having started
+          console.log('[Welcome] setFirstTimeUsed() completed');
           setIsRouting?.(true);
           onVideoFinish?.();
           router.replace('/(onboarding)/packs');
@@ -260,7 +263,9 @@ const BottomAuthSection = React.memo(({ isAuthenticated, onVideoFinish, setIsRou
         <Text small>Déjà un compte ?</Text>
         <Pressable 
           onPress={() => { 
-            console.log('[Welcome] Login clicked');
+            console.log('[Welcome] Login clicked - calling setFirstTimeUsed()');
+            setFirstTimeUsed?.(); // Mark user as having started
+            console.log('[Welcome] setFirstTimeUsed() completed');
             setIsRouting?.(true);
             onVideoFinish?.(); 
             router.replace('/(auth)/login'); 
@@ -297,16 +302,17 @@ export default React.memo(function WelcomeScreen({ onVideoFinish, setIsRouting }
   const [videoReady, setVideoReady] = React.useState(false);
   const textAnimProgress = useSharedValue(0);
   const videoMarginTop = useSharedValue(0);
-  const { isAuthenticated, user, isHydrated } = useAuthStore();
+  const { isAuthenticated, user, isHydrated, setFirstTimeUsed, isFirstTime } = useAuthStore();
 
   // Select video based on whether this is user's first time
-  const isFirstTime = user?.isFirstTime !== false;
-  const selectedVideo = isFirstTime ? loadingVideo : reloadingScreen;
+  const selectedVideo = isFirstTime ? videobg : reloadingScreen;
 
   const videoPlayer = useVideoPlayer(selectedVideo, (player) => {
     player.loop = false;
     player.muted = true;
   });
+
+  console.log('[Welcome] Current video:', { isFirstTime, selectedVideo: isFirstTime ? 'splash' : 'reloading' });
 
   const isFinishedRef = React.useRef(false);
   const playbackTimerRef = React.useRef<NodeJS.Timeout | null>(null);
@@ -416,6 +422,7 @@ export default React.memo(function WelcomeScreen({ onVideoFinish, setIsRouting }
           onVideoFinish={onVideoFinish}
           setIsRouting={setIsRouting}
           textAnimProgress={textAnimProgress}
+          setFirstTimeUsed={setFirstTimeUsed}
         />
       </View>
     </Animated.View>
