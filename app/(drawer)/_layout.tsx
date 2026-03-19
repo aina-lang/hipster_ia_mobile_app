@@ -24,8 +24,8 @@ import { GenericModal } from '../../components/ui/GenericModal';
 dayjs.extend(relativeTime);
 dayjs.locale('fr');
 
-const NEON_BLUE  = '#00d4ff';
-const NEON_LIGHT = '#1e9bff';
+const NEON_BLUE  = colors.neon.primary;
+const NEON_LIGHT = colors.primary.light;
 const AVATAR_SIZE = 190;
 
 interface HistoryItem {
@@ -69,7 +69,7 @@ function AvatarNeonBorder({ children, size }: { children: React.ReactNode; size:
             style={{ width: TRACK_W * 2, height: '100%' }}
           />
         </RNAnimated.View>
-        <View style={{ position: 'absolute', top: BORDER, left: BORDER, right: BORDER, bottom: BORDER, borderRadius: (outer - BORDER * 2) / 2, backgroundColor: '#0d0d0d' }} />
+        <View style={{ position: 'absolute', top: BORDER, left: BORDER, right: BORDER, bottom: BORDER, borderRadius: (outer - BORDER * 2) / 2, backgroundColor: colors.background.premium }} />
       </View>
       <View
         style={{ position: 'absolute', top: -4, left: -4, right: -4, bottom: -4, borderRadius: (outer + 8) / 2, backgroundColor: 'transparent', shadowColor: NEON_BLUE, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.45, shadowRadius: 14, elevation: 8 }}
@@ -179,11 +179,11 @@ function CustomDrawerContent(props: any) {
     : `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=random`;
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#0d0d0d' }}>
-      <DrawerContentScrollView {...props} contentContainerStyle={{ paddingTop: 0, backgroundColor: '#0d0d0d' }}>
+    <View style={{ flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.9)' }}>
+      <DrawerContentScrollView {...props} contentContainerStyle={{ paddingTop: 0, backgroundColor: 'rgba(15, 23, 42, 0.9)' }}>
 
         <View style={s.headerWrapper}>
-          <LinearGradient colors={['rgba(0,212,255,0.08)', 'transparent']} style={s.headerGradient} />
+          <LinearGradient colors={[colors.primary.main + '14', 'transparent']} style={s.headerGradient} />
           <View style={s.headerContainer}>
             <AvatarNeonBorder size={AVATAR_SIZE}>
               <Image source={{ uri: userAvatar }} style={s.avatar} />
@@ -317,11 +317,11 @@ export default function DrawerLayout() {
       exhausted(user.audioUsed   || 0, user.audioLimit   || 0) &&
       exhausted(user.threeDUsed  || 0, user.threeDLimit  || 0);
 
-    const isCritical     = !isActive || (planType === 'curieux' && (!user.stripeCustomerId || isExpired));
+    const isCritical     = !isActive || (planType === 'curieux' && isExpired);
     const isBlockedHome  = isFullyExhausted && (pathname === '/' || pathname === '/(drawer)/' || pathname === '/(drawer)');
     const onSubPage      = pathname === '/subscription' || pathname === '/(drawer)/subscription';
 
-    if ((isCritical || isBlockedHome) && !onSubPage) router.replace('/subscription');
+    if ((isCritical || isBlockedHome) && !onSubPage && planType !== 'curieux') router.replace('/subscription');
   }, [user, pathname]);
 
   return (
@@ -330,14 +330,14 @@ export default function DrawerLayout() {
       screenOptions={{
         headerShown: false,
         drawerStyle: {
-          backgroundColor: '#0d0d0d',
+          backgroundColor: colors.background.primary,
           borderRightWidth: 1,
-          borderRightColor: 'rgba(255,255,255,0.06)',
+          borderRightColor: colors.border,
           width: '80%',
         },
-        drawerActiveBackgroundColor: 'rgba(0,212,255,0.08)',
-        drawerActiveTintColor: NEON_BLUE,
-        drawerInactiveTintColor: 'rgba(255,255,255,0.55)',
+        drawerActiveBackgroundColor: colors.primary.main + '14',
+        drawerActiveTintColor: colors.neon.primary,
+        drawerInactiveTintColor: colors.text.muted,
         drawerLabelStyle: {
           marginLeft: 8,
           fontSize: 15,
@@ -351,11 +351,71 @@ export default function DrawerLayout() {
         },
       }}
     >
-      <Drawer.Screen name="index"        options={{ drawerLabel: 'Accueil',    drawerIcon: ({ color }) => <Home        size={20} color={color} /> }} />
-      <Drawer.Screen name="profile"      options={{ drawerLabel: 'Mon Profil', drawerIcon: ({ color }) => <User        size={20} color={color} /> }} />
-      <Drawer.Screen name="history"      options={{ drawerLabel: 'Historique', drawerIcon: ({ color }) => <HistoryIcon size={20} color={color} /> }} />
-      <Drawer.Screen name="subscription" options={{ drawerLabel: 'Abonnement', drawerIcon: ({ color }) => <Sparkles    size={20} color={color} /> }} />
-      <Drawer.Screen name="referral"     options={{ drawerLabel: 'Parrainage', drawerIcon: ({ color }) => <Users       size={20} color={color} /> }} />
+     <Drawer.Screen
+  name="index"
+  options={{
+    drawerIcon: ({ color, focused }) => (
+      <Home size={20} color={focused ? '#ffffff' : color} style={focused ? { shadowColor: '#00eaff', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 8, elevation: 4 } : undefined} />
+    ),
+    drawerLabel: ({ focused, color }) => (
+      <Text style={{ fontFamily: 'Arimo-Bold', fontSize: 15, letterSpacing: 0.3, color: focused ? '#ffffff' : color, textShadowColor: focused ? '#00eaff' : 'transparent', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: focused ? 8 : 0 }}>
+        Accueil
+      </Text>
+    ),
+  }}
+/>
+<Drawer.Screen
+  name="profile"
+  options={{
+    drawerIcon: ({ color, focused }) => (
+      <User size={20} color={focused ? '#ffffff' : color} style={focused ? { shadowColor: '#00eaff', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 8, elevation: 4 } : undefined} />
+    ),
+    drawerLabel: ({ focused, color }) => (
+      <Text style={{ fontFamily: 'Arimo-Bold', fontSize: 15, letterSpacing: 0.3, color: focused ? '#ffffff' : color, textShadowColor: focused ? '#00eaff' : 'transparent', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: focused ? 8 : 0 }}>
+        Mon Profil
+      </Text>
+    ),
+  }}
+/>
+<Drawer.Screen
+  name="history"
+  options={{
+    drawerIcon: ({ color, focused }) => (
+      <HistoryIcon size={20} color={focused ? '#ffffff' : color} style={focused ? { shadowColor: '#00eaff', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 8, elevation: 4 } : undefined} />
+    ),
+    drawerLabel: ({ focused, color }) => (
+      <Text style={{ fontFamily: 'Arimo-Bold', fontSize: 15, letterSpacing: 0.3, color: focused ? '#ffffff' : color, textShadowColor: focused ? '#00eaff' : 'transparent', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: focused ? 8 : 0 }}>
+        Historique
+      </Text>
+    ),
+  }}
+/>
+<Drawer.Screen
+  name="subscription"
+  options={{
+    drawerIcon: ({ color, focused }) => (
+      <Sparkles size={20} color={focused ? '#ffffff' : color} style={focused ? { shadowColor: '#00eaff', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 8, elevation: 4 } : undefined} />
+    ),
+    drawerLabel: ({ focused, color }) => (
+      <Text style={{ fontFamily: 'Arimo-Bold', fontSize: 15, letterSpacing: 0.3, color: focused ? '#ffffff' : color, textShadowColor: focused ? '#00eaff' : 'transparent', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: focused ? 8 : 0 }}>
+        Abonnement
+      </Text>
+    ),
+  }}
+/>
+<Drawer.Screen
+  name="referral"
+  options={{
+    drawerIcon: ({ color, focused }) => (
+      <Users size={20} color={focused ? '#ffffff' : color} style={focused ? { shadowColor: '#00eaff', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 8, elevation: 4 } : undefined} />
+    ),
+    drawerLabel: ({ focused, color }) => (
+      <Text style={{ fontFamily: 'Arimo-Bold', fontSize: 15, letterSpacing: 0.3, color: focused ? '#ffffff' : color, textShadowColor: focused ? '#00eaff' : 'transparent', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: focused ? 8 : 0 }}>
+        Parrainage
+      </Text>
+    ),
+  }}
+/>
     </Drawer>
   );
 }
@@ -389,7 +449,7 @@ const s = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: colors.status.success,
     borderWidth: 3,
-    borderColor: '#0d0d0d',
+    borderColor: colors.background.primary,
     zIndex: 2,
   },
   userInfo: {

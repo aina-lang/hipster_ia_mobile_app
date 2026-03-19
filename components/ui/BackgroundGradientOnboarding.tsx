@@ -53,7 +53,7 @@ export function BackgroundGradientOnboarding({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a0a11',
+    backgroundColor: colors.background.dark,
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
@@ -61,11 +61,11 @@ const styles = StyleSheet.create({
   },
   lightOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0)',
+    backgroundColor: 'transparent',
   },
   darkOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.80)',
+    backgroundColor: colors.overlay,
   },
   image: {
     position: 'absolute',

@@ -14,60 +14,9 @@ import { ReferralCodeCard } from '../../components/ReferralCodeCard';
 import { AiService } from '../../api/ai.service';
 import { GenericModal, ModalType } from '../../components/ui/GenericModal';
 
-const NEON_BLUE  = '#00d4ff';
-const NEON_LIGHT = '#1e9bff';
+import { NeonBorderInput } from '../../components/ui/NeonBorderInput';
+import { NeonActionButton } from '../../components/ui/NeonActionButton';
 
-function NeonBorderInput({ children, isActive }: { children: React.ReactNode; isActive: boolean }) {
-  const translateX = useRef(new RNAnimated.Value(0)).current;
-  const loop = useRef<RNAnimated.CompositeAnimation | null>(null);
-
-  useEffect(() => {
-    loop.current?.stop();
-    if (isActive) {
-      translateX.setValue(0);
-      loop.current = RNAnimated.loop(
-        RNAnimated.timing(translateX, { toValue: -800, duration: 2400, easing: Easing.linear, useNativeDriver: true }),
-        { resetBeforeIteration: true }
-      );
-      loop.current.start();
-    } else {
-      translateX.setValue(0);
-    }
-    return () => loop.current?.stop();
-  }, [isActive]);
-
-  return (
-    <View style={nb.wrapper}>
-      {isActive && (
-        <>
-          <View style={nb.clip} pointerEvents="none">
-            <RNAnimated.View style={[nb.track, { transform: [{ translateX }] }]}>
-              <LinearGradient
-                colors={['transparent', NEON_BLUE, NEON_LIGHT, 'transparent', 'transparent', NEON_BLUE, NEON_LIGHT, 'transparent']}
-                locations={[0.05, 0.2, 0.3, 0.45, 0.55, 0.7, 0.8, 0.95]}
-                start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }}
-                style={{ width: 1600, height: '100%' }}
-              />
-            </RNAnimated.View>
-            <View style={nb.mask} />
-          </View>
-          <View style={nb.bloomMid} pointerEvents="none" />
-          <View style={nb.bloomFar} pointerEvents="none" />
-        </>
-      )}
-      {children}
-    </View>
-  );
-}
-
-const nb = StyleSheet.create({
-  wrapper:  { position: 'relative' },
-  clip:     { position: 'absolute', top: -1, left: -1, right: -1, bottom: -0.5, borderRadius: 13, overflow: 'hidden', zIndex: 2 },
-  track:    { position: 'absolute', top: 0, bottom: 0, left: 0 },
-  mask:     { position: 'absolute', top: 1, left: 1, right: 1, bottom: 0.5, borderRadius: 12, zIndex: 1, backgroundColor: '#030814' },
-  bloomMid: { position: 'absolute', top: -4, left: -4, right: -4, bottom: -4, borderRadius: 16, backgroundColor: 'transparent', shadowColor: NEON_BLUE, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.45, shadowRadius: 14, elevation: 8 },
-  bloomFar: { position: 'absolute', top: -8, left: -8, right: -8, bottom: -8, borderRadius: 20, backgroundColor: 'transparent', shadowColor: NEON_LIGHT, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.22, shadowRadius: 24, elevation: 4 },
-});
 
 function SectionTitle({ title }: { title: string }) {
   return (
@@ -80,7 +29,7 @@ function SectionTitle({ title }: { title: string }) {
 function StatCard({ icon, label, value }: { icon: any; label: string; value: number | string }) {
   return (
     <View style={s.statCard}>
-      <LinearGradient colors={['rgba(0,212,255,0.06)', 'transparent']} style={StyleSheet.absoluteFill} />
+      <LinearGradient colors={[colors.primary.main + '0f', 'transparent']} style={StyleSheet.absoluteFill} />
       <View style={s.statIcon}>{icon}</View>
       <Text style={s.statValue}>{value}</Text>
       <Text style={s.statLabel}>{label}</Text>
@@ -91,7 +40,7 @@ function StatCard({ icon, label, value }: { icon: any; label: string; value: num
 function RuleItem({ number, text }: { number: string; text: string }) {
   return (
     <View style={s.ruleItem}>
-      <LinearGradient colors={[NEON_BLUE, NEON_LIGHT]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.ruleNumber}>
+      <LinearGradient colors={[colors.neon.primary, colors.primary.light]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.ruleNumber}>
         <Text style={s.ruleNumberText}>{number}</Text>
       </LinearGradient>
       <Text style={s.ruleText}>{text}</Text>
@@ -154,7 +103,7 @@ export default function ReferralScreen() {
     return (
       <BackgroundGradientOnboarding darkOverlay>
         <View style={s.loadingContainer}>
-          <ActivityIndicator size="large" color={NEON_BLUE} />
+          <ActivityIndicator size="large" color={colors.neon.primary} />
         </View>
       </BackgroundGradientOnboarding>
     );
@@ -167,7 +116,7 @@ export default function ReferralScreen() {
           contentContainerStyle={s.scrollContent}
           showsVerticalScrollIndicator={false}
           bounces={false}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchStats(); }} tintColor={NEON_BLUE} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchStats(); }} tintColor={colors.neon.primary} />}
         >
           <View style={s.header}>
             <TouchableOpacity style={s.backButton} onPress={() => router.back()}>
@@ -183,8 +132,8 @@ export default function ReferralScreen() {
           {stats?.referralCode && <ReferralCodeCard code={stats.referralCode} />}
 
           <View style={s.statsGrid}>
-            <StatCard icon={<Users size={20} color={NEON_BLUE} />} label="Filleuls" value={stats?.totalReferred || 0} />
-            <StatCard icon={<Gift size={20} color={NEON_BLUE} />} label="Mois offerts" value={stats?.freeMonthsPending || 0} />
+            <StatCard icon={<Users size={20} color={colors.neon.primary} />} label="Filleuls" value={stats?.totalReferred || 0} />
+            <StatCard icon={<Gift size={20} color={colors.neon.primary} />} label="Mois offerts" value={stats?.freeMonthsPending || 0} />
           </View>
 
           {stats?.isAmbassador ? (
@@ -200,8 +149,8 @@ export default function ReferralScreen() {
             </View>
           ) : (
             <View style={s.infoCard}>
-              <LinearGradient colors={['rgba(0,212,255,0.06)', 'transparent']} style={StyleSheet.absoluteFill} />
-              <Star size={18} color={NEON_BLUE} />
+              <LinearGradient colors={[colors.primary.main + '0f', 'transparent']} style={StyleSheet.absoluteFill} />
+              <Star size={18} color={colors.neon.primary} />
               <Text style={s.infoText}>
                 Deviens <Text style={s.highlight}>Ambassadeur</Text> avec 10 filleuls payants et profite d'un{' '}
                 <Text style={s.highlight}>tarif préférentiel permanent</Text> sur tous les packs.
@@ -280,7 +229,7 @@ const s = StyleSheet.create({
   statsGrid: { flexDirection: 'row', gap: 16, marginBottom: 20 },
   statCard:  { flex: 1, borderRadius: 20, padding: 20, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(0,212,255,0.12)', backgroundColor: 'rgba(15,23,42,0.6)', overflow: 'hidden' },
   statIcon:  { marginBottom: 10 },
-  statValue: { fontFamily: 'Arimo-Bold', fontSize: 28, color: '#ffffff', marginBottom: 4, textShadowColor: NEON_BLUE, textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 8 },
+  statValue: { fontFamily: 'Arimo-Bold', fontSize: 28, color: '#ffffff', marginBottom: 4, textShadowColor: colors.neon.primary, textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 8 },
   statLabel: { fontFamily: 'Arimo-Bold', fontSize: 10, color: colors.text.muted, textTransform: 'uppercase', letterSpacing: 1 },
 
   ambassadorCard:  { flexDirection: 'row', alignItems: 'center', borderRadius: 20, padding: 20, borderWidth: 1, borderColor: 'rgba(255,215,0,0.25)', backgroundColor: 'rgba(15,23,42,0.6)', marginBottom: 20, overflow: 'hidden', gap: 16 },
@@ -291,7 +240,7 @@ const s = StyleSheet.create({
 
   infoCard:  { flexDirection: 'row', alignItems: 'center', borderRadius: 20, padding: 16, borderWidth: 1, borderColor: 'rgba(0,212,255,0.15)', backgroundColor: 'rgba(15,23,42,0.6)', marginBottom: 20, overflow: 'hidden', gap: 14 },
   infoText:  { flex: 1, fontFamily: 'Arimo-Regular', fontSize: 13, color: colors.text.secondary, lineHeight: 18 },
-  highlight: { fontFamily: 'Arimo-Bold', color: NEON_BLUE },
+  highlight: { fontFamily: 'Arimo-Bold', color: colors.neon.primary },
 
   card:        { backgroundColor: 'rgba(15,23,42,0.6)', borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.07)', padding: 20, gap: 14, marginBottom: 20 },
   sectionRow:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
@@ -301,7 +250,7 @@ const s = StyleSheet.create({
   inputContainer:       { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(15,23,42,0.9)', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 4, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', zIndex: 3 },
   inputContainerActive: { borderColor: 'transparent', backgroundColor: '#030814' },
   input:                { flex: 1, height: 48, fontFamily: 'Arimo-Bold', fontSize: 14, color: colors.text.primary, letterSpacing: 1 },
-  applyButton:          { width: 38, height: 38, borderRadius: 10, backgroundColor: NEON_BLUE, justifyContent: 'center', alignItems: 'center' },
+  applyButton:          { width: 38, height: 38, borderRadius: 10, backgroundColor: colors.neon.primary, justifyContent: 'center', alignItems: 'center' },
   applyButtonDisabled:  { backgroundColor: 'rgba(255,255,255,0.1)' },
 
   referredBadge: { flexDirection: 'row', alignItems: 'center', gap: 10, justifyContent: 'center', paddingVertical: 8 },

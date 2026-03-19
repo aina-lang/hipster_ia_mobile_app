@@ -35,13 +35,13 @@ const CARD_W = 340;
 
 function getFeatureIcon(feature: string) {
   const f = feature.toLowerCase();
-  if (f.includes('image'))                                    return ImageIcon;
-  if (f.includes('texte'))                                    return FileText;
-  if (f.includes('vidéo'))                                    return Video;
-  if (f.includes('sonore') || f.includes('audio'))            return Music;
-  if (f.includes('3d') || f.includes('sketch'))               return Box;
-  if (f.includes('export'))                                   return f.includes('pas') ? XCircle : Download;
-  if (f.includes('accompagnement') || f.includes('hipster'))  return Crown;
+  if (f.includes('image'))                                   return ImageIcon;
+  if (f.includes('texte'))                                   return FileText;
+  if (f.includes('vidéo'))                                   return Video;
+  if (f.includes('sonore') || f.includes('audio'))           return Music;
+  if (f.includes('3d') || f.includes('sketch'))              return Box;
+  if (f.includes('export'))                                  return f.includes('pas') ? XCircle : Download;
+  if (f.includes('accompagnement') || f.includes('hipster')) return Crown;
   return CheckCircle2;
 }
 
@@ -65,15 +65,13 @@ function FeatureItem({ feature, isSelected }: { feature: string; isSelected?: bo
   const Icon     = getFeatureIcon(feature);
   const isAgency = feature.toLowerCase().includes('accompagnement');
   const iconColor = isSelected
-    ? '#00eaff'
+    ? '#ffffff'
     : isAgency ? colors.text.primary : colors.text.muted;
   return (
     <View style={[s.featureRow, isAgency && s.agencyRow]}>
-      <Icon
-        size={14}
-        color={iconColor}
-        style={isSelected ? s.featureIconGlow : undefined}
-      />
+      <View style={isSelected ? s.featureIconGlow : undefined}>
+        <Icon size={14} color={iconColor} />
+      </View>
       <Text style={[s.featureText, isAgency && s.agencyText, isSelected && s.featureTextSelected]}>
         {feature}
       </Text>
@@ -194,7 +192,9 @@ function PlanCard({ plan, isSelected, onSelect, submitting }: {
               </LinearGradient>
             )}
             {plan.isComingSoon && (
-              <View style={[s.badge, { backgroundColor: '#334155' }]}><Text style={s.badgeText}>À VENIR</Text></View>
+              <View style={[s.badge, { backgroundColor: '#334155' }]}>
+                <Text style={s.badgeText}>À VENIR</Text>
+              </View>
             )}
 
             <View style={s.planHeader}>
@@ -304,55 +304,33 @@ const s = StyleSheet.create({
   loaderText:     { color: colors.text.secondary, marginTop: 16, fontFamily: 'Arimo-Regular' },
   plansContainer: { gap: 16 },
 
-  header:          { alignItems: 'center', marginBottom: 20, paddingHorizontal: 10, paddingVertical: 10 },
-  titleRow:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 5 },
-  titleSub:        { fontFamily: 'Arimo-Bold', fontSize: 16, letterSpacing: 3, textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)', marginTop: 10 },
-  titleScript:     { fontFamily: 'Brittany-Signature', paddingLeft: 1, fontSize: 36, color: '#fff', textShadowColor: '#00eaff', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 18, lineHeight: 48, includeFontPadding: false },
-  subtitle:        { fontFamily: 'Arimo-Regular', fontSize: 14, color: 'rgba(255,255,255,0.45)', textAlign: 'center', letterSpacing: 0.3, marginTop: 4 },
+  header:      { alignItems: 'center', marginBottom: 20, paddingHorizontal: 10, paddingVertical: 10 },
+  titleRow:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 5 },
+  titleSub:    { fontFamily: 'Arimo-Bold', fontSize: 16, letterSpacing: 3, textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)', marginTop: 10 },
+  titleScript: { fontFamily: 'Brittany-Signature', paddingLeft: 1, fontSize: 36, color: '#fff', textShadowColor: '#00eaff', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 18, lineHeight: 48, includeFontPadding: false },
+  subtitle:    { fontFamily: 'Arimo-Regular', fontSize: 14, color: 'rgba(255,255,255,0.45)', textAlign: 'center', letterSpacing: 0.3, marginTop: 4 },
 
   footer: {
-  padding: 24,
-  paddingBottom: Platform.OS === 'ios' ? 40 : 24,
-  alignItems: 'center',
-},
-
-btnWrapper: {
-  width: '60%'
-},
-  btnPressable: {
-    borderRadius: 5,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.42)',
-  },
-  btnGradient: {
-    paddingVertical: 15,
-    paddingHorizontal: 15,
+    padding: 24,
+    paddingBottom: Platform.OS === 'ios' ? 40 : 24,
     alignItems: 'center',
-    justifyContent: 'center',
   },
-  btnText: {
-    fontFamily: 'Arimo-Bold',
-    fontSize: 14,
-    fontWeight: '600',
-    letterSpacing: 0.6,
-    color: '#ffffff',
-  },
+  btnWrapper:   { width: '60%' },
+  btnPressable: { borderRadius: 5, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.42)' },
+  btnGradient:  { paddingVertical: 15, paddingHorizontal: 15, alignItems: 'center', justifyContent: 'center' },
+  btnText:      { fontFamily: 'Arimo-Bold', fontSize: 14, fontWeight: '600', letterSpacing: 0.6, color: '#ffffff' },
 
   neonWrapper: { position: 'relative' },
   neonClip: {
     position: 'absolute',
     top: -1, left: -1, right: -1, bottom: -0.5,
-    borderRadius: 21,
-    overflow: 'hidden',
-    zIndex: 2,
+    borderRadius: 21, overflow: 'hidden', zIndex: 2,
   },
   neonTrack: { position: 'absolute', top: 0, bottom: 0, left: 0 },
   neonMask: {
     position: 'absolute',
     top: 1, left: 1, right: 1, bottom: 0.5,
-    borderRadius: 20,
-    zIndex: 1,
+    borderRadius: 20, zIndex: 1,
   },
   bloomMid: {
     position: 'absolute', top: -4, left: -4, right: -4, bottom: -4,
@@ -373,8 +351,8 @@ btnWrapper: {
     shadowOpacity: 0.6, shadowRadius: 16, elevation: 12,
   },
 
-  planWrapper:   { flex: 1, position: 'relative', marginBottom: 12 },
-  touchableArea: { flex: 1 },
+  planWrapper:      { flex: 1, position: 'relative', marginBottom: 12 },
+  touchableArea:    { flex: 1 },
   planCard: {
     backgroundColor: 'rgba(15,23,42,0.92)',
     borderRadius: 20, padding: 16,
@@ -385,18 +363,13 @@ btnWrapper: {
     zIndex: 3,
   },
   planCardSelected: { backgroundColor: '#030814', borderWidth: 0 },
-
   badge: {
     position: 'absolute', top: 0, right: 0, zIndex: 20,
     paddingHorizontal: 15, paddingVertical: 6,
-    borderBottomLeftRadius: 15,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.25)',
-    borderTopRightRadius: 20,
+    borderBottomLeftRadius: 15, overflow: 'hidden',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.25)', borderTopRightRadius: 20,
   },
   badgeText: { fontSize: 10, fontWeight: '900', color: '#ffffff', letterSpacing: 0.5 },
-
   planHeader:   { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 16 },
   iconBox: {
     width: 72, height: 72, borderRadius: 20,
@@ -407,17 +380,15 @@ btnWrapper: {
     backgroundColor: 'rgba(30,155,255,0.15)',
     borderWidth: 1, borderColor: 'rgba(30,155,255,0.4)',
   },
-
-  planName:          { fontFamily: 'Arimo-Bold', fontSize: 17, fontWeight: '700', color: colors.text.secondary },
-  planNameSelected:  { color: '#ffffff', fontWeight: '800' },
-  planPrice:         { fontFamily: 'Arimo-Bold', fontSize: 20, fontWeight: '800', color: colors.text.primary },
-  planPriceSelected: { color: '#ffffff', textShadowColor: '#00eaff', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 8 },
-  planDesc:          { fontFamily: 'Arimo-Regular', fontSize: 12, color: colors.text.muted, marginTop: 2 },
-
-  featuresList:       { gap: 8, paddingLeft: 4 },
-  planIconGlow:       { shadowColor: '#00eaff', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 12, elevation: 6 },
-  featureIconGlow:    { shadowColor: '#00eaff', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 6, elevation: 4 },
-  featureRow:   { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  planIconGlow:     { shadowColor: '#00eaff', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 12, elevation: 6 },
+  featureIconGlow:  { shadowColor: '#00eaff', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 8, elevation: 4 },
+  planName:         { fontFamily: 'Brittany-Signature', fontSize: 26, fontWeight: '700', color: colors.text.secondary, paddingBottom: 5 },
+  planNameSelected: { color: '#ffffff', fontWeight: '800' },
+  planPrice:        { fontFamily: 'Arimo-Bold', fontSize: 20, fontWeight: '800', color: colors.text.primary },
+  planPriceSelected:{ color: '#ffffff', textShadowColor: '#00eaff', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 8 },
+  planDesc:         { fontFamily: 'Arimo-Regular', fontSize: 12, color: colors.text.muted, marginTop: 2 },
+  featuresList:     { gap: 8, paddingLeft: 4 },
+  featureRow:       { flexDirection: 'row', alignItems: 'center', gap: 10 },
   featureText:         { fontFamily: 'Arimo-Regular', fontSize: 13, color: colors.text.secondary },
   featureTextSelected: { color: 'rgba(255,255,255,0.85)' },
   agencyRow:    { marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.08)' },
