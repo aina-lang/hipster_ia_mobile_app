@@ -143,31 +143,45 @@ const TopBar = ({ textAnimProgress, isAuthenticated, userName }: TopBarProps) =>
     };
   });
 
-  const title = isAuthenticated ? `Bienvenue${userName ? `, ${userName}` : ''}` : 'HIPSTER IA';
+  const title = isAuthenticated ? `Bienvenue${userName ? `, ${userName}` : ''}` : 'Bienvenue';
+  const subtitle = isAuthenticated ? 'À bord' : 'Votre agence marketing';
 
   return (
-    <Animated.View 
+    <View 
       style={[
-        styles.topBar, 
         { 
-          height: isAuthenticated ? 60 + insets.top : 110 + insets.top, 
-          paddingTop: insets.top - 10 
-        },
-        animStyle
+          height: isAuthenticated ? 60 + insets.top : 120 + insets.top, 
+          paddingTop: insets.top - 10,
+          overflow: 'hidden'
+        }
       ]}
     >
-      <Text h1>{title}</Text>
-      {!isAuthenticated && (
-        <>
-          <Animated.Text style={styles.topBarSubText}>
-            L'agence marketing automatisée
+      <LinearGradient
+        colors={['#000000', '#0a1a2e', '#0d2a4d']}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+        style={[styles.topBar, { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }]}
+      />
+
+      <Animated.View 
+        style={[
+          styles.topBarContent,
+          animStyle
+        ]}
+      >
+        <View style={styles.titleWrapper}>
+          <Text h1 style={styles.topBarTitle}>{title}</Text>
+          {!isAuthenticated && (
+            <Text style={styles.topBarSubtitle}>{subtitle}</Text>
+          )}
+        </View>
+        {!isAuthenticated && (
+          <Animated.Text style={styles.topBarTagline}>
+            automatisée
           </Animated.Text>
-          <Animated.Text style={styles.subLineTextTop}>
-            Dans votre poche.
-          </Animated.Text>
-        </>
-      )}
-    </Animated.View>
+        )}
+      </Animated.View>
+    </View>
   );
 };
 
@@ -385,7 +399,6 @@ export default React.memo(function WelcomeScreen({ onVideoFinish, setIsRouting }
 
   return (
     <Animated.View exiting={FadeOut.duration(400)} style={StyleSheet.absoluteFill}>
-      <StatusBar style="light" />
       {!videoReady && <View style={[StyleSheet.absoluteFill, { backgroundColor: '#000' }]} />}
 
       <Animated.View style={[StyleSheet.absoluteFill, videoAnimatedStyle]}>
@@ -443,13 +456,49 @@ const styles = StyleSheet.create({
     bottom: 150,
   },
   topBar: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#000000',
+    width: '100%',
+  },
+  topBarContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
+    paddingHorizontal: 20,
+  },
+  titleWrapper: {
+    alignItems: 'center',
+    gap: 0,
+  },
+  topBarTitle: {
+    fontSize: 28,
+    fontWeight: '800',
+    fontFamily: 'Arimo-Bold',
+    color: '#ffffff',
+    textShadowColor: '#00d4ff',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 14,
+    letterSpacing: -0.5,
+  },
+  topBarSubtitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    fontFamily: 'Arimo-Bold',
+    color: '#ffffff',
+    textShadowColor: 'rgba(0, 212, 255, 0.6)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 8,
+    letterSpacing: 1.2,
+  },
+  topBarTagline: {
+    fontSize: 13,
+    fontWeight: '500',
+    fontFamily: 'Arimo-Regular',
+    color: 'rgba(0, 212, 255, 0.8)',
+    letterSpacing: 2.5,
+    textTransform: 'uppercase',
+    marginTop: 4,
   },
   mainSubText: {
     fontSize: 18,
