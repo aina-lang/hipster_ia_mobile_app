@@ -393,7 +393,7 @@ export default function Step4ResultScreen() {
       if (mode === 'image' || mode === 'both') setImageUrl('');
       setShowRegeneratePanel(false);
 
-      const isFlyerExact = effectiveFunction && effectiveFunction.includes('Flyers');
+      const isFlyerExact = effectiveFunction && (effectiveFunction.includes('Flyer') || effectiveFunction.includes('Affiche'));
       const params: any = {
         job: selectedJob || 'Autre',
         function: effectiveFunction,
