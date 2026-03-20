@@ -182,7 +182,7 @@ export default function ProfileScreen() {
   };
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || isEditing) return;  // Ne pas réinitialiser si on est en mode édition
     setName(user.name || '');
     setProfessionalEmail(user.professionalEmail || '');
     setProfessionalAddress(user.professionalAddress || '');
@@ -197,7 +197,7 @@ export default function ProfileScreen() {
     setSelectedCountry(c);
     setProfessionalPhone(getLocalNumber(user.professionalPhone || '', c?.phoneCode));
     setProfessionalPhone2(getLocalNumber(user.professionalPhone2 || '', c?.phoneCode));
-  }, [user]);
+  }, [user, isEditing]);
 
   const handleSave = async () => {
     try {
@@ -358,13 +358,11 @@ export default function ProfileScreen() {
                   <TouchableOpacity style={s.cancelBtn} onPress={handleCancel}>
                     <Text style={s.cancelBtnText}>Annuler</Text>
                   </TouchableOpacity>
-                  <View style={{ flex: 1 }}>
-                    <NeonActionButton onPress={handleSave} loading={isLoading} disabled={isLoading} label="Enregistrer" />
-                  </View>
+                  <NeonActionButton onPress={handleSave} loading={isLoading} disabled={isLoading} label="Enregistrer" />
                 </View>
               ) : (
                 <View style={s.actionsCenter}>
-                  <NeonActionButton onPress={() => setIsEditing(true)} loading={false} disabled={false} label="Modifier le profil" small />
+                  <NeonActionButton onPress={() => setIsEditing(true)} loading={false} disabled={false} label="Modifier le profil" />
                 </View>
               )}
             </View>
@@ -493,9 +491,9 @@ const s = StyleSheet.create({
   prefixFlag:  { fontSize: 16 },
   prefixCode:  { fontFamily: 'Arimo-Bold', fontSize: 12, color: colors.text.secondary },
 
-  actionsRow:    { flexDirection: 'row', gap: 12, marginTop: 24, marginBottom: 8 },
+  actionsRow:    { flexDirection: 'row', gap: 12, marginTop: 24, marginBottom: 8, alignItems: 'center' },
   actionsCenter: { alignItems: 'center', marginTop: 24, marginBottom: 8 },
-  cancelBtn:    { flex: 1, paddingVertical: 15, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.05)', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', justifyContent: 'center' },
+  cancelBtn:    { paddingVertical: 15, paddingHorizontal: 16, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.05)', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', minWidth: 90 },
   cancelBtnText: { fontFamily: 'Arimo-Bold', color: colors.text.secondary, fontSize: 14 },
 
   planRow:       { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },

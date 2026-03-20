@@ -25,7 +25,7 @@ interface Plan {
 }
 
 const PLAN_IMAGES: Record<string, any> = {
-  curieux: require('../../assets/images/packs/curieux.png'),
+  curieux: require('../../assets/images/packs/packCurieux.png'),
   atelier: require('../../assets/images/packs/atelier.png'),
   studio:  require('../../assets/images/packs/studio.png'),
 };
