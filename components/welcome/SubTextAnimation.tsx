@@ -44,7 +44,7 @@ export const SubTextAnimation = React.memo(({ textAnimProgress, isAuthenticated 
 
   return (
     <Animated.View style={animStyle}>
-      <Animated.Text style={styles.mainSubText}>Créez vos affiches, promotions et publications en quelques secondes.</Animated.Text>
+      <Animated.Text style={styles.mainSubText}></Animated.Text>
     </Animated.View>
   );
 });

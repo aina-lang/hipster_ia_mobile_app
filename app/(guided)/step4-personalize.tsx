@@ -149,7 +149,7 @@ function CategoryTabs({
 
 const tabStyles = StyleSheet.create({
   wrapper: {
-    marginBottom: 14,
+    marginBottom: 16,
   },
   scroll: {
     flexDirection: 'row',

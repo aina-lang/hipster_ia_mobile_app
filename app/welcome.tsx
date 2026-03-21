@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { Linking } from 'react-native';
-import { View, StyleSheet, Pressable } from 'react-native';
+import { View, StyleSheet, Pressable, Dimensions, useWindowDimensions } from 'react-native';
 import { Text } from '../components/ui/Text';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -23,6 +23,22 @@ import { useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FontAwesome5 } from '@expo/vector-icons';
+
+// Responsive utilities
+const ResponsiveSize = {
+  getResponsiveFontSize: (baseSize: number, minSize: number = baseSize * 0.8): number => {
+    const { width } = Dimensions.get('window');
+    return Math.max(minSize, Math.min(baseSize, width * (baseSize / 375)));
+  },
+  getResponsivePadding: (basePadding: number): number => {
+    const { width } = Dimensions.get('window');
+    return width < 400 ? basePadding * 0.75 : basePadding;
+  },
+  getResponsiveButtonWidth: (): string | number => {
+    const { width } = Dimensions.get('window');
+    return width < 400 ? '85%' : '70%';
+  }
+};
 
 const NEON_BLUE = '#00d4ff';
 const NEON_GLOW = '#0099ff';
@@ -121,6 +137,8 @@ interface TopBarProps {
 
 const TopBar = ({ textAnimProgress, isAuthenticated, userName }: TopBarProps) => {
   const insets = useSafeAreaInsets();
+  const { width, height } = useWindowDimensions();
+  const isSmallScreen = width < 400;
   
   const animStyle = useAnimatedStyle(() => {
     const opacity = interpolate(
@@ -145,13 +163,14 @@ const TopBar = ({ textAnimProgress, isAuthenticated, userName }: TopBarProps) =>
 
   const title = isAuthenticated ? `Bienvenue${userName ? `, ${userName}` : ''}` : 'Bienvenue';
   const subtitle = isAuthenticated ? 'À bord' : 'Votre agence marketing';
+  const topBarHeight = isAuthenticated ? (isSmallScreen ? 50 : 60) : (isSmallScreen ? 100 : 120);
 
   return (
     <View 
       style={[
         { 
-          height: isAuthenticated ? 60 + insets.top : 120 + insets.top, 
-          paddingTop: insets.top - 10,
+          height: topBarHeight + insets.top, 
+          paddingTop: Math.max(insets.top - 10, 4),
           overflow: 'hidden'
         }
       ]}
@@ -166,17 +185,31 @@ const TopBar = ({ textAnimProgress, isAuthenticated, userName }: TopBarProps) =>
       <Animated.View 
         style={[
           styles.topBarContent,
+          { paddingHorizontal: ResponsiveSize.getResponsivePadding(20) },
           animStyle
         ]}
       >
         <View style={styles.titleWrapper}>
-          <Text h1 style={styles.topBarTitle}>{title}</Text>
+          <Text h1 style={[
+            styles.topBarTitle,
+            { fontSize: ResponsiveSize.getResponsiveFontSize(28, 22) }
+          ]}>
+            {title}
+          </Text>
           {!isAuthenticated && (
-            <Text style={styles.topBarSubtitle}>{subtitle}</Text>
+            <Text style={[
+              styles.topBarSubtitle,
+              { fontSize: ResponsiveSize.getResponsiveFontSize(16, 13) }
+            ]}>
+              {subtitle}
+            </Text>
           )}
         </View>
         {!isAuthenticated && (
-          <Animated.Text style={styles.topBarTagline}>
+          <Animated.Text style={[
+            styles.topBarTagline,
+            { fontSize: ResponsiveSize.getResponsiveFontSize(13, 11) }
+          ]}>
             automatisée
           </Animated.Text>
         )}
@@ -191,40 +224,8 @@ interface SubTextAnimationProps {
 }
 
 const SubTextAnimation = React.memo(({ textAnimProgress, isAuthenticated }: SubTextAnimationProps) => {
-  const animStyle = useAnimatedStyle(() => {
-    const translateY = interpolate(
-      textAnimProgress?.value ?? 0, 
-      [0, 1], 
-      [0, -300], 
-      Extrapolate.CLAMP
-    );
-    
-    const opacity = interpolate(
-      textAnimProgress?.value ?? 0,
-      [0, 0.5, 1],
-      [0, 0, 1],
-      Extrapolate.CLAMP
-    );
-    
-    return { 
-      transform: [{ translateY }],
-      opacity 
-    };
-  });
-
-  if (isAuthenticated) {
-    return (
-      <Animated.View style={animStyle}>
-        <Animated.Text style={styles.mainSubText}>CONTENT DE TE REVOIR</Animated.Text>
-      </Animated.View>
-    );
-  }
-
-  return (
-    <Animated.View style={animStyle}>
-      <Animated.Text style={styles.mainSubText}>Créez vos affiches, promotions et publications en quelques secondes.</Animated.Text>
-    </Animated.View>
-  );
+  // Typography is now displayed in BottomAuthSection above the button
+  return null;
 });
 
 interface BottomAuthSectionProps {
@@ -237,11 +238,13 @@ interface BottomAuthSectionProps {
 
 const BottomAuthSection = React.memo(({ isAuthenticated, onVideoFinish, setIsRouting, textAnimProgress, setFirstTimeUsed }: BottomAuthSectionProps) => {
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const isSmallScreen = width < 400;
 
   const animStyle = useAnimatedStyle(() => ({
     transform: [
       {
-        translateY: interpolate(textAnimProgress?.value ?? 0, [0, 1], [350, 0], Extrapolate.CLAMP),
+        translateY: interpolate(textAnimProgress?.value ?? 0, [0, 1], [isSmallScreen ? 280 : 350, 0], Extrapolate.CLAMP),
       },
     ],
     opacity: interpolate(textAnimProgress?.value ?? 0, [0, 0.4, 1], [0, 0, 1], Extrapolate.CLAMP),
@@ -250,61 +253,94 @@ const BottomAuthSection = React.memo(({ isAuthenticated, onVideoFinish, setIsRou
   if (isAuthenticated) return null;
 
   return (
-    <Animated.View style={[styles.container, animStyle]}>
+    <Animated.View style={[
+      styles.container,
+      { paddingHorizontal: ResponsiveSize.getResponsivePadding(20) },
+      animStyle
+    ]}>
+      <Text style={[
+        styles.mainSubText,
+        { fontSize: ResponsiveSize.getResponsiveFontSize(18, 15), marginBottom: isSmallScreen ? 8 : 12 }
+      ]}>
+        Créez vos affiches, promotions et publications en quelques secondes
+      </Text>
       <Pressable
         onPress={() => {
           console.log('[Welcome] Commencer clicked - calling setFirstTimeUsed()');
-          setFirstTimeUsed?.(); // Mark user as having started
+          setFirstTimeUsed?.();
           console.log('[Welcome] setFirstTimeUsed() completed');
           setIsRouting?.(true);
           onVideoFinish?.();
           router.replace('/(onboarding)/packs');
         }}
-        style={styles.primaryButton}
+        style={[
+          styles.primaryButton,
+          { width: ResponsiveSize.getResponsiveButtonWidth() }
+        ]}
       >
         <LinearGradient
           colors={['#000000', '#0a1628', '#264F8C']}
           start={{ x: 0, y: 0.5 }}
           end={{ x: 1, y: 0.5 }}
           locations={[0, 0.6, 1]}
-          style={styles.gradient}
+          style={[
+            styles.gradient,
+            { paddingVertical: isSmallScreen ? 12 : 14 }
+          ]}
         >
-          <Text style={styles.primaryButtonText}>Commencer maintenant</Text>
+          <Text style={[
+            styles.primaryButtonText,
+            { fontSize: ResponsiveSize.getResponsiveFontSize(14, 12) }
+          ]}>
+            Commencer maintenant
+          </Text>
         </LinearGradient>
       </Pressable>
 
-      <View style={styles.row}>
-        <Text small>Déjà un compte ?</Text>
+      <View style={[styles.row, { gap: isSmallScreen ? 4 : 6 }]}>
+        <Text small style={{ fontSize: ResponsiveSize.getResponsiveFontSize(12, 10) }}>
+          Déjà un compte ?
+        </Text>
         <Pressable 
           onPress={() => { 
             console.log('[Welcome] Login clicked - calling setFirstTimeUsed()');
-            setFirstTimeUsed?.(); // Mark user as having started
+            setFirstTimeUsed?.();
             console.log('[Welcome] setFirstTimeUsed() completed');
             setIsRouting?.(true);
             onVideoFinish?.(); 
             router.replace('/(auth)/login'); 
           }}
           style={({ pressed }) => ({
-            padding: 10,
+            padding: 8,
             opacity: pressed ? 0.7 : 1,
-            margin: -10, // Negative margin to balance the padding without shifting layout
+            margin: -8,
           })}
         >
-          <Text small style={styles.highlight}>Se connecter</Text>
+          <Text small style={[
+            styles.highlight,
+            { fontSize: ResponsiveSize.getResponsiveFontSize(14, 11) }
+          ]}>
+            Se connecter
+          </Text>
         </Pressable>
       </View>
 
-      <View style={styles.trial}>
-        <FontAwesome5 name="angellist" size={18} style={styles.glowIcon} />
-        <Text small>
+      <View style={[styles.trial, { gap: isSmallScreen ? 3 : 4, marginTop: isSmallScreen ? 16 : 20 }]}>
+        <FontAwesome5 name="angellist" size={isSmallScreen ? 14 : 16} style={styles.glowIcon} />
+        <Text small style={{ fontSize: ResponsiveSize.getResponsiveFontSize(11, 9) }}>
           <Text style={styles.highlight}>7 jours</Text> d'essai gratuit
         </Text>
-        <Text style={styles.separator}>·</Text>
+        <Text style={[styles.separator, { fontSize: ResponsiveSize.getResponsiveFontSize(12, 10) }]}>·</Text>
         <Pressable
           onPress={() => Linking.openURL('mailto:contact@hipster-ia.fr').catch(() => {})}
           style={styles.contactLink}
         >
-          <Text style={styles.contactText}>Besoin d'aide ?</Text>
+          <Text style={[
+            styles.contactText,
+            { fontSize: ResponsiveSize.getResponsiveFontSize(11, 9) }
+          ]}>
+            Besoin d'aide ?
+          </Text>
         </Pressable>
       </View>
 
@@ -506,9 +542,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Arimo-Bold',
     color: 'rgba(255, 255, 255, 0.8)',
     textAlign: 'center',
-    bottom: -520,
     lineHeight: 30,
-    paddingHorizontal: 20,
   },
   subLineTextTop: {
     fontSize: 18,
@@ -539,23 +573,18 @@ const styles = StyleSheet.create({
   },
   container: {
     position: 'absolute',
-    // top: 0,
-    bottom: 0,
+    bottom: 20,
     left: 0,
     right: 0,
     alignItems: 'center',
     gap: 12,
-    paddingHorizontal: 20,
     paddingVertical: 20,
   },
   primaryButton: {
-    width: '70%',
     overflow: 'hidden',
-
   },
   gradient: {
     width: '100%',
-    paddingVertical: 14,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,

@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { Linking } from 'react-native';
-import { View, StyleSheet, Pressable } from 'react-native';
-import { Text } from './Text';
+import { View, StyleSheet, Pressable, Dimensions, useWindowDimensions } from 'react-native';
+import { Text } from '../components/ui/Text';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
@@ -18,18 +18,35 @@ import Animated, {
   SharedValue,
 } from 'react-native-reanimated';
 import { useVideoPlayer, VideoView } from 'expo-video';
-import { useAuthStore } from '../../store/authStore';
+import { useAuthStore } from '../store/authStore';
 import { useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FontAwesome5 } from '@expo/vector-icons';
 
+// Responsive utilities
+const ResponsiveSize = {
+  getResponsiveFontSize: (baseSize: number, minSize: number = baseSize * 0.8): number => {
+    const { width } = Dimensions.get('window');
+    return Math.max(minSize, Math.min(baseSize, width * (baseSize / 375)));
+  },
+  getResponsivePadding: (basePadding: number): number => {
+    const { width } = Dimensions.get('window');
+    return width < 400 ? basePadding * 0.75 : basePadding;
+  },
+  getResponsiveButtonWidth: (): string | number => {
+    const { width } = Dimensions.get('window');
+    return width < 400 ? '85%' : '70%';
+  }
+};
+
 const NEON_BLUE = '#00d4ff';
 const NEON_GLOW = '#0099ff';
 const NEON_LIGHT = '#66e5ff';
 
-const loadingVideo = require('../../assets/video/splashVideo-fixed-mobile.mp4');
-const reloadingVideo = require('../../assets/video/reloadignScreen.mp4');
+const videobg = require('../assets/video/splashVideo-fixed-mobile.mp4');
+const loadingVideo = require('../assets/video/loadingVideo.mp4');
+const reloadingScreen = require('../assets/video/reloadignScreen.mp4');
 
 interface ParticleConfig {
   x: number;
@@ -107,8 +124,9 @@ const Particle = React.memo(({ x, y, size, color, delayMs, durationMs }: Particl
   );
 });
 
-export interface LoadingTransitionProps {
+export interface WelcomeScreenProps {
   onVideoFinish?: () => void;
+  setIsRouting?: (routing: boolean) => void;
 }
 
 interface TopBarProps {
@@ -119,6 +137,8 @@ interface TopBarProps {
 
 const TopBar = ({ textAnimProgress, isAuthenticated, userName }: TopBarProps) => {
   const insets = useSafeAreaInsets();
+  const { width, height } = useWindowDimensions();
+  const isSmallScreen = width < 400;
   
   const animStyle = useAnimatedStyle(() => {
     const opacity = interpolate(
@@ -141,31 +161,60 @@ const TopBar = ({ textAnimProgress, isAuthenticated, userName }: TopBarProps) =>
     };
   });
 
-  const title = isAuthenticated ? `Bienvenue${userName ? `, ${userName}` : ''}` : 'HIPSTER IA';
+  const title = isAuthenticated ? `Bienvenue${userName ? `, ${userName}` : ''}` : 'Bienvenue';
+  const subtitle = isAuthenticated ? 'À bord' : 'Votre agence marketing';
+  const topBarHeight = isAuthenticated ? (isSmallScreen ? 50 : 60) : (isSmallScreen ? 100 : 120);
 
   return (
-    <Animated.View 
+    <View 
       style={[
-        styles.topBar, 
         { 
-          height: isAuthenticated ? 60 + insets.top : 110 + insets.top, 
-          paddingTop: insets.top - 10 
-        },
-        animStyle
+          height: topBarHeight + insets.top, 
+          paddingTop: Math.max(insets.top - 10, 4),
+          overflow: 'hidden'
+        }
       ]}
     >
-      <Text h1>{title}</Text>
-      {!isAuthenticated && (
-        <>
-          <Animated.Text style={styles.topBarSubText}>
-            L'agence marketing automatisée
+      <LinearGradient
+        colors={['#000000', '#0a1a2e', '#0d2a4d']}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+        style={[styles.topBar, { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }]}
+      />
+
+      <Animated.View 
+        style={[
+          styles.topBarContent,
+          { paddingHorizontal: ResponsiveSize.getResponsivePadding(20) },
+          animStyle
+        ]}
+      >
+        <View style={styles.titleWrapper}>
+          <Text h1 style={[
+            styles.topBarTitle,
+            { fontSize: ResponsiveSize.getResponsiveFontSize(28, 22) }
+          ]}>
+            {title}
+          </Text>
+          {!isAuthenticated && (
+            <Text style={[
+              styles.topBarSubtitle,
+              { fontSize: ResponsiveSize.getResponsiveFontSize(16, 13) }
+            ]}>
+              {subtitle}
+            </Text>
+          )}
+        </View>
+        {!isAuthenticated && (
+          <Animated.Text style={[
+            styles.topBarTagline,
+            { fontSize: ResponsiveSize.getResponsiveFontSize(13, 11) }
+          ]}>
+            automatisée
           </Animated.Text>
-          <Animated.Text style={styles.subLineTextTop}>
-            Dans votre poche.
-          </Animated.Text>
-        </>
-      )}
-    </Animated.View>
+        )}
+      </Animated.View>
+    </View>
   );
 };
 
@@ -175,11 +224,14 @@ interface SubTextAnimationProps {
 }
 
 const SubTextAnimation = React.memo(({ textAnimProgress, isAuthenticated }: SubTextAnimationProps) => {
+  const { width } = useWindowDimensions();
+  const isSmallScreen = width < 400;
+
   const animStyle = useAnimatedStyle(() => {
     const translateY = interpolate(
       textAnimProgress?.value ?? 0, 
       [0, 1], 
-      [0, -300], 
+      [0, isSmallScreen ? -250 : -300], 
       Extrapolate.CLAMP
     );
     
@@ -198,15 +250,31 @@ const SubTextAnimation = React.memo(({ textAnimProgress, isAuthenticated }: SubT
 
   if (isAuthenticated) {
     return (
-      <Animated.View style={animStyle}>
-        <Animated.Text style={styles.mainSubText}>CONTENT DE TE REVOIR</Animated.Text>
+      <Animated.View style={[animStyle, { width: '100%', paddingHorizontal: ResponsiveSize.getResponsivePadding(20) }]}>
+        <Animated.Text style={[
+          styles.mainSubText,
+          {
+            fontSize: ResponsiveSize.getResponsiveFontSize(18, 16),
+            lineHeight: ResponsiveSize.getResponsiveFontSize(30, 24),
+          }
+        ]}>
+          CONTENT DE TE REVOIR
+        </Animated.Text>
       </Animated.View>
     );
   }
 
   return (
-    <Animated.View style={animStyle}>
-      <Animated.Text style={styles.mainSubText}>Créez vos affiches, promotions et publications en quelques secondes.</Animated.Text>
+    <Animated.View style={[animStyle, { width: '100%', paddingHorizontal: ResponsiveSize.getResponsivePadding(20) }]}>
+      <Animated.Text style={[
+        styles.mainSubText,
+        {
+          fontSize: ResponsiveSize.getResponsiveFontSize(18, 15),
+          lineHeight: ResponsiveSize.getResponsiveFontSize(30, 24),
+        }
+      ]}>
+        Créez  affiches, promotions et publications en quelques secondes.
+      </Animated.Text>
     </Animated.View>
   );
 });
@@ -214,16 +282,20 @@ const SubTextAnimation = React.memo(({ textAnimProgress, isAuthenticated }: SubT
 interface BottomAuthSectionProps {
   isAuthenticated: boolean;
   onVideoFinish?: () => void;
+  setIsRouting?: (routing: boolean) => void;
   textAnimProgress: SharedValue<number>;
+  setFirstTimeUsed?: () => void;
 }
 
-const BottomAuthSection = React.memo(({ isAuthenticated, onVideoFinish, textAnimProgress }: BottomAuthSectionProps) => {
+const BottomAuthSection = React.memo(({ isAuthenticated, onVideoFinish, setIsRouting, textAnimProgress, setFirstTimeUsed }: BottomAuthSectionProps) => {
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const isSmallScreen = width < 400;
 
   const animStyle = useAnimatedStyle(() => ({
     transform: [
       {
-        translateY: interpolate(textAnimProgress?.value ?? 0, [0, 1], [350, 0], Extrapolate.CLAMP),
+        translateY: interpolate(textAnimProgress?.value ?? 0, [0, 1], [isSmallScreen ? 280 : 350, 0], Extrapolate.CLAMP),
       },
     ],
     opacity: interpolate(textAnimProgress?.value ?? 0, [0, 0.4, 1], [0, 0, 1], Extrapolate.CLAMP),
@@ -232,43 +304,88 @@ const BottomAuthSection = React.memo(({ isAuthenticated, onVideoFinish, textAnim
   if (isAuthenticated) return null;
 
   return (
-    <Animated.View style={[styles.container, animStyle]}>
+    <Animated.View style={[
+      styles.container,
+      { paddingHorizontal: ResponsiveSize.getResponsivePadding(20) },
+      animStyle
+    ]}>
       <Pressable
         onPress={() => {
+          console.log('[Welcome] Commencer clicked - calling setFirstTimeUsed()');
+          setFirstTimeUsed?.();
+          console.log('[Welcome] setFirstTimeUsed() completed');
+          setIsRouting?.(true);
           onVideoFinish?.();
-          router.push('/(onboarding)/packs');
+          router.replace('/(onboarding)/packs');
         }}
-        style={styles.primaryButton}
+        style={[
+          styles.primaryButton,
+          { width: ResponsiveSize.getResponsiveButtonWidth() }
+        ]}
       >
         <LinearGradient
           colors={['#000000', '#0a1628', '#264F8C']}
           start={{ x: 0, y: 0.5 }}
           end={{ x: 1, y: 0.5 }}
           locations={[0, 0.6, 1]}
-          style={styles.gradient}
+          style={[
+            styles.gradient,
+            { paddingVertical: isSmallScreen ? 12 : 14 }
+          ]}
         >
-          <Text style={styles.primaryButtonText}>Commencer maintenant</Text>
+          <Text style={[
+            styles.primaryButtonText,
+            { fontSize: ResponsiveSize.getResponsiveFontSize(14, 12) }
+          ]}>
+            Commencer maintenant
+          </Text>
         </LinearGradient>
       </Pressable>
 
-      <View style={styles.row}>
-        <Text small>Déjà un compte ?</Text>
-        <Pressable onPress={() => { onVideoFinish?.(); router.push('/(auth)/login'); }}>
-          <Text small style={styles.highlight}>Se connecter</Text>
+      <View style={[styles.row, { gap: isSmallScreen ? 4 : 6 }]}>
+        <Text small style={{ fontSize: ResponsiveSize.getResponsiveFontSize(12, 10) }}>
+          Déjà un compte ?
+        </Text>
+        <Pressable 
+          onPress={() => { 
+            console.log('[Welcome] Login clicked - calling setFirstTimeUsed()');
+            setFirstTimeUsed?.();
+            console.log('[Welcome] setFirstTimeUsed() completed');
+            setIsRouting?.(true);
+            onVideoFinish?.(); 
+            router.replace('/(auth)/login'); 
+          }}
+          style={({ pressed }) => ({
+            padding: 8,
+            opacity: pressed ? 0.7 : 1,
+            margin: -8,
+          })}
+        >
+          <Text small style={[
+            styles.highlight,
+            { fontSize: ResponsiveSize.getResponsiveFontSize(14, 11) }
+          ]}>
+            Se connecter
+          </Text>
         </Pressable>
       </View>
 
-      <View style={styles.trial}>
-        <FontAwesome5 name="angellist" size={18} style={styles.glowIcon} />
-        <Text small>
+      <View style={[styles.trial, { gap: isSmallScreen ? 3 : 4, marginTop: isSmallScreen ? 16 : 20 }]}>
+        <FontAwesome5 name="angellist" size={isSmallScreen ? 14 : 16} style={styles.glowIcon} />
+        <Text small style={{ fontSize: ResponsiveSize.getResponsiveFontSize(11, 9) }}>
           <Text style={styles.highlight}>7 jours</Text> d'essai gratuit
         </Text>
-        <Text style={styles.separator}>·</Text>
+        <Text style={[styles.separator, { fontSize: ResponsiveSize.getResponsiveFontSize(12, 10) }]}>·</Text>
         <Pressable
           onPress={() => Linking.openURL('mailto:contact@hipster-ia.fr').catch(() => {})}
           style={styles.contactLink}
         >
-          <Text style={styles.contactText}>Besoin d'aide ?</Text>
+          <Text style={[
+            styles.contactText,
+            { fontSize: ResponsiveSize.getResponsiveFontSize(11, 9) }
+          ]}>
+            Besoin d'aide ?
+          </Text>
         </Pressable>
       </View>
 
@@ -276,20 +393,21 @@ const BottomAuthSection = React.memo(({ isAuthenticated, onVideoFinish, textAnim
   );
 });
 
-export const LoadingTransition = React.memo(({ onVideoFinish }: LoadingTransitionProps) => {
+export default React.memo(function WelcomeScreen({ onVideoFinish, setIsRouting }: WelcomeScreenProps) {
   const [videoReady, setVideoReady] = React.useState(false);
   const textAnimProgress = useSharedValue(0);
   const videoMarginTop = useSharedValue(0);
-  const { isAuthenticated, user, isHydrated, isFirstTime } = useAuthStore();
+  const { isAuthenticated, user, isHydrated, setFirstTimeUsed, isFirstTime } = useAuthStore();
 
-  const selectedVideo = isFirstTime ? loadingVideo : reloadingVideo;
-  
-  console.log('LoadingTransition - Video selection:', { isHydrated, isFirstTime, usingReloading: !isFirstTime });
+  // Select video based on whether this is user's first time
+  const selectedVideo = isFirstTime ? videobg : reloadingScreen;
 
   const videoPlayer = useVideoPlayer(selectedVideo, (player) => {
     player.loop = false;
     player.muted = true;
   });
+
+  console.log('[Welcome] Current video:', { isFirstTime, selectedVideo: isFirstTime ? 'splash' : 'reloading' });
 
   const isFinishedRef = React.useRef(false);
   const playbackTimerRef = React.useRef<NodeJS.Timeout | null>(null);
@@ -297,7 +415,7 @@ export const LoadingTransition = React.memo(({ onVideoFinish }: LoadingTransitio
   useEffect(() => {
     if (!videoPlayer) return;
 
-    const handleVideoFinish = () => {
+    const onPlaybackFinish = () => {
       if (isFinishedRef.current) return;
       isFinishedRef.current = true;
 
@@ -323,7 +441,7 @@ export const LoadingTransition = React.memo(({ onVideoFinish }: LoadingTransitio
 
     const startTracking = () => {
       if (isFinishedRef.current || playbackTimerRef.current) return;
-      playbackTimerRef.current = setTimeout(handleVideoFinish, 5000);
+      playbackTimerRef.current = setTimeout(onPlaybackFinish, 5000);
     };
 
     const onStatusChange = ({ status }: { status: 'idle' | 'loading' | 'readyToPlay' | 'error' }) => {
@@ -346,12 +464,12 @@ export const LoadingTransition = React.memo(({ onVideoFinish }: LoadingTransitio
 
     videoPlayer.addListener('statusChange', onStatusChange);
     videoPlayer.addListener('playingChange', onPlayingChange);
-    videoPlayer.addListener('playToEnd', handleVideoFinish);
+    videoPlayer.addListener('playToEnd', onPlaybackFinish);
 
     return () => {
       videoPlayer.removeListener('statusChange', onStatusChange);
       videoPlayer.removeListener('playingChange', onPlayingChange);
-      videoPlayer.removeListener('playToEnd', handleVideoFinish);
+      videoPlayer.removeListener('playToEnd', onPlaybackFinish);
       if (playbackTimerRef.current) clearTimeout(playbackTimerRef.current);
     };
   }, [videoPlayer, onVideoFinish, isHydrated, isAuthenticated]);
@@ -362,7 +480,6 @@ export const LoadingTransition = React.memo(({ onVideoFinish }: LoadingTransitio
 
   return (
     <Animated.View exiting={FadeOut.duration(400)} style={StyleSheet.absoluteFill}>
-      <StatusBar style="light" />
       {!videoReady && <View style={[StyleSheet.absoluteFill, { backgroundColor: '#000' }]} />}
 
       <Animated.View style={[StyleSheet.absoluteFill, videoAnimatedStyle]}>
@@ -397,7 +514,9 @@ export const LoadingTransition = React.memo(({ onVideoFinish }: LoadingTransitio
         <BottomAuthSection
           isAuthenticated={isAuthenticated}
           onVideoFinish={onVideoFinish}
+          setIsRouting={setIsRouting}
           textAnimProgress={textAnimProgress}
+          setFirstTimeUsed={setFirstTimeUsed}
         />
       </View>
     </Animated.View>
@@ -418,13 +537,49 @@ const styles = StyleSheet.create({
     bottom: 150,
   },
   topBar: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#000000',
+    width: '100%',
+  },
+  topBarContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
+    paddingHorizontal: 20,
+  },
+  titleWrapper: {
+    alignItems: 'center',
+    gap: 0,
+  },
+  topBarTitle: {
+    fontSize: 28,
+    fontWeight: '800',
+    fontFamily: 'Arimo-Bold',
+    color: '#ffffff',
+    textShadowColor: '#00d4ff',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 14,
+    letterSpacing: -0.5,
+  },
+  topBarSubtitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    fontFamily: 'Arimo-Bold',
+    color: '#ffffff',
+    textShadowColor: 'rgba(0, 212, 255, 0.6)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 8,
+    letterSpacing: 1.2,
+  },
+  topBarTagline: {
+    fontSize: 13,
+    fontWeight: '500',
+    fontFamily: 'Arimo-Regular',
+    color: 'rgba(0, 212, 255, 0.8)',
+    letterSpacing: 2.5,
+    textTransform: 'uppercase',
+    marginTop: 4,
   },
   mainSubText: {
     fontSize: 18,
@@ -432,9 +587,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Arimo-Bold',
     color: 'rgba(255, 255, 255, 0.8)',
     textAlign: 'center',
-    bottom: -520,
     lineHeight: 30,
-    paddingHorizontal: 20,
   },
   subLineTextTop: {
     fontSize: 18,
@@ -465,22 +618,18 @@ const styles = StyleSheet.create({
   },
   container: {
     position: 'absolute',
-    // top: 0,
     bottom: 0,
     left: 0,
     right: 0,
     alignItems: 'center',
     gap: 12,
-    paddingHorizontal: 20,
     paddingVertical: 20,
   },
   primaryButton: {
-    width: '70%',
     overflow: 'hidden',
-
   },
   gradient: {
-    paddingVertical: 14,
+    width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
