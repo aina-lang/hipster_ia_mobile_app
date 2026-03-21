@@ -6,7 +6,7 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { Eye, EyeOff } from 'lucide-react-native';
+import { Eye, EyeOff, ArrowLeft } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BackgroundGradientOnboarding } from '../../components/ui/BackgroundGradientOnboarding';
 import { GenericModal } from '../../components/ui/GenericModal';
@@ -189,6 +189,13 @@ export default function LoginScreen() {
         >
           <Animated.View entering={FadeInDown.duration(800)} style={s.content}>
 
+            <TouchableOpacity 
+              onPress={() => router.back()} 
+              style={s.backButton}
+            >
+              <ArrowLeft size={24} color="#00d4ff" />
+            </TouchableOpacity>
+
             <View style={s.header}>
               <View style={s.titleRow}>
                 <Text style={s.titleSub}>Bon</Text>
@@ -242,6 +249,8 @@ const s = StyleSheet.create({
   kav:             { flex: 1 },
   scrollContent:   { flexGrow: 1, paddingHorizontal: 24, justifyContent: 'center' },
   content:         { flex: 1, justifyContent: 'center', paddingTop: 60, paddingBottom: 40 },
+
+  backButton:      { position: 'absolute', top: 16, left: 0, padding: 8, zIndex: 10 },
 
   header:          { alignItems: 'center', marginBottom: 36, paddingHorizontal: 8, paddingVertical: 10 },
   titleRow:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 10 },

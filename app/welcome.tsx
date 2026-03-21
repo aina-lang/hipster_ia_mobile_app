@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { Linking } from 'react-native';
-import { View, StyleSheet, Pressable, Dimensions, useWindowDimensions } from 'react-native';
+import { View, StyleSheet, Pressable } from 'react-native';
 import { Text } from '../components/ui/Text';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -23,29 +23,13 @@ import { useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FontAwesome5 } from '@expo/vector-icons';
-
-// Responsive utilities
-const ResponsiveSize = {
-  getResponsiveFontSize: (baseSize: number, minSize: number = baseSize * 0.8): number => {
-    const { width } = Dimensions.get('window');
-    return Math.max(minSize, Math.min(baseSize, width * (baseSize / 375)));
-  },
-  getResponsivePadding: (basePadding: number): number => {
-    const { width } = Dimensions.get('window');
-    return width < 400 ? basePadding * 0.75 : basePadding;
-  },
-  getResponsiveButtonWidth: (): string | number => {
-    const { width } = Dimensions.get('window');
-    return width < 400 ? '85%' : '70%';
-  }
-};
+import { useResponsiveDimensions } from '../hooks/useResponsiveDimensions';
 
 const NEON_BLUE = '#00d4ff';
 const NEON_GLOW = '#0099ff';
 const NEON_LIGHT = '#66e5ff';
 
 const videobg = require('../assets/video/splashVideo-fixed-mobile.mp4');
-const loadingVideo = require('../assets/video/loadingVideo.mp4');
 const reloadingScreen = require('../assets/video/reloadignScreen.mp4');
 
 interface ParticleConfig {
@@ -137,8 +121,7 @@ interface TopBarProps {
 
 const TopBar = ({ textAnimProgress, isAuthenticated, userName }: TopBarProps) => {
   const insets = useSafeAreaInsets();
-  const { width, height } = useWindowDimensions();
-  const isSmallScreen = width < 400;
+  const responsive = useResponsiveDimensions();
   
   const animStyle = useAnimatedStyle(() => {
     const opacity = interpolate(
@@ -161,60 +144,31 @@ const TopBar = ({ textAnimProgress, isAuthenticated, userName }: TopBarProps) =>
     };
   });
 
-  const title = isAuthenticated ? `Bienvenue${userName ? `, ${userName}` : ''}` : 'Bienvenue';
-  const subtitle = isAuthenticated ? 'À bord' : 'Votre agence marketing';
-  const topBarHeight = isAuthenticated ? (isSmallScreen ? 50 : 60) : (isSmallScreen ? 100 : 120);
+  const title = isAuthenticated ? `Bienvenue${userName ? `, ${userName}` : ''}` : 'HIPSTER IA';
 
   return (
-    <View 
+    <Animated.View 
       style={[
+        styles.topBar, 
         { 
-          height: topBarHeight + insets.top, 
-          paddingTop: Math.max(insets.top - 10, 4),
-          overflow: 'hidden'
-        }
+          height: responsive.topBarHeight + insets.top, 
+          paddingTop: insets.top - 10 
+        },
+        animStyle
       ]}
     >
-      <LinearGradient
-        colors={['#000000', '#0a1a2e', '#0d2a4d']}
-        start={{ x: 0.5, y: 0 }}
-        end={{ x: 0.5, y: 1 }}
-        style={[styles.topBar, { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }]}
-      />
-
-      <Animated.View 
-        style={[
-          styles.topBarContent,
-          { paddingHorizontal: ResponsiveSize.getResponsivePadding(20) },
-          animStyle
-        ]}
-      >
-        <View style={styles.titleWrapper}>
-          <Text h1 style={[
-            styles.topBarTitle,
-            { fontSize: ResponsiveSize.getResponsiveFontSize(28, 22) }
-          ]}>
-            {title}
-          </Text>
-          {!isAuthenticated && (
-            <Text style={[
-              styles.topBarSubtitle,
-              { fontSize: ResponsiveSize.getResponsiveFontSize(16, 13) }
-            ]}>
-              {subtitle}
-            </Text>
-          )}
-        </View>
-        {!isAuthenticated && (
-          <Animated.Text style={[
-            styles.topBarTagline,
-            { fontSize: ResponsiveSize.getResponsiveFontSize(13, 11) }
-          ]}>
-            automatisée
+      <Text h1 style={{ fontSize: responsive.fontSize['3xl'] }}>{title}</Text>
+      {!isAuthenticated && (
+        <>
+          <Animated.Text style={[styles.topBarSubText, { fontSize: responsive.fontSize.lg }]}>
+            L'agence marketing automatisée
           </Animated.Text>
-        )}
-      </Animated.View>
-    </View>
+          <Animated.Text style={[styles.subLineTextTop, { fontSize: responsive.fontSize.base }]}>
+            Dans votre poche.
+          </Animated.Text>
+        </>
+      )}
+    </Animated.View>
   );
 };
 
@@ -224,8 +178,46 @@ interface SubTextAnimationProps {
 }
 
 const SubTextAnimation = React.memo(({ textAnimProgress, isAuthenticated }: SubTextAnimationProps) => {
-  // Typography is now displayed in BottomAuthSection above the button
-  return null;
+  const responsive = useResponsiveDimensions();
+  
+  const animStyle = useAnimatedStyle(() => {
+    const translateY = interpolate(
+      textAnimProgress?.value ?? 0, 
+      [0, 1], 
+      [0, -300], 
+      Extrapolate.CLAMP
+    );
+    
+    const opacity = interpolate(
+      textAnimProgress?.value ?? 0,
+      [0, 0.5, 1],
+      [0, 0, 1],
+      Extrapolate.CLAMP
+    );
+    
+    return { 
+      transform: [{ translateY }],
+      opacity 
+    };
+  });
+
+  if (isAuthenticated) {
+    return (
+      <Animated.View style={animStyle}>
+        <Animated.Text style={[styles.mainSubText, { fontSize: responsive.fontSize.lg, bottom: responsive.mainSubTextBottom }]}>
+          CONTENT DE TE REVOIR
+        </Animated.Text>
+      </Animated.View>
+    );
+  }
+
+  return (
+    <Animated.View style={animStyle}>
+      <Animated.Text style={[styles.mainSubText, { fontSize: responsive.fontSize.lg, bottom: responsive.mainSubTextBottom }]}>
+        Créez vos affiches, promotions et publications en quelques secondes.
+      </Animated.Text>
+    </Animated.View>
+  );
 });
 
 interface BottomAuthSectionProps {
@@ -233,18 +225,16 @@ interface BottomAuthSectionProps {
   onVideoFinish?: () => void;
   setIsRouting?: (routing: boolean) => void;
   textAnimProgress: SharedValue<number>;
-  setFirstTimeUsed?: () => void;
 }
 
-const BottomAuthSection = React.memo(({ isAuthenticated, onVideoFinish, setIsRouting, textAnimProgress, setFirstTimeUsed }: BottomAuthSectionProps) => {
+const BottomAuthSection = React.memo(({ isAuthenticated, onVideoFinish, setIsRouting, textAnimProgress }: BottomAuthSectionProps) => {
   const router = useRouter();
-  const { width } = useWindowDimensions();
-  const isSmallScreen = width < 400;
+  const responsive = useResponsiveDimensions();
 
   const animStyle = useAnimatedStyle(() => ({
     transform: [
       {
-        translateY: interpolate(textAnimProgress?.value ?? 0, [0, 1], [isSmallScreen ? 280 : 350, 0], Extrapolate.CLAMP),
+        translateY: interpolate(textAnimProgress?.value ?? 0, [0, 1], [350, 0], Extrapolate.CLAMP),
       },
     ],
     opacity: interpolate(textAnimProgress?.value ?? 0, [0, 0.4, 1], [0, 0, 1], Extrapolate.CLAMP),
@@ -253,92 +243,63 @@ const BottomAuthSection = React.memo(({ isAuthenticated, onVideoFinish, setIsRou
   if (isAuthenticated) return null;
 
   return (
-    <Animated.View style={[
-      styles.container,
-      { paddingHorizontal: ResponsiveSize.getResponsivePadding(20) },
-      animStyle
-    ]}>
-      <Text style={[
-        styles.mainSubText,
-        { fontSize: ResponsiveSize.getResponsiveFontSize(18, 15), marginBottom: isSmallScreen ? 8 : 12 }
-      ]}>
-        Créez vos affiches, promotions et publications en quelques secondes
-      </Text>
+    <Animated.View style={[styles.container, { paddingHorizontal: responsive.containerPaddingHorizontal, gap: responsive.containerGap, bottom: responsive.containerBottom }, animStyle]}>
       <Pressable
         onPress={() => {
-          console.log('[Welcome] Commencer clicked - calling setFirstTimeUsed()');
-          setFirstTimeUsed?.();
-          console.log('[Welcome] setFirstTimeUsed() completed');
+          console.log('[Welcome] Commencer clicked');
           setIsRouting?.(true);
           onVideoFinish?.();
           router.replace('/(onboarding)/packs');
         }}
-        style={[
-          styles.primaryButton,
-          { width: ResponsiveSize.getResponsiveButtonWidth() }
-        ]}
+        style={[styles.primaryButton, { width: responsive.isSmallScreen ? '85%' : '70%' }]}
       >
         <LinearGradient
           colors={['#000000', '#0a1628', '#264F8C']}
           start={{ x: 0, y: 0.5 }}
           end={{ x: 1, y: 0.5 }}
           locations={[0, 0.6, 1]}
-          style={[
-            styles.gradient,
-            { paddingVertical: isSmallScreen ? 12 : 14 }
-          ]}
+          style={[styles.gradient, { paddingVertical: responsive.isSmallScreen ? 12 : 14 }]}
         >
-          <Text style={[
-            styles.primaryButtonText,
-            { fontSize: ResponsiveSize.getResponsiveFontSize(14, 12) }
-          ]}>
+          <Text style={[styles.primaryButtonText, { fontSize: responsive.fontSize.sm }]}>
             Commencer maintenant
           </Text>
         </LinearGradient>
       </Pressable>
 
-      <View style={[styles.row, { gap: isSmallScreen ? 4 : 6 }]}>
-        <Text small style={{ fontSize: ResponsiveSize.getResponsiveFontSize(12, 10) }}>
+      <View style={[styles.row, { gap: responsive.spacing.xs }]}>
+        <Text small style={{ fontSize: responsive.fontSize.xs }}>
           Déjà un compte ?
         </Text>
         <Pressable 
           onPress={() => { 
-            console.log('[Welcome] Login clicked - calling setFirstTimeUsed()');
-            setFirstTimeUsed?.();
-            console.log('[Welcome] setFirstTimeUsed() completed');
+            console.log('[Welcome] Login clicked');
             setIsRouting?.(true);
             onVideoFinish?.(); 
             router.replace('/(auth)/login'); 
           }}
           style={({ pressed }) => ({
-            padding: 8,
+            padding: 10,
             opacity: pressed ? 0.7 : 1,
-            margin: -8,
+            margin: -10,
           })}
         >
-          <Text small style={[
-            styles.highlight,
-            { fontSize: ResponsiveSize.getResponsiveFontSize(14, 11) }
-          ]}>
+          <Text small style={[styles.highlight, { fontSize: responsive.fontSize.base }]}>
             Se connecter
           </Text>
         </Pressable>
       </View>
 
-      <View style={[styles.trial, { gap: isSmallScreen ? 3 : 4, marginTop: isSmallScreen ? 16 : 20 }]}>
-        <FontAwesome5 name="angellist" size={isSmallScreen ? 14 : 16} style={styles.glowIcon} />
-        <Text small style={{ fontSize: ResponsiveSize.getResponsiveFontSize(11, 9) }}>
+      <View style={[styles.trial, { gap: responsive.spacing.xs, marginTop: responsive.spacing.lg }]}>
+        <FontAwesome5 name="angellist" size={responsive.isSmallScreen ? 16 : 18} style={styles.glowIcon} />
+        <Text small style={{ fontSize: responsive.fontSize.xs }}>
           <Text style={styles.highlight}>7 jours</Text> d'essai gratuit
         </Text>
-        <Text style={[styles.separator, { fontSize: ResponsiveSize.getResponsiveFontSize(12, 10) }]}>·</Text>
+        <Text style={[styles.separator, { fontSize: responsive.fontSize.xs }]}>·</Text>
         <Pressable
           onPress={() => Linking.openURL('mailto:contact@hipster-ia.fr').catch(() => {})}
           style={styles.contactLink}
         >
-          <Text style={[
-            styles.contactText,
-            { fontSize: ResponsiveSize.getResponsiveFontSize(11, 9) }
-          ]}>
+          <Text style={[styles.contactText, { fontSize: responsive.fontSize.xs }]}>
             Besoin d'aide ?
           </Text>
         </Pressable>
@@ -352,17 +313,18 @@ export default React.memo(function WelcomeScreen({ onVideoFinish, setIsRouting }
   const [videoReady, setVideoReady] = React.useState(false);
   const textAnimProgress = useSharedValue(0);
   const videoMarginTop = useSharedValue(0);
-  const { isAuthenticated, user, isHydrated, setFirstTimeUsed, isFirstTime } = useAuthStore();
+  const { isAuthenticated, user, isHydrated } = useAuthStore();
+  const responsive = useResponsiveDimensions();
 
-  // Select video based on whether this is user's first time
-  const selectedVideo = isFirstTime ? videobg : reloadingScreen;
+  // Select video based on authentication status
+  const selectedVideo = isAuthenticated ? reloadingScreen : videobg;
 
   const videoPlayer = useVideoPlayer(selectedVideo, (player) => {
     player.loop = false;
     player.muted = true;
   });
 
-  console.log('[Welcome] Current video:', { isFirstTime, selectedVideo: isFirstTime ? 'splash' : 'reloading' });
+  console.log('[Welcome] Video selection:', { isAuthenticated, selectedVideo: isAuthenticated ? 'reloading' : 'splash' });
 
   const isFinishedRef = React.useRef(false);
   const playbackTimerRef = React.useRef<NodeJS.Timeout | null>(null);
@@ -435,6 +397,7 @@ export default React.memo(function WelcomeScreen({ onVideoFinish, setIsRouting }
 
   return (
     <Animated.View exiting={FadeOut.duration(400)} style={StyleSheet.absoluteFill}>
+      <StatusBar style="light" />
       {!videoReady && <View style={[StyleSheet.absoluteFill, { backgroundColor: '#000' }]} />}
 
       <Animated.View style={[StyleSheet.absoluteFill, videoAnimatedStyle]}>
@@ -458,7 +421,7 @@ export default React.memo(function WelcomeScreen({ onVideoFinish, setIsRouting }
         />
 
         <View style={styles.center}>
-          <View style={styles.particleAnchor} pointerEvents="none">
+          <View style={[styles.particleAnchor, { bottom: responsive.particleBottom }]} pointerEvents="none">
             {PARTICLES.map((p, i) => (
               <Particle key={i} {...p} />
             ))}
@@ -471,7 +434,6 @@ export default React.memo(function WelcomeScreen({ onVideoFinish, setIsRouting }
           onVideoFinish={onVideoFinish}
           setIsRouting={setIsRouting}
           textAnimProgress={textAnimProgress}
-          setFirstTimeUsed={setFirstTimeUsed}
         />
       </View>
     </Animated.View>
@@ -489,52 +451,15 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: 0,
     height: 0,
-    bottom: 150,
   },
   topBar: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
     justifyContent: 'center',
     alignItems: 'center',
-    width: '100%',
-  },
-  topBarContent: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: '100%',
-    paddingHorizontal: 20,
-  },
-  titleWrapper: {
-    alignItems: 'center',
-    gap: 0,
-  },
-  topBarTitle: {
-    fontSize: 28,
-    fontWeight: '800',
-    fontFamily: 'Arimo-Bold',
-    color: '#ffffff',
-    textShadowColor: '#00d4ff',
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 14,
-    letterSpacing: -0.5,
-  },
-  topBarSubtitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    fontFamily: 'Arimo-Bold',
-    color: '#ffffff',
-    textShadowColor: 'rgba(0, 212, 255, 0.6)',
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 8,
-    letterSpacing: 1.2,
-  },
-  topBarTagline: {
-    fontSize: 13,
-    fontWeight: '500',
-    fontFamily: 'Arimo-Regular',
-    color: 'rgba(0, 212, 255, 0.8)',
-    letterSpacing: 2.5,
-    textTransform: 'uppercase',
-    marginTop: 4,
+    backgroundColor: '#000000',
   },
   mainSubText: {
     fontSize: 18,
@@ -542,7 +467,9 @@ const styles = StyleSheet.create({
     fontFamily: 'Arimo-Bold',
     color: 'rgba(255, 255, 255, 0.8)',
     textAlign: 'center',
+
     lineHeight: 30,
+    paddingHorizontal: 20,
   },
   subLineTextTop: {
     fontSize: 18,
@@ -573,11 +500,9 @@ const styles = StyleSheet.create({
   },
   container: {
     position: 'absolute',
-    bottom: 20,
     left: 0,
     right: 0,
     alignItems: 'center',
-    gap: 12,
     paddingVertical: 20,
   },
   primaryButton: {
@@ -592,7 +517,6 @@ const styles = StyleSheet.create({
     borderRadius: 14,
   },
   primaryButtonText: {
-    fontSize: 14,
     fontWeight: '700',
     letterSpacing: 1,
     textAlign: 'center',
@@ -602,14 +526,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
   },
   trial: {
-    marginTop: 20,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 4,
   },
   link: {
     color: '#00a8cc',
