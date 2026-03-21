@@ -42,7 +42,7 @@ export const BottomAuthSection = React.memo(({ isAuthenticated, onVideoFinish, s
           console.log('[Welcome] setFirstTimeUsed() completed');
           setIsRouting?.(true);
           onVideoFinish?.();
-          router.replace('/(onboarding)/packs');
+          router.push({ pathname: '/(onboarding)/packs', params: { from: 'welcome' } });
         }}
         style={styles.primaryButton}
       >
@@ -66,7 +66,7 @@ export const BottomAuthSection = React.memo(({ isAuthenticated, onVideoFinish, s
             console.log('[Welcome] setFirstTimeUsed() completed');
             setIsRouting?.(true);
             onVideoFinish?.(); 
-            router.replace('/(auth)/login'); 
+            router.push('/(auth)/login'); 
           }}
           style={({ pressed }) => ({
             padding: 10,

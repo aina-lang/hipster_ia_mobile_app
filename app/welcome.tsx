@@ -1,6 +1,6 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Linking } from 'react-native';
-import { View, StyleSheet, Pressable } from 'react-native';
+import { View, StyleSheet, Pressable, Image } from 'react-native';
 import { Text } from '../components/ui/Text';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -19,6 +19,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { useAuthStore } from '../store/authStore';
+import { useWelcomeVideoStore } from '../store/welcomeVideoStore';
 import { useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -31,6 +32,7 @@ const NEON_LIGHT = '#66e5ff';
 
 const videobg = require('../assets/video/splashVideo-fixed-mobile.mp4');
 const reloadingScreen = require('../assets/video/reloadignScreen.mp4');
+const bgAfterBack = require('../assets/bg_after_back.jpeg');
 
 interface ParticleConfig {
   x: number;
@@ -225,9 +227,10 @@ interface BottomAuthSectionProps {
   onVideoFinish?: () => void;
   setIsRouting?: (routing: boolean) => void;
   textAnimProgress: SharedValue<number>;
+  setIsReturningFromBack?: (returning: boolean) => void;
 }
 
-const BottomAuthSection = React.memo(({ isAuthenticated, onVideoFinish, setIsRouting, textAnimProgress }: BottomAuthSectionProps) => {
+const BottomAuthSection = React.memo(({ isAuthenticated, onVideoFinish, setIsRouting, textAnimProgress, setIsReturningFromBack }: BottomAuthSectionProps) => {
   const router = useRouter();
   const responsive = useResponsiveDimensions();
 
@@ -249,6 +252,7 @@ const BottomAuthSection = React.memo(({ isAuthenticated, onVideoFinish, setIsRou
           console.log('[Welcome] Commencer clicked');
           setIsRouting?.(true);
           onVideoFinish?.();
+          setIsReturningFromBack(false); // Reset flag when navigating away
           router.replace('/(onboarding)/packs');
         }}
         style={[styles.primaryButton, { width: responsive.isSmallScreen ? '85%' : '70%' }]}
@@ -275,7 +279,8 @@ const BottomAuthSection = React.memo(({ isAuthenticated, onVideoFinish, setIsRou
             console.log('[Welcome] Login clicked');
             setIsRouting?.(true);
             onVideoFinish?.(); 
-            router.replace('/(auth)/login'); 
+            setIsReturningFromBack(false); // Reset flag when navigating away
+            router.push('/(auth)/login'); 
           }}
           style={({ pressed }) => ({
             padding: 10,
@@ -313,8 +318,31 @@ export default React.memo(function WelcomeScreen({ onVideoFinish, setIsRouting }
   const [videoReady, setVideoReady] = React.useState(false);
   const textAnimProgress = useSharedValue(0);
   const videoMarginTop = useSharedValue(0);
+  const insets = useSafeAreaInsets();
   const { isAuthenticated, user, isHydrated } = useAuthStore();
+  const { isReturningFromBack, setIsReturningFromBack } = useWelcomeVideoStore();
   const responsive = useResponsiveDimensions();
+  const videoCompletedRef = useRef(false);
+  const topBarHeight = responsive.topBarHeight + insets.top;
+
+  // Sync store state with ref
+  React.useEffect(() => {
+    // Only reset if NOT returning from back - keep flag persistent
+    if (!isReturningFromBack) {
+      videoCompletedRef.current = false;
+    }
+  }, [isReturningFromBack]);
+
+  // When returning from back, freeze animations in final state and show static image
+  React.useEffect(() => {
+    if (isReturningFromBack) {
+      // Set animations to their final state immediately - no animations
+      textAnimProgress.value = 1; // Text fully animated in
+      videoMarginTop.value = 100; // Video fully animated up
+      // Mark as finished to prevent video playback logic from triggering
+      isFinishedRef.current = true;
+    }
+  }, [isReturningFromBack, textAnimProgress, videoMarginTop]);
 
   // Select video based on authentication status
   const selectedVideo = isAuthenticated ? reloadingScreen : videobg;
@@ -330,11 +358,12 @@ export default React.memo(function WelcomeScreen({ onVideoFinish, setIsRouting }
   const playbackTimerRef = React.useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    if (!videoPlayer) return;
+    if (!videoPlayer || isReturningFromBack) return; // Don't play video if returning from back
 
     const onPlaybackFinish = () => {
       if (isFinishedRef.current) return;
       isFinishedRef.current = true;
+      videoCompletedRef.current = true;
 
       if (playbackTimerRef.current) {
         clearTimeout(playbackTimerRef.current);
@@ -352,7 +381,15 @@ export default React.memo(function WelcomeScreen({ onVideoFinish, setIsRouting }
       });
 
       setTimeout(() => {
-        if (isHydrated && isAuthenticated) onVideoFinish?.();
+        if (isHydrated && isAuthenticated) {
+          // Seek to the absolute end of the video to show last frame
+          const duration = videoPlayer.duration ?? 0;
+          if (duration > 0) {
+            videoPlayer.seekBy(duration - videoPlayer.currentTime);
+          }
+          videoPlayer.pause(); // Freeze on last frame
+          onVideoFinish?.();
+        }
       }, 2000);
     };
 
@@ -375,6 +412,7 @@ export default React.memo(function WelcomeScreen({ onVideoFinish, setIsRouting }
 
     if (videoPlayer.status === 'readyToPlay') {
       setVideoReady(true);
+      videoPlayer.play();
       SplashScreen.hideAsync().catch(() => {});
     }
     if (videoPlayer.playing) startTracking();
@@ -389,7 +427,7 @@ export default React.memo(function WelcomeScreen({ onVideoFinish, setIsRouting }
       videoPlayer.removeListener('playToEnd', onPlaybackFinish);
       if (playbackTimerRef.current) clearTimeout(playbackTimerRef.current);
     };
-  }, [videoPlayer, onVideoFinish, isHydrated, isAuthenticated]);
+  }, [videoPlayer, onVideoFinish, isHydrated, isAuthenticated, isReturningFromBack]);
 
   const videoAnimatedStyle = useAnimatedStyle(() => ({
     marginTop: videoMarginTop.value,
@@ -400,9 +438,17 @@ export default React.memo(function WelcomeScreen({ onVideoFinish, setIsRouting }
       <StatusBar style="light" />
       {!videoReady && <View style={[StyleSheet.absoluteFill, { backgroundColor: '#000' }]} />}
 
-      <Animated.View style={[StyleSheet.absoluteFill, videoAnimatedStyle]}>
-        <VideoView player={videoPlayer} style={StyleSheet.absoluteFill} contentFit="cover" nativeControls={false} />
-      </Animated.View>
+      {isReturningFromBack ? (
+        // Show static image when returning from packs with frozen animations
+        <Animated.View style={[{ position: 'absolute', top: topBarHeight - 30, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center' }]}>
+          <Image source={bgAfterBack} style={{ width: '120%', height: '120%' }} resizeMode="contain" />
+        </Animated.View>
+      ) : (
+        // Show video during normal flow
+        <Animated.View style={[StyleSheet.absoluteFill, videoAnimatedStyle]}>
+          <VideoView player={videoPlayer} style={StyleSheet.absoluteFill} contentFit="cover" nativeControls={false} />
+        </Animated.View>
+      )}
 
       <LinearGradient
         colors={['transparent', 'rgba(0,0,0,0.5)', 'rgba(0,0,0,0.8)']}
@@ -434,6 +480,7 @@ export default React.memo(function WelcomeScreen({ onVideoFinish, setIsRouting }
           onVideoFinish={onVideoFinish}
           setIsRouting={setIsRouting}
           textAnimProgress={textAnimProgress}
+          setIsReturningFromBack={setIsReturningFromBack}
         />
       </View>
     </Animated.View>

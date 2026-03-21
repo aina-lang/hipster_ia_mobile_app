@@ -4,15 +4,16 @@ import {
   Platform, TouchableOpacity, ScrollView, Pressable,
   ActivityIndicator, Animated as RNAnimated, Easing,
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { Eye, EyeOff, Gift } from 'lucide-react-native';
+import { Eye, EyeOff, Gift, ArrowLeft } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BackgroundGradientOnboarding } from '../../components/ui/BackgroundGradientOnboarding';
 import { GenericModal } from '../../components/ui/GenericModal';
 import { colors } from '../../theme/colors';
 import { useAuthStore } from '../../store/authStore';
 import { useOnboardingStore } from '../../store/onboardingStore';
+import { useWelcomeVideoStore } from '../../store/welcomeVideoStore';
 
 function NeonBorderInput({ children, isActive }: { children: React.ReactNode; isActive: boolean }) {
   const translateX = useRef(new RNAnimated.Value(0)).current;
@@ -91,6 +92,9 @@ const btn = StyleSheet.create({
 export default function RegisterScreen() {
   const { selectedPlan } = useOnboardingStore();
   const { aiRegister, error, clearError } = useAuthStore();
+  const { setIsReturningFromBack } = useWelcomeVideoStore();
+  const params = useLocalSearchParams();
+  const fromWelcome = params?.from === 'welcome';
 
   const [fullName, setFullName]             = useState('');
   const [email, setEmail]                   = useState('');
@@ -152,13 +156,23 @@ export default function RegisterScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={s.kav}
       >
+        <TouchableOpacity 
+          onPress={() => {
+            setIsReturningFromBack(true);
+            router.replace('/');
+          }}
+          style={s.backButton}
+        >
+          <ArrowLeft size={24} color="#00d4ff" />
+        </TouchableOpacity>
+
         <ScrollView
           contentContainerStyle={s.scrollContent}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
           bounces={false}
         >
-          <Animated.View entering={FadeInDown.duration(800)}>
+          <Animated.View entering={FadeInDown.duration(800)} style={s.content}>
 
             <View style={s.header}>
               <View style={s.titleRow}>
@@ -304,10 +318,12 @@ export default function RegisterScreen() {
 
 const s = StyleSheet.create({
   kav:            { flex: 1 },
-  // padding horizontal augmenté pour que les bloom des inputs ne soient pas coupés
-  scrollContent:  { flexGrow: 1, paddingHorizontal: 28, paddingTop: 60, paddingBottom: 60 },
+  scrollContent:  { flexGrow: 1, paddingHorizontal: 24, justifyContent: 'center' },
+  content:        { flex: 1, justifyContent: 'center', paddingTop: 60, paddingBottom: 40 },
 
-  header:          { alignItems: 'center', marginBottom: 36, paddingHorizontal: 8, paddingVertical: 10 },
+  backButton:     { position: 'absolute', top: 16, left: 0, padding: 8, zIndex: 10 },
+
+  header:         { alignItems: 'center', marginBottom: 36, paddingHorizontal: 8, paddingVertical: 10 },
   titleRow:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 10 },
   titleSub:        { fontFamily: 'Arimo-Bold', fontSize: 16, letterSpacing: 3, textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)', marginTop: 10 },
   titleScript:     { fontFamily: 'Brittany-Signature', paddingLeft: 1, fontSize: 36, color: '#fff', textShadowColor: '#00eaff', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 18, lineHeight: 48, includeFontPadding: false },
@@ -361,4 +377,6 @@ termsLink:       { fontFamily: 'Arimo-Regular', fontSize: 14, color: '#fff', tex
   footer:          { flexDirection: 'row', justifyContent: 'center' },
   footerText:      { fontFamily: 'Arimo-Regular', color: colors.text.secondary, fontSize: 14 },
   neonLink:        { fontFamily: 'Arimo-Regular', fontSize: 14, color: '#fff', textShadowColor: '#00eaff', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 8 },
+  
+  backButton:      { position: 'absolute', top: 16, left: 0, padding: 8, zIndex: 10 },
 });

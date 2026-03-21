@@ -12,6 +12,7 @@ import { BackgroundGradientOnboarding } from '../../components/ui/BackgroundGrad
 import { GenericModal } from '../../components/ui/GenericModal';
 import { colors } from '../../theme/colors';
 import { useAuthStore } from '../../store/authStore';
+import { useWelcomeVideoStore } from '../../store/welcomeVideoStore';
 
 function NeonBorderInput({ children, isActive }: { children: React.ReactNode; isActive: boolean }) {
   const translateX = useRef(new RNAnimated.Value(0)).current;
@@ -150,6 +151,7 @@ export default function LoginScreen() {
   const [modal, setModal]       = useState({ visible: false, type: 'info' as any, title: '', message: '' });
 
   const { aiLogin, isLoading, error, clearError } = useAuthStore();
+  const { setIsReturningFromBack } = useWelcomeVideoStore();
 
   const showModal = (type: any, title: string, message = '') =>
     setModal({ visible: true, type, title, message });
@@ -190,7 +192,10 @@ export default function LoginScreen() {
           <Animated.View entering={FadeInDown.duration(800)} style={s.content}>
 
             <TouchableOpacity 
-              onPress={() => router.back()} 
+              onPress={() => {
+                setIsReturningFromBack(true);
+                router.replace('/');
+              }} 
               style={s.backButton}
             >
               <ArrowLeft size={24} color="#00d4ff" />

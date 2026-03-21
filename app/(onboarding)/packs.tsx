@@ -5,12 +5,13 @@ import {
   Easing, Pressable,
 } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
-import { useRouter, useFocusEffect } from 'expo-router';
+import { useRouter, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Crown, Image as ImageIcon, FileText, Video, Music, Download, Box, CheckCircle2, XCircle } from 'lucide-react-native';
+import { Crown, Image as ImageIcon, FileText, Video, Music, Download, Box, CheckCircle2, XCircle, ArrowLeft } from 'lucide-react-native';
 
 import { api } from '../../api/client';
 import { useOnboardingStore } from '../../store/onboardingStore';
+import { useWelcomeVideoStore } from '../../store/welcomeVideoStore';
 import { colors } from '../../theme/colors';
 import { BackgroundGradientOnboarding } from '../../components/ui/BackgroundGradientOnboarding';
 
@@ -224,7 +225,10 @@ function PlanCard({ plan, isSelected, onSelect, submitting }: {
 
 export default function PacksScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams();
+  const fromWelcome = params?.from === 'welcome';
   const { selectedPlan, setPlan } = useOnboardingStore();
+  const { setIsReturningFromBack } = useWelcomeVideoStore();
   const [plans, setPlans]           = useState<Plan[]>([]);
   const [loading, setLoading]       = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -253,6 +257,16 @@ export default function PacksScreen() {
 
   return (
     <BackgroundGradientOnboarding darkOverlay>
+      <TouchableOpacity 
+        onPress={() => {
+          setIsReturningFromBack(true);
+          router.replace('/');
+        }}
+        style={s.backButton}
+      >
+        <ArrowLeft size={24} color="#00d4ff" />
+      </TouchableOpacity>
+
       <View style={s.screen}>
 
         <View style={s.header}>
@@ -286,7 +300,13 @@ export default function PacksScreen() {
 
         <View style={s.footer}>
           <ContinuerButton
-            onPress={() => { setSubmitting(true); router.push('/(auth)/register'); }}
+            onPress={() => { 
+              setSubmitting(true); 
+              router.push({
+                pathname: '/(auth)/register',
+                params: { from: fromWelcome ? 'welcome' : 'packs' }
+              });
+            }}
             loading={submitting}
             disabled={submitting}
           />
@@ -298,6 +318,8 @@ export default function PacksScreen() {
 }
 
 const s = StyleSheet.create({
+  backButton:     { position: 'absolute', top: 16, left: 0, padding: 8, zIndex: 10 },
+  
   screen:         { flex: 1, paddingTop: 60 },
   scrollContent:  { paddingHorizontal: 24, paddingTop: 8, paddingBottom: 40 },
   loader:         { flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 100 },
