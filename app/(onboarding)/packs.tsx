@@ -189,7 +189,7 @@ function PlanCard({ plan, isSelected, onSelect, submitting }: {
                 locations={[0, 0.46, 1]}
                 style={s.badge}
               >
-                <Text style={s.badgeText}>CONSEILLÉ</Text>
+                <Text style={s.badgeText}>PROMOTION</Text>
               </LinearGradient>
             )}
             {plan.isComingSoon && (
@@ -206,9 +206,18 @@ function PlanCard({ plan, isSelected, onSelect, submitting }: {
                 <Text style={[s.planName, isSelected && s.planNameSelected, plan.isComingSoon && { color: colors.text.muted }]}>
                   {plan.name}
                 </Text>
-                <Text style={[s.planPrice, isSelected && s.planPriceSelected, plan.isComingSoon && { color: colors.text.muted }]}>
-                  {plan.price}
-                </Text>
+                {plan.id === 'studio' ? (
+                  <View style={{ gap: 4 }}>
+                    <Text style={[s.oldPrice, isSelected && s.oldPriceSelected]}>29,90€</Text>
+                    <Text style={[s.planPrice, isSelected && s.planPriceSelected]}>
+                      {plan.price}
+                    </Text>
+                  </View>
+                ) : (
+                  <Text style={[s.planPrice, isSelected && s.planPriceSelected, plan.isComingSoon && { color: colors.text.muted }]}>
+                    {plan.price}
+                  </Text>
+                )}
                 {plan.description && <Text style={s.planDesc}>{plan.description}</Text>}
               </View>
             </View>
@@ -409,8 +418,10 @@ const s = StyleSheet.create({
   featureIconGlow:  { shadowColor: '#00eaff', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 8, elevation: 4 },
   planName:         { fontFamily: 'Brittany-Signature', fontSize: 26, fontWeight: '700', color: colors.text.secondary, paddingBottom: 5 },
   planNameSelected: { color: '#ffffff', fontWeight: '800' },
-  planPrice:        { fontFamily: 'Arimo-Bold', fontSize: 20, fontWeight: '800', color: colors.text.primary },
+  planPrice:        { fontFamily: 'Arimo-Bold', fontSize: 26, fontWeight: '800', color: colors.text.primary },
   planPriceSelected:{ color: '#ffffff', textShadowColor: '#00eaff', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 8 },
+  oldPrice:         { fontFamily: 'Arimo-Bold', fontSize: 14, fontWeight: '700', color: 'rgba(255,255,255,0.4)', textDecorationLine: 'line-through', textDecorationColor: 'rgba(255,255,255,0.6)' },
+  oldPriceSelected: { color: 'rgba(255,255,255,0.5)', textDecorationColor: 'rgba(255,255,255,0.7)' },
   planDesc:         { fontFamily: 'Arimo-Regular', fontSize: 12, color: colors.text.muted, marginTop: 2 },
   featuresList:     { gap: 8, paddingLeft: 4 },
   featureRow:       { flexDirection: 'row', alignItems: 'center', gap: 10 },
