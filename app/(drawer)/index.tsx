@@ -114,7 +114,7 @@ const getUniversalFunctions = (planType: string): JobFunction[] => {
       },
     ];
   }
-  
+
   // Default for Atelier and other plans
   return [
     {
@@ -132,6 +132,39 @@ const getUniversalFunctions = (planType: string): JobFunction[] => {
   ];
 };
 
+const formatUserMessage = (text: string): string => {
+  if (!text || text.trim().length === 0) return text;
+
+  try {
+    const trimmed = text.trim();
+    if ((trimmed.startsWith('{') || trimmed.startsWith('[')) && (trimmed.endsWith('}') || trimmed.endsWith(']'))) {
+      const parsed = JSON.parse(trimmed);
+      if (typeof parsed === 'object' && parsed !== null) {
+        if (Array.isArray(parsed)) {
+          const userMessages = parsed.filter((item: any) => item.role === 'user' || item.sender === 'user');
+          if (userMessages.length > 0) {
+            const lastUserMsg = userMessages[userMessages.length - 1];
+            const content = lastUserMsg.content || lastUserMsg.text || lastUserMsg.message || '';
+            if (content) return String(content);
+          }
+        } else {
+          if (parsed.content) return String(parsed.content);
+          if (parsed.query) return String(parsed.query);
+          if (parsed.prompt) return String(parsed.prompt);
+
+          return Object.values(parsed)
+            .filter(v => typeof v === 'string' && v.trim().length > 0)
+            .join(' - ');
+        }
+      }
+    }
+  } catch (e) {
+    // Ignore JSON parse errors
+  }
+
+  // Si c'est juste du texte sans JSON ou si erreur, on retourne tel quel sans emojis ou formatage complexe
+  return text;
+};
 
 
 
@@ -529,6 +562,180 @@ export default function HomeScreen() {
   }, [reset]);
 
   useEffect(() => {
+    const formatStructuredData = (data: any): string => {
+      if (typeof data !== 'object' || data === null) return JSON.stringify(data);
+
+      const lines: string[] = [];
+      const indent = (text: string, level: number = 0) => '  '.repeat(level) + text;
+      const processedKeys = new Set<string>();
+
+      // Title/Primary heading
+      const primaryTitle = data.title || data.name || data.heading || null;
+      if (primaryTitle) {
+        processedKeys.add('title');
+        processedKeys.add('name');
+        processedKeys.add('heading');
+        lines.push('');
+        lines.push(indent('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 0));
+        lines.push(indent(`📌 ${primaryTitle.toUpperCase()}`, 0));
+        lines.push(indent('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 0));
+        lines.push('');
+      }
+
+      // Description or content
+      if (data.description) {
+        processedKeys.add('description');
+        lines.push(indent(data.description, 0));
+        lines.push('');
+      }
+      if (data.content && !data.description) {
+        processedKeys.add('content');
+        lines.push(indent(data.content, 0));
+        lines.push('');
+      }
+      if (data.text && !data.description && !data.content) {
+        processedKeys.add('text');
+        lines.push(indent(data.text, 0));
+        lines.push('');
+      }
+
+      // Subtitle
+      if (data.subtitle) {
+        processedKeys.add('subtitle');
+        lines.push(indent(`📍 ${data.subtitle}`, 0));
+        lines.push('');
+      }
+
+      // Sections array
+      if (data.sections && Array.isArray(data.sections) && data.sections.length > 0) {
+        processedKeys.add('sections');
+        lines.push(indent('📋 SECTIONS', 0));
+        lines.push(indent('─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─', 0));
+        data.sections.forEach((section: any, idx: number) => {
+          if (typeof section === 'string') {
+            lines.push(indent(`${String(idx + 1).padStart(2, '0')}. ${section}`, 1));
+          } else if (section.title) {
+            lines.push(indent(`\n▸ ${section.title}`, 1));
+            if (section.content) {
+              lines.push(indent(section.content, 2));
+            }
+            if (section.description && !section.content) {
+              lines.push(indent(section.description, 2));
+            }
+          }
+        });
+        lines.push('');
+      }
+
+      // Color scheme
+      if (data.colorScheme || data.colors) {
+        processedKeys.add('colorScheme');
+        processedKeys.add('colors');
+        const colors = data.colorScheme || data.colors;
+        lines.push(indent('🎨 PALETTE COULEURS', 0));
+        lines.push(indent('─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─', 0));
+        if (typeof colors === 'object') {
+          Object.entries(colors).forEach(([key, value]: any) => {
+            lines.push(indent(`  ${key}: ${value}`, 1));
+          });
+        } else {
+          lines.push(indent(colors, 1));
+        }
+        lines.push('');
+      }
+
+      // Keywords/Tags
+      if (data.keywords && Array.isArray(data.keywords)) {
+        processedKeys.add('keywords');
+        lines.push(indent('🏷️  MOT-CLÉS', 0));
+        lines.push(indent(data.keywords.map((k: string) => `#${k}`).join('  '), 1));
+        lines.push('');
+      }
+
+      // Hashtags
+      if (data.hashtags && Array.isArray(data.hashtags)) {
+        processedKeys.add('hashtags');
+        lines.push(indent('#️⃣ HASHTAGS', 0));
+        const tags = data.hashtags.map((h: string) => h.startsWith('#') ? h : `#${h}`).join('  ');
+        lines.push(indent(tags, 1));
+        lines.push('');
+      }
+
+      // Features/Points list
+      if (data.features && Array.isArray(data.features) && data.features.length > 0) {
+        processedKeys.add('features');
+        lines.push(indent('✨ CARACTÉRISTIQUES', 0));
+        lines.push(indent('─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─', 0));
+        data.features.forEach((feature: any) => {
+          const featureText = typeof feature === 'string' ? feature : feature.text || feature.name || feature.description || '';
+          if (featureText) {
+            lines.push(indent(`✓ ${featureText}`, 1));
+          }
+        });
+        lines.push('');
+      }
+
+      // Benefits
+      if (data.benefits && Array.isArray(data.benefits)) {
+        processedKeys.add('benefits');
+        lines.push(indent('💡 AVANTAGES', 0));
+        lines.push(indent('─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─', 0));
+        data.benefits.forEach((benefit: any) => {
+          const text = typeof benefit === 'string' ? benefit : benefit.text || benefit.description || '';
+          if (text) lines.push(indent(`→ ${text}`, 1));
+        });
+        lines.push('');
+      }
+
+      // Meta info (for social, etc)
+      if (data.meta) {
+        processedKeys.add('meta');
+        lines.push(indent('ℹ️  INFORMATIONS', 0));
+        lines.push(indent('─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─', 0));
+        Object.entries(data.meta).forEach(([key, value]: any) => {
+          lines.push(indent(`${key}: ${value}`, 1));
+        });
+        lines.push('');
+      }
+
+      // Call to action
+      if (data.cta || data.callToAction) {
+        processedKeys.add('cta');
+        processedKeys.add('callToAction');
+        const cta = data.cta || data.callToAction;
+        const ctaText = typeof cta === 'string' ? cta : cta.text || cta.label || '';
+        if (ctaText) {
+          lines.push(indent('─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─', 0));
+          lines.push(indent(`🎯 ${ctaText}`, 0));
+        }
+      }
+
+      // Display any remaining fields not yet processed
+      const remainingKeys = Object.keys(data).filter(k => !processedKeys.has(k) && data[k] !== null && data[k] !== undefined);
+      if (remainingKeys.length > 0) {
+        lines.push('');
+        lines.push(indent('📝 AUTRES INFORMATIONS', 0));
+        lines.push(indent('─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─', 0));
+        remainingKeys.forEach(key => {
+          const value = data[key];
+          let displayValue = '';
+          if (typeof value === 'string') {
+            displayValue = value;
+          } else if (Array.isArray(value)) {
+            displayValue = value.join(', ');
+          } else if (typeof value === 'object') {
+            displayValue = JSON.stringify(value, null, 2);
+          } else {
+            displayValue = String(value);
+          }
+          lines.push(indent(`${key}: ${displayValue}`, 1));
+        });
+      }
+
+      const filtered = lines.filter(line => line.trim() !== '');
+      return filtered.length > 0 ? filtered.join('\n') : JSON.stringify(data, null, 2);
+    };
+
     const loadConversation = async () => {
       if (idToLoad) {
         setIsLoadingConversation(true);
@@ -542,79 +749,149 @@ export default function HomeScreen() {
             // Set the conversation ID for subsequent messages
             setConversationId(idToLoad);
 
-            // Parse the stored conversation history
-            let storedMessages: any[] = [];
-            let isOldFormat = false;
-
-            try {
-              // Try to parse as JSON (new format)
-              const parsed = JSON.parse(conversation.prompt);
-              if (Array.isArray(parsed)) {
-                storedMessages = parsed;
-              } else {
-                // Not an array, treat as old format
-                isOldFormat = true;
-              }
-            } catch (e) {
-              // Not valid JSON, it's old format (plain text)
-              isOldFormat = true;
-              console.log('[DEBUG] Old conversation format detected');
-            }
-
+            // Check if this is a non-CHAT generation (Flyer, Social, Image, etc)
+            const isNonChatGeneration = conversation.type && conversation.type !== 'CHAT';
             const uiMessages: Message[] = [];
 
-            if (isOldFormat) {
-              // Old format: just show the prompt and result
+            if (isNonChatGeneration) {
+              // For Flyer, Social, Image, etc: show the original prompt and result with image
               if (conversation.prompt) {
                 uiMessages.push({
                   id: `${idToLoad}-user`,
-                  text: conversation.prompt,
+                  text: formatUserMessage(conversation.prompt), // Use formatUserMessage here
                   sender: 'user',
                   timestamp: new Date(conversation.createdAt),
                   isTyping: false,
                 });
               }
-              if (conversation.result) {
+
+              // Add the result with the image - format structured data nicely
+              if (conversation.result || conversation.imageUrl) {
+                let resultText = conversation.result || 'Génération complétée';
+                console.log('[DEBUG] Raw result:', resultText);
+
+                // Try to parse and format JSON result
+                if (resultText && resultText !== 'Génération complétée') {
+                  try {
+                    let textToParse = resultText;
+
+                    // Handle different JSON formats
+                    if (typeof textToParse === 'string') {
+                      textToParse = textToParse
+                        .trim()
+                        .replace(/^```json\n?/, '')
+                        .replace(/^```\n?/, '')
+                        .replace(/\n?```$/, '')
+                        .trim();
+
+                      console.log('[DEBUG] Text to parse:', textToParse.substring(0, 100));
+
+                      const parsed = JSON.parse(textToParse);
+                      const formatted = formatStructuredData(parsed);
+                      console.log('[DEBUG] Formatted result length:', formatted.length);
+
+                      if (formatted && formatted.length > 0) {
+                        resultText = formatted;
+                      }
+                    }
+                  } catch (e) {
+                    console.warn('[DEBUG] Parse error:', e, 'Original:', resultText.substring(0, 100));
+                    // Not JSON, use as-is
+                  }
+                }
+
+                console.log('[DEBUG] Final resultText:', resultText.substring(0, 100));
+
+                // Determine media type based on generation type
+                let mediaType: 'image' | 'text' = 'image';
+                if (conversation.type === 'SOCIAL' || conversation.type === 'TEXT') {
+                  mediaType = 'text';
+                }
+
                 uiMessages.push({
-                  id: `${idToLoad}-ai`,
-                  text: conversation.result,
+                  id: `${idToLoad}-result`,
+                  text: resultText,
                   sender: 'ai',
                   timestamp: new Date(conversation.createdAt),
                   isTyping: false,
+                  type: conversation.imageUrl ? mediaType : 'text',
+                  mediaUrl: conversation.imageUrl || undefined,
                 });
               }
             } else {
-              // New format: convert stored messages to UI format
-              storedMessages.forEach((msg, index) => {
-                if (msg.role === 'user' || msg.role === 'assistant') {
-                  const uiMsg: Message = {
-                    id: `${idToLoad}-${index}`,
-                    text: msg.content,
-                    sender: (msg.role === 'user' ? 'user' : 'ai') as 'user' | 'ai',
-                    timestamp: new Date(),
-                    isTyping: false,
-                    type: msg.type || 'text',
-                    mediaUrl: msg.url || msg.mediaUrl,
-                  };
-                  uiMessages.push(uiMsg);
+              // CHAT type: regular conversation loading
+              // Parse the stored conversation history
+              let storedMessages: any[] = [];
+              let isOldFormat = false;
+
+              try {
+                // Try to parse as JSON (new format)
+                const parsed = JSON.parse(conversation.prompt);
+                if (Array.isArray(parsed)) {
+                  storedMessages = parsed;
+                } else {
+                  // Not an array, treat as old format
+                  isOldFormat = true;
                 }
-              });
+              } catch (e) {
+                // Not valid JSON, it's old format (plain text)
+                isOldFormat = true;
+                console.log('[DEBUG] Old conversation format detected');
+              }
 
-              // Add the final AI response if it's not already in the messages
-              if (conversation.result) {
-                // Check if the last message is already the result
-                const lastMsg = uiMessages[uiMessages.length - 1];
-                const resultMatches = lastMsg && lastMsg.sender === 'ai' && lastMsg.text === conversation.result;
-
-                if (!resultMatches) {
-                  // Add the result as a new AI message
+              if (isOldFormat) {
+                // Old format: just show the prompt and result
+                if (conversation.prompt) {
                   uiMessages.push({
-                    id: `${idToLoad}-result`,
-                    text: conversation.result,
-                    sender: 'ai',
-                    timestamp: new Date(),
+                    id: `${idToLoad}-user`,
+                    text: formatUserMessage(conversation.prompt), // Use formatUserMessage here
+                    sender: 'user',
+                    timestamp: new Date(conversation.createdAt),
                     isTyping: false,
                   });
+                }
+                if (conversation.result) {
+                  uiMessages.push({
+                    id: `${idToLoad}-ai`,
+                    text: conversation.result,
+                    sender: 'ai',
+                    timestamp: new Date(conversation.createdAt),
+                    isTyping: false,
+                  });
+                }
+              } else {
+                // New format: convert stored messages to UI format
+                storedMessages.forEach((msg, index) => {
+                  if (msg.role === 'user' || msg.role === 'assistant') {
+                    const uiMsg: Message = {
+                      id: `${idToLoad}-${index}`,
+                      text: msg.role === 'user' ? formatUserMessage(msg.content) : msg.content, // Use formatUserMessage for user content
+                      sender: (msg.role === 'user' ? 'user' : 'ai') as 'user' | 'ai',
+                      timestamp: new Date(),
+                      isTyping: false,
+                      type: msg.type || 'text',
+                      mediaUrl: msg.url || msg.mediaUrl,
+                    };
+                    uiMessages.push(uiMsg);
+                  }
+                });
+
+                // Add the final AI response if it's not already in the messages
+                if (conversation.result) {
+                  // Check if the last message is already the result
+                  const lastMsg = uiMessages[uiMessages.length - 1];
+                  const resultMatches = lastMsg && lastMsg.sender === 'ai' && lastMsg.text === conversation.result;
+
+                  if (!resultMatches) {
+                    // Add the result as a new AI message
+                    uiMessages.push({
+                      id: `${idToLoad}-result`,
+                      text: conversation.result,
+                      sender: 'ai',
+                      timestamp: new Date(),
+                      isTyping: false,
+                    });
+                  }
                 }
               }
             }
@@ -644,6 +921,26 @@ export default function HomeScreen() {
     }
   }, [messages]);
 
+  const getGreetingByTime = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Bonjour';
+    if (hour < 18) return 'Bon après-midi';
+    return 'Bonsoir';
+  };
+
+  const getEmojiForKey = (key: string): string => {
+    const k = key.toLowerCase();
+    if (k.includes('title') || k.includes('heading') || k.includes('name')) return '📌';
+    if (k.includes('description') || k.includes('content') || k.includes('text')) return '📝';
+    if (k.includes('color') || k.includes('style') || k.includes('design')) return '🎨';
+    if (k.includes('feature') || k.includes('benefit')) return '✨';
+    if (k.includes('price') || k.includes('cost')) return '💰';
+    if (k.includes('image') || k.includes('url') || k.includes('media')) return '📸';
+    if (k.includes('hashtag') || k.includes('tag') || k.includes('keyword')) return '#️⃣';
+    if (k.includes('cta') || k.includes('action') || k.includes('button')) return '🎯';
+    return '•';
+  };
+
   const handleSend = async () => {
     if ((!inputValue.trim() && !selectedImage) || isGenerating) return;
 
@@ -655,10 +952,11 @@ export default function HomeScreen() {
       return;
     }
 
+    const formattedText = formatUserMessage(inputValue.trim());
 
     const userMsg: Message = {
       id: Date.now().toString(),
-      text: inputValue.trim(),
+      text: formattedText,
       sender: 'user',
       timestamp: new Date(),
       type: currentImage ? 'image' : 'text',
@@ -858,13 +1156,6 @@ export default function HomeScreen() {
     );
   };
 
-  const getGreetingByTime = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return 'Bonjour';
-    if (hour < 18) return 'Bon après-midi';
-    return 'Bonsoir';
-  };
-
   return (
     <BackgroundGradientOnboarding darkOverlay={true} blurIntensity={2}>
       <View className="flex-1" >
@@ -1013,11 +1304,27 @@ export default function HomeScreen() {
                         )}
 
                         {msg.sender === 'user' ? (
-                          msg.text ? <Text className="text-base leading-6 text-slate-300">{msg.text}</Text> : null
+                          msg.text ? (
+                            <View>
+                              {msg.text.split('\n').map((line, idx) => (
+                                <Text key={idx} className="text-base text-slate-300">
+                                  {line}
+                                </Text>
+                              ))}
+                            </View>
+                          ) : null
                         ) : msg.isTyping ? (
                           <TypingMessage text={msg.text} onComplete={() => completeTyping(msg.id)} />
                         ) : (
-                          msg.text ? <Text className="text-base leading-6 text-slate-300">{msg.text}</Text> : null
+                          msg.text ? (
+                            <View>
+                              {msg.text.split('\n').map((line, idx) => (
+                                <Text key={idx} className="text-base leading-6 text-slate-300">
+                                  {line}
+                                </Text>
+                              ))}
+                            </View>
+                          ) : null
                         )}
 
                         {msg.sender === 'ai' && !msg.isTyping && (!msg.type || msg.type === 'text') && msg.text && (
@@ -1060,6 +1367,7 @@ export default function HomeScreen() {
             {isPaidPlanButInactive ? (
               <View className="h-20" /> // Placeholder to keep layout stable
             ) : (
+              /*
               <ChatInput
                 inputValue={inputValue}
                 onChangeText={setInputValue}
@@ -1072,29 +1380,31 @@ export default function HomeScreen() {
                 placeholderText={placeholderText}
                 maxLength={500}
               />
+              */
+              null
             )}
           </View>
         </KeyboardAvoidingView>
-        
+
         {/* Freezing Overlay when payment is required */}
         {isPaidPlanButInactive && (
-          <View 
-            style={[StyleSheet.absoluteFill, { zIndex: 999 }]} 
+          <View
+            style={[StyleSheet.absoluteFill, { zIndex: 999 }]}
             pointerEvents="box-none"
           >
             {/* Dark semi-transparent background */}
-            <View 
-              style={[StyleSheet.absoluteFill, { backgroundColor: colors.overlay }]} 
+            <View
+              style={[StyleSheet.absoluteFill, { backgroundColor: colors.overlay }]}
               pointerEvents="auto"
             />
 
             {/* Accessible Drawer Button on top of overlay */}
-            <View 
-              style={{ 
-                position: 'absolute', 
-                top: insets.top + 10, 
+            <View
+              style={{
+                position: 'absolute',
+                top: insets.top + 10,
                 left: 20,
-                zIndex: 1001 
+                zIndex: 1001
               }}
             >
               <TouchableOpacity
@@ -1103,21 +1413,21 @@ export default function HomeScreen() {
                 <Menu size={24} color={colors.text.primary} />
               </TouchableOpacity>
             </View>
-            
+
             {/* Blocker on top at the bottom */}
-            <View 
-              style={{ 
-                position: 'absolute', 
-                bottom: 0, 
-                left: 0, 
-                right: 0, 
+            <View
+              style={{
+                position: 'absolute',
+                bottom: 0,
+                left: 0,
+                right: 0,
                 paddingHorizontal: 20,
                 paddingBottom: (Platform.OS === 'ios' ? insets.bottom : 0) + 20
               }}
               pointerEvents="box-none"
             >
               <PaymentBlocker
-                plan={currentPlanObject} 
+                plan={currentPlanObject}
                 onPay={handleStripePayment}
                 loading={isPaymentLoading}
               />
