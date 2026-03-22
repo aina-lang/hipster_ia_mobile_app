@@ -217,7 +217,7 @@ export default function RootLayout() {
         <StripeProvider
           publishableKey="pk_live_51R15MnK5fB5lGbp8VegFwbWvCmKN976QtqCHDmpXND8fNsmtwiPaBXPHaiV135A8nbCK1y7LEnvqACH7hClCT19l005y1ZoRmZ"
           merchantIdentifier="merchant.com.hipster"
-          locale="fr-FR">
+          locale="fr">
           {isInitialized ? (
             <Stack
               screenOptions={{ headerShown: false }}>

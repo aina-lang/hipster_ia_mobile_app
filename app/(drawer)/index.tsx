@@ -418,7 +418,7 @@ export default function HomeScreen() {
         merchantDisplayName: 'Hipster IA',
         customerEphemeralKeySecret: customerEphemeralKey,
         customerId,
-        locale: 'fr-FR',
+        locale: 'fr',
       });
 
       if (initResult.error) throw initResult.error;
