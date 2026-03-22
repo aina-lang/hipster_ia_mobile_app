@@ -155,7 +155,7 @@ export default function SubscriptionScreen() {
       const ephem  = data.ephemeralKey  || data.customer_ephemeral_key;
       const custId = data.customerId    || data.customer || data.customer_id;
       if (!secret) throw new Error('Client secret non récupéré.');
-      await initPaymentSheet({ paymentIntentClientSecret: secret, merchantDisplayName: 'Hipster IA', customerEphemeralKeySecret: ephem, customerId: custId });
+      await initPaymentSheet({ paymentIntentClientSecret: secret, merchantDisplayName: 'Hipster IA', customerEphemeralKeySecret: ephem, customerId: custId, locale: 'fr-FR' });
       const result: any = await presentPaymentSheet();
       if (result.error) { showModal('error', 'Paiement échoué', result.error.message); setLoading(false); return; }
       await handlePlanConfirmation(selectedPlan!);
