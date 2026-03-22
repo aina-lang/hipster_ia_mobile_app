@@ -156,15 +156,24 @@ export default function RegisterScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={s.kav}
       >
-        <TouchableOpacity 
-          onPress={() => {
-            setIsReturningFromBack(true);
-            router.replace('/');
-          }}
-          style={s.backButton}
-        >
-          <ArrowLeft size={24} color="#00d4ff" />
-        </TouchableOpacity>
+        {/* ── FIXED HEADER ── */}
+        <View style={s.header}>
+          <TouchableOpacity 
+            style={s.backButton}
+            onPress={() => {
+              setIsReturningFromBack(true);
+              router.replace('/');
+            }}
+          >
+            <ArrowLeft size={22} color={colors.text.primary} />
+          </TouchableOpacity>
+          <View style={s.headerCenter}>
+            <View style={s.titleRow}>
+              <Text style={s.titleSub}>Créer un</Text>
+              <Text style={s.titleScript}>compte</Text>
+            </View>
+          </View>
+        </View>
 
         <ScrollView
           contentContainerStyle={s.scrollContent}
@@ -173,14 +182,6 @@ export default function RegisterScreen() {
           bounces={false}
         >
           <Animated.View entering={FadeInDown.duration(800)} style={s.content}>
-
-            <View style={s.header}>
-              <View style={s.titleRow}>
-                <Text style={s.titleSub}>Créer un</Text>
-                <Text style={s.titleScript}>compte</Text>
-              </View>
-              <Text style={s.subtitle}>Accédez à toute la puissance de Hipster IA.</Text>
-            </View>
 
             <View style={s.form}>
               <View style={s.inputContainer}>
@@ -318,16 +319,17 @@ export default function RegisterScreen() {
 
 const s = StyleSheet.create({
   kav:            { flex: 1 },
-  scrollContent:  { flexGrow: 1, paddingHorizontal: 24, justifyContent: 'center' },
-  content:        { flex: 1, justifyContent: 'center', paddingTop: 60, paddingBottom: 40 },
+  scrollContent:  { flexGrow: 1, paddingHorizontal: 24, paddingTop: 16, justifyContent: 'center' },
+  content:        { flex: 1, justifyContent: 'center', paddingBottom: 40 },
 
-  backButton:     { position: 'absolute', top: 16, left: 0, padding: 8, zIndex: 10 },
-
-  header:         { alignItems: 'center', marginBottom: 36, paddingHorizontal: 8, paddingVertical: 10 },
-  titleRow:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 10 },
-  titleSub:        { fontFamily: 'Arimo-Bold', fontSize: 16, letterSpacing: 3, textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)', marginTop: 10 },
-  titleScript:     { fontFamily: 'Brittany-Signature', paddingLeft: 1, fontSize: 36, color: '#fff', textShadowColor: '#00eaff', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 18, lineHeight: 48, includeFontPadding: false },
-  subtitle:        { fontFamily: 'Arimo-Regular', fontSize: 14, color: 'rgba(255,255,255,0.45)', textAlign: 'center', letterSpacing: 0.3, marginTop: 4 },
+  /* Header - Fixed at top */
+  header:         { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 24, paddingTop: 40, paddingBottom: 8, backgroundColor: 'rgba(10,15,30,0.95)', borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)' },
+  backButton:     { width: 42, height: 42, borderRadius: 21, backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center', marginRight: 16 },
+  headerCenter:   { flex: 1, alignItems: 'center', marginRight: 58 },
+  titleRow:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  titleSub:       { fontFamily: 'Arimo-Bold', fontSize: 16, letterSpacing: 3, textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)', lineHeight: 22 },
+  titleScript:    { fontFamily: 'Brittany-Signature', paddingLeft: 1, fontSize: 28, color: '#fff', textShadowColor: '#00eaff', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 18, lineHeight: 22, includeFontPadding: false },
+  subtitle:       { fontFamily: 'Arimo-Regular', fontSize: 14, color: 'rgba(255,255,255,0.45)', textAlign: 'center', letterSpacing: 0.3, marginTop: 4 },
 
   form:           { width: '100%' },
   inputContainer: { marginBottom: 20 },
@@ -344,14 +346,14 @@ const s = StyleSheet.create({
   termsContainer:  { marginBottom: 24 },
 checkboxWrapper: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8 },
 checkbox: {
-  width: 22, height: 22,
-  borderRadius: 6,
+  width: 19, height: 19,
+  borderRadius: 5,
   borderWidth: 2,
   borderColor: 'rgba(255,255,255,0.5)',     // ← plus visible
   justifyContent: 'center',
   alignItems: 'center',
   backgroundColor: 'rgba(15,23,42,0.95)',   // ← fond plus opaque
-  marginRight: 12,
+  marginRight: 8,
   flexShrink: 0,
 },
 checkboxChecked: {
@@ -365,18 +367,16 @@ checkboxChecked: {
   elevation: 0,   // ← était 6, cause le "hover" sur Android
 },
 checkMark: { 
-  fontSize: 12, 
+  fontSize: 11, 
   color: '#fff', 
   fontWeight: '900',
   includeFontPadding: false,
-  lineHeight: 14,
+  lineHeight: 13,
 },
-termsText:       { fontSize: 14, color: colors.text.primary, lineHeight: 20, flex: 1 },
-termsLink:       { fontFamily: 'Arimo-Regular', fontSize: 14, color: '#fff', textShadowColor: '#00eaff', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 8, textDecorationLine: 'underline' },
+  termsText:       { fontSize: 11, color: colors.text.primary, lineHeight: 14, flex: 1, flexWrap: 'nowrap' },
+termsLink:       { fontFamily: 'Arimo-Regular', fontSize: 11, color: '#fff', textShadowColor: '#00eaff', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 8, textDecorationLine: 'underline' },
 
   footer:          { flexDirection: 'row', justifyContent: 'center' },
   footerText:      { fontFamily: 'Arimo-Regular', color: colors.text.secondary, fontSize: 14 },
   neonLink:        { fontFamily: 'Arimo-Regular', fontSize: 14, color: '#fff', textShadowColor: '#00eaff', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 8 },
-  
-  backButton:      { position: 'absolute', top: 16, left: 0, padding: 8, zIndex: 10 },
 });

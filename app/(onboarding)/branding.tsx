@@ -3,7 +3,7 @@ import { View, StyleSheet, Text, TouchableOpacity, ScrollView, Image, Platform, 
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import Animated, { FadeInRight, FadeInDown, runOnJS } from 'react-native-reanimated';
-import { Upload, Palette, User } from 'lucide-react-native';
+import { Upload, Palette, User, ArrowLeft } from 'lucide-react-native';
 import ColorPicker, { HueSlider, Panel1, Preview, OpacitySlider } from 'reanimated-color-picker';
 import { BackgroundGradientOnboarding } from '../../components/ui/BackgroundGradientOnboarding';
 import { StepIndicator } from '../../components/ui/StepIndicator';
@@ -155,15 +155,28 @@ export default function BrandingScreen() {
 
     return (
         <BackgroundGradientOnboarding darkOverlay={true}>
-            {/* StepIndicator removed as this is now the final onboarding step */}
+            {/* ── FIXED HEADER ── */}
+            <View style={styles.header}>
+                <TouchableOpacity 
+                    style={styles.backButton}
+                    onPress={() => router.back()}
+                >
+                    <ArrowLeft size={22} color={colors.text.primary} />
+                </TouchableOpacity>
+                <View style={styles.headerCenter}>
+                    <View style={styles.titleRow}>
+                        <Text style={styles.titleSub}>Votre</Text>
+                        <Text style={styles.titleScript}>identité</Text>
+                    </View>
+                </View>
+            </View>
 
-            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+            <ScrollView 
+                contentContainerStyle={styles.scrollContent} 
+                showsVerticalScrollIndicator={false}
+            >
                 <View style={styles.container}>
                     <Animated.View entering={FadeInRight.duration(800)} style={styles.content}>
-                        <Text style={styles.title}>Votre identité visuelle</Text>
-                        <Text style={styles.subtitle}>
-                            Personnalisez l'apparence de votre espace.
-                        </Text>
 
                         {/* Color Picker */}
                         <View style={styles.section}>
@@ -265,17 +278,17 @@ export default function BrandingScreen() {
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        paddingHorizontal: 24,
-    },
-    scrollContent: {
-        paddingTop: 100,
-        paddingBottom: 120
-    },
-    content: {
-        gap: 24
-    },
+    /* Header - Fixed at top */
+    header:         { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 24, paddingTop: 40, paddingBottom: 8, backgroundColor: 'rgba(10,15,30,0.95)', borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)', zIndex: 100 },
+    backButton:     { width: 42, height: 42, borderRadius: 21, backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center', marginRight: 16 },
+    headerCenter:   { flex: 1, alignItems: 'center' },
+    titleRow:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+    titleSub:       { fontFamily: 'Arimo-Bold', fontSize: 16, letterSpacing: 3, textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)', lineHeight: 22 },
+    titleScript:    { fontFamily: 'Brittany-Signature', paddingLeft: 1, fontSize: 28, color: '#fff', textShadowColor: '#00eaff', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 18, lineHeight: 22, includeFontPadding: false },
+    
+    container:      { flex: 1, paddingHorizontal: 24 },
+    scrollContent:  { flexGrow: 1, paddingTop: 16, paddingBottom: 120 },
+    content:        { gap: 24 },
     title: {
         fontSize: 28,
         fontWeight: '700',

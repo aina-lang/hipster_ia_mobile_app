@@ -257,79 +257,82 @@ export default function PacksScreen() {
 
   return (
     <BackgroundGradientOnboarding darkOverlay>
-      <TouchableOpacity 
-        onPress={() => {
-          setIsReturningFromBack(true);
-          router.replace('/');
-        }}
-        style={s.backButton}
-      >
-        <ArrowLeft size={24} color="#00d4ff" />
-      </TouchableOpacity>
-
-      <View style={s.screen}>
-
-        <View style={s.header}>
+      {/* ── FIXED HEADER ── */}
+      <View style={s.header}>
+        <TouchableOpacity 
+          style={s.backButton}
+          onPress={() => {
+            setIsReturningFromBack(true);
+            router.replace('/');
+          }}
+        >
+          <ArrowLeft size={22} color={colors.text.primary} />
+        </TouchableOpacity>
+        <View style={s.headerCenter}>
           <View style={s.titleRow}>
             <Text style={s.titleSub}>Choisissez</Text>
             <Text style={s.titleScript}>votre pack</Text>
           </View>
-          <Text style={s.subtitle}>Sélectionnez l'offre qui vous correspond</Text>
         </View>
+      </View>
 
-        <ScrollView contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false}>
-          {loading ? (
-            <View style={s.loader}>
-              <ActivityIndicator color={colors.primary.main} size="large" />
-              <Text style={s.loaderText}>Chargement des plans…</Text>
-            </View>
-          ) : (
-            <View style={s.plansContainer}>
-              {plans.map(plan => (
-                <PlanCard
-                  key={plan.id}
-                  plan={plan}
-                  isSelected={selectedPlan === plan.id}
-                  onSelect={() => setPlan(plan.id)}
-                  submitting={submitting}
-                />
-              ))}
-            </View>
-          )}
-        </ScrollView>
+      <ScrollView 
+        contentContainerStyle={s.scrollContent} 
+        showsVerticalScrollIndicator={false}
+        style={s.screen}
+      >
+        {loading ? (
+          <View style={s.loader}>
+            <ActivityIndicator color={colors.primary.main} size="large" />
+            <Text style={s.loaderText}>Chargement des plans…</Text>
+          </View>
+        ) : (
+          <View style={s.plansContainer}>
+            {plans.map(plan => (
+              <PlanCard
+                key={plan.id}
+                plan={plan}
+                isSelected={selectedPlan === plan.id}
+                onSelect={() => setPlan(plan.id)}
+                submitting={submitting}
+              />
+            ))}
+          </View>
+        )}
+      </ScrollView>
 
-        <View style={s.footer}>
-          <ContinuerButton
-            onPress={() => { 
-              setSubmitting(true); 
-              router.push({
-                pathname: '/(auth)/register',
-                params: { from: fromWelcome ? 'welcome' : 'packs' }
-              });
-            }}
-            loading={submitting}
-            disabled={submitting}
-          />
-        </View>
-
+      <View style={s.footer}>
+        <ContinuerButton
+          onPress={() => { 
+            setSubmitting(true); 
+            router.push({
+              pathname: '/(auth)/register',
+              params: { from: fromWelcome ? 'welcome' : 'packs' }
+            });
+          }}
+          loading={submitting}
+          disabled={submitting}
+        />
       </View>
     </BackgroundGradientOnboarding>
   );
 }
 
 const s = StyleSheet.create({
-  backButton:     { position: 'absolute', top: 16, left: 0, padding: 8, zIndex: 10 },
+  /* Header - Fixed at top */
+  header:         { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 24, paddingTop: 40, paddingBottom: 8, backgroundColor: 'rgba(10,15,30,0.95)', borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)', zIndex: 100 },
+  backButton:     { width: 42, height: 42, borderRadius: 21, backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center', marginRight: 16 },
+  headerCenter:   { flex: 1, alignItems: 'center', marginRight: 58 },
   
-  screen:         { flex: 1, paddingTop: 60 },
-  scrollContent:  { paddingHorizontal: 24, paddingTop: 8, paddingBottom: 40 },
+  screen:         { flex: 1, paddingTop: 0 },
+  scrollContent:  { flexGrow: 1, paddingHorizontal: 24, paddingTop: 16, paddingBottom: 40 },
   loader:         { flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 100 },
   loaderText:     { color: colors.text.secondary, marginTop: 16, fontFamily: 'Arimo-Regular' },
   plansContainer: { gap: 16 },
 
-  header:      { alignItems: 'center', marginBottom: 20, paddingHorizontal: 10, paddingVertical: 10 },
-  titleRow:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 5 },
-  titleSub:    { fontFamily: 'Arimo-Bold', fontSize: 16, letterSpacing: 3, textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)', marginTop: 10 },
-  titleScript: { fontFamily: 'Brittany-Signature', paddingLeft: 1, fontSize: 36, color: '#fff', textShadowColor: '#00eaff', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 18, lineHeight: 48, includeFontPadding: false },
+  titleRow:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  titleSub:    { fontFamily: 'Arimo-Bold', fontSize: 16, letterSpacing: 3, textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)', lineHeight: 22 },
+  titleScript: { fontFamily: 'Brittany-Signature', paddingLeft: 1, fontSize: 28, color: '#fff', textShadowColor: '#00eaff', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 18, lineHeight: 22, includeFontPadding: false },
   subtitle:    { fontFamily: 'Arimo-Regular', fontSize: 14, color: 'rgba(255,255,255,0.45)', textAlign: 'center', letterSpacing: 0.3, marginTop: 4 },
 
   footer: {

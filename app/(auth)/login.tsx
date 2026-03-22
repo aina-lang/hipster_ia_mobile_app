@@ -183,6 +183,25 @@ export default function LoginScreen() {
         style={s.kav}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
       >
+        {/* ── FIXED HEADER ── */}
+        <View style={s.fixedHeader}>
+          <TouchableOpacity 
+            style={s.backButtonStyle}
+            onPress={() => {
+              setIsReturningFromBack(true);
+              router.replace('/');
+            }} 
+          >
+            <ArrowLeft size={22} color={colors.text.primary} />
+          </TouchableOpacity>
+          <View style={s.headerCenter}>
+            <View style={s.titleRow}>
+              <Text style={s.titleSub}>Se</Text>
+              <Text style={s.titleScript}>connecter</Text>
+            </View>
+          </View>
+        </View>
+
         <ScrollView
           contentContainerStyle={s.scrollContent}
           keyboardShouldPersistTaps="handled"
@@ -190,24 +209,6 @@ export default function LoginScreen() {
           bounces={false}
         >
           <Animated.View entering={FadeInDown.duration(800)} style={s.content}>
-
-            <TouchableOpacity 
-              onPress={() => {
-                setIsReturningFromBack(true);
-                router.replace('/');
-              }} 
-              style={s.backButton}
-            >
-              <ArrowLeft size={24} color="#00d4ff" />
-            </TouchableOpacity>
-
-            <View style={s.header}>
-              <View style={s.titleRow}>
-                <Text style={s.titleSub}>Bon</Text>
-                <Text style={s.titleScript}>retour !</Text>
-              </View>
-              <Text style={s.subtitle}>Connectez-vous pour continuer l'expérience IA.</Text>
-            </View>
 
             <View style={s.form}>
               <EmailField
@@ -252,15 +253,16 @@ export default function LoginScreen() {
 
 const s = StyleSheet.create({
   kav:             { flex: 1 },
-  scrollContent:   { flexGrow: 1, paddingHorizontal: 24, justifyContent: 'center' },
-  content:         { flex: 1, justifyContent: 'center', paddingTop: 60, paddingBottom: 40 },
-
-  backButton:      { position: 'absolute', top: 16, left: 0, padding: 8, zIndex: 10 },
+  fixedHeader:     { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 24, paddingTop: 40, paddingBottom: 8, backgroundColor: 'rgba(10,15,30,0.95)', borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)', zIndex: 100 },
+  backButtonStyle: { width: 42, height: 42, borderRadius: 21, backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center', marginRight: 16 },
+  headerCenter:    { flex: 1, alignItems: 'center' },
+  scrollContent:   { flexGrow: 1, paddingHorizontal: 24, paddingTop: 16, paddingBottom: 40 },
+  content:         { paddingTop: 0 },
 
   header:          { alignItems: 'center', marginBottom: 36, paddingHorizontal: 8, paddingVertical: 10 },
-  titleRow:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 10 },
-  titleSub:        { fontFamily: 'Arimo-Bold', fontSize: 16, letterSpacing: 3, textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)', marginTop: 10 },
-  titleScript:     { fontFamily: 'Brittany-Signature',paddingLeft: 1, fontSize: 36, color: '#fff', textShadowColor: '#00eaff', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 18, lineHeight: 48, includeFontPadding: false },
+  titleRow:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  titleSub:        { fontFamily: 'Arimo-Bold', fontSize: 16, letterSpacing: 3, textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)', lineHeight: 22 },
+  titleScript:     { fontFamily: 'Brittany-Signature', fontSize: 28, color: '#fff', textShadowColor: '#00eaff', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 18, lineHeight: 22, includeFontPadding: false },
   subtitle:        { fontFamily: 'Arimo-Regular', fontSize: 14, color: 'rgba(255,255,255,0.45)', textAlign: 'center', letterSpacing: 0.3, marginTop: 4 },
 
   form:            { width: '100%' },
