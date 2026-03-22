@@ -282,10 +282,10 @@ export default function RegisterScreen() {
                   <View style={[s.checkbox, acceptedTerms && s.checkboxChecked]}>
                     {acceptedTerms && <Text style={s.checkMark}>✓</Text>}
                   </View>
-                  <Text style={s.termsText}>
+                  <Text style={s.termsText} numberOfLines={1}>
                     J'accepte les{' '}
                     <Text style={s.termsLink} onPress={() => router.push('/(auth)/privacy-policy')}>
-                      conditions d'utilisation
+                      conditions générales de vente des CGV
                     </Text>
                   </Text>
                 </TouchableOpacity>

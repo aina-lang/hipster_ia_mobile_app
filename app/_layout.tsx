@@ -216,7 +216,8 @@ export default function RootLayout() {
       <GestureHandlerRootView style={{ flex: 1 }}>
         <StripeProvider
           publishableKey="pk_live_51R15MnK5fB5lGbp8VegFwbWvCmKN976QtqCHDmpXND8fNsmtwiPaBXPHaiV135A8nbCK1y7LEnvqACH7hClCT19l005y1ZoRmZ"
-          merchantIdentifier="merchant.com.hipster">
+          merchantIdentifier="merchant.com.hipster"
+          locale="fr">
           {isInitialized ? (
             <Stack
               screenOptions={{ headerShown: false }}>
