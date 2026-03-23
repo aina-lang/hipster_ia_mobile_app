@@ -458,7 +458,10 @@ export default function HomeScreen() {
 
       const presentResult = await presentPaymentSheet();
       if (presentResult.error) {
-        showModal('error', 'Paiement échoué', presentResult.error.message || 'Erreur lors du paiement');
+        const errorMsg = presentResult.error.message?.includes('payment flow has been cancelled')
+          ? 'Le paiement a été annulé.'
+          : (presentResult.error.message || 'Erreur lors du paiement');
+        showModal('error', 'Paiement échoué', errorMsg);
         return;
       }
 
