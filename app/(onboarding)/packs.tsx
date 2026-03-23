@@ -288,6 +288,7 @@ export default function PacksScreen() {
       // 2. Initialiser Stripe Payment Sheet
       const initResult = await initPaymentSheet({
         merchantDisplayName: 'Hipster IA',
+        locale: 'fr-FR',
         customerId: customerId,
         customerEphemeralKeySecret: ephemeralKey,
         paymentIntentClientSecret: paymentIntentClientSecret,
