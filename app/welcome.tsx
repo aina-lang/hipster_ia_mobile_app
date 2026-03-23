@@ -363,7 +363,6 @@ export default React.memo(function WelcomeScreen({ onVideoFinish, setIsRouting }
 
     const onPlaybackFinish = () => {
       if (isFinishedRef.current) return;
-      setIsReturningFromBack?.(true);
       videoCompletedRef.current = true;
 
       if (playbackTimerRef.current) {
