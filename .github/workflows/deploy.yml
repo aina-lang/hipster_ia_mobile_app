@@ -1,4 +1,4 @@
-name: Deploy Expo VPS
+name: Deploy Expo App
 
 on:
   push:
@@ -20,33 +20,38 @@ jobs:
             set -e
 
             APP_DIR="$HOME/hipster_ia_mobile_app"
-            SESSION="dev"
-            LOG_FILE="$APP_DIR/expo.log"
+            APP_NAME="hipsteria"
 
             cd "$APP_DIR"
+
+            echo "==== Pull latest code ===="
             git fetch origin
             git reset --hard origin/main
 
+            echo "==== Versions ===="
             node -v
             npm -v
 
+            echo "==== Install deps ===="
             npm ci
 
-            if tmux has-session -t "$SESSION" 2>/dev/null; then
-              tmux kill-session -t "$SESSION"
-              sleep 2
+            echo "==== Clean Expo cache ===="
+            rm -rf .expo
+
+            echo "==== Start or restart PM2 process ===="
+            if pm2 describe "$APP_NAME" > /dev/null 2>&1; then
+              pm2 delete "$APP_NAME"
             fi
 
-            rm -rf .expo
-            : > "$LOG_FILE"
+            EXPO_TUNNEL_SUBDOMAIN=hipsteria pm2 start "npx expo start -c --tunnel" \
+              --name "$APP_NAME" \
+              --cwd "$APP_DIR"
 
-            tmux new-session -d -s "$SESSION" \
-              "cd '$APP_DIR' && EXPO_TUNNEL_SUBDOMAIN=hipsteria npx expo start -c --tunnel >> '$LOG_FILE' 2>&1"
+            echo "==== Save PM2 process list ===="
+            pm2 save
 
-            sleep 12
+            echo "==== PM2 status ===="
+            pm2 ls
 
-            echo "==== tmux sessions ===="
-            tmux ls || true
-
-            echo "==== Expo log (last 100 lines) ===="
-            tail -n 100 "$LOG_FILE" || true
+            echo "==== PM2 logs (last 100 lines) ===="
+            pm2 logs "$APP_NAME" --lines 100 --nostream
