@@ -74,7 +74,7 @@ function NeonLoginButton({ onPress, loading, disabled }: { onPress: () => void; 
   return (
     <RNAnimated.View style={[btn.wrapper, { transform: [{ scale }] }]}>
       <Pressable onPress={onPress} onPressIn={() => spring(0.96, 40)} onPressOut={() => spring(1, 20)} disabled={disabled} style={btn.pressable}>
-        <LinearGradient colors={['#264F8C', '#0a1628', '#040612']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} locations={[0, 0.46, 1]} style={btn.gradient}>
+        <LinearGradient colors={['#1e6ba8', '#0a3d7a', '#051a3d']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} locations={[0, 0.5, 1]} style={btn.gradient}>
           {loading ? <ActivityIndicator color="#fff" size="small" /> : <Text style={btn.text}>Se connecter</Text>}
         </LinearGradient>
       </Pressable>
@@ -83,10 +83,10 @@ function NeonLoginButton({ onPress, loading, disabled }: { onPress: () => void; 
 }
 
 const btn = StyleSheet.create({
-  wrapper:   { alignSelf: 'center', width: '60%', marginBottom: 24 },
-  pressable: { borderRadius: 5, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.42)' },
-  gradient:  { paddingVertical: 15, paddingHorizontal: 15, alignItems: 'center', justifyContent: 'center' },
-  text:      { fontFamily: 'Arimo-Bold', fontSize: 14, fontWeight: '600', letterSpacing: 0.6, color: '#fff' },
+  wrapper:   { alignSelf: 'center', width: '100%', marginBottom: 0, marginTop: 16 },
+  pressable: { borderRadius: 8, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)' },
+  gradient:  { paddingVertical: 14, paddingHorizontal: 20, alignItems: 'center', justifyContent: 'center' },
+  text:      { fontFamily: 'Arimo-Bold', fontSize: 15, fontWeight: '600', letterSpacing: 0.5, color: '#fff' },
 });
 
 const EmailField = React.memo(({ value, onChange, onClear }: {
@@ -166,13 +166,26 @@ export default function LoginScreen() {
     try {
       await aiLogin({ email, password });
       setModal(m => ({ ...m, visible: false }));
-      const { hasFinishedOnboarding } = useAuthStore.getState();
-      router.replace(hasFinishedOnboarding ? '/(drawer)' : '/(onboarding)/setup');
+      
+      // Get the updated state after login
+      const state = useAuthStore.getState();
+      const destination = state.hasFinishedOnboarding ? '/(drawer)' : '/(onboarding)/job';
+      
+      // Small delay to ensure modal closes before navigation
+      setTimeout(() => {
+        router.replace(destination);
+      }, 300);
     } catch (e: any) {
-      showModal('error', 'Échec de la connexion', e.response?.data?.message || e.message || 'Une erreur est survenue.');
+      console.error('[LoginScreen] Login error:', e);
+      const errorMessage = e.response?.data?.message || e.message || 'Une erreur est survenue lors de la connexion.';
+      
       if (e.response?.data?.needsVerification) {
         setModal(m => ({ ...m, visible: false }));
-        router.push({ pathname: '/(auth)/verify-email', params: { email } });
+        setTimeout(() => {
+          router.push({ pathname: '/(auth)/verify-email', params: { email } });
+        }, 300);
+      } else {
+        showModal('error', 'Échec de la connexion', errorMessage);
       }
     }
   };
@@ -203,6 +216,16 @@ export default function LoginScreen() {
         >
           <Animated.View entering={FadeInDown.duration(800)} style={s.content}>
 
+            {/* ── HEADER SECTION ── */}
+            <View style={s.header}>
+              <View style={s.titleRow}>
+                <Text style={s.titleSub}>bon</Text>
+                <Text style={s.titleScript}>retour !</Text>
+              </View>
+              <Text style={s.subtitle}>Connectez-vous pour continuer l'expérience IA.</Text>
+            </View>
+
+            {/* ── FORM SECTION ── */}
             <View style={s.form}>
               <EmailField
                 value={email}
@@ -246,30 +269,30 @@ export default function LoginScreen() {
 
 const s = StyleSheet.create({
   kav:             { flex: 1 },
-  fixedHeader:     { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 24, paddingTop: 40, paddingBottom: 8, backgroundColor: 'rgba(10,15,30,0.95)', borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)', zIndex: 100 },
-  backButtonStyle: { width: 42, height: 42, borderRadius: 21, backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center', marginRight: 16 },
+  fixedHeader:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', paddingHorizontal: 24, paddingTop: 16, paddingBottom: 16, backgroundColor: 'rgba(10,15,30,0.95)', borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)', zIndex: 100 },
+  backButtonStyle: { width: 42, height: 42, borderRadius: 21, backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center' },
   headerCenter:    { flex: 1, alignItems: 'center' },
-  scrollContent:   { flexGrow: 1, paddingHorizontal: 24, paddingTop: 16, paddingBottom: 40 },
-  content:         { paddingTop: 0 },
+  scrollContent:   { flexGrow: 1, paddingHorizontal: 24, paddingTop: 40, paddingBottom: 60, justifyContent: 'center' },
+  content:         { width: '100%' },
 
-  header:          { alignItems: 'center', marginBottom: 36, paddingHorizontal: 8, paddingVertical: 10 },
-  titleRow:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
-  titleSub:        { fontFamily: 'Arimo-Bold', fontSize: 16, letterSpacing: 3, textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)', lineHeight: 22 },
-  titleScript:     { fontFamily: 'Brittany-Signature', fontSize: 28, color: '#fff', textShadowColor: '#00eaff', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 18, lineHeight: 22, includeFontPadding: false },
-  subtitle:        { fontFamily: 'Arimo-Regular', fontSize: 14, color: 'rgba(255,255,255,0.45)', textAlign: 'center', letterSpacing: 0.3, marginTop: 4 },
+  header:          { alignItems: 'center', marginBottom: 48, paddingHorizontal: 8 },
+  titleRow:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 16 },
+  titleSub:        { fontFamily: 'Arimo-Bold', fontSize: 18, letterSpacing: 2, textTransform: 'lowercase', color: 'rgba(255,255,255,0.6)' },
+  titleScript:     { fontFamily: 'Brittany-Signature', fontSize: 32, color: '#fff', textShadowColor: '#00eaff', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 16, includeFontPadding: false },
+  subtitle:        { fontFamily: 'Arimo-Regular', fontSize: 14, color: 'rgba(255,255,255,0.5)', textAlign: 'center', letterSpacing: 0.3 },
 
   form:            { width: '100%' },
-  inputContainer:  { marginBottom: 20 },
-  label:           { fontFamily: 'Arimo-Bold', fontSize: 13, color: colors.text.secondary, marginBottom: 8, fontWeight: '600', letterSpacing: 0.3 },
-  input:           { backgroundColor: 'rgba(15,23,42,0.9)', borderRadius: 12, padding: 16, fontFamily: 'Arimo-Regular', color: colors.text.primary, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', zIndex: 3 },
-  inputActive:     { borderColor: 'transparent', backgroundColor: '#030814' },
+  inputContainer:  { marginBottom: 24 },
+  label:           { fontFamily: 'Arimo-Bold', fontSize: 13, color: 'rgba(255,255,255,0.5)', marginBottom: 10, fontWeight: '600', letterSpacing: 0.3 },
+  input:           { backgroundColor: 'rgba(15,23,42,0.6)', borderRadius: 10, padding: 16, fontFamily: 'Arimo-Regular', color: colors.text.primary, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', zIndex: 3 },
+  inputActive:     { borderColor: 'rgba(0, 234, 255, 0.3)', backgroundColor: 'rgba(15,23,42,0.8)' },
   passwordWrapper: { position: 'relative', justifyContent: 'center' },
   passwordInput:   { paddingRight: 50 },
   eyeIcon:         { position: 'absolute', right: 16, height: '100%', justifyContent: 'center', zIndex: 4 },
 
-  forgotPassword:  { alignSelf: 'flex-end', marginBottom: 24 },
-  neonLink:        { fontFamily: 'Arimo-Regular', fontSize: 14, color: '#fff', textShadowColor: '#00eaff', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 8 },
+  forgotPassword:  { alignSelf: 'flex-end', marginBottom: 32 },
+  neonLink:        { fontFamily: 'Arimo-Regular', fontSize: 13, color: 'rgba(255,255,255,0.6)', textDecorationLine: 'underline' },
 
-  footer:          { flexDirection: 'row', justifyContent: 'center' },
-  footerText:      { fontFamily: 'Arimo-Regular', color: colors.text.secondary, fontSize: 14 },
+  footer:          { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 4, marginTop: 28 },
+  footerText:      { fontFamily: 'Arimo-Regular', color: 'rgba(255,255,255,0.5)', fontSize: 13 },
 });
