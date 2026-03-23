@@ -258,7 +258,7 @@ export default function PacksScreen() {
           colors: {
             primary: NEON_BLUE, background: '#0a0f1e', componentBackground: '#151b2b',
             componentBorder: '#2a324b', componentDivider: '#2a324b',
-            primaryText: 'white', secondaryText: '#a0aabf', componentText: 'white', placeholderText: '#6b7280',
+            primaryText: '#ffffff', secondaryText: '#a0aabf', componentText: '#ffffff', placeholderText: '#6b7280',
           },
           shapes: { borderRadius: 12 },
         },
