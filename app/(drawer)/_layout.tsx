@@ -444,7 +444,7 @@ const s = StyleSheet.create({
   },
   statusBadge: {
     position: 'absolute',
-    bottom: 8, right: 8,
+    bottom: 18, right: 28,
     width: 16, height: 16,
     borderRadius: 8,
     backgroundColor: colors.status.success,

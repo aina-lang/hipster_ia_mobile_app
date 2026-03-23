@@ -157,7 +157,14 @@ export default function SubscriptionScreen() {
       if (!secret) throw new Error('Client secret non récupéré.');
       await initPaymentSheet({ paymentIntentClientSecret: secret, merchantDisplayName: 'Hipster IA', customerEphemeralKeySecret: ephem, customerId: custId, locale: 'fr' });
       const result: any = await presentPaymentSheet();
-      if (result.error) { showModal('error', 'Paiement échoué', result.error.message); setLoading(false); return; }
+      if (result.error) { 
+        const errorMsg = result.error.message?.includes('payment flow has been cancelled') 
+          ? 'Le paiement a été annulé.' 
+          : result.error.message;
+        showModal('error', 'Paiement échoué', errorMsg); 
+        setLoading(false); 
+        return; 
+      }
       await handlePlanConfirmation(selectedPlan!);
     } catch (e: any) {
       showModal('error', 'Erreur paiement', e?.message || "Impossible d'initialiser le paiement.");
