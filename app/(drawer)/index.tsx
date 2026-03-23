@@ -785,10 +785,12 @@ export default function HomeScreen() {
 
             setMessages(uiMessages);
           }
+        } catch (error) {
+          console.error('[DEBUG] Failed to load conversation:', error);
+        } finally {
+          setIsLoadingConversation(false);
         }
-        setMessages(uiMessages);
-      } catch (error) { console.error('[DEBUG] Failed to load conversation:', error); }
-      finally { setIsLoadingConversation(false); }
+      }
     };
     loadConversation();
   }, [idToLoad]);
