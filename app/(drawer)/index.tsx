@@ -329,7 +329,7 @@ export default function HomeScreen() {
   const isThreeDExhausted = threeDLimit  > 0 && threeDLimit  !== 999999 && threeDUsed  >= threeDLimit;
   const isFullyExhausted  = isTextExhausted && isImagesExhausted && isVideosExhausted && isAudioExhausted && isThreeDExhausted;
 
-  const isTrialButNoCard      = isPackCurieux && (!user?.isStripeVerified || !user?.stripeCustomerId);
+  const isTrialButNoCard      = isPackCurieux && !user?.stripeCustomerId;
   const isAnyMessageTyping    = messages.some(m => m.isTyping);
   const isPaidPlanButInactive = isHydrated && (!isSubscriptionActive || isTrialButNoCard || (isPackCurieux && isExpired) || isFullyExhausted);
 
@@ -405,7 +405,7 @@ export default function HomeScreen() {
       });
 
       setIsPaymentLoading(false);
-      await useAuthStore.getState().updateAiProfile({ isStripeVerified: true, subscriptionStatus: (planType === 'curieux' ? 'trial' : 'active') as any, stripeCustomerId: customerId, stripeSubscriptionId: subscriptionId });
+      await useAuthStore.getState().updateAiProfile({ subscriptionStatus: (planType === 'curieux' ? 'trial' : 'active') as any, stripeCustomerId: customerId, stripeSubscriptionId: subscriptionId });
       await useAuthStore.getState().aiRefreshUser();
       showModal('success', 'Félicitations !', 'Votre abonnement est maintenant actif.');
     } catch (e: any) {
