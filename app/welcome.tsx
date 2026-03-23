@@ -253,7 +253,7 @@ const BottomAuthSection = React.memo(({ isAuthenticated, onVideoFinish, setIsRou
           setIsRouting?.(true);
           onVideoFinish?.();
           setIsReturningFromBack?.(false); // Reset flag when navigating away
-          router.replace({
+          router.push({
             pathname: '/(auth)/register',
             params: { from: 'welcome' }
           });
@@ -282,7 +282,7 @@ const BottomAuthSection = React.memo(({ isAuthenticated, onVideoFinish, setIsRou
             console.log('[Welcome] Login clicked');
             setIsRouting?.(true);
             onVideoFinish?.();
-            setIsReturningFromBack(false); // Reset flag when navigating away
+            setIsReturningFromBack?.(false); // Reset flag when navigating away
             router.push('/(auth)/login');
           }}
           style={({ pressed }) => ({
