@@ -20,6 +20,7 @@ import { CountryPicker } from '../../components/ui/CountryPicker';
 import { colors } from '../../theme/colors';
 import { useAuthStore } from '../../store/authStore';
 import { getCountryByName, Country } from '../../api/countries';
+import { useWelcomeVideoStore } from '../../store/welcomeVideoStore';
 
 import { NeonBorderInput } from '../../components/ui/NeonBorderInput';
 import { NeonActionButton } from '../../components/ui/NeonActionButton';
@@ -399,7 +400,11 @@ export default function ProfileScreen() {
                 <Text style={s.menuItemText}>Modifier le mot de passe</Text>
                 <ChevronRight size={20} color={colors.text.muted} />
               </TouchableOpacity>
-              <TouchableOpacity style={s.logoutBtn} onPress={() => { logout(); router.replace('/(auth)/login'); }}>
+              <TouchableOpacity style={s.logoutBtn} onPress={() => { 
+                useWelcomeVideoStore.getState().setIsReturningFromBack(true);
+                logout(); 
+                router.replace('/welcome'); 
+              }}>
                 <LogOut size={20} color={colors.status.error} />
                 <Text style={s.logoutText}>Se déconnecter</Text>
               </TouchableOpacity>

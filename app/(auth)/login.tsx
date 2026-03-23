@@ -70,9 +70,9 @@ const PasswordField = React.memo(({ value, onChange, onClear }: {
 });
 
 export default function LoginScreen() {
-  const [email, setEmail]       = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [modal, setModal]       = useState({ visible: false, type: 'info' as any, title: '', message: '' });
+  const [modal, setModal] = useState({ visible: false, type: 'info' as any, title: '', message: '' });
 
   const { aiLogin, isLoading, error, clearError } = useAuthStore();
 
@@ -141,10 +141,10 @@ export default function LoginScreen() {
 }
 
 const s = StyleSheet.create({
-  kav:            { flex: 1 },
+  kav: { flex: 1 },
   scrollContent: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 24, paddingBottom: 40, justifyContent: 'center' },
-  content:       { width: '100%' }, 
-  form:           { width: '100%' },
+  content: { width: '100%' },
+  form: { width: '100%' },
   inputContainer: { marginBottom: 20 },
   label: {
     fontFamily: fonts.arimo.bold,
@@ -164,11 +164,11 @@ const s = StyleSheet.create({
     borderColor: '#ffffff14',
     zIndex: 3,
   },
-  inputActive:     { borderColor: 'transparent', backgroundColor: colors.midnightBlue },
+  inputActive: { borderColor: 'transparent', backgroundColor: colors.midnightBlue },
   passwordWrapper: { position: 'relative', justifyContent: 'center' },
-  passwordInput:   { paddingRight: 50 },
-  eyeIcon:         { position: 'absolute', right: 16, height: '100%', justifyContent: 'center', zIndex: 4 },
-  forgotPassword:  { alignSelf: 'flex-end', marginBottom: 24 },
-  footer:          { flexDirection: 'row', justifyContent: 'center', alignItems: 'center',marginTop : 20 },
-  footerText:      { fontFamily: fonts.arimo.regular, color: '#9ca3af', fontSize: 14 },
+  passwordInput: { paddingRight: 50 },
+  eyeIcon: { position: 'absolute', right: 16, height: '100%', justifyContent: 'center', zIndex: 4 },
+  forgotPassword: { alignSelf: 'flex-end', marginBottom: 24 },
+  footer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 20 },
+  footerText: { fontFamily: fonts.arimo.regular, color: '#9ca3af', fontSize: 14 },
 });

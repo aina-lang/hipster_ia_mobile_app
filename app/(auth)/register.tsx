@@ -19,29 +19,29 @@ import { useOnboardingStore } from '../../store/onboardingStore';
 import { useWelcomeVideoStore } from '../../store/welcomeVideoStore';
 
 export default function RegisterScreen() {
-  const { selectedPlan }                  = useOnboardingStore();
+  const { selectedPlan } = useOnboardingStore();
   const { aiRegister, error, clearError } = useAuthStore();
-  const { setIsReturningFromBack }        = useWelcomeVideoStore();
-  const params                            = useLocalSearchParams();
-  const fromWelcome                       = params?.from === 'welcome';
+  const { setIsReturningFromBack } = useWelcomeVideoStore();
+  const params = useLocalSearchParams();
+  const fromWelcome = params?.from === 'welcome';
 
-  const [fullName, setFullName]               = useState('');
-  const [email, setEmail]                     = useState('');
-  const [password, setPassword]               = useState('');
+  const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [referralCode, setReferralCode]       = useState('');
-  const [acceptedTerms, setAcceptedTerms]     = useState(false);
-  const [showConfirm, setShowConfirm]         = useState(false);
-  const [focused, setFocused]                 = useState<string | null>(null);
-  const [loading, setLoading]                 = useState(false);
-  const [modal, setModal]                     = useState({ visible: false, type: 'info' as any, title: '', message: '' });
+  const [referralCode, setReferralCode] = useState('');
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [focused, setFocused] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [modal, setModal] = useState({ visible: false, type: 'info' as any, title: '', message: '' });
 
   const showModal = (type: any, title: string, message = '') =>
     setModal({ visible: true, type, title, message });
 
   const f = (name: string) => ({
     onFocus: () => setFocused(name),
-    onBlur:  () => setFocused(null),
+    onBlur: () => setFocused(null),
   });
 
   const handleRegister = async () => {
@@ -171,10 +171,10 @@ export default function RegisterScreen() {
 }
 
 const s = StyleSheet.create({
-  kav:            { flex: 1 },
-  scrollContent:  { flexGrow: 1, paddingHorizontal: 24, paddingTop: 16, paddingBottom: 40 },
-  content:        { flex: 1, justifyContent: 'center', paddingBottom: 20 },
-  form:           { width: '100%' },
+  kav: { flex: 1 },
+  scrollContent: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 16, paddingBottom: 40 },
+  content: { flex: 1, justifyContent: 'center', paddingBottom: 20 },
+  form: { width: '100%' },
   inputContainer: { marginBottom: 20 },
   label: {
     fontFamily: fonts.arimo.bold,
@@ -200,12 +200,12 @@ const s = StyleSheet.create({
     borderColor: '#ffffff14',
     zIndex: 3,
   },
-  inputActive:     { borderColor: 'transparent', backgroundColor: colors.midnightBlue },
+  inputActive: { borderColor: 'transparent', backgroundColor: colors.midnightBlue },
   passwordWrapper: { position: 'relative', justifyContent: 'center' },
-  passwordInput:   { paddingRight: 50 },
-  eyeIcon:         { position: 'absolute', right: 16, height: '100%', justifyContent: 'center', zIndex: 4 },
+  passwordInput: { paddingRight: 50 },
+  eyeIcon: { position: 'absolute', right: 16, height: '100%', justifyContent: 'center', zIndex: 4 },
 
-  termsContainer:  { marginBottom: 24 },
+  termsContainer: { marginBottom: 24 },
   checkboxWrapper: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8 },
   checkboxChecked: {
     backgroundColor: colors.darkSlateBlue,
@@ -225,8 +225,8 @@ const s = StyleSheet.create({
     marginRight: 8,
     flexShrink: 0,
   },
-  checkMark:  { fontSize: 11, color: 'white', fontWeight: '900', includeFontPadding: false, lineHeight: 13 },
-  termsText:  { fontSize: 11, color: 'white', lineHeight: 14, flex: 1, flexWrap: 'nowrap' },
+  checkMark: { fontSize: 11, color: 'white', fontWeight: '900', includeFontPadding: false, lineHeight: 13 },
+  termsText: { fontSize: 11, color: 'white', lineHeight: 14, flex: 1, flexWrap: 'nowrap' },
   termsLink: {
     fontFamily: fonts.arimo.regular,
     fontSize: 11,
@@ -236,6 +236,6 @@ const s = StyleSheet.create({
     textShadowRadius: 3,
     textDecorationLine: 'underline',
   },
-  footer:     { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop : 20 },
+  footer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 20 },
   footerText: { fontFamily: fonts.arimo.regular, color: '#9ca3af', fontSize: 14 },
 });

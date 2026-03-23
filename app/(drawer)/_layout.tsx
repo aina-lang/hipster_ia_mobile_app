@@ -19,6 +19,7 @@ import { colors } from '../../theme/colors';
 import { useAuthStore } from '../../store/authStore';
 import { useChatStore } from '../../store/chatStore';
 import { AiService } from '../../api/ai.service';
+import { useWelcomeVideoStore } from '../../store/welcomeVideoStore';
 import { GenericModal } from '../../components/ui/GenericModal';
 
 dayjs.extend(relativeTime);
@@ -151,8 +152,9 @@ function CustomDrawerContent(props: any) {
 
   const handleLogout = async () => {
     setShowLogoutModal(false);
+    useWelcomeVideoStore.getState().setIsReturningFromBack(true);
     await logout();
-    router.replace('/(auth)/login');
+    router.replace('/welcome');
   };
 
   const handleDeleteItem = async () => {
