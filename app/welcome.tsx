@@ -458,7 +458,7 @@ export default React.memo(function WelcomeScreen({ onVideoFinish, setIsRouting }
 
       {showImage ? (
         // Show static image when returning from packs with frozen animations
-        <Animated.View style={[{ position: 'absolute', top: topBarHeight - 20, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center' }]}>
+        <Animated.View style={[{ position: 'absolute', top: topBarHeight - 180, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center' }]}>
           <Image source={bgAfterBack} style={{ width: '120%', height: '120%' }} resizeMode="contain" />
         </Animated.View>
       ) : (
