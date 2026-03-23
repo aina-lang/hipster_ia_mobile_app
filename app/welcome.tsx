@@ -51,7 +51,7 @@ const PARTICLES: ParticleConfig[] = [
   { x: 60, y: -78, size: 3, color: NEON_GLOW, delayMs: 760, durationMs: 1600 },
 ];
 
-interface ParticleProps extends ParticleConfig {}
+interface ParticleProps extends ParticleConfig { }
 
 const Particle = React.memo(({ x, y, size, color, delayMs, durationMs }: ParticleProps) => {
   const opacity = useSharedValue(0);
@@ -124,7 +124,7 @@ interface TopBarProps {
 const TopBar = ({ textAnimProgress, isAuthenticated, userName }: TopBarProps) => {
   const insets = useSafeAreaInsets();
   const responsive = useResponsiveDimensions();
-  
+
   const animStyle = useAnimatedStyle(() => {
     const opacity = interpolate(
       textAnimProgress?.value ?? 0,
@@ -132,14 +132,14 @@ const TopBar = ({ textAnimProgress, isAuthenticated, userName }: TopBarProps) =>
       [0, 0, 1],
       Extrapolate.CLAMP
     );
-    
+
     const translateY = interpolate(
       textAnimProgress?.value ?? 0,
       [0, 1],
       [-30, 0],
       Extrapolate.CLAMP
     );
-    
+
     return {
       opacity,
       transform: [{ translateY }],
@@ -149,12 +149,12 @@ const TopBar = ({ textAnimProgress, isAuthenticated, userName }: TopBarProps) =>
   const title = isAuthenticated ? `Bienvenue${userName ? `, ${userName}` : ''}` : 'HIPSTER IA';
 
   return (
-    <Animated.View 
+    <Animated.View
       style={[
-        styles.topBar, 
-        { 
-          height: responsive.topBarHeight + insets.top, 
-          paddingTop: insets.top - 10 
+        styles.topBar,
+        {
+          height: responsive.topBarHeight + insets.top,
+          paddingTop: insets.top - 10
         },
         animStyle
       ]}
@@ -181,25 +181,25 @@ interface SubTextAnimationProps {
 
 const SubTextAnimation = React.memo(({ textAnimProgress, isAuthenticated }: SubTextAnimationProps) => {
   const responsive = useResponsiveDimensions();
-  
+
   const animStyle = useAnimatedStyle(() => {
     const translateY = interpolate(
-      textAnimProgress?.value ?? 0, 
-      [0, 1], 
-      [0, -300], 
+      textAnimProgress?.value ?? 0,
+      [0, 1],
+      [0, -300],
       Extrapolate.CLAMP
     );
-    
+
     const opacity = interpolate(
       textAnimProgress?.value ?? 0,
       [0, 0.5, 1],
       [0, 0, 1],
       Extrapolate.CLAMP
     );
-    
-    return { 
+
+    return {
       transform: [{ translateY }],
-      opacity 
+      opacity
     };
   });
 
@@ -252,8 +252,11 @@ const BottomAuthSection = React.memo(({ isAuthenticated, onVideoFinish, setIsRou
           console.log('[Welcome] Commencer clicked');
           setIsRouting?.(true);
           onVideoFinish?.();
-          setIsReturningFromBack(false); // Reset flag when navigating away
-          router.replace('/(onboarding)/packs');
+          setIsReturningFromBack?.(false); // Reset flag when navigating away
+          router.replace({
+            pathname: '/(auth)/register',
+            params: { from: 'welcome' }
+          });
         }}
         style={[styles.primaryButton, { width: responsive.isSmallScreen ? '85%' : '70%' }]}
       >
@@ -274,13 +277,13 @@ const BottomAuthSection = React.memo(({ isAuthenticated, onVideoFinish, setIsRou
         <Text small style={{ fontSize: responsive.fontSize.xs }}>
           Déjà un compte ?
         </Text>
-        <Pressable 
-          onPress={() => { 
+        <Pressable
+          onPress={() => {
             console.log('[Welcome] Login clicked');
             setIsRouting?.(true);
-            onVideoFinish?.(); 
+            onVideoFinish?.();
             setIsReturningFromBack(false); // Reset flag when navigating away
-            router.push('/(auth)/login'); 
+            router.push('/(auth)/login');
           }}
           style={({ pressed }) => ({
             padding: 10,
@@ -301,7 +304,7 @@ const BottomAuthSection = React.memo(({ isAuthenticated, onVideoFinish, setIsRou
         </Text>
         <Text style={[styles.separator, { fontSize: responsive.fontSize.xs }]}>·</Text>
         <Pressable
-          onPress={() => Linking.openURL('mailto:contact@hipster-ia.fr').catch(() => {})}
+          onPress={() => Linking.openURL('mailto:contact@hipster-ia.fr').catch(() => { })}
           style={styles.contactLink}
         >
           <Text style={[styles.contactText, { fontSize: responsive.fontSize.xs }]}>
@@ -402,7 +405,7 @@ export default React.memo(function WelcomeScreen({ onVideoFinish, setIsRouting }
       if (status === 'readyToPlay') {
         setVideoReady(true);
         videoPlayer.play();
-        SplashScreen.hideAsync().catch(() => {});
+        SplashScreen.hideAsync().catch(() => { });
       }
     };
 
@@ -413,7 +416,7 @@ export default React.memo(function WelcomeScreen({ onVideoFinish, setIsRouting }
     if (videoPlayer.status === 'readyToPlay') {
       setVideoReady(true);
       videoPlayer.play();
-      SplashScreen.hideAsync().catch(() => {});
+      SplashScreen.hideAsync().catch(() => { });
     }
     if (videoPlayer.playing) startTracking();
 
@@ -460,10 +463,10 @@ export default React.memo(function WelcomeScreen({ onVideoFinish, setIsRouting }
       />
 
       <View style={StyleSheet.absoluteFill}>
-        <TopBar 
+        <TopBar
           textAnimProgress={textAnimProgress}
-          isAuthenticated={isAuthenticated} 
-          userName={user?.name || user?.email?.split('@')[0]} 
+          isAuthenticated={isAuthenticated}
+          userName={user?.name || user?.email?.split('@')[0]}
         />
 
         <View style={styles.center}>

@@ -22,7 +22,10 @@ export default function WelcomeScreen() {
   const { isAuthenticated, finishOnboarding } = useAuthStore();
 
   const handleStart = async () => {
-    router.push('/(onboarding)/packs');
+    router.push({
+      pathname: '/(auth)/register',
+      params: { from: 'welcome' }
+    });
   };
 
   const handleContact = () => {

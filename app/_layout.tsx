@@ -44,7 +44,7 @@ export default function RootLayout() {
     }
   }, [fontsLoaded, isHydrated, isInitialized]);
 
-  
+
 
   // On app startup, verify that stored session is still valid
   useEffect(() => {
@@ -126,6 +126,11 @@ export default function RootLayout() {
           targetRoute = '/(auth)/verify-email';
         }
       }
+      else if (user && user.type === 'ai' && !user.stripeSubscriptionId) {
+        if (!segments.includes('packs')) {
+          targetRoute = '/(onboarding)/packs';
+        }
+      }
       else if (user && !user.job) {
         if (!segments.includes('job')) {
           targetRoute = '/(onboarding)/job';
@@ -143,7 +148,7 @@ export default function RootLayout() {
       // If not authenticated, redirect to /welcome if we are in a protected area or at the root path
       const inProtectedRoute = segments.some(s => s.includes('(drawer)') || s.includes('(guided)') || s.includes('(tabs)'));
       const isAtRoot = !segments.length || segments[0] === '' || segments[0] === 'index';
-      
+
       // ONLY redirect if we are NOT already routing somewhere
       if (!isRouting && (inProtectedRoute || isAtRoot)) {
         targetRoute = '/welcome';
@@ -216,8 +221,7 @@ export default function RootLayout() {
       <GestureHandlerRootView style={{ flex: 1 }}>
         <StripeProvider
           publishableKey="pk_live_51R15MnK5fB5lGbp8VegFwbWvCmKN976QtqCHDmpXND8fNsmtwiPaBXPHaiV135A8nbCK1y7LEnvqACH7hClCT19l005y1ZoRmZ"
-          merchantIdentifier="merchant.com.hipster"
-          locale="fr">
+          merchantIdentifier="merchant.com.hipster">
           {isInitialized ? (
             <Stack
               screenOptions={{ headerShown: false }}>
@@ -233,8 +237,8 @@ export default function RootLayout() {
 
           <>
             {(!isHydrated || !isInitialized || !videoFinished) && (
-              <WelcomeScreen 
-                onVideoFinish={handleVideoFinish} 
+              <WelcomeScreen
+                onVideoFinish={handleVideoFinish}
                 setIsRouting={setIsRouting}
               />
             )}
