@@ -250,9 +250,8 @@ const BottomAuthSection = React.memo(({ isAuthenticated, onVideoFinish, setIsRou
       <Pressable
         onPress={() => {
           console.log('[Welcome] Commencer clicked');
-          setIsRouting?.(true);
+          setIsReturningFromBack?.(true); // Mark as returning so on back we don't replay
           onVideoFinish?.();
-          setIsReturningFromBack?.(false); // Reset flag when navigating away
           router.push({
             pathname: '/(auth)/register',
             params: { from: 'welcome' }
@@ -280,9 +279,8 @@ const BottomAuthSection = React.memo(({ isAuthenticated, onVideoFinish, setIsRou
         <Pressable
           onPress={() => {
             console.log('[Welcome] Login clicked');
-            setIsRouting?.(true);
+            setIsReturningFromBack?.(true); // Mark as returning so on back we don't replay
             onVideoFinish?.();
-            setIsReturningFromBack?.(false); // Reset flag when navigating away
             router.push('/(auth)/login');
           }}
           style={({ pressed }) => ({
@@ -319,11 +317,11 @@ const BottomAuthSection = React.memo(({ isAuthenticated, onVideoFinish, setIsRou
 
 export default React.memo(function WelcomeScreen({ onVideoFinish, setIsRouting }: WelcomeScreenProps) {
   const [videoReady, setVideoReady] = React.useState(false);
-  const textAnimProgress = useSharedValue(0);
-  const videoMarginTop = useSharedValue(0);
-  const insets = useSafeAreaInsets();
-  const { isAuthenticated, user, isHydrated } = useAuthStore();
   const { isReturningFromBack, setIsReturningFromBack } = useWelcomeVideoStore();
+  const textAnimProgress = useSharedValue(isReturningFromBack ? 1 : 0);
+  const videoMarginTop = useSharedValue(isReturningFromBack ? 100 : 0);
+  const { isAuthenticated, user, isHydrated } = useAuthStore();
+  const insets = useSafeAreaInsets();
   const responsive = useResponsiveDimensions();
   const videoCompletedRef = useRef(false);
   const topBarHeight = responsive.topBarHeight + insets.top;
@@ -357,7 +355,7 @@ export default React.memo(function WelcomeScreen({ onVideoFinish, setIsRouting }
 
   console.log('[Welcome] Video selection:', { isAuthenticated, selectedVideo: isAuthenticated ? 'reloading' : 'splash' });
 
-  const isFinishedRef = React.useRef(false);
+  const isFinishedRef = React.useRef(isReturningFromBack);
   const playbackTimerRef = React.useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -365,7 +363,7 @@ export default React.memo(function WelcomeScreen({ onVideoFinish, setIsRouting }
 
     const onPlaybackFinish = () => {
       if (isFinishedRef.current) return;
-      isFinishedRef.current = true;
+      setIsReturningFromBack?.(true);
       videoCompletedRef.current = true;
 
       if (playbackTimerRef.current) {
