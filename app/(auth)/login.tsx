@@ -15,6 +15,7 @@ import { NeonLink } from '../../components/ui/NeonLink';
 import { colors } from '../../theme/colors';
 import { fonts } from '../../theme/typography';
 import { useAuthStore } from '../../store/authStore';
+import { useWelcomeVideoStore } from '../../store/welcomeVideoStore';
 
 const EmailField = React.memo(({ value, onChange, onClear }: {
   value: string; onChange: (t: string) => void; onClear: () => void;
@@ -75,6 +76,7 @@ export default function LoginScreen() {
   const [modal, setModal] = useState({ visible: false, type: 'info' as any, title: '', message: '' });
 
   const { aiLogin, isLoading, error, clearError } = useAuthStore();
+  const { setIsReturningFromBack } = useWelcomeVideoStore();
 
   const showModal = (type: any, title: string, message = '') =>
     setModal({ visible: true, type, title, message });
@@ -103,7 +105,14 @@ export default function LoginScreen() {
     <BackgroundGradientOnboarding darkOverlay>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={s.kav}>
 
-        <ScreenHeader titleSub="Se" titleScript="connecter" onBack={() => router.back()} />
+        <ScreenHeader titleSub="Se" titleScript="connecter" onBack={() => {
+          setIsReturningFromBack(true);
+          if (router.canGoBack()) {
+            router.back();
+          } else {
+            router.replace('/welcome');
+          }
+        }} />
 
         <ScrollView contentContainerStyle={s.scrollContent} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} bounces={false}>
           <Animated.View entering={FadeInDown.duration(800)} style={s.content}>

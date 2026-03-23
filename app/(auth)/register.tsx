@@ -83,7 +83,14 @@ export default function RegisterScreen() {
     <BackgroundGradientOnboarding darkOverlay>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={s.kav}>
 
-        <ScreenHeader titleSub="Créer un" titleScript="compte" onBack={() => router.back()} />
+        <ScreenHeader titleSub="Créer un" titleScript="compte" onBack={() => {
+          setIsReturningFromBack(true);
+          if (router.canGoBack()) {
+            router.back();
+          } else {
+            router.replace('/welcome');
+          }
+        }} />
 
         <ScrollView contentContainerStyle={s.scrollContent} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} bounces={false}>
           <Animated.View entering={FadeInDown.duration(800)} style={s.content}>

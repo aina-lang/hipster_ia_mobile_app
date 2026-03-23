@@ -3,6 +3,7 @@ import { Stack, useRouter, useSegments, usePathname } from 'expo-router';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useAuthStore } from '../store/authStore';
+import { useWelcomeVideoStore } from '../store/welcomeVideoStore';
 import '../global.css';
 import { StripeProvider } from '@stripe/stripe-react-native';
 import WelcomeScreen from './welcome';
@@ -15,7 +16,7 @@ import { useFonts } from 'expo-font';
 SplashScreen.preventAutoHideAsync();
 import * as ImagePicker from 'expo-image-picker';
 import { Audio } from 'expo-av';
-import { View, Platform, Linking } from 'react-native';
+import { View, Platform, Linking, StyleSheet } from 'react-native';
 import * as Sharing from 'expo-sharing';
 
 import * as SystemUI from 'expo-system-ui';
@@ -29,7 +30,7 @@ export default function RootLayout() {
   const router = useRouter();
   const [isRouting, setIsRouting] = React.useState(true);
   const [isInitialized, setIsInitialized] = React.useState(false);
-  const [videoFinished, setVideoFinished] = React.useState(false);
+  const { videoCompleted, setVideoCompleted, reset: resetWelcome } = useWelcomeVideoStore();
   const routingRef = React.useRef(false);
 
   const [fontsLoaded, fontError] = useFonts({
@@ -50,6 +51,7 @@ export default function RootLayout() {
   useEffect(() => {
     // Set root background to black to prevent white flash
     SystemUI.setBackgroundColorAsync('#000000').catch(() => { });
+    useWelcomeVideoStore.getState().reset();
 
     if (!isHydrated || initializeAuthRef.current) {
       return;
@@ -117,6 +119,7 @@ export default function RootLayout() {
     // Check if we are in specific groups/pages
     const inAuthGroup = segments.some(s => s.includes('(auth)')) || segments.includes('login') || segments.includes('register') || segments.includes('verify-email');
     const inOnboardingGroup = segments.some(s => s.includes('(onboarding)')) || segments.includes('setup') || segments.includes('branding') || segments.includes('packs') || segments.includes('payment');
+    const isWelcomeScreen = segments.includes('welcome');
 
     let targetRoute: string | null = null;
 
@@ -178,8 +181,10 @@ export default function RootLayout() {
     }
 
     if (targetRoute && normalizedTarget !== normalizedPathname) {
-      // CRITICAL: Only redirect if video is finished and we haven't started routing yet
-      if (!videoFinished || routingRef.current) {
+      // CRITICAL: Only redirect if video is finished (for authenticated flow) 
+      // or if we're not using the overlay splash (unauthenticated redirect).
+      const shouldWait = isAuthenticated && !videoCompleted;
+      if (shouldWait || routingRef.current) {
         return;
       }
 
@@ -193,12 +198,12 @@ export default function RootLayout() {
         routingRef.current = false;
       }
     }
-  }, [isAuthenticated, hasFinishedOnboarding, isHydrated, isInitialized, segments, pathname, videoFinished]);
+  }, [isAuthenticated, hasFinishedOnboarding, isHydrated, isInitialized, segments, pathname, videoCompleted]);
 
   const handleVideoFinish = React.useCallback(() => {
-    console.log('[RootLayout] handleVideoFinish called. Setting videoFinished=true');
-    setVideoFinished(true);
-  }, []);
+    console.log('[RootLayout] handleVideoFinish called. Setting videoCompleted=true');
+    setVideoCompleted(true);
+  }, [setVideoCompleted]);
 
   // Safety fallback: If we are stuck in isRouting for too long, force it to false
   useEffect(() => {
@@ -236,7 +241,7 @@ export default function RootLayout() {
           <StyledStatusBar theme="dark" translucent={true} />
 
           <>
-            {(!isHydrated || !isInitialized || !videoFinished) && (
+            {(!isHydrated || !isInitialized || !videoCompleted) && (
               <WelcomeScreen
                 onVideoFinish={handleVideoFinish}
                 setIsRouting={setIsRouting}

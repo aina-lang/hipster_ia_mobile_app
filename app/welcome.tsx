@@ -250,7 +250,6 @@ const BottomAuthSection = React.memo(({ isAuthenticated, onVideoFinish, setIsRou
       <Pressable
         onPress={() => {
           console.log('[Welcome] Commencer clicked');
-          setIsReturningFromBack?.(true); // Mark as returning so on back we don't replay
           onVideoFinish?.();
           router.push({
             pathname: '/(auth)/register',
@@ -279,7 +278,6 @@ const BottomAuthSection = React.memo(({ isAuthenticated, onVideoFinish, setIsRou
         <Pressable
           onPress={() => {
             console.log('[Welcome] Login clicked');
-            setIsReturningFromBack?.(true); // Mark as returning so on back we don't replay
             onVideoFinish?.();
             router.push('/(auth)/login');
           }}
@@ -317,9 +315,14 @@ const BottomAuthSection = React.memo(({ isAuthenticated, onVideoFinish, setIsRou
 
 export default React.memo(function WelcomeScreen({ onVideoFinish, setIsRouting }: WelcomeScreenProps) {
   const [videoReady, setVideoReady] = React.useState(false);
-  const { isReturningFromBack, setIsReturningFromBack } = useWelcomeVideoStore();
-  const textAnimProgress = useSharedValue(isReturningFromBack ? 1 : 0);
-  const videoMarginTop = useSharedValue(isReturningFromBack ? 100 : 0);
+  const { isReturningFromBack, setIsReturningFromBack, videoCompleted, setVideoCompleted } = useWelcomeVideoStore();
+  // Image is ONLY shown if explicitly returning from back or after logout.
+  // Global completion state (videoCompleted) should NOT trigger the image.
+  const showImage = isReturningFromBack;
+  const shouldSkipPlay = videoCompleted || isReturningFromBack;
+  
+  const textAnimProgress = useSharedValue(shouldSkipPlay ? 1 : 0);
+  const videoMarginTop = useSharedValue(shouldSkipPlay ? 100 : 0);
   const { isAuthenticated, user, isHydrated } = useAuthStore();
   const insets = useSafeAreaInsets();
   const responsive = useResponsiveDimensions();
@@ -342,8 +345,10 @@ export default React.memo(function WelcomeScreen({ onVideoFinish, setIsRouting }
       videoMarginTop.value = 100; // Video fully animated up
       // Mark as finished to prevent video playback logic from triggering
       isFinishedRef.current = true;
+      // CRITICAL: Signal to RootLayout that "video" (overlay) is done
+      onVideoFinish?.();
     }
-  }, [isReturningFromBack, textAnimProgress, videoMarginTop]);
+  }, [isReturningFromBack, textAnimProgress, videoMarginTop, onVideoFinish]);
 
   // Select video based on authentication status
   const selectedVideo = isAuthenticated ? reloadingScreen : videobg;
@@ -355,11 +360,21 @@ export default React.memo(function WelcomeScreen({ onVideoFinish, setIsRouting }
 
   console.log('[Welcome] Video selection:', { isAuthenticated, selectedVideo: isAuthenticated ? 'reloading' : 'splash' });
 
-  const isFinishedRef = React.useRef(isReturningFromBack);
+  const isFinishedRef = React.useRef(shouldSkipPlay);
   const playbackTimerRef = React.useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    if (!videoPlayer || isReturningFromBack) return; // Don't play video if returning from back
+    if (!videoPlayer || shouldSkipPlay) {
+      if (videoPlayer && videoCompleted && !isReturningFromBack) {
+        // If video already completed in overlay, ensure this instance is at the end
+        const duration = videoPlayer.duration ?? 0;
+        if (duration > 0) {
+          videoPlayer.seekBy(duration - videoPlayer.currentTime);
+          videoPlayer.pause();
+        }
+      }
+      return; 
+    }
 
     const onPlaybackFinish = () => {
       if (isFinishedRef.current) return;
@@ -380,16 +395,19 @@ export default React.memo(function WelcomeScreen({ onVideoFinish, setIsRouting }
         easing: Easing.inOut(Easing.quad),
       });
 
-      setTimeout(() => {
-        if (isHydrated && isAuthenticated) {
-          // Seek to the absolute end of the video to show last frame
-          const duration = videoPlayer.duration ?? 0;
-          if (duration > 0) {
-            videoPlayer.seekBy(duration - videoPlayer.currentTime);
-          }
+      playbackTimerRef.current = setTimeout(() => {
+        // Seek to the absolute end of the video to show last frame
+        const duration = videoPlayer?.duration ?? 0;
+        if (duration > 0 && videoPlayer) {
+          videoPlayer.seekBy(duration - videoPlayer.currentTime);
           videoPlayer.pause(); // Freeze on last frame
-          onVideoFinish?.();
         }
+        
+        // Mark as completed globally
+        setVideoCompleted(true);
+        
+        // CRITICAL: Signal to RootLayout that "video" (overlay) is done 
+        onVideoFinish?.();
       }, 2000);
     };
 
@@ -434,13 +452,13 @@ export default React.memo(function WelcomeScreen({ onVideoFinish, setIsRouting }
   }));
 
   return (
-    <Animated.View exiting={FadeOut.duration(400)} style={StyleSheet.absoluteFill}>
+    <Animated.View exiting={FadeOut.duration(400)} style={[StyleSheet.absoluteFill, { backgroundColor: '#000' }]}>
       <StatusBar style="light" />
       {!videoReady && <View style={[StyleSheet.absoluteFill, { backgroundColor: '#000' }]} />}
 
-      {isReturningFromBack ? (
+      {showImage ? (
         // Show static image when returning from packs with frozen animations
-        <Animated.View style={[{ position: 'absolute', top: topBarHeight - 30, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center' }]}>
+        <Animated.View style={[{ position: 'absolute', top: topBarHeight - 20, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center' }]}>
           <Image source={bgAfterBack} style={{ width: '120%', height: '120%' }} resizeMode="contain" />
         </Animated.View>
       ) : (
