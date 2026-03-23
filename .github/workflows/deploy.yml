@@ -40,12 +40,12 @@ jobs:
 
             echo "==== Start or restart PM2 process ===="
             if pm2 describe "$APP_NAME" > /dev/null 2>&1; then
-              pm2 delete "$APP_NAME"
+              EXPO_TUNNEL_SUBDOMAIN=hipsteria pm2 restart "$APP_NAME" --update-env
+            else
+              EXPO_TUNNEL_SUBDOMAIN=hipsteria pm2 start "npx expo start -c --tunnel" \
+                --name "$APP_NAME" \
+                --cwd "$APP_DIR"
             fi
-
-            EXPO_TUNNEL_SUBDOMAIN=hipsteria pm2 start "npx expo start -c --tunnel" \
-              --name "$APP_NAME" \
-              --cwd "$APP_DIR"
 
             echo "==== Save PM2 process list ===="
             pm2 save

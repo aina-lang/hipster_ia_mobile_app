@@ -126,7 +126,7 @@ export default function RootLayout() {
           targetRoute = '/(auth)/verify-email';
         }
       }
-      else if (user && user.type === 'ai' && !user.stripeSubscriptionId) {
+      else if (user && user.type === 'ai' && !user.stripeSubscriptionId && !user.planType) {
         if (!segments.includes('packs')) {
           targetRoute = '/(onboarding)/packs';
         }
