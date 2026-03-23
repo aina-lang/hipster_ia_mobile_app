@@ -326,7 +326,7 @@ const s = StyleSheet.create({
   subtitle: {
     fontFamily: 'Arimo-Regular',
     fontSize: 14,
-    color: 'rgba(255,255,255,0.45)',
+    color: '#ffffff73',
     textAlign: 'center',
     letterSpacing: 0.3,
   },

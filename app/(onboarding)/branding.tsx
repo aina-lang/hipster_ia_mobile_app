@@ -1,403 +1,290 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, Text, TouchableOpacity, ScrollView, Image, Platform, TextInput } from 'react-native';
-import { useRouter } from 'expo-router';
+import {
+  View, StyleSheet, Text, TouchableOpacity, ScrollView,
+  Image, Platform, TextInput, BackHandler,
+} from 'react-native';
+import { useRouter, useNavigation } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
-import Animated, { FadeInRight, FadeInDown, runOnJS } from 'react-native-reanimated';
-import { Upload, Palette, User, ArrowLeft } from 'lucide-react-native';
+import Animated, { FadeInDown, runOnJS } from 'react-native-reanimated';
+import { Upload, Palette, User } from 'lucide-react-native';
 import ColorPicker, { HueSlider, Panel1, Preview, OpacitySlider } from 'reanimated-color-picker';
 import { BackgroundGradientOnboarding } from '../../components/ui/BackgroundGradientOnboarding';
-import { StepIndicator } from '../../components/ui/StepIndicator';
-import { NeonButton } from '../../components/ui/NeonButton';
+import { ScreenHeader } from '../../components/ui/ScreenHeader';
+import { NeonActionButton } from '../../components/ui/NeonActionButton';
+import { GenericModal } from '../../components/ui/GenericModal';
 import { colors } from '../../theme/colors';
+import { fonts } from '../../theme/typography';
 import { useOnboardingStore } from '../../store/onboardingStore';
 import { useAuthStore } from '../../store/authStore';
-import { BackHandler } from 'react-native';
-import { useNavigation } from 'expo-router';
-import { GenericModal } from '../../components/ui/GenericModal';
-import { NeonBackButton } from '../../components/ui/NeonBackButton';
 
 export default function BrandingScreen() {
-    const router = useRouter();
-    const { finishOnboarding } = useAuthStore();
-    const {
-        brandingColor, setBrandingData,
-        logoUri
-    } = useOnboardingStore();
-    const { user } = useAuthStore();
+  const router = useRouter();
+  const navigation = useNavigation();
+  const { brandingColor, setBrandingData, logoUri } = useOnboardingStore();
+  const { user, finishOnboarding } = useAuthStore();
 
-    const initialImage = user?.logoUrl || user?.avatarUrl || logoUri;
+  const initialImage = user?.logoUrl || user?.avatarUrl || logoUri;
 
-    const [selectedColor, setSelectedColor] = useState(user?.brandingColor || brandingColor || '#FF0000');
-    const [localImage, setLocalImage] = useState(initialImage);
-    const [localLoading, setLocalLoading] = useState(false);
-    const [tempHex, setTempHex] = useState(selectedColor.toUpperCase());
+  const [selectedColor, setSelectedColor] = useState(user?.brandingColor || brandingColor || '#FF0000');
+  const [localImage, setLocalImage]       = useState(initialImage);
+  const [localLoading, setLocalLoading]   = useState(false);
+  const [tempHex, setTempHex]             = useState(selectedColor.toUpperCase());
+  const [modal, setModal]                 = useState({ visible: false, type: 'info' as any, title: '', message: '' });
 
-    // Modal State
-    const [modalVisible, setModalVisible] = useState(false);
-    const [modalType, setModalType] = useState<any>('info');
-    const [modalTitle, setModalTitle] = useState('');
-    const [modalMessage, setModalMessage] = useState('');
+  const showModal = (type: any, title: string, message = '') =>
+    setModal({ visible: true, type, title, message });
 
-    const navigation = useNavigation();
-
-    const showModal = (type: any, title: string, message: string = '') => {
-        setModalType(type);
-        setModalTitle(title);
-        setModalMessage(message);
-        setModalVisible(true);
+  // Block Android hardware back button
+  React.useEffect(() => {
+    const onBackPress = () => {
+      if (user && !user.isSetupComplete) {
+        showModal('warning', 'Configuration requise', 'Veuillez finaliser votre profil pour continuer.');
+        return true;
+      }
+      return false;
     };
+    const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => subscription.remove();
+  }, [user]);
 
-    // 1. Block back navigation on Android hardware button
-    React.useEffect(() => {
-        const onBackPress = () => {
-            if (user && !user.isSetupComplete) {
-                showModal('warning', 'Configuration requise', 'Veuillez finaliser votre profil pour continuer.');
-                return true; // Block event
-            }
-            return false; // Allow event
-        };
+  // Block swipe/UI back navigation
+  React.useEffect(() => {
+    const unsubscribe = navigation.addListener('beforeRemove', (e) => {
+      if (user && user.isSetupComplete) return;
+      e.preventDefault();
+      showModal('warning', 'Configuration requise', 'Veuillez finaliser votre profil pour continuer.');
+    });
+    return unsubscribe;
+  }, [navigation, user]);
 
-        const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
-        return () => subscription.remove();
-    }, [user]);
+  const handleHexChange = (text: string) => {
+    const sanitized = text.toUpperCase().replace(/[^0-9A-F#]/g, '');
+    setTempHex(sanitized);
+    if (/^#([0-9A-F]{3,4}|[0-9A-F]{6}|[0-9A-F]{8})$/i.test(sanitized)) {
+      setSelectedColor(sanitized);
+    }
+  };
 
-    // 2. Block back navigation from UI (swipe, button, etc.)
-    React.useEffect(() => {
-        const unsubscribe = navigation.addListener('beforeRemove', (e) => {
-            if (user && user.isSetupComplete) return;
+  const handleHexBlur = () => {
+    let formatted = tempHex;
+    if (formatted.length > 0 && !formatted.startsWith('#')) {
+      formatted = '#' + formatted;
+    }
+    if (/^#([0-9A-F]{3,4}|[0-9A-F]{6}|[0-9A-F]{8})$/i.test(formatted)) {
+      setSelectedColor(formatted);
+      setTempHex(formatted);
+    } else {
+      setTempHex(selectedColor.toUpperCase());
+    }
+  };
 
-            e.preventDefault();
-            showModal('warning', 'Configuration requise', 'Veuillez finaliser votre profil pour continuer.');
-        });
-        return unsubscribe;
-    }, [navigation, user]);
+  const pickImage = async () => {
+    if (localLoading) return;
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    if (!result.canceled) {
+      setLocalImage(result.assets[0].uri);
+    }
+  };
 
-    const handleHexChange = (text: string) => {
-        const sanitized = text.toUpperCase().replace(/[^0-9A-F#]/g, '');
-        setTempHex(sanitized);
+  const handleNext = async () => {
+    setLocalLoading(true);
+    try {
+      setBrandingData({ brandingColor: selectedColor, logoUri: localImage });
 
-        if (/^#([0-9A-F]{3,4}|[0-9A-F]{6}|[0-9A-F]{8})$/i.test(sanitized)) {
-            setSelectedColor(sanitized);
-        }
-    };
+      const authStore = useAuthStore.getState();
+      const profileId = authStore.user?.id;
 
-    const handleHexBlur = () => {
-        // Ensure it starts with #
-        let formatted = tempHex;
-        if (formatted.length > 0 && !formatted.startsWith('#')) {
-            formatted = '#' + formatted;
-        }
+      await authStore.updateAiProfile({
+        brandingColor: selectedColor,
+        isSetupComplete: true,
+      });
 
-        if (/^#([0-9A-F]{3,4}|[0-9A-F]{6}|[0-9A-F]{8})$/i.test(formatted)) {
-            setSelectedColor(formatted);
-            setTempHex(formatted);
-        } else {
-            // Reset to current selected color if invalid
-            setTempHex(selectedColor.toUpperCase());
-        }
-    };
+      const isLocalUri =
+        localImage &&
+        (localImage.startsWith('file://') ||
+          localImage.startsWith('content://') ||
+          localImage.includes('/cache/'));
 
-    const pickImage = async () => {
-        if (localLoading) return;
+      if (localImage && (localImage !== initialImage || isLocalUri) && profileId) {
+        await authStore.uploadLogo(profileId, localImage);
+      }
 
-        const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ['images'],
-            allowsEditing: true,
-            aspect: [1, 1],
-            quality: 0.8,
-        });
+      await authStore.finishOnboarding();
+      router.replace('/(drawer)');
+    } catch (e) {
+      console.error('Failed to sync branding data', e);
+    } finally {
+      setLocalLoading(false);
+    }
+  };
 
-        if (!result.canceled) {
-            console.log(`[Branding] Picked image:`, result.assets[0].uri);
-            setLocalImage(result.assets[0].uri);
-        }
-    };
+  const onColorChange = ({ hex }: { hex: string }) => {
+    'worklet';
+    runOnJS(setSelectedColor)(hex);
+    runOnJS(setTempHex)(hex.toUpperCase());
+  };
 
-    const handleNext = async () => {
-        setLocalLoading(true);
-        try {
-            setBrandingData({
-                brandingColor: selectedColor,
-                logoUri: localImage
-            });
+  return (
+    <BackgroundGradientOnboarding darkOverlay>
 
-            const authStore = useAuthStore.getState();
-            const profileId = authStore.user?.id;
+      <ScreenHeader
+        titleSub="Votre"
+        titleScript="identité"
+        onBack={() => router.back()}
+      />
 
-            // 1. Sync color and status
-            console.log('[Branding] Syncing color and completion:', selectedColor);
-            await authStore.updateAiProfile({
-                brandingColor: selectedColor,
-                isSetupComplete: true,
-            });
+      <ScrollView
+        contentContainerStyle={s.scrollContent}
+        showsVerticalScrollIndicator={false}
+        bounces={false}
+      >
+        <Animated.View entering={FadeInDown.duration(800)} style={s.content}>
 
-            // 2. Upload image if changed or if it's a local file URI (which means it's not yet on server)
-            const isLocalUri = localImage && (localImage.startsWith('file://') || localImage.startsWith('content://') || localImage.includes('/cache/'));
-
-            if (localImage && (localImage !== initialImage || isLocalUri) && profileId) {
-                console.log('[Branding] Uploading image:', localImage);
-                await authStore.uploadLogo(profileId, localImage);
-            }
-
-            await authStore.finishOnboarding();
-            router.replace('/(drawer)');
-        } catch (e) {
-            console.error('Failed to sync branding data', e);
-        } finally {
-            setLocalLoading(false);
-        }
-    };
-
-    const onColorChange = ({ hex }: { hex: string }) => {
-        'worklet';
-        runOnJS(setSelectedColor)(hex);
-        runOnJS(setTempHex)(hex.toUpperCase());
-    };
-
-    return (
-        <BackgroundGradientOnboarding darkOverlay={true}>
-            {/* ── FIXED HEADER ── */}
-            <View style={styles.header}>
-                <NeonBackButton onPress={() => router.back()} />
-                <View style={styles.headerCenter}>
-                    <View style={styles.titleRow}>
-                        <Text style={styles.titleSub}>Votre</Text>
-                        <Text style={styles.titleScript}>identité</Text>
-                    </View>
-                </View>
+          {/* Color Picker */}
+          <View style={s.section}>
+            <View style={s.sectionHeader}>
+              <Palette size={16} color={colors.text.secondary} />
+              <Text style={s.sectionTitle}>Couleur principale</Text>
             </View>
+            <View style={s.card}>
+              <ColorPicker value={selectedColor} onChange={onColorChange} style={s.colorPicker}>
+                <View style={s.panelContainer}>
+                  <Panel1 style={s.panel} />
+                </View>
+                <View style={s.slidersContainer}>
+                  <HueSlider style={s.slider} />
+                  <OpacitySlider style={s.slider} />
+                </View>
+                <View style={s.pickerFooter}>
+                  <Preview style={s.preview} hideText />
+                  <TextInput
+                    style={s.hexInput}
+                    value={tempHex}
+                    onChangeText={handleHexChange}
+                    onBlur={handleHexBlur}
+                    placeholder="#000000FF"
+                    placeholderTextColor="rgba(255,255,255,0.3)"
+                    maxLength={9}
+                    autoCapitalize="characters"
+                    spellCheck={false}
+                    autoCorrect={false}
+                  />
+                </View>
+              </ColorPicker>
+              {localLoading && (
+                <View style={StyleSheet.absoluteFill} pointerEvents="box-only" />
+              )}
+            </View>
+          </View>
 
-            <ScrollView 
-                contentContainerStyle={styles.scrollContent} 
-                showsVerticalScrollIndicator={false}
+          {/* Avatar / Logo */}
+          <View style={s.section}>
+            <View style={s.sectionHeader}>
+              <User size={16} color={colors.text.secondary} />
+              <Text style={s.sectionTitle}>Photo de profil / Logo</Text>
+            </View>
+            <TouchableOpacity
+              style={[s.uploadBox, localLoading && { opacity: 0.6 }]}
+              onPress={() => !localLoading && pickImage()}
+              disabled={localLoading}
+              activeOpacity={0.8}
             >
-                <View style={styles.container}>
-                    <Animated.View entering={FadeInRight.duration(800)} style={styles.content}>
-
-                        {/* Color Picker */}
-                        <View style={styles.section}>
-                            <View style={styles.sectionHeader}>
-                                <Palette size={16} color={colors.text.secondary} />
-                                <Text style={styles.sectionTitleText}>Couleur principale</Text>
-                            </View>
-
-                            <View style={styles.pickerWrapper}>
-                                <ColorPicker
-                                    value={selectedColor}
-                                    onChange={onColorChange}
-                                    style={styles.colorPicker}
-                                >
-                                    <View style={styles.panelContainer}>
-                                        <Panel1 style={styles.panel} />
-                                    </View>
-
-                                    <View style={styles.slidersContainer}>
-                                        <HueSlider style={styles.slider} />
-                                        <OpacitySlider style={styles.slider} />
-                                    </View>
-
-                                    <View style={styles.pickerFooter}>
-                                        <Preview style={styles.preview} hideText />
-                                        <TextInput
-                                            style={styles.hexInput}
-                                            value={tempHex}
-                                            onChangeText={handleHexChange}
-                                            onBlur={handleHexBlur}
-                                            placeholder="#000000FF"
-                                            placeholderTextColor="rgba(255,255,255,0.3)"
-                                            maxLength={9}
-                                            autoCapitalize="characters"
-                                            spellCheck={false}
-                                            autoCorrect={false}
-                                        />
-                                    </View>
-                                </ColorPicker>
-                                {localLoading && (
-                                    <View style={{
-                                        ...StyleSheet.absoluteFillObject,
-                                        backgroundColor: 'transparent',
-                                        zIndex: 100
-                                    }} />
-                                )}
-                            </View>
-                        </View>
-
-                        {/* Avatar / Logo */}
-                        <View style={styles.section}>
-                            <View style={styles.sectionHeader}>
-                                <User size={16} color={colors.text.secondary} />
-                                <Text style={styles.sectionTitleText}>Photo de profil / Logo</Text>
-                            </View>
-                            <TouchableOpacity
-                                style={[styles.uploadBox, localLoading && { opacity: 0.6 }]}
-                                onPress={() => !localLoading && pickImage()}
-                                disabled={localLoading}
-                            >
-                                {localImage && localImage.trim() !== '' ? (
-                                    <Image source={{ uri: localImage }} style={styles.uploadedImage} />
-                                ) : (
-                                    <View style={styles.uploadPlaceholder}>
-                                        <Upload size={24} color={colors.text.secondary} />
-                                        <Text style={styles.uploadText}>Choisir une image</Text>
-                                        <Text style={styles.uploadHint}>PNG, JPG, JPEG • Max 5Mo</Text>
-                                    </View>
-                                )}
-                            </TouchableOpacity>
-                        </View>
-
-                    </Animated.View>
+              {localImage && localImage.trim() !== '' ? (
+                <Image source={{ uri: localImage }} style={s.uploadedImage} />
+              ) : (
+                <View style={s.uploadPlaceholder}>
+                  <Upload size={24} color={colors.text.secondary} />
+                  <Text style={s.uploadText}>Choisir une image</Text>
+                  <Text style={s.uploadHint}>PNG, JPG, JPEG • Max 5Mo</Text>
                 </View>
-            </ScrollView>
+              )}
+            </TouchableOpacity>
+          </View>
 
-            <View style={styles.footer}>
-                <Animated.View entering={FadeInDown.delay(400).duration(800)}>
-                    <NeonButton
-                        title="Continuer"
-                        onPress={handleNext}
-                        size="lg"
-                        variant="premium"
-                        loading={localLoading}
-                        disabled={localLoading}
-                        style={styles.button}
-                    />
-                </Animated.View>
-            </View>
-            <GenericModal
-                visible={modalVisible}
-                type={modalType}
-                title={modalTitle}
-                message={modalMessage}
-                onClose={() => setModalVisible(false)}
-            />
-        </BackgroundGradientOnboarding>
-    );
+        </Animated.View>
+      </ScrollView>
+
+      <View style={s.footer}>
+        <NeonActionButton
+          label="Continuer"
+          onPress={handleNext}
+          loading={localLoading}
+          disabled={localLoading}
+        />
+      </View>
+
+      <GenericModal
+        visible={modal.visible}
+        type={modal.type}
+        title={modal.title}
+        message={modal.message}
+        onClose={() => setModal(m => ({ ...m, visible: false }))}
+      />
+    </BackgroundGradientOnboarding>
+  );
 }
 
-const styles = StyleSheet.create({
-    /* Header - Fixed at top */
-    header:         { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 24, paddingTop: 40, paddingBottom: 8, backgroundColor: 'rgba(10,15,30,0.95)', borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)', zIndex: 100 },
-    backButton:     { width: 42, height: 42, borderRadius: 21, backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center', marginRight: 16 },
-    headerCenter:   { flex: 1, alignItems: 'center' },
-    titleRow:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
-    titleSub:       { fontFamily: 'Arimo-Bold', fontSize: 16, letterSpacing: 3, textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)', lineHeight: 22 },
-    titleScript:    { fontFamily: 'Brittany-Signature', paddingLeft: 1, fontSize: 28, color: '#fff', textShadowColor: '#00eaff', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 18, lineHeight: 22, includeFontPadding: false },
-    
-    container:      { flex: 1, paddingHorizontal: 24 },
-    scrollContent:  { flexGrow: 1, paddingTop: 16, paddingBottom: 120 },
-    content:        { gap: 24 },
-    title: {
-        fontSize: 28,
-        fontWeight: '700',
-        color: colors.text.primary,
-        marginBottom: 8,
-    },
-    subtitle: {
-        fontSize: 16,
-        color: colors.text.secondary,
-    },
-    section: {
-        gap: 12
-    },
-    sectionHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8
-    },
-    sectionTitleText: {
-        color: colors.text.secondary,
-        fontSize: 16,
-        fontWeight: '600',
-    },
-    pickerWrapper: {
-        backgroundColor: 'rgba(15,23,42,0.9)',
-        borderRadius: 20,
-        padding: 16,
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)',
-    },
-    colorPicker: {
-        gap: 16,
-    },
-    panelContainer: {
-        height: 180,
-        borderRadius: 12,
-        overflow: 'hidden',
-    },
-    panel: {
-        flex: 1,
-    },
-    slidersContainer: {
-        gap: 12,
-    },
-    slider: {
-        height: 20,
-        borderRadius: 10,
-    },
-    pickerFooter: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 12,
-        paddingTop: 4,
-    },
-    preview: {
-        width: 32,
-        height: 32,
-        borderRadius: 16,
-        borderWidth: 2,
-        borderColor: 'rgba(255,255,255,0.2)',
-    },
-    hexInput: {
-        color: '#FFFFFF',
-        fontSize: 16,
-        fontWeight: '700',
-        letterSpacing: 1,
-        backgroundColor: 'rgba(255,255,255,0.05)',
-        paddingHorizontal: 12,
-        paddingVertical: 4,
-        borderRadius: 8,
-        minWidth: 100,
-        textAlign: 'center',
-    },
-    uploadBox: {
-        height: 120,
-        backgroundColor: 'rgba(15,23,42,0.9)',
-        borderRadius: 16,
-        borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.1)',
-        borderStyle: 'dashed',
-        overflow: 'hidden',
-        alignItems: 'center',
-        justifyContent: 'center'
-    },
-    uploadPlaceholder: {
-        alignItems: 'center',
-        zIndex: 99999,
-        gap: 8
-    },
-    uploadText: {
-        color: colors.text.primary,
-        fontSize: 14,
-        fontWeight: '600'
-    },
-    uploadHint: {
-        color: colors.text.secondary,
-        fontSize: 12,
-        marginTop: 2
-    },
-    uploadedImage: {
-        width: '100%',
-        height: '100%',
-        resizeMode: 'cover'
-    },
-    footer: {
-        position: 'absolute',
-        bottom: 40,
-        left: 24,
-        right: 24,
-        zIndex: 10
-    },
-    button: {
-        width: '100%'
-    }
+const s = StyleSheet.create({
+  scrollContent:    { flexGrow: 1, paddingHorizontal: 24, paddingTop: 16, paddingBottom: 120 },
+  content:          { gap: 24 },
+
+  section:          { gap: 12 },
+  sectionHeader:    { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  sectionTitle:     { fontFamily: fonts.arimo.bold, fontSize: 13, color: colors.gray, fontWeight: '600', letterSpacing: 0.3 },
+
+  card: {
+    backgroundColor: colors.darkSlateBlue,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#ffffff14',
+  },
+  colorPicker:      { gap: 16 },
+  panelContainer:   { height: 180, borderRadius: 12, overflow: 'hidden' },
+  panel:            { flex: 1 },
+  slidersContainer: { gap: 12 },
+  slider:           { height: 20, borderRadius: 10 },
+  pickerFooter:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12, paddingTop: 4 },
+  preview:          { width: 32, height: 32, borderRadius: 16, borderWidth: 2, borderColor: 'rgba(255,255,255,0.2)' },
+  hexInput: {
+    fontFamily: fonts.arimo.bold,
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: 1,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#ffffff14',
+    minWidth: 100,
+    textAlign: 'center',
+  },
+
+  uploadBox: {
+    height: 120,
+    backgroundColor: colors.darkSlateBlue,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#ffffff14',
+    borderStyle: 'dashed',
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  uploadPlaceholder: { alignItems: 'center', gap: 8 },
+  uploadText:        { fontFamily: fonts.arimo.bold, color: 'white', fontSize: 14, fontWeight: '600' },
+  uploadHint:        { fontFamily: fonts.arimo.regular, color: colors.gray, fontSize: 12 },
+  uploadedImage:     { width: '100%', height: '100%', resizeMode: 'cover' },
+
+  footer: {
+    padding: 24,
+    paddingBottom: Platform.OS === 'ios' ? 40 : 24,
+  },
 });

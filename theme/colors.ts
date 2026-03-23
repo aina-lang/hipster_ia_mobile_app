@@ -37,6 +37,13 @@ export const colors = {
   violet,
   rose,
 
+  neonBlue: '#00eaff',
+  neonBlueDark: '#1e9bff',
+  midnightBlue: '#030814',
+  darkSlateBlue : '#0f172ae6',
+  whiteOverlay : '#ffffff73',
+  gray : '#9ca3af',
+
   // Background — pure deep black
   background: {
     primary: '#050508',

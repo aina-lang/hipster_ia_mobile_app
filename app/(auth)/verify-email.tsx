@@ -1,83 +1,66 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  View,
-  StyleSheet,
-  Text,
-  TextInput,
-  KeyboardAvoidingView,
-  Platform,
-  TouchableOpacity,
-  BackHandler,
+  View, StyleSheet, Text, TextInput, KeyboardAvoidingView,
+  Platform, TouchableOpacity, BackHandler,
 } from 'react-native';
 import { router, useLocalSearchParams, useNavigation } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { ShieldCheck, AlertCircle } from 'lucide-react-native';
-// Stripe logic delayed to subscription step
-import { BackgroundGradient } from '../../components/ui/BackgroundGradient';
-import { NeonButton } from '../../components/ui/NeonButton';
-import { StepIndicator } from '../../components/ui/StepIndicator';
-import { colors } from '../../theme/colors';
-import { api } from '../../api/client';
-import { useAuthStore } from '../../store/authStore';
-import { useOnboardingStore } from '../../store/onboardingStore';
 import { BackgroundGradientOnboarding } from '../../components/ui/BackgroundGradientOnboarding';
 import { GenericModal } from '../../components/ui/GenericModal';
+import { ScreenHeader } from '../../components/ui/ScreenHeader';
+import { NeonActionButton } from '../../components/ui/NeonActionButton';
+import { NeonLink } from '../../components/ui/NeonLink';
+import { colors } from '../../theme/colors';
+import { fonts } from '../../theme/typography';
+import { api } from '../../api/client';
+import { useAuthStore } from '../../store/authStore';
+
+const NEON_BLUE = colors.neonBlue;
 
 export default function VerifyEmailScreen() {
-  const { email, redirectTo, stripeData, planId, userId } = useLocalSearchParams<{
+  const { email, planId, userId } = useLocalSearchParams<{
     email: string;
     redirectTo?: string;
     stripeData?: string;
     planId?: string;
     userId?: string;
   }>();
-  const [code, setCode] = useState('');
+
+  const [code, setCode]           = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isResending, setIsResending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError]         = useState<string | null>(null);
+  const [modal, setModal]         = useState({ visible: false, type: 'info' as any, title: '', message: '' });
 
   const { aiVerifyEmail } = useAuthStore();
-  const navigation = useNavigation();
-  const allowNavRef = useRef(false);
+  const navigation        = useNavigation();
+  const allowNavRef       = useRef(false);
 
-  // Modal State
-  const [modalVisible, setModalVisible] = useState(false);
-  const [modalType, setModalType] = useState<any>('info');
-  const [modalTitle, setModalTitle] = useState('');
-  const [modalMessage, setModalMessage] = useState('');
+  const showModal = (type: any, title: string, message = '') =>
+    setModal({ visible: true, type, title, message });
 
-  const showModal = (type: any, title: string, message: string = '') => {
-    setModalType(type);
-    setModalTitle(title);
-    setModalMessage(message);
-    setModalVisible(true);
-  };
-
-  // 1. Block back navigation on Android hardware button
   useEffect(() => {
     const onBackPress = () => {
       const { isAuthenticated } = useAuthStore.getState();
       if (!allowNavRef.current && !isAuthenticated) {
         showModal('warning', 'Action interdite', 'Veuillez vérifier votre email pour continuer.');
-        return true; // Block event
+        return true;
       }
-      return false; // Allow event
+      return false;
     };
-
-    const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
-    return () => subscription.remove();
+    const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => sub.remove();
   }, []);
 
-  // 2. Block back navigation from UI (swipe, button, etc.)
   useEffect(() => {
-    const unsubscribe = navigation.addListener('beforeRemove', (e) => {
+    const unsub = navigation.addListener('beforeRemove', (e) => {
       const { isAuthenticated } = useAuthStore.getState();
       if (allowNavRef.current || isAuthenticated) return;
-
       e.preventDefault();
       showModal('warning', 'Action interdite', 'Veuillez vérifier votre email pour continuer.');
     });
-    return unsubscribe;
+    return unsub;
   }, [navigation]);
 
   const handleVerify = async () => {
@@ -85,26 +68,14 @@ export default function VerifyEmailScreen() {
       showModal('error', 'Erreur', 'Veuillez entrer le code de vérification.');
       return;
     }
-
     setIsLoading(true);
     setError(null);
     try {
-      // 1. Verify Email (Logs user in)
       await aiVerifyEmail(email as string, code);
-
-      // Allow navigation after success
       allowNavRef.current = true;
-
-      // 2. Proceed to PACK SELECTION (Then job/branding)
-      router.replace({
-        pathname: '/(onboarding)/packs',
-        params: { userId, planId }
-      });
-
-      // Navigate based on redirectTo or default onboarding flow
+      router.replace({ pathname: '/(onboarding)/packs', params: { userId, planId } });
     } catch (e: any) {
-      const message = e.response?.data?.message || 'Code invalide ou expiré.';
-      setError(message);
+      setError(e.response?.data?.message || 'Code invalide ou expiré.');
     } finally {
       setIsLoading(false);
     }
@@ -117,8 +88,7 @@ export default function VerifyEmailScreen() {
       await api.post('/ai/auth/resend-otp', { email });
       showModal('success', 'Envoyé', 'Un nouveau code a été envoyé à votre adresse email.');
     } catch (e: any) {
-      const message = e.response?.data?.message || "Erreur lors de l'envoi du nouveau code.";
-      setError(message);
+      setError(e.response?.data?.message || "Erreur lors de l'envoi du nouveau code.");
     } finally {
       setIsResending(false);
     }
@@ -126,181 +96,180 @@ export default function VerifyEmailScreen() {
 
   return (
     <>
-      <BackgroundGradientOnboarding darkOverlay={true}>
+      <BackgroundGradientOnboarding darkOverlay>
+        <ScreenHeader
+          titleSub="Vérifier"
+          titleScript="votre email"
+          onBack={() => {
+            allowNavRef.current = true;
+            router.replace({ pathname: '/(auth)/register', params: { email } });
+          }}
+        />
 
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.container}>
-          <Animated.View entering={FadeInDown.duration(800)} style={styles.content}>
-            <View style={styles.iconContainer}>
-              <ShieldCheck size={60} color={colors.primary.main} />
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={s.kav}>
+          <Animated.View entering={FadeInDown.duration(800)} style={s.content}>
+
+            <View style={s.iconContainer}>
+              <ShieldCheck size={52} style={s.icon} />
             </View>
 
-            <Text style={styles.title}>Vérifiez votre email</Text>
-            <Text style={styles.subtitle}>
-              Nous avons envoyé un code de vérification à :{'\n'}
-              <Text style={styles.emailText}>{email}</Text>
+            <Text style={s.subtitle}>
+              Nous avons envoyé un code de vérification à{'\n'}
+              <Text style={s.emailText}>{email}</Text>
             </Text>
 
             {error && (
-              <View style={styles.errorContainer}>
-                <AlertCircle size={20} color={colors.status.error} />
-                <Text style={styles.errorText}>{error}</Text>
+              <View style={s.errorContainer}>
+                <AlertCircle size={18} color={colors.status.error} />
+                <Text style={s.errorText}>{error}</Text>
               </View>
             )}
 
-            <View style={styles.form}>
-              <View style={styles.inputContainer}>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Entrez le code"
-                  placeholderTextColor={colors.text.muted}
-                  value={code}
-                  onChangeText={(text) => {
-                    setCode(text);
-                    setError(null);
-                  }}
-                  keyboardType="number-pad"
-                  maxLength={6}
-                  textAlign="center"
+            <View style={s.form}>
+              <TextInput
+                style={s.input}
+                placeholder="Entrez le code"
+                placeholderTextColor="#6b7280"
+                value={code}
+                onChangeText={t => { setCode(t); setError(null); }}
+                keyboardType="number-pad"
+                maxLength={6}
+                textAlign="center"
+              />
+
+              <NeonActionButton
+                label="Vérifier"
+                onPress={handleVerify}
+                loading={isLoading}
+                disabled={isLoading}
+              />
+
+              <View style={s.footer}>
+                <Text style={s.footerText}>Vous n'avez pas reçu le code ? </Text>
+                <NeonLink
+                  label={isResending ? 'Envoi...' : 'Renvoyer'}
+                  onPress={handleResend}
+                  style={isResending ? { opacity: 0.5 } : undefined}
                 />
               </View>
 
-              <NeonButton
-                title="Vérifier"
-                onPress={handleVerify}
-                size="lg"
-                variant="premium"
-                loading={isLoading}
-                style={styles.verifyButton}
-              />
-
-              <View style={styles.footer}>
-                <Text style={styles.footerText}>Vous n'avez pas reçu le code ? </Text>
-                <TouchableOpacity onPress={handleResend} disabled={isResending}>
-                  <Text style={[styles.footerLink, isResending && { opacity: 0.5 }]}>
-                    {isResending ? 'Envoi...' : 'Renvoyer'}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
               <TouchableOpacity
-                style={styles.backButton}
+                style={s.changeEmail}
                 onPress={() => {
                   allowNavRef.current = true;
-                  router.replace({
-                    pathname: '/(auth)/register',
-                    params: { email }
-                  });
+                  router.replace({ pathname: '/(auth)/register', params: { email } });
                 }}
               >
-                <Text style={styles.backButtonText}>Modifier l'adresse email</Text>
+                <Text style={s.termsLink}>Modifier l'adresse email</Text>
               </TouchableOpacity>
             </View>
+
           </Animated.View>
         </KeyboardAvoidingView>
       </BackgroundGradientOnboarding>
+
       <GenericModal
-        visible={modalVisible}
-        type={modalType}
-        title={modalTitle}
-        message={modalMessage}
-        onClose={() => setModalVisible(false)}
+        visible={modal.visible}
+        type={modal.type}
+        title={modal.title}
+        message={modal.message}
+        onClose={() => setModal(m => ({ ...m, visible: false }))}
       />
     </>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    paddingHorizontal: 32,
-  },
-  content: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+const s = StyleSheet.create({
+  kav:     { flex: 1, paddingHorizontal: 24 },
+  content: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+
   iconContainer: {
-    marginBottom: 24,
-    backgroundColor: 'rgba(57, 255, 20, 0.1)',
+    marginBottom: 20,
+    backgroundColor: colors.darkSlateBlue,
     padding: 20,
-    borderRadius: 30,
+    borderRadius: 30
   },
-  title: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: colors.text.primary,
-    marginBottom: 12,
-    textAlign: 'center',
+  icon: {
+    color : 'white',
+    shadowColor: NEON_BLUE,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 1,
+    shadowRadius: 3
   },
   subtitle: {
-    fontSize: 16,
+    fontFamily: fonts.arimo.regular,
+    fontSize: 15,
     color: colors.text.secondary,
-    marginBottom: 40,
+    marginBottom: 32,
     textAlign: 'center',
     lineHeight: 24,
   },
   emailText: {
-    color: colors.primary.main,
-    fontWeight: '600',
+    fontFamily: fonts.arimo.bold,
+    color: NEON_BLUE,
   },
+  termsLink: {
+    fontFamily: fonts.arimo.regular,
+    fontSize: 11,
+    color: 'white',
+    textShadowColor: colors.neonBlue,
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 3,
+    textDecorationLine: 'underline',
+  },
+
   errorContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    backgroundColor: 'rgba(239,68,68,0.1)',
     padding: 12,
     borderRadius: 12,
     marginBottom: 20,
     gap: 10,
     borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.2)',
-  },
-  errorText: {
-    color: colors.status.error,
-    fontSize: 14,
-    flex: 1,
-  },
-  form: {
+    borderColor: 'rgba(239,68,68,0.2)',
     width: '100%',
   },
-  inputContainer: {
-    marginBottom: 24,
+  errorText: {
+    fontFamily: fonts.arimo.regular,
+    color: colors.status.error,
+    fontSize: 13,
+    flex: 1,
   },
+
+  form: { width: '100%' },
+
   input: {
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    backgroundColor: colors.darkSlateBlue,
     borderRadius: 12,
     padding: 16,
-    color: colors.text.primary,
+    marginBottom: 24,
+    fontFamily: fonts.arimo.regular,
+    color: 'white',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderColor: '#ffffff14',
     fontSize: 24,
     letterSpacing: 8,
   },
-  verifyButton: {
-    width: '100%',
-    marginBottom: 24,
-  },
+
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginBottom: 20,
+    alignItems: 'center',
+    marginTop: 20,
+    marginBottom: 16
   },
   footerText: {
-    color: colors.text.secondary,
+    fontFamily: fonts.arimo.regular,
+    color: colors.gray,
     fontSize: 14,
   },
-  footerLink: {
-    color: colors.primary.main,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  backButton: {
-    alignItems: 'center',
-  },
-  backButtonText: {
-    color: colors.text.secondary,
-    fontSize: 14,
+
+  changeEmail: { alignItems: 'center' },
+  changeEmailText: {
+    fontFamily: fonts.arimo.regular,
+    color: colors.gray,
+    fontSize: 13,
     textDecorationLine: 'underline',
   },
 });

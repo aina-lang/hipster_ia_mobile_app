@@ -3,9 +3,7 @@ export const fonts = {
     regular: 'Arimo-Regular',
     bold: 'Arimo-Bold',
   },
-  brittany: {
-    signature: 'Brittany-Signature',
-  },
+  brittany: 'Brittany-Signature',
 };
 
 export const textStyles = {
