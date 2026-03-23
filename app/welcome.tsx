@@ -47,8 +47,15 @@ const PARTICLES: ParticleConfig[] = [
   { x: 60,  y: -78, size: 3,   color: NEON_GLOW,  delayMs: 760, durationMs: 1600 },
 ];
 
+<<<<<<< HEAD
 const Particle = React.memo(({ x, y, size, color, delayMs, durationMs }: ParticleConfig) => {
   const opacity    = useSharedValue(0);
+=======
+interface ParticleProps extends ParticleConfig { }
+
+const Particle = React.memo(({ x, y, size, color, delayMs, durationMs }: ParticleProps) => {
+  const opacity = useSharedValue(0);
+>>>>>>> origin/main
   const translateY = useSharedValue(0);
 
   useEffect(() => {
@@ -104,6 +111,30 @@ interface TopBarProps {
 const TopBar = ({ textAnimProgress }: TopBarProps) => {
   const insets     = useSafeAreaInsets();
   const responsive = useResponsiveDimensions();
+<<<<<<< HEAD
+=======
+
+  const animStyle = useAnimatedStyle(() => {
+    const opacity = interpolate(
+      textAnimProgress?.value ?? 0,
+      [0, 0.5, 1],
+      [0, 0, 1],
+      Extrapolate.CLAMP
+    );
+
+    const translateY = interpolate(
+      textAnimProgress?.value ?? 0,
+      [0, 1],
+      [-30, 0],
+      Extrapolate.CLAMP
+    );
+
+    return {
+      opacity,
+      transform: [{ translateY }],
+    };
+  });
+>>>>>>> origin/main
 
   const animStyle = useAnimatedStyle(() => ({
     opacity: interpolate(textAnimProgress?.value ?? 0, [0, 0.5, 1], [0, 0, 1], Extrapolate.CLAMP),
@@ -116,8 +147,11 @@ const TopBar = ({ textAnimProgress }: TopBarProps) => {
     <Animated.View
       style={[
         styles.topBar,
-        { height: responsive.topBarHeight + insets.top, paddingTop: insets.top - 10 },
-        animStyle,
+        {
+          height: responsive.topBarHeight + insets.top,
+          paddingTop: insets.top - 10
+        },
+        animStyle
       ]}
     >
       <Text h1 style={{ fontSize: responsive.fontSize['3xl'] }}>HIPSTER IA</Text>
@@ -133,6 +167,27 @@ const TopBar = ({ textAnimProgress }: TopBarProps) => {
 
 const SubTextAnimation = React.memo(({ textAnimProgress }: { textAnimProgress: SharedValue<number> }) => {
   const responsive = useResponsiveDimensions();
+
+  // const animStyle = useAnimatedStyle(() => {
+  //   const translateY = interpolate(
+  //     textAnimProgress?.value ?? 0,
+  //     [0, 1],
+  //     [0, -300],
+  //     Extrapolate.CLAMP
+  //   );
+
+  //   const opacity = interpolate(
+  //     textAnimProgress?.value ?? 0,
+  //     [0, 0.5, 1],
+  //     [0, 0, 1],
+  //     Extrapolate.CLAMP
+  //   );
+
+  //   return {
+  //     transform: [{ translateY }],
+  //     opacity
+  //   };
+  // });
 
   const animStyle = useAnimatedStyle(() => ({
     transform: [{
@@ -190,8 +245,11 @@ const BottomAuthSection = React.memo(({
         onPress={() => {
           setIsRouting?.(true);
           onVideoFinish?.();
-          setIsReturningFromBack(false);
-          router.replace('/(onboarding)/packs');
+          setIsReturningFromBack?.(false); // Reset flag when navigating away
+          router.replace({
+            pathname: '/(auth)/register',
+            params: { from: 'welcome' }
+          });
         }}
         style={[styles.primaryButton, { width: responsive.isSmallScreen ? '85%' : '70%' }]}
       >
@@ -209,12 +267,15 @@ const BottomAuthSection = React.memo(({
       </Pressable>
 
       <View style={[styles.row, { gap: responsive.spacing.xs }]}>
-        <Text small style={{ fontSize: responsive.fontSize.xs }}>Déjà un compte ?</Text>
+        <Text small style={{ fontSize: responsive.fontSize.xs }}>
+          Déjà un compte ?
+        </Text>
         <Pressable
           onPress={() => {
+            console.log('[Welcome] Login clicked');
             setIsRouting?.(true);
             onVideoFinish?.();
-            setIsReturningFromBack(false);
+            setIsReturningFromBack(false); // Reset flag when navigating away
             router.push('/(auth)/login');
           }}
           style={({ pressed }) => ({ padding: 10, opacity: pressed ? 0.7 : 1, margin: -10 })}
@@ -232,7 +293,7 @@ const BottomAuthSection = React.memo(({
         </Text>
         <Text style={[styles.separator, { fontSize: responsive.fontSize.xs }]}>·</Text>
         <Pressable
-          onPress={() => Linking.openURL('mailto:contact@hipster-ia.fr').catch(() => {})}
+          onPress={() => Linking.openURL('mailto:contact@hipster-ia.fr').catch(() => { })}
           style={styles.contactLink}
         >
           <Text style={[styles.contactText, { fontSize: responsive.fontSize.xs }]}>
@@ -323,7 +384,7 @@ export default React.memo(function WelcomeScreen({ onVideoFinish, setIsRouting }
       if (status === 'readyToPlay') {
         setVideoReady(true);
         videoPlayer.play();
-        SplashScreen.hideAsync().catch(() => {});
+        SplashScreen.hideAsync().catch(() => { });
       }
     };
 
@@ -334,7 +395,7 @@ export default React.memo(function WelcomeScreen({ onVideoFinish, setIsRouting }
     if (videoPlayer.status === 'readyToPlay') {
       setVideoReady(true);
       videoPlayer.play();
-      SplashScreen.hideAsync().catch(() => {});
+      SplashScreen.hideAsync().catch(() => { });
     }
     if (videoPlayer.playing) startTracking();
 
@@ -413,6 +474,31 @@ export default React.memo(function WelcomeScreen({ onVideoFinish, setIsRouting }
         style={[StyleSheet.absoluteFill, styles.fadeOverlay, fadeOverlayStyle]}
         pointerEvents="none"
       />
+
+      <View style={StyleSheet.absoluteFill}>
+        <TopBar
+          textAnimProgress={textAnimProgress}
+          isAuthenticated={isAuthenticated}
+          userName={user?.name || user?.email?.split('@')[0]}
+        />
+
+        <View style={styles.center}>
+          <View style={[styles.particleAnchor, { bottom: responsive.particleBottom }]} pointerEvents="none">
+            {PARTICLES.map((p, i) => (
+              <Particle key={i} {...p} />
+            ))}
+          </View>
+          <SubTextAnimation textAnimProgress={textAnimProgress} isAuthenticated={isAuthenticated} />
+        </View>
+
+        <BottomAuthSection
+          isAuthenticated={isAuthenticated}
+          onVideoFinish={onVideoFinish}
+          setIsRouting={setIsRouting}
+          textAnimProgress={textAnimProgress}
+          setIsReturningFromBack={setIsReturningFromBack}
+        />
+      </View>
     </Animated.View>
   );
 });

@@ -11,7 +11,10 @@ import { Crown, Image as ImageIcon, FileText, Video, Music, Download, Box, Check
 
 import { api } from '../../api/client';
 import { useOnboardingStore } from '../../store/onboardingStore';
+import { useAuthStore } from '../../store/authStore';
 import { useWelcomeVideoStore } from '../../store/welcomeVideoStore';
+import { useStripe } from '@stripe/stripe-react-native';
+import { Alert } from 'react-native';
 import { colors } from '../../theme/colors';
 import { BackgroundGradientOnboarding } from '../../components/ui/BackgroundGradientOnboarding';
 import { NeonBackButton } from '../../components/ui/NeonBackButton';
@@ -24,12 +27,13 @@ interface Plan {
   features: string[];
   popular?: boolean;
   isComingSoon?: boolean;
+  stripePriceId?: string;
 }
 
 const PLAN_IMAGES: Record<string, any> = {
   curieux: require('../../assets/images/packs/packCurieux.png'),
   atelier: require('../../assets/images/packs/atelier.png'),
-  studio:  require('../../assets/images/packs/studio.png'),
+  studio: require('../../assets/images/packs/studio.png'),
 };
 
 const COMING_SOON_IDS = new Set(['agence']);
@@ -37,12 +41,12 @@ const CARD_W = 340;
 
 function getFeatureIcon(feature: string) {
   const f = feature.toLowerCase();
-  if (f.includes('image'))                                   return ImageIcon;
-  if (f.includes('texte'))                                   return FileText;
-  if (f.includes('vidéo'))                                   return Video;
-  if (f.includes('sonore') || f.includes('audio'))           return Music;
-  if (f.includes('3d') || f.includes('sketch'))              return Box;
-  if (f.includes('export'))                                  return f.includes('pas') ? XCircle : Download;
+  if (f.includes('image')) return ImageIcon;
+  if (f.includes('texte')) return FileText;
+  if (f.includes('vidéo')) return Video;
+  if (f.includes('sonore') || f.includes('audio')) return Music;
+  if (f.includes('3d') || f.includes('sketch')) return Box;
+  if (f.includes('export')) return f.includes('pas') ? XCircle : Download;
   if (f.includes('accompagnement') || f.includes('hipster')) return Crown;
   return CheckCircle2;
 }
@@ -64,7 +68,7 @@ function PlanIcon({ planId, size = 56, color, isSelected }: { planId: string; si
 }
 
 function FeatureItem({ feature, isSelected }: { feature: string; isSelected?: boolean }) {
-  const Icon     = getFeatureIcon(feature);
+  const Icon = getFeatureIcon(feature);
   const isAgency = feature.toLowerCase().includes('accompagnement');
   const iconColor = isSelected
     ? '#ffffff'
@@ -85,7 +89,7 @@ function NeonBorderCard({ children, isSelected, cardBg = '#030814' }: {
   children: React.ReactNode; isSelected: boolean; cardBg?: string;
 }) {
   const translateX = useRef(new RNAnimated.Value(0)).current;
-  const loopRef    = useRef<RNAnimated.CompositeAnimation | null>(null);
+  const loopRef = useRef<RNAnimated.CompositeAnimation | null>(null);
 
   useEffect(() => {
     loopRef.current?.stop();
@@ -125,8 +129,8 @@ function NeonBorderCard({ children, isSelected, cardBg = '#030814' }: {
       )}
       {isSelected && (
         <>
-          <View style={s.bloomFar}  pointerEvents="none" />
-          <View style={s.bloomMid}  pointerEvents="none" />
+          <View style={s.bloomFar} pointerEvents="none" />
+          <View style={s.bloomMid} pointerEvents="none" />
           <View style={s.floorGlow} pointerEvents="none" />
         </>
       )}
@@ -138,9 +142,9 @@ function NeonBorderCard({ children, isSelected, cardBg = '#030814' }: {
 function ContinuerButton({ onPress, loading, disabled }: {
   onPress: () => void; loading: boolean; disabled: boolean;
 }) {
-  const scale    = useRef(new RNAnimated.Value(1)).current;
-  const pressIn  = () => RNAnimated.spring(scale, { toValue: 0.96, useNativeDriver: true, speed: 40 }).start();
-  const pressOut = () => RNAnimated.spring(scale, { toValue: 1,    useNativeDriver: true, speed: 20 }).start();
+  const scale = useRef(new RNAnimated.Value(1)).current;
+  const pressIn = () => RNAnimated.spring(scale, { toValue: 0.96, useNativeDriver: true, speed: 40 }).start();
+  const pressOut = () => RNAnimated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 20 }).start();
 
   return (
     <RNAnimated.View style={[s.btnWrapper, { transform: [{ scale }] }]}>
@@ -165,7 +169,7 @@ function ContinuerButton({ onPress, loading, disabled }: {
 function PlanCard({ plan, isSelected, onSelect, submitting }: {
   plan: Plan; isSelected: boolean; onSelect: () => void; submitting: boolean;
 }) {
-  const scale  = useSharedValue(1);
+  const scale = useSharedValue(1);
   const aStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
   const spring = (v: number) => withSpring(v, { damping: 15 });
 
@@ -239,8 +243,11 @@ export default function PacksScreen() {
   const fromWelcome = params?.from === 'welcome';
   const { selectedPlan, setPlan } = useOnboardingStore();
   const { setIsReturningFromBack } = useWelcomeVideoStore();
-  const [plans, setPlans]           = useState<Plan[]>([]);
-  const [loading, setLoading]       = useState(true);
+  const { user, aiRefreshUser } = useAuthStore();
+  const { initPaymentSheet, presentPaymentSheet } = useStripe();
+
+  const [plans, setPlans] = useState<Plan[]>([]);
+  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
   useFocusEffect(React.useCallback(() => { setSubmitting(false); }, []));
@@ -265,11 +272,95 @@ export default function PacksScreen() {
     }
   }
 
+  const handleContinue = async () => {
+    if (!selectedPlan) return;
+    setSubmitting(true);
+
+    try {
+      const planConfig = plans.find(p => p.id === selectedPlan);
+      const { data } = await api.post('/ai/payment/create-payment-sheet', {
+        planId: selectedPlan,
+        priceId: selectedPlan !== 'curieux' ? planConfig?.stripePriceId : undefined,
+        userId: user?.id,
+      });
+
+      const { paymentIntentClientSecret, setupIntentClientSecret, ephemeralKey, customerId } = data.data || data;
+
+      // 2. Initialiser Stripe Payment Sheet
+      const initResult = await initPaymentSheet({
+        merchantDisplayName: 'Hipster IA',
+        customerId: customerId,
+        customerEphemeralKeySecret: ephemeralKey,
+        paymentIntentClientSecret: paymentIntentClientSecret,
+        setupIntentClientSecret: setupIntentClientSecret,
+        allowsDelayedPaymentMethods: true,
+        defaultBillingDetails: {
+          name: user?.name || user?.email,
+          email: user?.email,
+        },
+        returnURL: 'hipsteria://stripe-redirect',
+        appearance: {
+          colors: {
+            primary: '#00eaff',
+            background: '#0a0f1e',
+            componentBackground: '#151b2b',
+            componentBorder: '#2a324b',
+            componentDivider: '#2a324b',
+            primaryText: '#ffffff',
+            secondaryText: '#a0aabf',
+            componentText: '#ffffff',
+            placeholderText: '#6b7280',
+          },
+          shapes: { borderRadius: 12 },
+        },
+      });
+
+      if (initResult.error) {
+        throw new Error(initResult.error.message);
+      }
+
+      // 3. Présenter la feuille de paiement à l'utilisateur
+      const presentResult = await presentPaymentSheet();
+
+      if (presentResult.error) {
+        if (presentResult.error.code !== 'Canceled') {
+          throw new Error(presentResult.error.message);
+        }
+        // Annulé par l'utilisateur
+        setSubmitting(false);
+        return;
+      }
+
+      // 4. Confirmer le plan en base de données et actualiser les limites
+      const subId = data?.data?.subscriptionId || data?.subscriptionId;
+      await api.post('/ai/payment/confirm-plan', { planId: selectedPlan, subscriptionId: subId });
+      await aiRefreshUser();
+
+      // 5. Continuer vers l'étape suivante (Job)
+      router.replace('/(onboarding)/job');
+
+    } catch (err: any) {
+      console.error('[PacksScreen] Payment Error:', err);
+      Alert.alert("Erreur de paiement", err.message || "Une erreur est survenue lors de la configuration du paiement.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <BackgroundGradientOnboarding darkOverlay>
 
       <View style={s.header}>
         <NeonBackButton onPress={() => router.back()} />
+        <TouchableOpacity
+          style={s.backButton}
+          onPress={() => {
+            setIsReturningFromBack(true);
+            router.replace('/');
+          }}
+        >
+          <ArrowLeft size={22} color={colors.text.primary} />
+        </TouchableOpacity>
         <View style={s.headerCenter}>
           <View style={s.titleRow}>
             <Text style={s.titleSub}>Choisissez</Text>
@@ -278,8 +369,8 @@ export default function PacksScreen() {
         </View>
       </View>
 
-      <ScrollView 
-        contentContainerStyle={s.scrollContent} 
+      <ScrollView
+        contentContainerStyle={s.scrollContent}
         showsVerticalScrollIndicator={false}
         style={s.screen}
       >
@@ -305,15 +396,9 @@ export default function PacksScreen() {
 
       <View style={s.footer}>
         <ContinuerButton
-          onPress={() => { 
-            setSubmitting(true); 
-            router.push({
-              pathname: '/(auth)/register',
-              params: { from: fromWelcome ? 'welcome' : 'packs' }
-            });
-          }}
+          onPress={handleContinue}
           loading={submitting}
-          disabled={submitting}
+          disabled={submitting || !selectedPlan}
         />
       </View>
     </BackgroundGradientOnboarding>
@@ -322,30 +407,30 @@ export default function PacksScreen() {
 
 const s = StyleSheet.create({
   /* Header - Fixed at top */
-  header:         { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 24, paddingTop: 40, paddingBottom: 8, backgroundColor: 'rgba(10,15,30,0.95)', borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)', zIndex: 100 },
-  backButton:     { width: 42, height: 42, borderRadius: 21, backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center', marginRight: 16 },
-  headerCenter:   { flex: 1, alignItems: 'center', marginRight: 58 },
-  
-  screen:         { flex: 1, paddingTop: 0 },
-  scrollContent:  { flexGrow: 1, paddingHorizontal: 24, paddingTop: 16, paddingBottom: 40 },
-  loader:         { flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 100 },
-  loaderText:     { color: colors.text.secondary, marginTop: 16, fontFamily: 'Arimo-Regular' },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 24, paddingTop: 40, paddingBottom: 8, backgroundColor: 'rgba(10,15,30,0.95)', borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)', zIndex: 100 },
+  backButton: { width: 42, height: 42, borderRadius: 21, backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center', marginRight: 16 },
+  headerCenter: { flex: 1, alignItems: 'center', marginRight: 58 },
+
+  screen: { flex: 1, paddingTop: 0 },
+  scrollContent: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 16, paddingBottom: 40 },
+  loader: { flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 100 },
+  loaderText: { color: colors.text.secondary, marginTop: 16, fontFamily: 'Arimo-Regular' },
   plansContainer: { gap: 16 },
 
-  titleRow:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
-  titleSub:    { fontFamily: 'Arimo-Bold', fontSize: 16, letterSpacing: 3, textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)', lineHeight: 22 },
+  titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  titleSub: { fontFamily: 'Arimo-Bold', fontSize: 16, letterSpacing: 3, textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)', lineHeight: 22 },
   titleScript: { fontFamily: 'Brittany-Signature', paddingLeft: 1, fontSize: 28, color: '#fff', textShadowColor: '#00eaff', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 18, lineHeight: 22, includeFontPadding: false },
-  subtitle:    { fontFamily: 'Arimo-Regular', fontSize: 14, color: 'rgba(255,255,255,0.45)', textAlign: 'center', letterSpacing: 0.3, marginTop: 4 },
+  subtitle: { fontFamily: 'Arimo-Regular', fontSize: 14, color: 'rgba(255,255,255,0.45)', textAlign: 'center', letterSpacing: 0.3, marginTop: 4 },
 
   footer: {
     padding: 24,
     paddingBottom: Platform.OS === 'ios' ? 40 : 24,
     alignItems: 'center',
   },
-  btnWrapper:   { width: '60%' },
+  btnWrapper: { width: '60%' },
   btnPressable: { borderRadius: 5, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.42)' },
-  btnGradient:  { paddingVertical: 15, paddingHorizontal: 15, alignItems: 'center', justifyContent: 'center' },
-  btnText:      { fontFamily: 'Arimo-Bold', fontSize: 14, fontWeight: '600', letterSpacing: 0.6, color: '#ffffff' },
+  btnGradient: { paddingVertical: 15, paddingHorizontal: 15, alignItems: 'center', justifyContent: 'center' },
+  btnText: { fontFamily: 'Arimo-Bold', fontSize: 14, fontWeight: '600', letterSpacing: 0.6, color: '#ffffff' },
 
   neonWrapper: { position: 'relative' },
   neonClip: {
@@ -378,8 +463,8 @@ const s = StyleSheet.create({
     shadowOpacity: 0.6, shadowRadius: 16, elevation: 12,
   },
 
-  planWrapper:      { flex: 1, position: 'relative', marginBottom: 12 },
-  touchableArea:    { flex: 1 },
+  planWrapper: { flex: 1, position: 'relative', marginBottom: 12 },
+  touchableArea: { flex: 1 },
   planCard: {
     backgroundColor: 'rgba(15,23,42,0.92)',
     borderRadius: 20, padding: 16,
@@ -397,7 +482,7 @@ const s = StyleSheet.create({
     borderWidth: 1, borderColor: 'rgba(255,255,255,0.25)', borderTopRightRadius: 20,
   },
   badgeText: { fontSize: 10, fontWeight: '900', color: '#ffffff', letterSpacing: 0.5 },
-  planHeader:   { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 16 },
+  planHeader: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 16 },
   iconBox: {
     width: 72, height: 72, borderRadius: 20,
     backgroundColor: 'rgba(255,255,255,0.05)',
@@ -407,19 +492,19 @@ const s = StyleSheet.create({
     backgroundColor: 'rgba(30,155,255,0.15)',
     borderWidth: 1, borderColor: 'rgba(30,155,255,0.4)',
   },
-  planIconGlow:     { shadowColor: '#00eaff', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 12, elevation: 6 },
-  featureIconGlow:  { shadowColor: '#00eaff', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 8, elevation: 4 },
-  planName:         { fontFamily: 'Brittany-Signature', fontSize: 26, fontWeight: '700', color: colors.text.secondary, paddingBottom: 5 },
+  planIconGlow: { shadowColor: '#00eaff', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 12, elevation: 6 },
+  featureIconGlow: { shadowColor: '#00eaff', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 8, elevation: 4 },
+  planName: { fontFamily: 'Brittany-Signature', fontSize: 26, fontWeight: '700', color: colors.text.secondary, paddingBottom: 5 },
   planNameSelected: { color: '#ffffff', fontWeight: '800' },
-  planPrice:        { fontFamily: 'Arimo-Bold', fontSize: 26, fontWeight: '800', color: colors.text.primary },
-  planPriceSelected:{ color: '#ffffff', textShadowColor: '#00eaff', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 8 },
-  oldPrice:         { fontFamily: 'Arimo-Bold', fontSize: 14, fontWeight: '700', color: 'rgba(255,255,255,0.4)', textDecorationLine: 'line-through', textDecorationColor: 'rgba(255,255,255,0.6)' },
+  planPrice: { fontFamily: 'Arimo-Bold', fontSize: 26, fontWeight: '800', color: colors.text.primary },
+  planPriceSelected: { color: '#ffffff', textShadowColor: '#00eaff', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 8 },
+  oldPrice: { fontFamily: 'Arimo-Bold', fontSize: 14, fontWeight: '700', color: 'rgba(255,255,255,0.4)', textDecorationLine: 'line-through', textDecorationColor: 'rgba(255,255,255,0.6)' },
   oldPriceSelected: { color: 'rgba(255,255,255,0.5)', textDecorationColor: 'rgba(255,255,255,0.7)' },
-  planDesc:         { fontFamily: 'Arimo-Regular', fontSize: 12, color: colors.text.muted, marginTop: 2 },
-  featuresList:     { gap: 8, paddingLeft: 4 },
-  featureRow:       { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  featureText:         { fontFamily: 'Arimo-Regular', fontSize: 13, color: colors.text.secondary },
+  planDesc: { fontFamily: 'Arimo-Regular', fontSize: 12, color: colors.text.muted, marginTop: 2 },
+  featuresList: { gap: 8, paddingLeft: 4 },
+  featureRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  featureText: { fontFamily: 'Arimo-Regular', fontSize: 13, color: colors.text.secondary },
   featureTextSelected: { color: 'rgba(255,255,255,0.85)' },
-  agencyRow:    { marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.08)' },
-  agencyText:   { fontFamily: 'Arimo-Bold', fontSize: 13, fontWeight: '700', color: colors.text.primary },
+  agencyRow: { marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.08)' },
+  agencyText: { fontFamily: 'Arimo-Bold', fontSize: 13, fontWeight: '700', color: colors.text.primary },
 });

@@ -390,8 +390,20 @@ export default function HomeScreen() {
 
       if (initResult.error) throw initResult.error;
       const presentResult = await presentPaymentSheet();
-      if (presentResult.error) { showModal('error', 'Paiement échoué', presentResult.error.message || 'Erreur lors du paiement'); return; }
-      await api.post('/ai/payment/confirm-plan', { planId: currentPlanObject?.id, paymentIntentId: data.paymentIntent?.id });
+      if (presentResult.error) {
+        const errorMsg = presentResult.error.message?.includes('payment flow has been cancelled')
+          ? 'Le paiement a été annulé.'
+          : (presentResult.error.message || 'Erreur lors du paiement');
+        showModal('error', 'Paiement échoué', errorMsg);
+        return;
+      }
+
+      // Success
+      await api.post('/ai/payment/confirm-plan', {
+        planId: currentPlanObject?.id,
+        paymentIntentId: data.paymentIntent?.id,
+      });
+
       setIsPaymentLoading(false);
       await useAuthStore.getState().updateAiProfile({ isStripeVerified: true, subscriptionStatus: (planType === 'curieux' ? 'trial' : 'active') as any, stripeCustomerId: customerId, stripeSubscriptionId: subscriptionId });
       await useAuthStore.getState().aiRefreshUser();
