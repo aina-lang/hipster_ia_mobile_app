@@ -21,6 +21,7 @@ jobs:
 
             APP_DIR="$HOME/hipster_ia_mobile_app"
             APP_NAME="hipsteria"
+            EXPO_PORT="8081"
 
             cd "$APP_DIR"
 
@@ -38,14 +39,19 @@ jobs:
             echo "==== Clean Expo cache ===="
             rm -rf .expo
 
-            echo "==== Start or restart PM2 process ===="
-            if pm2 describe "$APP_NAME" > /dev/null 2>&1; then
-              EXPO_TUNNEL_SUBDOMAIN=hipsteria pm2 restart "$APP_NAME" --update-env
-            else
-              EXPO_TUNNEL_SUBDOMAIN=hipsteria pm2 start "npx expo start -c --tunnel" \
-                --name "$APP_NAME" \
-                --cwd "$APP_DIR"
+            echo "==== Kill old Expo / port $EXPO_PORT ===="
+            if lsof -ti :"$EXPO_PORT" >/dev/null 2>&1; then
+              lsof -ti :"$EXPO_PORT" | xargs -r kill -9
+              sleep 2
             fi
+
+            echo "==== Delete old PM2 app if exists ===="
+            pm2 delete "$APP_NAME" >/dev/null 2>&1 || true
+
+            echo "==== Start Expo with PM2 ===="
+            EXPO_TUNNEL_SUBDOMAIN=hipsteria pm2 start "npx expo start -c --tunnel --port $EXPO_PORT" \
+              --name "$APP_NAME" \
+              --cwd "$APP_DIR"
 
             echo "==== Save PM2 process list ===="
             pm2 save
