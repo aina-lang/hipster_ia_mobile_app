@@ -47,15 +47,10 @@ const PARTICLES: ParticleConfig[] = [
   { x: 60,  y: -78, size: 3,   color: NEON_GLOW,  delayMs: 760, durationMs: 1600 },
 ];
 
-<<<<<<< HEAD
-const Particle = React.memo(({ x, y, size, color, delayMs, durationMs }: ParticleConfig) => {
-  const opacity    = useSharedValue(0);
-=======
 interface ParticleProps extends ParticleConfig { }
 
 const Particle = React.memo(({ x, y, size, color, delayMs, durationMs }: ParticleProps) => {
   const opacity = useSharedValue(0);
->>>>>>> origin/main
   const translateY = useSharedValue(0);
 
   useEffect(() => {
@@ -111,8 +106,6 @@ interface TopBarProps {
 const TopBar = ({ textAnimProgress }: TopBarProps) => {
   const insets     = useSafeAreaInsets();
   const responsive = useResponsiveDimensions();
-<<<<<<< HEAD
-=======
 
   const animStyle = useAnimatedStyle(() => {
     const opacity = interpolate(
@@ -134,14 +127,6 @@ const TopBar = ({ textAnimProgress }: TopBarProps) => {
       transform: [{ translateY }],
     };
   });
->>>>>>> origin/main
-
-  const animStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(textAnimProgress?.value ?? 0, [0, 0.5, 1], [0, 0, 1], Extrapolate.CLAMP),
-    transform: [{
-      translateY: interpolate(textAnimProgress?.value ?? 0, [0, 1], [-30, 0], Extrapolate.CLAMP),
-    }],
-  }));
 
   return (
     <Animated.View
