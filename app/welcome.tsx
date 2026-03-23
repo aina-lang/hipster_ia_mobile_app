@@ -8,10 +8,10 @@ import Animated, {
   FadeOut,
   useSharedValue,
   useAnimatedStyle,
-  withTiming,
-  withDelay,
   withRepeat,
   withSequence,
+  withTiming,
+  withDelay,
   Easing,
   interpolate,
   Extrapolate,
@@ -30,21 +30,25 @@ const NEON_BLUE = '#00d4ff';
 const NEON_GLOW = '#0099ff';
 const NEON_LIGHT = '#66e5ff';
 
-const videobg         = require('../assets/video/splashVideo-fixed-mobile.mp4');
-const reloadingScreen = require('../assets/video/welcome.mp4');
-const bgAfterBack     = require('../assets/bg_after_back.jpeg');
+const videobg = require('../assets/video/splashVideo-fixed-mobile.mp4');
+const reloadingScreen = require('../assets/video/reloadignScreen.mp4');
+const bgAfterBack = require('../assets/bg_after_back.jpeg');
 
 interface ParticleConfig {
-  x: number; y: number; size: number;
-  color: string; delayMs: number; durationMs: number;
+  x: number;
+  y: number;
+  size: number;
+  color: string;
+  delayMs: number;
+  durationMs: number;
 }
 
 const PARTICLES: ParticleConfig[] = [
-  { x: 0,   y: -80, size: 2.5, color: NEON_BLUE,  delayMs: 500, durationMs: 1700 },
-  { x: -30, y: -85, size: 2,   color: NEON_LIGHT, delayMs: 620, durationMs: 1300 },
-  { x: 30,  y: -85, size: 2,   color: NEON_LIGHT, delayMs: 540, durationMs: 1500 },
-  { x: -60, y: -78, size: 3,   color: NEON_GLOW,  delayMs: 700, durationMs: 1800 },
-  { x: 60,  y: -78, size: 3,   color: NEON_GLOW,  delayMs: 760, durationMs: 1600 },
+  { x: 0, y: -80, size: 2.5, color: NEON_BLUE, delayMs: 500, durationMs: 1700 },
+  { x: -30, y: -85, size: 2, color: NEON_LIGHT, delayMs: 620, durationMs: 1300 },
+  { x: 30, y: -85, size: 2, color: NEON_LIGHT, delayMs: 540, durationMs: 1500 },
+  { x: -60, y: -78, size: 3, color: NEON_GLOW, delayMs: 700, durationMs: 1800 },
+  { x: 60, y: -78, size: 3, color: NEON_GLOW, delayMs: 760, durationMs: 1600 },
 ];
 
 interface ParticleProps extends ParticleConfig { }
@@ -61,7 +65,8 @@ const Particle = React.memo(({ x, y, size, color, delayMs, durationMs }: Particl
           withTiming(0.9, { duration: durationMs * 0.5, easing: Easing.inOut(Easing.sin) }),
           withTiming(0.1, { duration: durationMs * 0.5, easing: Easing.inOut(Easing.sin) })
         ),
-        -1, true
+        -1,
+        true
       )
     );
     translateY.value = withDelay(
@@ -69,9 +74,10 @@ const Particle = React.memo(({ x, y, size, color, delayMs, durationMs }: Particl
       withRepeat(
         withSequence(
           withTiming(-5, { duration: durationMs, easing: Easing.inOut(Easing.sin) }),
-          withTiming(5,  { duration: durationMs, easing: Easing.inOut(Easing.sin) })
+          withTiming(5, { duration: durationMs, easing: Easing.inOut(Easing.sin) })
         ),
-        -1, true
+        -1,
+        true
       )
     );
   }, []);
@@ -83,13 +89,23 @@ const Particle = React.memo(({ x, y, size, color, delayMs, durationMs }: Particl
 
   return (
     <Animated.View
-      style={[{
-        position: 'absolute', left: x, top: y,
-        width: size, height: size, borderRadius: size / 2,
-        backgroundColor: color,
-        shadowColor: color, shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 1, shadowRadius: size * 3, elevation: 5,
-      }, animStyle]}
+      style={[
+        {
+          position: 'absolute',
+          left: x,
+          top: y,
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          backgroundColor: color,
+          shadowColor: color,
+          shadowOffset: { width: 0, height: 0 },
+          shadowOpacity: 1,
+          shadowRadius: size * 3,
+          elevation: 5,
+        },
+        animStyle,
+      ]}
     />
   );
 });
@@ -101,10 +117,12 @@ export interface WelcomeScreenProps {
 
 interface TopBarProps {
   textAnimProgress: SharedValue<number>;
+  isAuthenticated: boolean;
+  userName: string | undefined;
 }
 
-const TopBar = ({ textAnimProgress }: TopBarProps) => {
-  const insets     = useSafeAreaInsets();
+const TopBar = ({ textAnimProgress, isAuthenticated, userName }: TopBarProps) => {
+  const insets = useSafeAreaInsets();
   const responsive = useResponsiveDimensions();
 
   const animStyle = useAnimatedStyle(() => {
@@ -128,6 +146,8 @@ const TopBar = ({ textAnimProgress }: TopBarProps) => {
     };
   });
 
+  const title = isAuthenticated ? `Bienvenue${userName ? `, ${userName}` : ''}` : 'HIPSTER IA';
+
   return (
     <Animated.View
       style={[
@@ -139,53 +159,63 @@ const TopBar = ({ textAnimProgress }: TopBarProps) => {
         animStyle
       ]}
     >
-      <Text h1 style={{ fontSize: responsive.fontSize['3xl'] }}>HIPSTER IA</Text>
-      <Animated.Text style={[styles.topBarSubText, { fontSize: responsive.fontSize.lg }]}>
-        L'agence marketing automatisée
-      </Animated.Text>
-      <Animated.Text style={[styles.subLineTextTop, { fontSize: responsive.fontSize.base }]}>
-        Dans votre poche.
-      </Animated.Text>
+      <Text h1 style={{ fontSize: responsive.fontSize['3xl'] }}>{title}</Text>
+      {!isAuthenticated && (
+        <>
+          <Animated.Text style={[styles.topBarSubText, { fontSize: responsive.fontSize.lg }]}>
+            L'agence marketing automatisée
+          </Animated.Text>
+          <Animated.Text style={[styles.subLineTextTop, { fontSize: responsive.fontSize.base }]}>
+            Dans votre poche.
+          </Animated.Text>
+        </>
+      )}
     </Animated.View>
   );
 };
 
-const SubTextAnimation = React.memo(({ textAnimProgress }: { textAnimProgress: SharedValue<number> }) => {
+interface SubTextAnimationProps {
+  textAnimProgress: SharedValue<number>;
+  isAuthenticated: boolean;
+}
+
+const SubTextAnimation = React.memo(({ textAnimProgress, isAuthenticated }: SubTextAnimationProps) => {
   const responsive = useResponsiveDimensions();
 
-  // const animStyle = useAnimatedStyle(() => {
-  //   const translateY = interpolate(
-  //     textAnimProgress?.value ?? 0,
-  //     [0, 1],
-  //     [0, -300],
-  //     Extrapolate.CLAMP
-  //   );
+  const animStyle = useAnimatedStyle(() => {
+    const translateY = interpolate(
+      textAnimProgress?.value ?? 0,
+      [0, 1],
+      [0, -300],
+      Extrapolate.CLAMP
+    );
 
-  //   const opacity = interpolate(
-  //     textAnimProgress?.value ?? 0,
-  //     [0, 0.5, 1],
-  //     [0, 0, 1],
-  //     Extrapolate.CLAMP
-  //   );
+    const opacity = interpolate(
+      textAnimProgress?.value ?? 0,
+      [0, 0.5, 1],
+      [0, 0, 1],
+      Extrapolate.CLAMP
+    );
 
-  //   return {
-  //     transform: [{ translateY }],
-  //     opacity
-  //   };
-  // });
+    return {
+      transform: [{ translateY }],
+      opacity
+    };
+  });
 
-  const animStyle = useAnimatedStyle(() => ({
-    transform: [{
-      translateY: interpolate(textAnimProgress?.value ?? 0, [0, 1], [0, -300], Extrapolate.CLAMP),
-    }],
-    opacity: interpolate(textAnimProgress?.value ?? 0, [0, 0.5, 1], [0, 0, 1], Extrapolate.CLAMP),
-  }));
+  if (isAuthenticated) {
+    return (
+      <Animated.View style={animStyle}>
+        <Animated.Text style={[styles.mainSubText, { fontSize: responsive.fontSize.lg, bottom: responsive.mainSubTextBottom }]}>
+          CONTENT DE TE REVOIR
+        </Animated.Text>
+      </Animated.View>
+    );
+  }
 
   return (
     <Animated.View style={animStyle}>
-      <Animated.Text
-        style={[styles.mainSubText, { fontSize: responsive.fontSize.lg, bottom: responsive.mainSubTextBottom }]}
-      >
+      <Animated.Text style={[styles.mainSubText, { fontSize: responsive.fontSize.lg, bottom: responsive.mainSubTextBottom }]}>
         Créez vos affiches, promotions et publications en quelques secondes.
       </Animated.Text>
     </Animated.View>
@@ -193,41 +223,33 @@ const SubTextAnimation = React.memo(({ textAnimProgress }: { textAnimProgress: S
 });
 
 interface BottomAuthSectionProps {
+  isAuthenticated: boolean;
   onVideoFinish?: () => void;
   setIsRouting?: (routing: boolean) => void;
   textAnimProgress: SharedValue<number>;
-  setIsReturningFromBack: (v: boolean) => void;
+  setIsReturningFromBack?: (returning: boolean) => void;
 }
 
-const BottomAuthSection = React.memo(({
-  onVideoFinish, setIsRouting, textAnimProgress, setIsReturningFromBack,
-}: BottomAuthSectionProps) => {
-  const router     = useRouter();
+const BottomAuthSection = React.memo(({ isAuthenticated, onVideoFinish, setIsRouting, textAnimProgress, setIsReturningFromBack }: BottomAuthSectionProps) => {
+  const router = useRouter();
   const responsive = useResponsiveDimensions();
 
   const animStyle = useAnimatedStyle(() => ({
-    transform: [{
-      translateY: interpolate(textAnimProgress?.value ?? 0, [0, 1], [350, 0], Extrapolate.CLAMP),
-    }],
+    transform: [
+      {
+        translateY: interpolate(textAnimProgress?.value ?? 0, [0, 1], [350, 0], Extrapolate.CLAMP),
+      },
+    ],
     opacity: interpolate(textAnimProgress?.value ?? 0, [0, 0.4, 1], [0, 0, 1], Extrapolate.CLAMP),
   }));
 
+  if (isAuthenticated) return null;
+
   return (
-    
-    <Animated.View
-      style={[
-        styles.container,
-        {
-          paddingHorizontal: responsive.containerPaddingHorizontal,
-          gap: responsive.containerGap,
-          bottom: responsive.containerBottom,
-        },
-        animStyle,
-      ]}
-    >
-      
+    <Animated.View style={[styles.container, { paddingHorizontal: responsive.containerPaddingHorizontal, gap: responsive.containerGap, bottom: responsive.containerBottom }, animStyle]}>
       <Pressable
         onPress={() => {
+          console.log('[Welcome] Commencer clicked');
           setIsRouting?.(true);
           onVideoFinish?.();
           setIsReturningFromBack?.(false); // Reset flag when navigating away
@@ -263,7 +285,11 @@ const BottomAuthSection = React.memo(({
             setIsReturningFromBack(false); // Reset flag when navigating away
             router.push('/(auth)/login');
           }}
-          style={({ pressed }) => ({ padding: 10, opacity: pressed ? 0.7 : 1, margin: -10 })}
+          style={({ pressed }) => ({
+            padding: 10,
+            opacity: pressed ? 0.7 : 1,
+            margin: -10,
+          })}
         >
           <Text small style={[styles.highlight, { fontSize: responsive.fontSize.base }]}>
             Se connecter
@@ -286,62 +312,60 @@ const BottomAuthSection = React.memo(({
           </Text>
         </Pressable>
       </View>
+
     </Animated.View>
   );
 });
 
 export default React.memo(function WelcomeScreen({ onVideoFinish, setIsRouting }: WelcomeScreenProps) {
   const [videoReady, setVideoReady] = React.useState(false);
-  const textAnimProgress  = useSharedValue(0);
-  const videoMarginTop    = useSharedValue(0);
-  const fadeOverlay       = useSharedValue(0);
-  const insets            = useSafeAreaInsets();
-  const { isAuthenticated, isHydrated } = useAuthStore();
+  const textAnimProgress = useSharedValue(0);
+  const videoMarginTop = useSharedValue(0);
+  const insets = useSafeAreaInsets();
+  const { isAuthenticated, user, isHydrated } = useAuthStore();
   const { isReturningFromBack, setIsReturningFromBack } = useWelcomeVideoStore();
-  const responsive        = useResponsiveDimensions();
+  const responsive = useResponsiveDimensions();
   const videoCompletedRef = useRef(false);
-  const topBarHeight      = responsive.topBarHeight + insets.top;
-  const isFinishedRef     = React.useRef(false);
-  const playbackTimerRef  = React.useRef<NodeJS.Timeout | null>(null);
+  const topBarHeight = responsive.topBarHeight + insets.top;
 
+  // Sync store state with ref
   React.useEffect(() => {
-    if (!isReturningFromBack) videoCompletedRef.current = false;
+    // Only reset if NOT returning from back - keep flag persistent
+    if (!isReturningFromBack) {
+      videoCompletedRef.current = false;
+    }
   }, [isReturningFromBack]);
 
+  // When returning from back, freeze animations in final state and show static image
   React.useEffect(() => {
     if (isReturningFromBack) {
-      textAnimProgress.value = 1;
-      videoMarginTop.value   = 100;
-      isFinishedRef.current  = true;
+      // Set animations to their final state immediately - no animations
+      textAnimProgress.value = 1; // Text fully animated in
+      videoMarginTop.value = 100; // Video fully animated up
+      // Mark as finished to prevent video playback logic from triggering
+      isFinishedRef.current = true;
     }
   }, [isReturningFromBack, textAnimProgress, videoMarginTop]);
 
+  // Select video based on authentication status
   const selectedVideo = isAuthenticated ? reloadingScreen : videobg;
 
   const videoPlayer = useVideoPlayer(selectedVideo, (player) => {
-    player.loop  = false;
+    player.loop = false;
     player.muted = true;
   });
 
-  const fadeOverlayStyle = useAnimatedStyle(() => ({
-    opacity: fadeOverlay.value,
-  }));
+  console.log('[Welcome] Video selection:', { isAuthenticated, selectedVideo: isAuthenticated ? 'reloading' : 'splash' });
 
-  const triggerFadeAndFinish = () => {
-    fadeOverlay.value = withTiming(1, { duration: 600, easing: Easing.inOut(Easing.quad) }, () => {
-      'worklet';
-    });
-    setTimeout(() => {
-      onVideoFinish?.();
-    }, 600);
-  };
+  const isFinishedRef = React.useRef(false);
+  const playbackTimerRef = React.useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    if (!videoPlayer || isReturningFromBack) return;
+    if (!videoPlayer || isReturningFromBack) return; // Don't play video if returning from back
 
     const onPlaybackFinish = () => {
       if (isFinishedRef.current) return;
-      isFinishedRef.current     = true;
+      isFinishedRef.current = true;
       videoCompletedRef.current = true;
 
       if (playbackTimerRef.current) {
@@ -349,15 +373,27 @@ export default React.memo(function WelcomeScreen({ onVideoFinish, setIsRouting }
         playbackTimerRef.current = null;
       }
 
-      if (isAuthenticated) {
-        const duration = videoPlayer.duration ?? 0;
-        if (duration > 0) videoPlayer.seekBy(duration - videoPlayer.currentTime);
-        videoPlayer.pause();
-        setTimeout(() => triggerFadeAndFinish(), 200);
-      } else {
-        videoMarginTop.value   = withTiming(100, { duration: 1500, easing: Easing.inOut(Easing.quad) });
-        textAnimProgress.value = withTiming(1,   { duration: 1500, easing: Easing.inOut(Easing.quad) });
-      }
+      videoMarginTop.value = withTiming(100, {
+        duration: 1500,
+        easing: Easing.inOut(Easing.quad),
+      });
+
+      textAnimProgress.value = withTiming(1, {
+        duration: 1500,
+        easing: Easing.inOut(Easing.quad),
+      });
+
+      setTimeout(() => {
+        if (isHydrated && isAuthenticated) {
+          // Seek to the absolute end of the video to show last frame
+          const duration = videoPlayer.duration ?? 0;
+          if (duration > 0) {
+            videoPlayer.seekBy(duration - videoPlayer.currentTime);
+          }
+          videoPlayer.pause(); // Freeze on last frame
+          onVideoFinish?.();
+        }
+      }, 2000);
     };
 
     const startTracking = () => {
@@ -397,7 +433,7 @@ export default React.memo(function WelcomeScreen({ onVideoFinish, setIsRouting }
   }, [videoPlayer, onVideoFinish, isHydrated, isAuthenticated, isReturningFromBack]);
 
   const videoAnimatedStyle = useAnimatedStyle(() => ({
-    marginTop: isAuthenticated ? 0 : videoMarginTop.value,
+    marginTop: videoMarginTop.value,
   }));
 
   return (
@@ -405,58 +441,24 @@ export default React.memo(function WelcomeScreen({ onVideoFinish, setIsRouting }
       <StatusBar style="light" />
       {!videoReady && <View style={[StyleSheet.absoluteFill, { backgroundColor: '#000' }]} />}
 
-      {isReturningFromBack && !isAuthenticated ? (
-        <Animated.View
-          style={[{
-            position: 'absolute', top: topBarHeight - 30,
-            left: 0, right: 0, bottom: 0,
-            justifyContent: 'center', alignItems: 'center',
-          }]}
-        >
+      {isReturningFromBack ? (
+        // Show static image when returning from packs with frozen animations
+        <Animated.View style={[{ position: 'absolute', top: topBarHeight - 30, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center' }]}>
           <Image source={bgAfterBack} style={{ width: '120%', height: '120%' }} resizeMode="contain" />
         </Animated.View>
       ) : (
+        // Show video during normal flow
         <Animated.View style={[StyleSheet.absoluteFill, videoAnimatedStyle]}>
-          <VideoView
-            player={videoPlayer}
-            style={StyleSheet.absoluteFill}
-            contentFit="cover"
-            nativeControls={false}
-          />
+          <VideoView player={videoPlayer} style={StyleSheet.absoluteFill} contentFit="cover" nativeControls={false} />
         </Animated.View>
       )}
 
-      {!isAuthenticated && (
-        <LinearGradient
-          colors={['transparent', 'rgba(0,0,0,0.5)', 'rgba(0,0,0,0.8)']}
-          locations={[0, 0.5, 1]}
-          start={{ x: 0.5, y: 0 }}
-          end={{ x: 0.5, y: 1 }}
-          style={styles.globalOverlay}
-          pointerEvents="none"
-        />
-      )}
-
-      {!isAuthenticated && (
-        <View style={StyleSheet.absoluteFill}>
-          <TopBar textAnimProgress={textAnimProgress} />
-          <View style={styles.center}>
-            <View style={[styles.particleAnchor, { bottom: responsive.particleBottom }]} pointerEvents="none">
-              {PARTICLES.map((p, i) => <Particle key={i} {...p} />)}
-            </View>
-            <SubTextAnimation textAnimProgress={textAnimProgress} />
-          </View>
-          <BottomAuthSection
-            onVideoFinish={onVideoFinish}
-            setIsRouting={setIsRouting}
-            textAnimProgress={textAnimProgress}
-            setIsReturningFromBack={setIsReturningFromBack}
-          />
-        </View>
-      )}
-
-      <Animated.View
-        style={[StyleSheet.absoluteFill, styles.fadeOverlay, fadeOverlayStyle]}
+      <LinearGradient
+        colors={['transparent', 'rgba(0,0,0,0.5)', 'rgba(0,0,0,0.8)']}
+        locations={[0, 0.5, 1]}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+        style={styles.globalOverlay}
         pointerEvents="none"
       />
 
@@ -490,63 +492,129 @@ export default React.memo(function WelcomeScreen({ onVideoFinish, setIsRouting }
 
 const styles = StyleSheet.create({
   center: {
-    flex: 1, justifyContent: 'center', alignItems: 'center', width: '100%',
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
   },
   particleAnchor: {
-    position: 'absolute', width: 0, height: 0,
+    position: 'absolute',
+    width: 0,
+    height: 0,
   },
   topBar: {
-    position: 'absolute', top: 0, left: 0, right: 0,
-    justifyContent: 'center', alignItems: 'center',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
     backgroundColor: '#000000',
   },
   mainSubText: {
-    fontSize: 18, fontWeight: '700', fontFamily: 'Arimo-Bold',
-    color: 'rgba(255, 255, 255, 0.8)', textAlign: 'center',
-    lineHeight: 30, paddingHorizontal: 20,
+    fontSize: 18,
+    fontWeight: '700',
+    fontFamily: 'Arimo-Bold',
+    color: 'rgba(255, 255, 255, 0.8)',
+    textAlign: 'center',
+
+    lineHeight: 30,
+    paddingHorizontal: 20,
   },
   subLineTextTop: {
-    fontSize: 18, fontFamily: 'Brittany-Signature',
-    color: 'rgba(255, 255, 255, 0.7)', textAlign: 'center', marginTop: -2,
+    fontSize: 18,
+    fontFamily: 'Brittany-Signature',
+    color: 'rgba(255, 255, 255, 0.7)',
+    textAlign: 'center',
+    marginTop: -2,
   },
   topBarSubText: {
-    fontSize: 18, fontWeight: '700', fontFamily: 'Arimo-Bold',
-    color: '#ffffff', textAlign: 'center', marginTop: 5,
-    textShadowColor: '#00d4ff', textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 10, lineHeight: 24, paddingHorizontal: 20,
+    fontSize: 18,
+    fontWeight: '700',
+    fontFamily: 'Arimo-Bold',
+    color: '#ffffff',
+    textAlign: 'center',
+    marginTop: 5,
+    textShadowColor: '#00d4ff',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 10,
+    lineHeight: 24,
+    paddingHorizontal: 20,
   },
   globalOverlay: {
-    position: 'absolute', bottom: 0, left: 0, right: 0, height: '70%',
-  },
-  fadeOverlay: {
-    backgroundColor: '#000000',
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: '70%',
   },
   container: {
-    position: 'absolute', left: 0, right: 0,
-    alignItems: 'center', paddingVertical: 20,
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    paddingVertical: 20,
   },
-  primaryButton: { overflow: 'hidden' },
+  primaryButton: {
+    overflow: 'hidden',
+  },
   gradient: {
-    width: '100%', alignItems: 'center', justifyContent: 'center',
-    borderWidth: 1, borderColor: 'rgba(160, 220, 255, 0.6)', borderRadius: 14,
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(160, 220, 255, 0.6)',
+    borderRadius: 14,
   },
   primaryButtonText: {
-    fontWeight: '700', letterSpacing: 1, textAlign: 'center', color: '#ffffff',
+    fontWeight: '700',
+    letterSpacing: 1,
+    textAlign: 'center',
+    color: '#ffffff',
   },
-  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
-  trial: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
-  link: { color: '#00a8cc' },
-  separator: { color: 'rgba(255,255,255,0.3)', fontSize: 12, marginHorizontal: 4 },
-  helpText: { color: 'rgba(255,255,255,0.5)', fontSize: 12 },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  trial: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  link: {
+    color: '#00a8cc',
+  },
+  separator: {
+    color: 'rgba(255,255,255,0.3)',
+    fontSize: 12,
+    marginHorizontal: 4,
+  },
+  helpText: {
+    color: 'rgba(255,255,255,0.5)',
+    fontSize: 12,
+  },
   highlight: {
-    fontWeight: '700', color: '#ffffff', fontSize: 14,
-    textShadowColor: '#00d4ff', textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 12, overflow: 'visible',
+    fontWeight: '700',
+    color: '#ffffff',
+    fontSize: 14,
+    textShadowColor: '#00d4ff',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 12,
+    overflow: 'visible',
   },
   glowIcon: {
-    color: '#ffffff', textShadowColor: '#00eaff',
-    textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 8,
+    color: '#ffffff',
+    textShadowColor: '#00eaff',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 8,
   },
-  contactLink: { alignItems: 'center', justifyContent: 'center' },
-  contactText: { color: 'rgba(255, 255, 255, 0.4)', fontSize: 12 },
+  contactLink: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  contactText: {
+    color: 'rgba(255, 255, 255, 0.4)',
+    fontSize: 12,
+  },
 });
