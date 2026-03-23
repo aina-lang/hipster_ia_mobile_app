@@ -20,6 +20,7 @@ import { NeonButton } from '../../components/ui/NeonButton';
 import { GenericModal } from '../../components/ui/GenericModal';
 import { colors } from '../../theme/colors';
 import { useAuthStore } from '../../store/authStore';
+import { NeonBackButton } from '../../components/ui/NeonBackButton';
 
 const OTP_LENGTH = 6;
 
@@ -117,19 +118,21 @@ export default function VerifyOtpScreen() {
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 style={styles.container}>
                 <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+
+                    
                     <View style={styles.innerContainer}>
 
-                        {/* Back Button */}
-                        <TouchableOpacity
-                            style={styles.backButton}
-                            onPress={() => router.replace('/(auth)/forgot-password')}
-                            hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
-                        >
-                            <ArrowLeft size={24} color={colors.text.primary} />
-                        </TouchableOpacity>
+                        <View style={styles.fixedHeader}>
+                            <NeonBackButton onPress={() => router.back()} />
+                            <View style={styles.headerCenter}>
+                                <View style={styles.titleRow}>
+                                <Text style={styles.titleSub}>Vérification</Text>
+                                <Text style={styles.titleScript}>OTP</Text>
+                                </View>
+                            </View>
+                        </View>
 
                         <Animated.View entering={FadeInDown.duration(800)} style={styles.content}>
-                            <Text style={styles.title}>Vérification OTP</Text>
                             <Text style={styles.subtitle}>
                                 Un code a été envoyé à {email}. Veuillez l'entrer ci-dessous pour continuer.
                             </Text>
@@ -191,8 +194,7 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     innerContainer: {
-        flex: 1,
-        paddingHorizontal: 32,
+        flex: 1
     },
     backButton: {
         marginTop: 60,
@@ -209,6 +211,7 @@ const styles = StyleSheet.create({
     content: {
         flex: 1,
         paddingTop: 10,
+        paddingHorizontal: 32,
     },
     title: {
         fontSize: 28,
@@ -251,4 +254,9 @@ const styles = StyleSheet.create({
         width: '100%',
         marginTop: 4,
     },
+    fixedHeader:  { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 24, paddingTop: 40, paddingBottom: 8, backgroundColor: 'rgba(10,15,30,0.95)', borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)', zIndex: 100 },
+    headerCenter: { flex: 1, alignItems: 'center' },
+    titleRow:     { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    titleSub:     { fontFamily: 'Arimo-Bold', fontSize: 16, letterSpacing: 3, textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)', lineHeight: 22 },
+    titleScript:  { fontFamily: 'Brittany-Signature', fontSize: 28, color: '#fff', textShadowColor: '#00eaff', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 18, lineHeight: 22, includeFontPadding: false },
 });

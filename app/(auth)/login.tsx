@@ -13,6 +13,7 @@ import { GenericModal } from '../../components/ui/GenericModal';
 import { colors } from '../../theme/colors';
 import { useAuthStore } from '../../store/authStore';
 import { useWelcomeVideoStore } from '../../store/welcomeVideoStore';
+import { NeonBackButton } from '../../components/ui/NeonBackButton';
 
 function NeonBorderInput({ children, isActive }: { children: React.ReactNode; isActive: boolean }) {
   const translateX = useRef(new RNAnimated.Value(0)).current;
@@ -185,15 +186,7 @@ export default function LoginScreen() {
       >
         {/* ── FIXED HEADER ── */}
         <View style={s.fixedHeader}>
-          <TouchableOpacity 
-            style={s.backButtonStyle}
-            onPress={() => {
-              setIsReturningFromBack(true);
-              router.replace('/');
-            }} 
-          >
-            <ArrowLeft size={22} color={colors.text.primary} />
-          </TouchableOpacity>
+          <NeonBackButton onPress={() => router.back()} />
           <View style={s.headerCenter}>
             <View style={s.titleRow}>
               <Text style={s.titleSub}>Se</Text>

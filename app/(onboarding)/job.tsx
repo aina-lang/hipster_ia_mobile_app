@@ -27,6 +27,7 @@ import {
   Plus,
   ArrowRight,
 } from 'lucide-react-native';
+import { NeonBackButton } from '../../components/ui/NeonBackButton';
 
 const JOBS: { label: JobType; icon: any }[] = [
   { label: 'Coiffure & Esthétique', icon: Scissors },

@@ -16,6 +16,7 @@ import { GenericModal, ModalType } from '../../components/ui/GenericModal';
 
 import { NeonBorderInput } from '../../components/ui/NeonBorderInput';
 import { NeonActionButton } from '../../components/ui/NeonActionButton';
+import { NeonBackButton } from '../../components/ui/NeonBackButton';
 
 
 function SectionTitle({ title }: { title: string }) {
@@ -119,9 +120,7 @@ export default function ReferralScreen() {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchStats(); }} tintColor={colors.neon.primary} />}
         >
           <View style={s.header}>
-            <TouchableOpacity style={s.backButton} onPress={() => router.back()}>
-              <ArrowLeft size={22} color={colors.text.primary} />
-            </TouchableOpacity>
+            <NeonBackButton onPress={() => router.back()} />
             <View style={s.headerCenter}>
               <Text style={s.titleSub}>Parrainage</Text>
             </View>

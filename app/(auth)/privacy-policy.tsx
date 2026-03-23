@@ -11,6 +11,7 @@ import { ArrowLeft } from 'lucide-react-native';
 import { BackgroundGradientOnboarding } from '../../components/ui/BackgroundGradientOnboarding';
 import { colors } from '../../theme/colors';
 import { PRIVACY_POLICY_CONTENT } from '../../constants/privacyPolicy';
+import { NeonBackButton } from '../../components/ui/NeonBackButton';
 
 export default function PrivacyPolicyScreen() {
   const router = useRouter();
@@ -19,12 +20,7 @@ export default function PrivacyPolicyScreen() {
     <BackgroundGradientOnboarding darkOverlay={true}>
       {/* ── FIXED HEADER ── */}
       <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton}
-          onPress={() => router.back()}
-        >
-          <ArrowLeft size={22} color={colors.text.primary} />
-        </TouchableOpacity>
+        <NeonBackButton onPress={() => router.back()} />
         <View style={styles.headerCenter}>
           <View style={styles.titleRow}>
             <Text style={styles.titleSub}>Conditions</Text>

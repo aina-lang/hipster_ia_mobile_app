@@ -15,6 +15,7 @@ import { AiService } from '../../api/ai.service';
 import { colors } from '../../theme/colors';
 import { GenericModal } from '../../components/ui/GenericModal';
 import { BackgroundGradientOnboarding } from '../../components/ui/BackgroundGradientOnboarding';
+import { NeonBackButton } from '../../components/ui/NeonBackButton';
 
 dayjs.extend(relativeTime);
 dayjs.locale('fr');
@@ -97,9 +98,7 @@ export default function HistoryScreen() {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.neon.primary} />}
         >
           <View style={s.header}>
-            <TouchableOpacity style={s.backButton} onPress={() => router.back()}>
-              <ArrowLeft size={22} color={colors.text.primary} />
-            </TouchableOpacity>
+            <NeonBackButton onPress={() => router.back()} />
             <View style={s.headerCenter}>
               <Text style={s.titleSub}>Historique</Text>
             </View>

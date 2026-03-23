@@ -121,12 +121,7 @@ const s = StyleSheet.create({
         backgroundColor: 'rgba(0,212,255,0.04)',
     },
     iconGlow: {
-        marginBottom: 16,
-        shadowColor: NEON_BLUE,
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 1,
-        shadowRadius: 12,
-        elevation: 6,
+        marginBottom: 16
     },
     iconBox: {
         width: 64,
@@ -134,7 +129,6 @@ const s = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         borderRadius: 16,
-        backgroundColor: colors.primary.main + '5',
         borderWidth: 1,
         borderColor: 'rgba(0,212,255,0.25)',
     },

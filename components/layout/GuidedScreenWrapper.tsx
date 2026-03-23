@@ -14,6 +14,7 @@ import { ArrowLeft } from 'lucide-react-native';
 import { colors } from '../../theme/colors';
 import { StepIndicator } from '../ui/StepIndicator';
 import { BackgroundGradientOnboarding } from '../ui/BackgroundGradientOnboarding';
+import { NeonBackButton } from '../../components/ui/NeonBackButton';
 
 interface GuidedScreenWrapperProps {
     children: React.ReactNode;
@@ -54,13 +55,14 @@ export const GuidedScreenWrapper: React.FC<GuidedScreenWrapperProps> = ({
                     {/* Header */}
                     <View style={styles.header}>
                         {showBack && (
-                            <TouchableOpacity
-                                onPress={handleBack}
-                                style={styles.backButton}
-                                activeOpacity={0.7}
-                            >
-                                <ArrowLeft size={22} color={colors.text.primary} />
-                            </TouchableOpacity>
+                            <View style={{
+                                position: 'absolute',
+                                left: 16,
+                                top: Platform.OS === 'ios' ? 68 : 58,
+                                zIndex: 10,
+                            }}>
+                                <NeonBackButton onPress={handleBack} />
+                            </View>
                         )}
 
                         <View style={styles.headerContent}>

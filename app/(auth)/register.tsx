@@ -14,6 +14,7 @@ import { colors } from '../../theme/colors';
 import { useAuthStore } from '../../store/authStore';
 import { useOnboardingStore } from '../../store/onboardingStore';
 import { useWelcomeVideoStore } from '../../store/welcomeVideoStore';
+import { NeonBackButton } from '../../components/ui/NeonBackButton';
 
 function NeonBorderInput({ children, isActive }: { children: React.ReactNode; isActive: boolean }) {
   const translateX = useRef(new RNAnimated.Value(0)).current;
@@ -158,15 +159,7 @@ export default function RegisterScreen() {
       >
         {/* ── FIXED HEADER ── */}
         <View style={s.header}>
-          <TouchableOpacity 
-            style={s.backButton}
-            onPress={() => {
-              setIsReturningFromBack(true);
-              router.replace('/');
-            }}
-          >
-            <ArrowLeft size={22} color={colors.text.primary} />
-          </TouchableOpacity>
+          <NeonBackButton onPress={() => router.back()} />
           <View style={s.headerCenter}>
             <View style={s.titleRow}>
               <Text style={s.titleSub}>Créer un</Text>

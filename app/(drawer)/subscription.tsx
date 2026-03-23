@@ -36,6 +36,7 @@ import { BackgroundGradientOnboarding } from '../../components/ui/BackgroundGrad
 import { PlanCard, Plan } from '../../components/subscription/PlanCard';
 import { ManagementCard } from '../../components/subscription/ManagementCard';
 import { NeonActionButton } from '../../components/ui/NeonActionButton';
+import { NeonBackButton } from '../../components/ui/NeonBackButton';
 
 const NEON_BLUE = colors.neon.primary;
 
@@ -183,9 +184,7 @@ export default function SubscriptionScreen() {
         >
           {/* ── HEADER ── */}
           <View style={s.header}>
-            <TouchableOpacity style={s.backButton} onPress={() => router.back()}>
-              <ArrowLeft size={22} color={colors.text.primary} />
-            </TouchableOpacity>
+            <NeonBackButton onPress={() => router.back()} />
             <View style={s.headerCenter}>
               <View style={s.titleRow}>
                 <Text style={s.titleLabel}>Plans d'abonnement</Text>

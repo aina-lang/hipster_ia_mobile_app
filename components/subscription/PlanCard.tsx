@@ -195,7 +195,7 @@ const s = StyleSheet.create({
   planWrapper:   { flex: 1, position: 'relative', marginBottom: 12 },
   touchableArea: { flex: 1 },
   planCard: {
-    backgroundColor: 'rgba(15,23,42,0.92)',
+    backgroundColor: '#0f172aeb',
     borderRadius: 20,
     padding: 20,
     borderWidth: 1,

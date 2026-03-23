@@ -23,6 +23,7 @@ import { getCountryByName, Country } from '../../api/countries';
 
 import { NeonBorderInput } from '../../components/ui/NeonBorderInput';
 import { NeonActionButton } from '../../components/ui/NeonActionButton';
+import { NeonBackButton } from '../../components/ui/NeonBackButton';
 
 const AVATAR_SIZE = 110;
 
@@ -278,9 +279,7 @@ export default function ProfileScreen() {
           <ScrollView contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false} bounces={false} keyboardShouldPersistTaps="handled">
 
             <View style={s.header}>
-              <TouchableOpacity style={s.backButton} onPress={() => router.back()}>
-                <ArrowLeft size={22} color={colors.text.primary} />
-              </TouchableOpacity>
+              <NeonBackButton onPress={() => router.back()} />
               <View style={s.headerCenter}>
                 <Text style={s.titleSub}>Mon Profil</Text>
               </View>

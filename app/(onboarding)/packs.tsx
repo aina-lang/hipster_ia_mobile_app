@@ -14,6 +14,7 @@ import { useOnboardingStore } from '../../store/onboardingStore';
 import { useWelcomeVideoStore } from '../../store/welcomeVideoStore';
 import { colors } from '../../theme/colors';
 import { BackgroundGradientOnboarding } from '../../components/ui/BackgroundGradientOnboarding';
+import { NeonBackButton } from '../../components/ui/NeonBackButton';
 
 interface Plan {
   id: string;
@@ -257,17 +258,9 @@ export default function PacksScreen() {
 
   return (
     <BackgroundGradientOnboarding darkOverlay>
-      {/* ── FIXED HEADER ── */}
+
       <View style={s.header}>
-        <TouchableOpacity 
-          style={s.backButton}
-          onPress={() => {
-            setIsReturningFromBack(true);
-            router.replace('/');
-          }}
-        >
-          <ArrowLeft size={22} color={colors.text.primary} />
-        </TouchableOpacity>
+        <NeonBackButton onPress={() => router.back()} />
         <View style={s.headerCenter}>
           <View style={s.titleRow}>
             <Text style={s.titleSub}>Choisissez</Text>

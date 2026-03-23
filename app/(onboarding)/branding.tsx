@@ -14,6 +14,7 @@ import { useAuthStore } from '../../store/authStore';
 import { BackHandler } from 'react-native';
 import { useNavigation } from 'expo-router';
 import { GenericModal } from '../../components/ui/GenericModal';
+import { NeonBackButton } from '../../components/ui/NeonBackButton';
 
 export default function BrandingScreen() {
     const router = useRouter();
@@ -157,12 +158,7 @@ export default function BrandingScreen() {
         <BackgroundGradientOnboarding darkOverlay={true}>
             {/* ── FIXED HEADER ── */}
             <View style={styles.header}>
-                <TouchableOpacity 
-                    style={styles.backButton}
-                    onPress={() => router.back()}
-                >
-                    <ArrowLeft size={22} color={colors.text.primary} />
-                </TouchableOpacity>
+                <NeonBackButton onPress={() => router.back()} />
                 <View style={styles.headerCenter}>
                     <View style={styles.titleRow}>
                         <Text style={styles.titleSub}>Votre</Text>

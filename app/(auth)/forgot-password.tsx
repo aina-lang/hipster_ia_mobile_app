@@ -12,6 +12,7 @@ import { BackgroundGradientOnboarding } from '../../components/ui/BackgroundGrad
 import { GenericModal } from '../../components/ui/GenericModal';
 import { colors } from '../../theme/colors';
 import { useAuthStore } from '../../store/authStore';
+import { NeonBackButton } from '../../components/ui/NeonBackButton';
 
 function NeonBorderInput({ children, isActive }: { children: React.ReactNode; isActive: boolean }) {
   const translateX = useRef(new RNAnimated.Value(0)).current;
@@ -144,22 +145,23 @@ export default function ForgotPasswordScreen() {
   return (
     <BackgroundGradientOnboarding darkOverlay>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+         <View style={s.fixedHeader}>
+            <NeonBackButton onPress={() => router.back()} />
+            <View style={s.headerCenter}>
+              <View style={s.titleRow}>
+                <Text style={s.titleSub}>Mot de</Text>
+                <Text style={s.titleScript}>passe oublié</Text>
+              </View>
+            </View>
+          </View>
         <ScrollView
           contentContainerStyle={s.scrollContent}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
           bounces={false}
         >
-          <TouchableOpacity
-            style={s.backButton}
-            onPress={() => router.back()}
-            hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
-          >
-            <ArrowLeft size={24} color={colors.text.primary} />
-          </TouchableOpacity>
-
+      
           <Animated.View entering={FadeInDown.duration(800)} style={s.content}>
-            <Text style={s.title}>Mot de passe oublié</Text>
             <Text style={s.subtitle}>
               Saisissez votre adresse email. Nous vous enverrons un code pour réinitialiser de façon sécurisée votre mot de passe.
             </Text>
@@ -197,4 +199,10 @@ const s = StyleSheet.create({
   label:          { fontFamily: 'Arimo-Bold', fontSize: 13, color: colors.text.secondary, marginBottom: 8, fontWeight: '600', letterSpacing: 0.3 },
   input:          { backgroundColor: 'rgba(15,23,42,0.9)', borderRadius: 12, padding: 16, fontFamily: 'Arimo-Regular', color: colors.text.primary, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', zIndex: 3 },
   inputActive:    { borderColor: 'transparent', backgroundColor: '#030814' },
+  fixedHeader:  { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 24, paddingTop: 40, paddingBottom: 8, backgroundColor: 'rgba(10,15,30,0.95)', borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)' },
+headerCenter: { flex: 1, alignItems: 'center' },
+titleRow:     { flexDirection: 'row', alignItems: 'center', gap: 8 },
+titleSub:     { fontFamily: 'Arimo-Bold', fontSize: 16, letterSpacing: 3, textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)', lineHeight: 22 },
+titleScript:  { fontFamily: 'Brittany-Signature', fontSize: 28, color: '#fff', textShadowColor: '#00eaff', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 18, lineHeight: 22, includeFontPadding: false },
+  
 });
