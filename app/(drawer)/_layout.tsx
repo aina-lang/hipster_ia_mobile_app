@@ -25,8 +25,8 @@ import { GenericModal } from '../../components/ui/GenericModal';
 dayjs.extend(relativeTime);
 dayjs.locale('fr');
 
-const NEON_BLUE  = colors.neon.primary;
-const NEON_LIGHT = colors.primary.light;
+const NEON_BLUE  = colors.neonBlue;
+const NEON_BLUE_DARK = colors.neonBlueDark;
 const AVATAR_SIZE = 190;
 
 interface HistoryItem {
@@ -64,7 +64,7 @@ function AvatarNeonBorder({ children, size }: { children: React.ReactNode; size:
       >
         <RNAnimated.View style={{ position: 'absolute', top: 0, bottom: 0, left: 0, width: TRACK_W * 2, transform: [{ translateX }] }}>
           <LinearGradient
-            colors={['transparent', NEON_BLUE, NEON_LIGHT, 'transparent', 'transparent', NEON_BLUE, NEON_LIGHT, 'transparent']}
+            colors={['transparent', NEON_BLUE, NEON_BLUE_DARK, 'transparent', 'transparent', NEON_BLUE, NEON_BLUE_DARK, 'transparent']}
             locations={[0.05, 0.2, 0.3, 0.45, 0.55, 0.7, 0.8, 0.95]}
             start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }}
             style={{ width: TRACK_W * 2, height: '100%' }}
@@ -360,7 +360,7 @@ export default function DrawerLayout() {
             <Home size={20} color={focused ? '#ffffff' : color} style={focused ? { shadowColor: '#00eaff', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 8, elevation: 4 } : undefined} />
           ),
           drawerLabel: ({ focused, color }) => (
-            <Text style={{ fontFamily: 'Arimo-Bold', fontSize: 15, letterSpacing: 0.3, color: focused ? '#ffffff' : color, textShadowColor: focused ? '#00eaff' : 'transparent', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: focused ? 8 : 0 }}>
+            <Text style={{ fontFamily: 'Arimo-Bold', fontSize: 15, letterSpacing: 0.3, color: focused ? '#ffffff' : color, textShadowColor: focused ? '#00eaff' : 'transparent', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: focused ? 3 : 0 }}>
               Accueil
             </Text>
           ),
@@ -373,7 +373,7 @@ export default function DrawerLayout() {
             <User size={20} color={focused ? '#ffffff' : color} style={focused ? { shadowColor: '#00eaff', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 8, elevation: 4 } : undefined} />
           ),
           drawerLabel: ({ focused, color }) => (
-            <Text style={{ fontFamily: 'Arimo-Bold', fontSize: 15, letterSpacing: 0.3, color: focused ? '#ffffff' : color, textShadowColor: focused ? '#00eaff' : 'transparent', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: focused ? 8 : 0 }}>
+            <Text style={{ fontFamily: 'Arimo-Bold', fontSize: 15, letterSpacing: 0.3, color: focused ? '#ffffff' : color, textShadowColor: focused ? '#00eaff' : 'transparent', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: focused ? 3 : 0 }}>
               Mon Profil
             </Text>
           ),
@@ -386,7 +386,7 @@ export default function DrawerLayout() {
             <HistoryIcon size={20} color={focused ? '#ffffff' : color} style={focused ? { shadowColor: '#00eaff', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 8, elevation: 4 } : undefined} />
           ),
           drawerLabel: ({ focused, color }) => (
-            <Text style={{ fontFamily: 'Arimo-Bold', fontSize: 15, letterSpacing: 0.3, color: focused ? '#ffffff' : color, textShadowColor: focused ? '#00eaff' : 'transparent', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: focused ? 8 : 0 }}>
+            <Text style={{ fontFamily: 'Arimo-Bold', fontSize: 15, letterSpacing: 0.3, color: focused ? '#ffffff' : color, textShadowColor: focused ? '#00eaff' : 'transparent', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: focused ? 3 : 0 }}>
               Historique
             </Text>
           ),
@@ -399,7 +399,7 @@ export default function DrawerLayout() {
             <Sparkles size={20} color={focused ? '#ffffff' : color} style={focused ? { shadowColor: '#00eaff', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 8, elevation: 4 } : undefined} />
           ),
           drawerLabel: ({ focused, color }) => (
-            <Text style={{ fontFamily: 'Arimo-Bold', fontSize: 15, letterSpacing: 0.3, color: focused ? '#ffffff' : color, textShadowColor: focused ? '#00eaff' : 'transparent', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: focused ? 8 : 0 }}>
+            <Text style={{ fontFamily: 'Arimo-Bold', fontSize: 15, letterSpacing: 0.3, color: focused ? '#ffffff' : color, textShadowColor: focused ? '#00eaff' : 'transparent', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: focused ? 3 : 0 }}>
               Abonnement
             </Text>
           ),
@@ -412,7 +412,7 @@ export default function DrawerLayout() {
             <Users size={20} color={focused ? '#ffffff' : color} style={focused ? { shadowColor: '#00eaff', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 8, elevation: 4 } : undefined} />
           ),
           drawerLabel: ({ focused, color }) => (
-            <Text style={{ fontFamily: 'Arimo-Bold', fontSize: 15, letterSpacing: 0.3, color: focused ? '#ffffff' : color, textShadowColor: focused ? '#00eaff' : 'transparent', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: focused ? 8 : 0 }}>
+            <Text style={{ fontFamily: 'Arimo-Bold', fontSize: 15, letterSpacing: 0.3, color: focused ? '#ffffff' : color, textShadowColor: focused ? '#00eaff' : 'transparent', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: focused ? 3 : 0 }}>
               Parrainage
             </Text>
           ),
@@ -464,10 +464,8 @@ const s = StyleSheet.create({
     color: '#ffffff',
     textShadowColor: NEON_BLUE,
     textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 12,
-    lineHeight: 38,
+    textShadowRadius: 3,
     marginBottom: 10,
-    includeFontPadding: false,
   },
   userEmail: {
     fontFamily: 'Arimo-Regular',
@@ -535,7 +533,7 @@ const s = StyleSheet.create({
     color: '#ffffff',
     textShadowColor: NEON_BLUE,
     textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 6,
+    textShadowRadius: 3,
   },
   historyErrorBox: {
     marginTop: 20,
@@ -601,7 +599,7 @@ const s = StyleSheet.create({
     letterSpacing: 1,
     textShadowColor: NEON_BLUE,
     textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 6,
+    textShadowRadius: 3,
   },
   logoutWrapper: {
     padding: 20,

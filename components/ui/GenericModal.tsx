@@ -1,6 +1,10 @@
-import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, Modal, TouchableOpacity, Dimensions } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import {
+  View, Text, StyleSheet, Modal, TouchableOpacity, Dimensions,
+  Animated as RNAnimated, Easing as RNEasing,
+} from 'react-native';
 import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
   FadeIn,
   FadeOut,
@@ -24,6 +28,7 @@ import {
   X,
 } from 'lucide-react-native';
 import { colors } from '../../theme/colors';
+import { fonts } from '../../theme/typography';
 
 export type ModalType =
   | 'success'
@@ -48,85 +53,119 @@ interface GenericModalProps {
   duration?: number;
 }
 
-const { width } = Dimensions.get('window');
+const MODAL_W = Dimensions.get('window').width * 0.85;
+
+// ─── helpers ──────────────────────────────────────────────────────────────────
 
 const getIcon = (type: ModalType, color: string) => {
   switch (type) {
-    case 'success':
-      return <CheckCircle size={48} color={color} />;
-    case 'error':
-      return <XCircle size={48} color={color} />;
-    case 'warning':
-      return <AlertTriangle size={48} color={color} />;
-    case 'info':
-      return <Info size={48} color={color} />;
-    case 'confirmation':
-      return <HelpCircle size={48} color={color} />;
-    case 'loading':
-      return <Loader2 size={48} color={color} />; // We'll rotate this manually or wrap it
-    case 'notification':
-      return <Bell size={48} color={color} />;
-    case 'system':
-      return <Cpu size={48} color={color} />;
-    default:
-      return <Info size={48} color={color} />;
+    case 'success':      return <CheckCircle   size={32} color={color} />;
+    case 'error':        return <XCircle       size={32} color={color} />;
+    case 'warning':      return <AlertTriangle size={32} color={color} />;
+    case 'info':         return <Info          size={32} color={color} />;
+    case 'confirmation': return <HelpCircle    size={32} color={color} />;
+    case 'notification': return <Bell          size={32} color={color} />;
+    case 'system':       return <Cpu           size={32} color={color} />;
+    default:             return <Info          size={32} color={color} />;
   }
 };
 
-const getColor = (type: ModalType) => {
+const getColor = (type: ModalType): string => {
   switch (type) {
-    case 'success':
-      return colors.status.success;
-    case 'error':
-      return colors.status.error;
-    case 'warning':
-      return colors.status.warning;
-    case 'info':
-      return colors.status.info;
-    case 'confirmation':
-      return colors.primary.main;
-    case 'loading':
-      return colors.primary.light;
-    case 'notification':
-      return colors.text.accent;
-    case 'system':
-      return colors.text.muted;
-    default:
-      return colors.primary.main;
+    case 'success':      return '#0fd492'; // emerald tiré vers teal — s'intègre mieux avec le bleu
+    case 'error':        return '#fb7185'; // rose-400, plus doux que rose-500 sur fond sombre
+    case 'warning':      return '#f5a623'; // amber légèrement assombri
+    case 'info':         return colors.blue[400];
+    case 'confirmation': return colors.neonBlue;
+    case 'loading':      return colors.neonBlueDark;
+    case 'notification': return colors.violet[400];
+    case 'system':       return colors.gray;
+    default:             return colors.neonBlue;
   }
 };
+
+// ─── spinning loader ──────────────────────────────────────────────────────────
 
 const LoadingSpinner = ({ color }: { color: string }) => {
   const rotation = useSharedValue(0);
-
   useEffect(() => {
     rotation.value = withRepeat(withTiming(360, { duration: 1000, easing: Easing.linear }), -1);
   }, []);
+  const animStyle = useAnimatedStyle(() => ({ transform: [{ rotate: `${rotation.value}deg` }] }));
+  return <Animated.View style={animStyle}><Loader2 size={32} color={color} /></Animated.View>;
+};
 
-  const animatedStyle = useAnimatedStyle(() => {
-    return {
-      transform: [{ rotate: `${rotation.value}deg` }],
-    };
-  });
+// ─── themed neon border — same mechanic as NeonBorderCard in PlanCard ─────────
+
+interface ThemedNeonBorderProps {
+  children: React.ReactNode;
+  color: string;
+  cardBg?: string;
+}
+
+const ThemedNeonBorder = ({ children, color, cardBg = colors.midnightBlue }: ThemedNeonBorderProps) => {
+  const translateX = useRef(new RNAnimated.Value(0)).current;
+  const loopRef    = useRef<RNAnimated.CompositeAnimation | null>(null);
+
+  useEffect(() => {
+    loopRef.current?.stop();
+    translateX.setValue(0);
+    loopRef.current = RNAnimated.loop(
+      RNAnimated.timing(translateX, {
+        toValue: -MODAL_W,
+        duration: 2500,
+        easing: RNEasing.linear,
+        useNativeDriver: true,
+      }),
+      { resetBeforeIteration: true }
+    );
+    loopRef.current.start();
+    return () => { loopRef.current?.stop(); };
+  }, [color]);
 
   return (
-    <Animated.View style={animatedStyle}>
-      <Loader2 size={48} color={color} />
-    </Animated.View>
+    <View style={s.neonWrapper}>
+      {/* Animated border track */}
+      <View style={s.neonClip} pointerEvents="none">
+        <RNAnimated.View style={[s.neonTrack, { transform: [{ translateX }] }]}>
+          <LinearGradient
+            colors={[
+              'transparent', color, color + 'aa', 'transparent',
+              'transparent', color, color + 'aa', 'transparent',
+            ]}
+            locations={[0.05, 0.2, 0.3, 0.45, 0.55, 0.7, 0.8, 0.95]}
+            start={{ x: 0, y: 0.5 }}
+            end={{ x: 1, y: 0.5 }}
+            style={{ width: MODAL_W * 2, height: '100%' }}
+          />
+        </RNAnimated.View>
+        {/* Inner mask — reveals only the 1px border ring */}
+        <View style={[s.neonMask, { backgroundColor: cardBg }]} />
+      </View>
+
+      {/* Bloom glows */}
+      <View style={[s.bloomMid,  { shadowColor: color }]} pointerEvents="none" />
+      <View style={[s.bloomFar,  { shadowColor: color }]} pointerEvents="none" />
+      <View style={[s.floorGlow, { shadowColor: color }]} pointerEvents="none" />
+
+      {children}
+    </View>
   );
 };
 
+// ─── main modal ───────────────────────────────────────────────────────────────
+
 export const GenericModal: React.FC<GenericModalProps> = ({
   visible,
-  type = 'info',
+  type       = 'info',
   title,
   message,
   onClose,
   onConfirm,
   confirmText = 'Confirmer',
-  cancelText = 'Annuler',
-  autoClose = false,
-  duration = 3000,
+  cancelText  = 'Annuler',
+  autoClose   = false,
+  duration    = 3000,
 }) => {
   const themeColor = getColor(type);
 
@@ -141,11 +180,10 @@ export const GenericModal: React.FC<GenericModalProps> = ({
 
   return (
     <Modal transparent visible={visible} animationType="none" onRequestClose={onClose}>
-      <View style={styles.overlay}>
-        <Animated.View
-          entering={FadeIn.duration(200)}
-          exiting={FadeOut.duration(200)}
-          style={styles.backdrop}>
+      <View style={s.overlay}>
+
+        {/* Backdrop blur */}
+        <Animated.View entering={FadeIn.duration(200)} exiting={FadeOut.duration(200)} style={s.backdrop}>
           <BlurView intensity={90} tint="dark" style={StyleSheet.absoluteFill} />
           <TouchableOpacity
             style={StyleSheet.absoluteFill}
@@ -153,62 +191,68 @@ export const GenericModal: React.FC<GenericModalProps> = ({
           />
         </Animated.View>
 
-        <Animated.View
-          entering={ZoomIn.duration(300).springify()}
-          exiting={ZoomOut.duration(200)}
-          style={[
-            styles.container,
-            {
-              borderColor: themeColor,
-              shadowColor: themeColor,
-            },
-          ]}>
-          {/* Close Button (if not loading) */}
-          {type !== 'loading' && onClose && !onConfirm && (
-            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <X size={20} color={colors.text.secondary} />
-            </TouchableOpacity>
-          )}
+        {/* Card with themed neon border */}
+        <Animated.View entering={ZoomIn.duration(300).springify()} exiting={ZoomOut.duration(200)}>
+          <ThemedNeonBorder color={themeColor}>
+            <View style={s.card}>
 
-          {/* Icon */}
-          <View style={[styles.iconContainer, { backgroundColor: themeColor + '20' }]}>
-            {type === 'loading' ? <LoadingSpinner color={themeColor} /> : getIcon(type, themeColor)}
-          </View>
+              {/* Close button */}
+              {type !== 'loading' && onClose && !onConfirm && (
+                <TouchableOpacity onPress={onClose} style={s.closeButton}>
+                  <X size={18} color="rgba(255,255,255,0.35)" />
+                </TouchableOpacity>
+              )}
 
-          {/* Content */}
-          <Text style={styles.title}>{title}</Text>
-          {message && <Text style={styles.message}>{message}</Text>}
+              {/* Icon + texts */}
+              <View style={s.topSection}>
+                <View style={[s.iconBox, { borderColor: `${themeColor}35`, backgroundColor: `${themeColor}18` }]}>
+                  {type === 'loading'
+                    ? <LoadingSpinner color={themeColor} />
+                    : getIcon(type, themeColor)
+                  }
+                </View>
+                <Text style={s.title}>{title}</Text>
+                {message ? <Text style={s.message}>{message}</Text> : null}
+              </View>
 
-          {/* Actions */}
-          <View style={styles.actions}>
-            {onConfirm ? (
-              <>
-                <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={onClose}>
-                  <Text style={styles.cancelButtonText}>{cancelText}</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.button, { backgroundColor: themeColor }]}
-                  onPress={onConfirm}>
-                  <Text style={styles.confirmButtonText}>{confirmText}</Text>
-                </TouchableOpacity>
-              </>
-            ) : (
-              type !== 'loading' && (
-                <TouchableOpacity
-                  style={[styles.button, { backgroundColor: themeColor, width: '100%' }]}
-                  onPress={onClose}>
-                  <Text style={styles.confirmButtonText}>OK</Text>
-                </TouchableOpacity>
-              )
-            )}
-          </View>
+              {/* Actions */}
+              {type !== 'loading' && (
+                <View style={s.bottomSection}>
+                  {onConfirm ? (
+                    <View style={s.actionsRow}>
+                      <TouchableOpacity style={s.cancelButton} onPress={onClose}>
+                        <Text style={s.cancelText}>{cancelText}</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[s.confirmButton, { backgroundColor: themeColor }]}
+                        onPress={onConfirm}
+                      >
+                        <Text style={s.confirmText}>{confirmText}</Text>
+                      </TouchableOpacity>
+                    </View>
+                  ) : (
+                    <TouchableOpacity
+                      style={[s.confirmButton, s.confirmFull, { borderColor: `${themeColor}55`, backgroundColor: `${themeColor}18` }]}
+                      onPress={onClose}
+                    >
+                      <Text style={[s.confirmText, { color: themeColor }]}>OK</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              )}
+
+            </View>
+          </ThemedNeonBorder>
         </Animated.View>
+
       </View>
     </Modal>
   );
 };
 
-const styles = StyleSheet.create({
+// ─── styles ───────────────────────────────────────────────────────────────────
+
+const s = StyleSheet.create({
   overlay: {
     flex: 1,
     justifyContent: 'center',
@@ -218,68 +262,151 @@ const styles = StyleSheet.create({
   backdrop: {
     ...StyleSheet.absoluteFillObject,
   },
-  container: {
-    width: width * 0.85,
-    backgroundColor: 'rgba(13, 13, 13, 0.97)',
-    borderRadius: 24,
-    padding: 24,
-    alignItems: 'center',
-    borderWidth: 1,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.5,
-    shadowRadius: 20,
-    elevation: 10,
+
+  // ── Neon border wrapper ───────────────────────────────────────────────────
+  neonWrapper: {
+    position: 'relative',
+    width: MODAL_W,
   },
-  closeButton: {
+  neonClip: {
     position: 'absolute',
-    top: 16,
-    right: 16,
-    padding: 4,
+    top: -1, left: -1, right: -1, bottom: -0.5,
+    borderRadius: 25,
+    overflow: 'hidden',
+    zIndex: 2,
+  },
+  neonTrack: {
+    position: 'absolute',
+    top: 0, bottom: 0, left: 0,
+  },
+  neonMask: {
+    position: 'absolute',
+    top: 1, left: 1, right: 1, bottom: 0.5,
+    borderRadius: 24,
     zIndex: 1,
   },
-  iconContainer: {
-    padding: 16,
+  bloomMid: {
+    position: 'absolute',
+    top: -4, left: -4, right: -4, bottom: -4,
+    borderRadius: 28,
+    backgroundColor: 'transparent',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.35,
+    shadowRadius: 18,
+    elevation: 8,
+  },
+  bloomFar: {
+    position: 'absolute',
+    top: -8, left: -8, right: -8, bottom: -8,
+    borderRadius: 32,
+    backgroundColor: 'transparent',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.2,
+    shadowRadius: 28,
+    elevation: 4,
+  },
+  floorGlow: {
+    position: 'absolute',
+    bottom: -16,
+    alignSelf: 'center',
+    width: '80%',
+    height: 24,
     borderRadius: 50,
-    marginBottom: 20,
+    backgroundColor: 'transparent',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 16,
+    elevation: 12,
   },
-  title: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: colors.text.primary,
-    marginBottom: 8,
-    textAlign: 'center',
+
+  // ── Card ─────────────────────────────────────────────────────────────────
+  card: {
+    width: MODAL_W,
+    backgroundColor: colors.midnightBlue,
+    borderRadius: 24,
+    overflow: 'hidden',
+    zIndex: 3,
   },
-  message: {
-    fontSize: 16,
-    color: colors.text.secondary,
-    textAlign: 'center',
-    lineHeight: 22,
-    marginBottom: 24,
+
+  closeButton: {
+    position: 'absolute',
+    top: 14, right: 14,
+    padding: 4,
+    zIndex: 10,
   },
-  actions: {
-    flexDirection: 'row',
-    gap: 12,
-    width: '100%',
-    justifyContent: 'center',
+
+  topSection: {
+    padding: 28,
+    paddingTop: 32,
+    alignItems: 'center',
   },
-  button: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 12,
+  iconBox: {
+    width: 60,
+    height: 60,
     alignItems: 'center',
     justifyContent: 'center',
+    borderRadius: 16,
+    borderWidth: 1,
+    marginBottom: 16,
+  },
+  title: {
+    fontFamily: fonts.arimo.bold,
+    fontSize: 20,
+    color: '#ffffff',
+    textAlign: 'center',
+    marginBottom: 8,
+    letterSpacing: 0.2,
+  },
+  message: {
+    fontFamily: fonts.arimo.regular,
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.55)',
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+
+  bottomSection: {
+    padding: 20,
+    paddingTop: 0,
+  },
+  actionsRow: {
+    flexDirection: 'row',
+    gap: 12,
   },
   cancelButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    flex: 1,
+    paddingVertical: 13,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.07)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.10)',
   },
-  confirmButtonText: {
-    color: colors.text.primary,
-    fontSize: 16,
-    fontWeight: '600',
+  cancelText: {
+    fontFamily: fonts.arimo.bold,
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.6)',
+    letterSpacing: 0.3,
   },
-  cancelButtonText: {
-    color: colors.text.primary,
-    fontSize: 16,
-    fontWeight: '600',
+  confirmButton: {
+    flex: 1,
+    paddingVertical: 13,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  confirmFull: {
+    flex: 0,
+    width: '100%',
+    backgroundColor: 'transparent',
+  },
+  confirmText: {
+    fontFamily: fonts.arimo.bold,
+    fontSize: 14,
+    color: '#ffffff',
+    letterSpacing: 0.4,
   },
 });

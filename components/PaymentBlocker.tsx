@@ -179,7 +179,7 @@ const s = StyleSheet.create({
         color: '#fff',
         textShadowColor: NEON_BLUE,
         textShadowOffset: { width: 0, height: 0 },
-        textShadowRadius: 18,
+        textShadowRadius: 3,
     },
     planPrice: {
         fontFamily: 'Arimo-Bold',
@@ -187,7 +187,7 @@ const s = StyleSheet.create({
         color: '#ffffff',
         textShadowColor: NEON_BLUE,
         textShadowOffset: { width: 0, height: 0 },
-        textShadowRadius: 8,
+        textShadowRadius: 3,
     },
     btnWrapper: {
         alignSelf: 'stretch',

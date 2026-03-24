@@ -31,7 +31,7 @@ const NEON_GLOW = '#0099ff';
 const NEON_LIGHT = '#66e5ff';
 
 const videobg = require('../assets/video/splashVideo-fixed-mobile.mp4');
-const reloadingScreen = require('../assets/video/reloadignScreen.mp4');
+const reloadingScreen = require('../assets/video/reloadingScreen.mp4');
 const bgAfterBack = require('../assets/bg_after_back.jpeg');
 
 interface ParticleConfig {
@@ -316,41 +316,38 @@ const BottomAuthSection = React.memo(({ isAuthenticated, onVideoFinish, setIsRou
 export default React.memo(function WelcomeScreen({ onVideoFinish, setIsRouting }: WelcomeScreenProps) {
   const [videoReady, setVideoReady] = React.useState(false);
   const { isReturningFromBack, setIsReturningFromBack, videoCompleted, setVideoCompleted } = useWelcomeVideoStore();
-  // Image is ONLY shown if explicitly returning from back or after logout.
-  // Global completion state (videoCompleted) should NOT trigger the image.
   const showImage = isReturningFromBack;
   const shouldSkipPlay = videoCompleted || isReturningFromBack;
   
   const textAnimProgress = useSharedValue(shouldSkipPlay ? 1 : 0);
   const videoMarginTop = useSharedValue(shouldSkipPlay ? 100 : 0);
+
+  // ── Scale + fade transition for authenticated users ──────────────────────
+  // Starts at 1, shrinks to 0.88 and fades out at end of video
+  const authTransitionScale = useSharedValue(1);
+  const authTransitionOpacity = useSharedValue(1);
+
   const { isAuthenticated, user, isHydrated } = useAuthStore();
   const insets = useSafeAreaInsets();
   const responsive = useResponsiveDimensions();
   const videoCompletedRef = useRef(false);
   const topBarHeight = responsive.topBarHeight + insets.top;
 
-  // Sync store state with ref
   React.useEffect(() => {
-    // Only reset if NOT returning from back - keep flag persistent
     if (!isReturningFromBack) {
       videoCompletedRef.current = false;
     }
   }, [isReturningFromBack]);
 
-  // When returning from back, freeze animations in final state and show static image
   React.useEffect(() => {
     if (isReturningFromBack) {
-      // Set animations to their final state immediately - no animations
-      textAnimProgress.value = 1; // Text fully animated in
-      videoMarginTop.value = 100; // Video fully animated up
-      // Mark as finished to prevent video playback logic from triggering
+      textAnimProgress.value = 1;
+      videoMarginTop.value = 100;
       isFinishedRef.current = true;
-      // CRITICAL: Signal to RootLayout that "video" (overlay) is done
       onVideoFinish?.();
     }
   }, [isReturningFromBack, textAnimProgress, videoMarginTop, onVideoFinish]);
 
-  // Select video based on authentication status
   const selectedVideo = isAuthenticated ? reloadingScreen : videobg;
 
   const videoPlayer = useVideoPlayer(selectedVideo, (player) => {
@@ -358,26 +355,24 @@ export default React.memo(function WelcomeScreen({ onVideoFinish, setIsRouting }
     player.muted = true;
   });
 
-  console.log('[Welcome] Video selection:', { isAuthenticated, selectedVideo: isAuthenticated ? 'reloading' : 'splash' });
-
   const isFinishedRef = React.useRef(shouldSkipPlay);
   const playbackTimerRef = React.useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (!videoPlayer || shouldSkipPlay) {
       if (videoPlayer && videoCompleted && !isReturningFromBack) {
-        // If video already completed in overlay, ensure this instance is at the end
         const duration = videoPlayer.duration ?? 0;
         if (duration > 0) {
           videoPlayer.seekBy(duration - videoPlayer.currentTime);
           videoPlayer.pause();
         }
       }
-      return; 
+      return;
     }
 
     const onPlaybackFinish = () => {
       if (isFinishedRef.current) return;
+      isFinishedRef.current = true;
       videoCompletedRef.current = true;
 
       if (playbackTimerRef.current) {
@@ -385,30 +380,43 @@ export default React.memo(function WelcomeScreen({ onVideoFinish, setIsRouting }
         playbackTimerRef.current = null;
       }
 
-      videoMarginTop.value = withTiming(100, {
-        duration: 1500,
-        easing: Easing.inOut(Easing.quad),
-      });
+      if (isAuthenticated) {
+        // ── Authenticated: scale + fade transition then navigate ──────────
+        authTransitionScale.value = withTiming(0.88, {
+          duration: 700,
+          easing: Easing.inOut(Easing.quad),
+        });
+        authTransitionOpacity.value = withTiming(0, {
+          duration: 700,
+          easing: Easing.inOut(Easing.quad),
+        });
 
-      textAnimProgress.value = withTiming(1, {
-        duration: 1500,
-        easing: Easing.inOut(Easing.quad),
-      });
+        playbackTimerRef.current = setTimeout(() => {
+          setVideoCompleted(true);
+          onVideoFinish?.();
+        }, 750);
+      } else {
+        // ── Not authenticated: original slide-up animation ────────────────
+        videoMarginTop.value = withTiming(100, {
+          duration: 1500,
+          easing: Easing.inOut(Easing.quad),
+        });
 
-      playbackTimerRef.current = setTimeout(() => {
-        // Seek to the absolute end of the video to show last frame
-        const duration = videoPlayer?.duration ?? 0;
-        if (duration > 0 && videoPlayer) {
-          videoPlayer.seekBy(duration - videoPlayer.currentTime);
-          videoPlayer.pause(); // Freeze on last frame
-        }
-        
-        // Mark as completed globally
-        setVideoCompleted(true);
-        
-        // CRITICAL: Signal to RootLayout that "video" (overlay) is done 
-        onVideoFinish?.();
-      }, 2000);
+        textAnimProgress.value = withTiming(1, {
+          duration: 1500,
+          easing: Easing.inOut(Easing.quad),
+        });
+
+        playbackTimerRef.current = setTimeout(() => {
+          const duration = videoPlayer?.duration ?? 0;
+          if (duration > 0 && videoPlayer) {
+            videoPlayer.seekBy(duration - videoPlayer.currentTime);
+            videoPlayer.pause();
+          }
+          setVideoCompleted(true);
+          onVideoFinish?.();
+        }, 2000);
+      }
     };
 
     const startTracking = () => {
@@ -447,8 +455,19 @@ export default React.memo(function WelcomeScreen({ onVideoFinish, setIsRouting }
     };
   }, [videoPlayer, onVideoFinish, isHydrated, isAuthenticated, isReturningFromBack]);
 
+  // Animated style for the non-auth video (original slide-up)
   const videoAnimatedStyle = useAnimatedStyle(() => ({
     marginTop: videoMarginTop.value,
+  }));
+
+  // Animated style for the auth video (scale + fade)
+  const authVideoAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: authTransitionScale.value }],
+    opacity: authTransitionOpacity.value,
+    // Slightly reduce the video so it fills well without being too large
+    // We inset by ~6% on each side using negative margin trick
+    marginHorizontal: -12,
+    marginVertical: -20,
   }));
 
   return (
@@ -457,12 +476,21 @@ export default React.memo(function WelcomeScreen({ onVideoFinish, setIsRouting }
       {!videoReady && <View style={[StyleSheet.absoluteFill, { backgroundColor: '#000' }]} />}
 
       {showImage ? (
-        // Show static image when returning from packs with frozen animations
         <Animated.View style={[{ position: 'absolute', top: topBarHeight - 180, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center' }]}>
           <Image source={bgAfterBack} style={{ width: '120%', height: '120%' }} resizeMode="contain" />
         </Animated.View>
+      ) : isAuthenticated ? (
+        // ── Authenticated: contain video centered on black background, scale+fade on exit ──
+        <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: '#000' }, authVideoAnimatedStyle]}>
+          <VideoView
+            player={videoPlayer}
+            style={StyleSheet.absoluteFill}
+            contentFit="contain"
+            nativeControls={false}
+          />
+        </Animated.View>
       ) : (
-        // Show video during normal flow
+        // ── Not authenticated: original slide-up video ──────────────────────
         <Animated.View style={[StyleSheet.absoluteFill, videoAnimatedStyle]}>
           <VideoView player={videoPlayer} style={StyleSheet.absoluteFill} contentFit="cover" nativeControls={false} />
         </Animated.View>
@@ -473,34 +501,38 @@ export default React.memo(function WelcomeScreen({ onVideoFinish, setIsRouting }
         locations={[0, 0.5, 1]}
         start={{ x: 0.5, y: 0 }}
         end={{ x: 0.5, y: 1 }}
-        style={styles.globalOverlay}
+        // Hide gradient overlay for authenticated users — clean video only
+        style={[styles.globalOverlay, isAuthenticated && { opacity: 0 }]}
         pointerEvents="none"
       />
 
-      <View style={StyleSheet.absoluteFill}>
-        <TopBar
-          textAnimProgress={textAnimProgress}
-          isAuthenticated={isAuthenticated}
-          userName={user?.name || user?.email?.split('@')[0]}
-        />
+      {/* UI elements — hidden entirely for authenticated users */}
+      {!isAuthenticated && (
+        <View style={StyleSheet.absoluteFill}>
+          <TopBar
+            textAnimProgress={textAnimProgress}
+            isAuthenticated={isAuthenticated}
+            userName={user?.name || user?.email?.split('@')[0]}
+          />
 
-        <View style={styles.center}>
-          <View style={[styles.particleAnchor, { bottom: responsive.particleBottom }]} pointerEvents="none">
-            {PARTICLES.map((p, i) => (
-              <Particle key={i} {...p} />
-            ))}
+          <View style={styles.center}>
+            <View style={[styles.particleAnchor, { bottom: responsive.particleBottom }]} pointerEvents="none">
+              {PARTICLES.map((p, i) => (
+                <Particle key={i} {...p} />
+              ))}
+            </View>
+            <SubTextAnimation textAnimProgress={textAnimProgress} isAuthenticated={isAuthenticated} />
           </View>
-          <SubTextAnimation textAnimProgress={textAnimProgress} isAuthenticated={isAuthenticated} />
-        </View>
 
-        <BottomAuthSection
-          isAuthenticated={isAuthenticated}
-          onVideoFinish={onVideoFinish}
-          setIsRouting={setIsRouting}
-          textAnimProgress={textAnimProgress}
-          setIsReturningFromBack={setIsReturningFromBack}
-        />
-      </View>
+          <BottomAuthSection
+            isAuthenticated={isAuthenticated}
+            onVideoFinish={onVideoFinish}
+            setIsRouting={setIsRouting}
+            textAnimProgress={textAnimProgress}
+            setIsReturningFromBack={setIsReturningFromBack}
+          />
+        </View>
+      )}
     </Animated.View>
   );
 });
@@ -532,7 +564,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Arimo-Bold',
     color: 'rgba(255, 255, 255, 0.8)',
     textAlign: 'center',
-
     lineHeight: 30,
     paddingHorizontal: 20,
   },
