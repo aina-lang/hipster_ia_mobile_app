@@ -41,7 +41,7 @@ function StatCard({ icon, label, value }: { icon: any; label: string; value: num
 function RuleItem({ number, text }: { number: string; text: string }) {
   return (
     <View style={s.ruleItem}>
-      <LinearGradient colors={[colors.neon.primary, colors.primary.light]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.ruleNumber}>
+      <LinearGradient colors={[colors.neonBlue, colors.neonBlueDark]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.ruleNumber}>
         <Text style={s.ruleNumberText}>{number}</Text>
       </LinearGradient>
       <Text style={s.ruleText}>{text}</Text>
@@ -198,7 +198,7 @@ export default function ReferralScreen() {
             <SectionTitle title="Comment ça marche ?" />
             <RuleItem number="1" text="Partage ton code unique avec tes amis." />
             <RuleItem number="2" text="Ton ami s'inscrit et s'abonne à un pack Hipster IA." />
-            <RuleItem number="3" text="Tu gagnes 1 mois gratuit pour chaque nouvel abonné !" />
+            <RuleItem number="3" text="Tu gagnes 1 mois gratuit dès le premier abonnement validé avec ton code" />
           </View>
         </ScrollView>
       </SafeAreaView>
