@@ -30,7 +30,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   text: {
-    color: colors.text.secondary,
+    color: colors.gray,
     fontSize: 14,
     fontWeight: '500',
     marginBottom: 12,
@@ -51,6 +51,6 @@ const styles = StyleSheet.create({
     borderRadius: 100,
   },
   inactiveDot: {
-    backgroundColor: 'rgba(100, 116, 139, 0.3)',
+    backgroundColor: '#64748b4d',
   },
 });

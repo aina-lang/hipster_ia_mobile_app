@@ -138,7 +138,7 @@ export const VISUAL_ARCHITECTURES: VisualArchitecture[] = [
     description: 'Minimaliste noir & blanc avec accent couleur',
     subtitle: 'Design épuré et commercial',
     image: monoAccent, // Using studioPoster as placeholder if no specific image
-    color: '#000000',
+    color: '#ffffff',
     type: 'EDITORIAL',
   },
 {

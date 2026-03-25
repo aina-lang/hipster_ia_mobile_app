@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useRef } from 'react';
 import {
   View,
   Text,
@@ -7,23 +7,86 @@ import {
   StyleSheet,
   Image,
   Dimensions,
-  Animated,
-  Platform,
+  Animated as RNAnimated,
+  Easing,
 } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
+import { ChevronRight } from 'lucide-react-native';
 import { colors } from '../../theme/colors';
+import { fonts } from '../../theme/typography';
 import { GuidedScreenWrapper } from '../../components/layout/GuidedScreenWrapper';
-import { NeonButton } from '../../components/ui/NeonButton';
+import { NeonActionButton } from '../../components/ui/NeonActionButton';
 import { VISUAL_ARCHITECTURES, VisualArchitecture } from '../../constants/visualArchitectures';
 import { useCreationStore } from '../../store/creationStore';
-import { ChevronRight } from 'lucide-react-native';
+
 
 const { width } = Dimensions.get('window');
-const TILE_WIDTH = (width - 56) / 2;
+const H_PADDING = 24;
+const COL_GAP   = 12;
+const CARD_W    = (width - H_PADDING * 2 - COL_GAP) / 2;
 
-// ============================================================================
-// Architecture Card Component
-// ============================================================================
+function ArchNeonBorderCard({
+  children,
+  isSelected,
+  color,
+}: {
+  children: React.ReactNode;
+  isSelected: boolean;
+  color: string;
+}) {
+  const translateX = useRef(new RNAnimated.Value(0)).current;
+  const loopRef    = useRef<RNAnimated.CompositeAnimation | null>(null);
+
+  React.useEffect(() => {
+    loopRef.current?.stop();
+    if (isSelected) {
+      translateX.setValue(0);
+      loopRef.current = RNAnimated.loop(
+        RNAnimated.timing(translateX, {
+          toValue: -CARD_W,
+          duration: 3000,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        }),
+        { resetBeforeIteration: true }
+      );
+      loopRef.current.start();
+    } else {
+      translateX.setValue(0);
+    }
+    return () => { loopRef.current?.stop(); };
+  }, [isSelected, color]);
+
+  return (
+    <View style={s.neonWrapper}>
+      {isSelected && (
+        <View style={s.neonClip} pointerEvents="none">
+          <RNAnimated.View style={[s.neonTrack, { transform: [{ translateX }] }]}>
+            <LinearGradient
+              colors={['transparent', color, color, 'transparent', 'transparent', color, color, 'transparent']}
+              locations={[0.05, 0.2, 0.3, 0.45, 0.55, 0.7, 0.8, 0.95]}
+              start={{ x: 0, y: 0.5 }}
+              end={{ x: 1, y: 0.5 }}
+              style={{ width: CARD_W * 2, height: '100%' }}
+            />
+          </RNAnimated.View>
+          <View style={[s.neonMask, { backgroundColor: '#030814' }]} />
+        </View>
+      )}
+      {isSelected && (
+        <>
+          <View style={[s.bloomFar, { shadowColor: color }]}  pointerEvents="none" />
+          <View style={[s.bloomMid, { shadowColor: color }]}  pointerEvents="none" />
+          <View style={[s.floorGlow, { shadowColor: color }]} pointerEvents="none" />
+        </>
+      )}
+      {children}
+    </View>
+  );
+}
+
 function ArchitectureCard({
   architecture,
   isSelected,
@@ -33,116 +96,58 @@ function ArchitectureCard({
   isSelected: boolean;
   onPress: () => void;
 }) {
-  const scaleAnim = useRef(new Animated.Value(1)).current;
-
-  const handlePressIn = () => {
-    Animated.spring(scaleAnim, {
-      toValue: 0.96,
-      useNativeDriver: true,
-      stiffness: 260,
-      damping: 20,
-    }).start();
-  };
-
-  const handlePressOut = () => {
-    Animated.spring(scaleAnim, {
-      toValue: 1,
-      useNativeDriver: true,
-      stiffness: 260,
-      damping: 20,
-    }).start();
-  };
+  const scale = useSharedValue(1);
+  const animatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 
   return (
-    <Animated.View
-      style={{
-        transform: [{ scale: scaleAnim }],
-        width: TILE_WIDTH,
-      }}
-    >
+    <Animated.View style={[{ width: CARD_W }, animatedStyle]}>
       <TouchableOpacity
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
+        onPressIn={() => { scale.value = withSpring(0.97, { damping: 15 }); }}
+        onPressOut={() => { scale.value = withSpring(1, { damping: 15 }); }}
         onPress={onPress}
         activeOpacity={0.9}
-        style={[
-          styles.card,
-          isSelected && { borderColor: architecture.color },
-        ]}
+        style={{ width: CARD_W }}
       >
-        {/* ── Zone image (haut) — pleinement visible ── */}
-        <View style={styles.imageContainer}>
-          <Image
-            source={architecture.image}
-            style={styles.cardImage}
-            resizeMode="contain"
-          />
-
-          {/* Fondu bas très léger pour raccorder visuellement avec la zone texte */}
-          {/* <View style={styles.imageBottomFade} pointerEvents="none" /> */}
-
-          {/* Badge sélection posé sur l'image */}
-          {isSelected && (
-            <View
-              style={[
-                styles.selectedBadge,
-                { backgroundColor: architecture.color },
-              ]}
-            >
-              <View style={styles.selectedDot} />
+        <ArchNeonBorderCard isSelected={isSelected} color={architecture.color}>
+          <View style={[s.card, isSelected && s.cardSelected]}>
+            <View style={s.imageContainer}>
+              <Image
+                source={architecture.image}
+                style={s.cardImage}
+                resizeMode="cover"
+              />
+              {isSelected && (
+                <View style={[s.selectedBadge, { backgroundColor: architecture.color === '#ffffff' ? '#000000' : architecture.color }]}>
+                  <View style={s.selectedDot} />
+                </View>
+              )}
             </View>
-          )}
 
-          {/* Bordure colorée interne quand sélectionné */}
-          
-        </View>
-
-        {/* ── Zone texte (bas) — fond solide, jamais sur l'image ── */}
-        <View
-          style={[
-            styles.textZone,
-            isSelected && {
-              backgroundColor: `${architecture.color}18`,
-              borderTopColor: `${architecture.color}66`,
-            },
-          ]}
-        >
-          <Text style={styles.cardTitle} numberOfLines={1}>
-            {architecture.label}
-          </Text>
-          <Text style={styles.cardDescription} numberOfLines={2}>
-            {architecture.description}
-          </Text>
-        </View>
+            <View style={[
+              s.textZone,
+              isSelected && {
+                backgroundColor: `${architecture.color}18`,
+                borderTopColor: `${architecture.color}66`,
+              },
+            ]}>
+              <Text style={[s.cardTitle, isSelected && s.cardTitleSelected]} numberOfLines={1}>
+                {architecture.label}
+              </Text>
+              <Text style={s.cardDescription} numberOfLines={2}>
+                {architecture.description}
+              </Text>
+            </View>
+          </View>
+        </ArchNeonBorderCard>
       </TouchableOpacity>
     </Animated.View>
   );
 }
 
-// ============================================================================
-// Main Screen
-// ============================================================================
 export default function Step3DirectionsScreen() {
   const router = useRouter();
   const scrollRef = useRef<ScrollView>(null);
-  const {
-    selectedArchitecture,
-    setArchitecture,
-    selectedJob,
-    selectedFunction,
-  } = useCreationStore();
-
-  React.useEffect(() => {
-    console.log('[DEBUG] Step3DirectionsScreen MOUNT', {
-      selectedJob,
-      selectedFunction,
-      selectedArchitecture,
-    });
-  }, []);
-
-  const handleSelectArchitecture = (id: string) => {
-    setArchitecture(id);
-  };
+  const { selectedArchitecture, setArchitecture, selectedJob, selectedFunction } = useCreationStore();
 
   const handleContinue = () => {
     if (selectedArchitecture) {
@@ -155,159 +160,144 @@ export default function Step3DirectionsScreen() {
       currentStep={3}
       totalSteps={4}
       scrollViewRef={scrollRef}
-      footer={
-        <View style={styles.fixedFooter}>
-          <NeonButton
-            title="Continuer"
-            onPress={handleContinue}
-            variant="premium"
-            size="lg"
-            disabled={!selectedArchitecture}
-            style={{ width: '100%', opacity: selectedArchitecture ? 1 : 0.5 }}
-          />
-        </View>
-      }
     >
-      <View style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Directions Artistiques</Text>
-          <View style={styles.breadcrumb}>
-            <Text style={styles.breadcrumbText}>{selectedJob}</Text>
-            <ChevronRight size={12} color={colors.text.muted} />
-            <Text style={styles.breadcrumbText} numberOfLines={1}>
-              {selectedFunction?.split('(')[0]}
-            </Text>
-          </View>
+      <View style={s.container}>
+        <View style={s.header}>
+          <Text style={s.headerScript}>Directions</Text>
+          <Text style={s.headerSub}>ARTISTIQUES</Text>
+          {(selectedJob || selectedFunction) && (
+            <View style={s.breadcrumb}>
+              {selectedJob && <Text style={s.breadcrumbText}>{selectedJob}</Text>}
+              {selectedJob && selectedFunction && (
+                <ChevronRight size={12} color={colors.text.muted} />
+              )}
+              {selectedFunction && (
+                <Text style={s.breadcrumbText} numberOfLines={1}>
+                  {selectedFunction.split('(')[0]}
+                </Text>
+              )}
+            </View>
+          )}
         </View>
 
-        {/* Subtitle */}
-        <View style={styles.subtitleBlock}>
-          <Text style={styles.subtitle}>
-            Sélectionnez une architecture graphique
-          </Text>
-          <Text style={styles.subtitleMuted}>
-            Chaque direction définit le style visuel de votre création
-          </Text>
-        </View>
+        <Text style={s.subtitle}>
+          Chaque direction définit le style visuel de votre création
+        </Text>
 
-        {/* Grid */}
-        <View style={styles.grid}>
+        <View style={s.grid}>
           {VISUAL_ARCHITECTURES.map((architecture) => (
             <ArchitectureCard
               key={architecture.id}
               architecture={architecture}
               isSelected={selectedArchitecture === architecture.id}
-              onPress={() => handleSelectArchitecture(architecture.id)}
+              onPress={() => setArchitecture(architecture.id)}
             />
           ))}
         </View>
 
-        {/* Détails architecture sélectionnée */}
-        {selectedArchitecture && (
-          <View style={styles.detailsBlock}>
-            {VISUAL_ARCHITECTURES.map((arch) => {
-              if (arch.id !== selectedArchitecture) return null;
-              return (
-                <View key={arch.id} style={styles.details}>
-                  <View
-                    style={[
-                      styles.detailsColorBand,
-                      { backgroundColor: arch.color },
-                    ]}
-                  />
-                  <View style={styles.detailsContent}>
-                    <Text style={styles.detailsTitle}>{arch.label}</Text>
-                    <Text style={styles.detailsSubtitle}>{arch.subtitle}</Text>
-                    <Text style={styles.detailsDescription}>
-                      {arch.description}
-                    </Text>
-                  </View>
-                </View>
-              );
-            })}
-          </View>
-        )}
+        {selectedArchitecture && VISUAL_ARCHITECTURES.map((arch) => {
+          if (arch.id !== selectedArchitecture) return null;
+          return (
+            <View key={arch.id} style={[s.detailsBlock, { backgroundColor: arch.color + '18', borderColor: arch.color  }]}>
+              <View style={s.detailsContent}>
+                <Text style={s.detailsTitle}>{arch.label}</Text>
+                <Text style={s.detailsSubtitle}>{arch.subtitle}</Text>
+                <Text style={s.detailsDescription}>{arch.description}</Text>
+              </View>
+            </View>
+          );
+        })}
+
+        <View style={s.buttonWrapper}>
+          <NeonActionButton
+            label="Continuer"
+            onPress={handleContinue}
+            disabled={!selectedArchitecture}
+          />
+        </View>
       </View>
     </GuidedScreenWrapper>
   );
 }
 
-// ============================================================================
-// Styles
-// ============================================================================
-const styles = StyleSheet.create({
+const s = StyleSheet.create({
   container: {
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-  },
-  fixedFooter: {
-    paddingHorizontal: 20,
-    paddingVertical: 14,
+    paddingHorizontal: H_PADDING
   },
 
-  // ── Header ────────────────────────────────────────────────────────────────
   header: {
     alignItems: 'center',
-    marginBottom: 16,
-    paddingTop: 4,
+    paddingTop: 0
   },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: colors.text.primary,
-    marginBottom: 6,
+  headerScript: {
+    fontFamily: 'Brittany-Signature',
+    fontSize: 42,
+    paddingVertical : 10,
+    color: '#ffffff',
+    textShadowColor: colors.neonBlue,
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 3
+  },
+  headerSub: {
+    fontFamily: fonts.arimo.bold,
+    fontSize: 13,
+    letterSpacing: 3,
+    color: colors.gray,
+    marginTop: -5,
+    marginBottom: 20,
   },
   breadcrumb: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
     justifyContent: 'center',
+    marginBottom : 10
   },
   breadcrumbText: {
-    fontSize: 13,
-    color: colors.text.muted,
-    fontWeight: '500',
-  },
-
-  // ── Subtitle ──────────────────────────────────────────────────────────────
-  subtitleBlock: {
-    marginBottom: 24,
+    fontFamily: fonts.arimo.regular,
+    fontSize: 12,
+    color: colors.text.muted
   },
   subtitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: colors.text.primary,
-    marginBottom: 6,
-  },
-  subtitleMuted: {
+    fontFamily: fonts.arimo.regular,
     fontSize: 13,
-    color: 'rgba(255,255,255,0.5)',
-    fontWeight: '400',
+    color: 'rgba(255,255,255,0.45)',
+    textAlign: 'center',
+    marginBottom: 24,
+    paddingHorizontal: 8,
   },
 
-  // ── Grid ──────────────────────────────────────────────────────────────────
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 16,
-    justifyContent: 'space-between',
+    gap: COL_GAP,
     marginBottom: 24,
   },
 
-  // ── Card ──────────────────────────────────────────────────────────────────
+  neonWrapper: { position: 'relative', marginBottom: 2 },
+  neonClip:    { position: 'absolute', top: -1, left: -1, right: -1, bottom: -0.5, borderRadius: 21, overflow: 'hidden', zIndex: 2 },
+  neonTrack:   { position: 'absolute', top: 0, bottom: 0, left: 0 },
+  neonMask:    { position: 'absolute', top: 1, left: 1, right: 1, bottom: 0.5, borderRadius: 20, zIndex: 1 },
+  bloomMid:    { position: 'absolute', top: -4, left: -4, right: -4, bottom: -4, borderRadius: 24, backgroundColor: 'transparent', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.45, shadowRadius: 18, elevation: 8 },
+  bloomFar:    { position: 'absolute', top: -8, left: -8, right: -8, bottom: -8, borderRadius: 28, backgroundColor: 'transparent', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.25, shadowRadius: 28, elevation: 4 },
+  floorGlow:   { position: 'absolute', bottom: -16, alignSelf: 'center', width: '80%', height: 24, borderRadius: 50, backgroundColor: 'transparent', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.6, shadowRadius: 16, elevation: 12 },
+
   card: {
-    width: TILE_WIDTH,
-    borderRadius: 14,
+    width: CARD_W,
+    backgroundColor: 'rgba(15,23,42,0.92)',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
     overflow: 'hidden',
-    borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.10)',
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    zIndex: 3,
+  },
+  cardSelected: {
+    backgroundColor: '#030814',
+    borderWidth: 0,
   },
 
-  // Image zone
   imageContainer: {
-    height: 260,
+    height: 220,
     width: '100%',
     position: 'relative',
     overflow: 'hidden',
@@ -315,54 +305,8 @@ const styles = StyleSheet.create({
   cardImage: {
     width: '100%',
     height: '100%',
-    position: 'absolute',
-  },
-  // Fondu très discret en bas de l'image — ne cache PAS l'image
-  imageBottomFade: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 28,
-    backgroundColor: 'transparent',
-    // Pour un vrai gradient, remplacer ce View par :
-    // <LinearGradient
-    //   colors={['transparent', 'rgba(10,12,18,0.7)']}
-    //   style={{ position:'absolute', bottom:0, left:0, right:0, height:36 }}
-    // />
-  },
-  imageGlowBorder: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    borderWidth: 1.5,
   },
 
-  // Text zone — fond opaque, jamais superposé à l'image
-  textZone: {
-    paddingHorizontal: 10,
-    paddingVertical: 10,
-    backgroundColor: 'rgba(10,12,18,0.7)',
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.08)',
-  },
-  cardTitle: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: '#fff',
-    marginBottom: 3,
-    letterSpacing: 0.2,
-  },
-  cardDescription: {
-    fontSize: 10,
-    color: 'rgba(255,255,255,0.55)',
-    fontWeight: '400',
-    lineHeight: 14,
-  },
-
-  // Badge sélection
   selectedBadge: {
     position: 'absolute',
     top: 8,
@@ -387,41 +331,70 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
 
-  // ── Details block ─────────────────────────────────────────────────────────
-  detailsBlock: {
-    marginTop: 8,
+  textZone: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: 'rgba(10,12,18,0.85)',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.08)',
   },
-  details: {
+  cardTitle: {
+    fontFamily: fonts.arimo.bold,
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.text.secondary,
+    marginBottom: 3,
+    letterSpacing: 0.3,
+  },
+  cardTitleSelected: {
+    color: '#ffffff',
+  },
+  cardDescription: {
+    fontFamily: fonts.arimo.regular,
+    fontSize: 10,
+    color: 'rgba(255,255,255,0.45)',
+    lineHeight: 14,
+  },
+
+  detailsBlock: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: 'rgba(255,255,255,0.08)',
     overflow: 'hidden',
+    marginBottom: 28
   },
   detailsColorBand: {
     width: 4,
   },
   detailsContent: {
     flex: 1,
-    padding: 14,
+    padding: 16,
+    justifyContent : 'center',
+    alignItems : 'center'
   },
   detailsTitle: {
-    fontSize: 14,
+    fontFamily: fonts.arimo.bold,
+    fontSize: 16,
     fontWeight: '800',
-    color: '#fff',
-    marginBottom: 4,
+    color: '#ffffff',
+    marginBottom: 10,
   },
   detailsSubtitle: {
+    fontFamily: fonts.arimo.bold,
     fontSize: 12,
-    color: 'rgba(255,255,255,0.7)',
-    fontWeight: '500',
+    color: 'rgba(255,255,255,0.6)',
     marginBottom: 6,
   },
   detailsDescription: {
+    fontFamily: fonts.arimo.regular,
     fontSize: 12,
-    color: 'rgba(255,255,255,0.5)',
-    fontWeight: '400',
-    lineHeight: 16,
+    color: 'rgba(255,255,255,0.4)',
+    lineHeight: 18,
+  },
+
+  buttonWrapper: {
+    paddingTop: 4,
   },
 });

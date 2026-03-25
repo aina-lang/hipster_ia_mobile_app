@@ -6,12 +6,8 @@ import {
     KeyboardAvoidingView,
     Platform,
     SafeAreaView,
-    TouchableOpacity,
-    Text,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ArrowLeft } from 'lucide-react-native';
-import { colors } from '../../theme/colors';
 import { StepIndicator } from '../ui/StepIndicator';
 import { BackgroundGradientOnboarding } from '../ui/BackgroundGradientOnboarding';
 import { NeonBackButton } from '../../components/ui/NeonBackButton';
@@ -46,37 +42,12 @@ export const GuidedScreenWrapper: React.FC<GuidedScreenWrapperProps> = ({
     };
 
     return (
-        <BackgroundGradientOnboarding darkOverlay={true} blurIntensity={90} imageSource="splash">
+        <BackgroundGradientOnboarding darkOverlay>
             <SafeAreaView style={styles.safeArea}>
                 <KeyboardAvoidingView
                     behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                     style={styles.container}
                 >
-                    {/* Header */}
-                    <View style={styles.header}>
-                        {showBack && (
-                            <View style={{
-                                position: 'absolute',
-                                left: 16,
-                                top: Platform.OS === 'ios' ? 68 : 58,
-                                zIndex: 10,
-                            }}>
-                                <NeonBackButton onPress={handleBack} />
-                            </View>
-                        )}
-
-                        <View style={styles.headerContent}>
-                            {currentStep !== undefined && (
-                                <View style={styles.stepIndicatorContainer}>
-                                    <StepIndicator
-                                        currentStep={currentStep}
-                                        totalSteps={totalSteps}
-                                    />
-                                </View>
-                            )}
-                        </View>
-                    </View>
-
                     <ScrollView
                         ref={scrollViewRef}
                         style={styles.scrollView}
@@ -84,8 +55,28 @@ export const GuidedScreenWrapper: React.FC<GuidedScreenWrapperProps> = ({
                         showsVerticalScrollIndicator={false}
                         keyboardShouldPersistTaps="handled"
                     >
+                        <View style={styles.header}>
+                            {showBack && (
+                                <View style={styles.backButtonContainer}>
+                                    <NeonBackButton onPress={handleBack} />
+                                </View>
+                            )}
+
+                            <View style={styles.headerContent}>
+                                {currentStep !== undefined && (
+                                    <View style={styles.stepIndicatorContainer}>
+                                        <StepIndicator
+                                            currentStep={currentStep}
+                                            totalSteps={totalSteps}
+                                        />
+                                    </View>
+                                )}
+                            </View>
+                        </View>
+
                         {children}
                     </ScrollView>
+                    
                     {footer && <View style={styles.footerContainer}>{footer}</View>}
                 </KeyboardAvoidingView>
             </SafeAreaView>
@@ -100,27 +91,24 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
     },
+    scrollView: {
+        flex: 1,
+    },
+    scrollContent: {
+        flexGrow: 1,
+    },
     header: {
         alignItems: 'center',
         justifyContent: 'center',
         paddingHorizontal: 16,
-        paddingTop: Platform.OS === 'ios' ? 60 : 60,
-        paddingBottom: 20,
-        marginBottom: 40,
+        paddingTop: Platform.OS === 'ios' ? 40 : 50,
         position: 'relative',
+        marginBottom : 30
     },
-    backButton: {
+    backButtonContainer: {
         position: 'absolute',
         left: 16,
-        top: Platform.OS === 'ios' ? 68 : 58,
-        width: 44,
-        height: 44,
-        backgroundColor: 'rgba(255,255,255,0.08)',
-        borderRadius: 22,
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.15)',
+        top: Platform.OS === 'ios' ? 40 : 50,
         zIndex: 10,
     },
     headerContent: {
@@ -130,15 +118,7 @@ const styles = StyleSheet.create({
     stepIndicatorContainer: {
         marginBottom: 10,
     },
-    scrollView: {
-        flex: 1,
-    },
-    scrollContent: {
-        flexGrow: 1,
-        paddingBottom: 20,
-    },
     footerContainer: {
-    
         backgroundColor: '#000000',
     },
 });
