@@ -36,12 +36,12 @@ import { useChatStore, Message, generateConversationId } from '../../store/chatS
 import { AiService } from '../../api/ai.service';
 import { api } from '../../api/client';
 import { colors } from '../../theme/colors';
+import { fonts } from '../../theme/typography';
 import { GenericModal, ModalType } from '../../components/ui/GenericModal';
 import { BackgroundGradientOnboarding } from '../../components/ui/BackgroundGradientOnboarding';
 import { MediaDisplay } from '../../components/MediaDisplay';
 import { TypingMessage } from '../../components/TypingMessage';
 import { PaymentBlocker } from '../../components/PaymentBlocker';
-import { ChatInput } from '../../components/ChatInput';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -57,6 +57,9 @@ const H_PADDING   = 20;
 const COL_GAP     = 12;
 const CARD_W      = (SCREEN_W - H_PADDING * 2 - COL_GAP) / 2;
 const NEON_CARD_W = CARD_W;
+
+const NEON_BLUE  = colors.neonBlue;
+const NEON_BLUE_DARK = colors.neonBlueDark;
 
 const PACK_IMAGES: Record<string, any> = {
   curieux: require('../../assets/images/packs/packCurieux.png'),
@@ -85,7 +88,6 @@ const getUniversalFunctions = (planType: string): JobFunction[] => {
   ];
 };
 
-// ── NeonBorderCard ────────────────────────────────────────────────────────────
 function NeonBorderCard({
   children,
   isSelected,
@@ -97,39 +99,6 @@ function NeonBorderCard({
 }) {
   const translateX = useRef(new RNAnimated.Value(0)).current;
   const loopRef    = useRef<RNAnimated.CompositeAnimation | null>(null);
-const formatUserMessage = (text: string): string => {
-  if (!text || text.trim().length === 0) return text;
-
-  try {
-    const trimmed = text.trim();
-    if ((trimmed.startsWith('{') || trimmed.startsWith('[')) && (trimmed.endsWith('}') || trimmed.endsWith(']'))) {
-      const parsed = JSON.parse(trimmed);
-      if (typeof parsed === 'object' && parsed !== null) {
-        if (Array.isArray(parsed)) {
-          const userMessages = parsed.filter((item: any) => item.role === 'user' || item.sender === 'user');
-          if (userMessages.length > 0) {
-            const lastUserMsg = userMessages[userMessages.length - 1];
-            const content = lastUserMsg.content || lastUserMsg.text || lastUserMsg.message || '';
-            if (content) return String(content);
-          }
-        } else {
-          if (parsed.content) return String(parsed.content);
-          if (parsed.query) return String(parsed.query);
-          if (parsed.prompt) return String(parsed.prompt);
-
-          return Object.values(parsed)
-            .filter(v => typeof v === 'string' && v.trim().length > 0)
-            .join(' - ');
-        }
-      }
-    }
-  } catch (e) {
-    // Ignore JSON parse errors
-  }
-
-  // Si c'est juste du texte sans JSON ou si erreur, on retourne tel quel sans emojis ou formatage complexe
-  return text;
-};
 
   useEffect(() => {
     loopRef.current?.stop();
@@ -157,7 +126,7 @@ const formatUserMessage = (text: string): string => {
         <View style={s.neonClip} pointerEvents="none">
           <RNAnimated.View style={[s.neonTrack, { transform: [{ translateX }] }]}>
             <LinearGradient
-              colors={['transparent', '#00eaff', '#1e9bff', 'transparent', 'transparent', '#00eaff', '#1e9bff', 'transparent']}
+              colors={['transparent', NEON_BLUE, NEON_BLUE_DARK, 'transparent', 'transparent', NEON_BLUE, NEON_BLUE_DARK, 'transparent']}
               locations={[0.05, 0.2, 0.3, 0.45, 0.55, 0.7, 0.8, 0.95]}
               start={{ x: 0, y: 0.5 }}
               end={{ x: 1, y: 0.5 }}
@@ -179,21 +148,49 @@ const formatUserMessage = (text: string): string => {
   );
 }
 
-// ── PackIcon ──────────────────────────────────────────────────────────────────
 function PackIcon({ planType, size = 48, isSelected }: { planType: string; size?: number; isSelected: boolean }) {
   const source = PACK_IMAGES[planType] ?? PACK_IMAGES['curieux'];
   return (
     <View style={isSelected ? s.iconGlow : undefined}>
       <Image
         source={source}
-        style={{ width: size, height: size, tintColor: isSelected ? '#00eaff' : colors.text.muted }}
+        style={{ width: size, height: size, tintColor: isSelected ? NEON_BLUE : colors.text.muted }}
         resizeMode="contain"
       />
     </View>
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+const formatUserMessage = (text: string): string => {
+  if (!text || text.trim().length === 0) return text;
+
+  try {
+    const trimmed = text.trim();
+    if ((trimmed.startsWith('{') || trimmed.startsWith('[')) && (trimmed.endsWith('}') || trimmed.endsWith(']'))) {
+      const parsed = JSON.parse(trimmed);
+      if (typeof parsed === 'object' && parsed !== null) {
+        if (Array.isArray(parsed)) {
+          const userMessages = parsed.filter((item: any) => item.role === 'user' || item.sender === 'user');
+          if (userMessages.length > 0) {
+            const lastUserMsg = userMessages[userMessages.length - 1];
+            const content = lastUserMsg.content || lastUserMsg.text || lastUserMsg.message || '';
+            if (content) return String(content);
+          }
+        } else {
+          if (parsed.content) return String(parsed.content);
+          if (parsed.query) return String(parsed.query);
+          if (parsed.prompt) return String(parsed.prompt);
+          return Object.values(parsed)
+            .filter(v => typeof v === 'string' && v.trim().length > 0)
+            .join(' - ');
+        }
+      }
+    }
+  } catch (e) {}
+
+  return text;
+};
+
 export default function HomeScreen() {
   const { isHydrated, user } = useAuthStore();
   const router     = useRouter();
@@ -223,6 +220,23 @@ export default function HomeScreen() {
   const [hasAutoOpenedStripe, setHasAutoOpenedStripe] = useState(false);
   const [recording, setRecording]                 = useState<Audio.Recording | null>(null);
   const [permissionResponse, requestPermission]   = Audio.usePermissions();
+
+  const planType             = user?.planType || 'curieux';
+  const subStatus            = user?.subscriptionStatus;
+  const isSubscriptionActive = subStatus === 'active' || subStatus === 'trialing' || subStatus === 'trial';
+  const isPackCurieux        = planType === 'curieux';
+
+  const now     = new Date();
+  const endDate = user?.subscriptionEndDate ? new Date(user.subscriptionEndDate) : null;
+  const isExpired = endDate && now > endDate;
+
+  const fns = getUniversalFunctions(planType);
+
+  useEffect(() => {
+    if (fns.length > 0 && !selectedFunction) {
+      setFunction(fns[0].label, fns[0].category);
+    }
+  }, [planType]);
 
   useEffect(() => { fetchPlans(); }, []);
   useEffect(() => {
@@ -297,17 +311,6 @@ export default function HomeScreen() {
       setIsGenerating(false);
     }
   }
-
-  // ── Plan / subscription state (restauré depuis l'ancien code) ────────────
-  const planType             = user?.planType || 'curieux';
-  const subStatus            = user?.subscriptionStatus;
-  const stripeId             = user?.stripeCustomerId;
-  const isSubscriptionActive = subStatus === 'active' || subStatus === 'trialing' || subStatus === 'trial';
-  const isPackCurieux        = planType === 'curieux';
-
-  const now     = new Date();
-  const endDate = user?.subscriptionEndDate ? new Date(user.subscriptionEndDate) : null;
-  const isExpired = endDate && now > endDate;
 
   const effectivePlanId   = isPackCurieux && isExpired ? 'studio' : planType;
   const fallbackPlan      = { id: 'curieux', name: 'Pack Curieux', price: 'Gratuit (7 jours)' };
@@ -398,7 +401,6 @@ export default function HomeScreen() {
         return;
       }
 
-      // Success
       await api.post('/ai/payment/confirm-plan', {
         planId: currentPlanObject?.id,
         paymentIntentId: data.paymentIntent?.id,
@@ -468,7 +470,6 @@ export default function HomeScreen() {
       const indent = (text: string, level: number = 0) => '  '.repeat(level) + text;
       const processedKeys = new Set<string>();
 
-      // Title/Primary heading
       const primaryTitle = data.title || data.name || data.heading || null;
       if (primaryTitle) {
         processedKeys.add('title');
@@ -481,7 +482,6 @@ export default function HomeScreen() {
         lines.push('');
       }
 
-      // Description or content
       if (data.description) {
         processedKeys.add('description');
         lines.push(indent(data.description, 0));
@@ -498,14 +498,12 @@ export default function HomeScreen() {
         lines.push('');
       }
 
-      // Subtitle
       if (data.subtitle) {
         processedKeys.add('subtitle');
         lines.push(indent(`📍 ${data.subtitle}`, 0));
         lines.push('');
       }
 
-      // Sections array
       if (data.sections && Array.isArray(data.sections) && data.sections.length > 0) {
         processedKeys.add('sections');
         lines.push(indent('📋 SECTIONS', 0));
@@ -515,35 +513,29 @@ export default function HomeScreen() {
             lines.push(indent(`${String(idx + 1).padStart(2, '0')}. ${section}`, 1));
           } else if (section.title) {
             lines.push(indent(`\n▸ ${section.title}`, 1));
-            if (section.content) {
-              lines.push(indent(section.content, 2));
-            }
-            if (section.description && !section.content) {
-              lines.push(indent(section.description, 2));
-            }
+            if (section.content) lines.push(indent(section.content, 2));
+            if (section.description && !section.content) lines.push(indent(section.description, 2));
           }
         });
         lines.push('');
       }
 
-      // Color scheme
       if (data.colorScheme || data.colors) {
         processedKeys.add('colorScheme');
         processedKeys.add('colors');
-        const colors = data.colorScheme || data.colors;
+        const clrs = data.colorScheme || data.colors;
         lines.push(indent('🎨 PALETTE COULEURS', 0));
         lines.push(indent('─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─', 0));
-        if (typeof colors === 'object') {
-          Object.entries(colors).forEach(([key, value]: any) => {
+        if (typeof clrs === 'object') {
+          Object.entries(clrs).forEach(([key, value]: any) => {
             lines.push(indent(`  ${key}: ${value}`, 1));
           });
         } else {
-          lines.push(indent(colors, 1));
+          lines.push(indent(clrs, 1));
         }
         lines.push('');
       }
 
-      // Keywords/Tags
       if (data.keywords && Array.isArray(data.keywords)) {
         processedKeys.add('keywords');
         lines.push(indent('🏷️  MOT-CLÉS', 0));
@@ -551,7 +543,6 @@ export default function HomeScreen() {
         lines.push('');
       }
 
-      // Hashtags
       if (data.hashtags && Array.isArray(data.hashtags)) {
         processedKeys.add('hashtags');
         lines.push(indent('#️⃣ HASHTAGS', 0));
@@ -560,21 +551,17 @@ export default function HomeScreen() {
         lines.push('');
       }
 
-      // Features/Points list
       if (data.features && Array.isArray(data.features) && data.features.length > 0) {
         processedKeys.add('features');
         lines.push(indent('✨ CARACTÉRISTIQUES', 0));
         lines.push(indent('─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─', 0));
         data.features.forEach((feature: any) => {
           const featureText = typeof feature === 'string' ? feature : feature.text || feature.name || feature.description || '';
-          if (featureText) {
-            lines.push(indent(`✓ ${featureText}`, 1));
-          }
+          if (featureText) lines.push(indent(`✓ ${featureText}`, 1));
         });
         lines.push('');
       }
 
-      // Benefits
       if (data.benefits && Array.isArray(data.benefits)) {
         processedKeys.add('benefits');
         lines.push(indent('💡 AVANTAGES', 0));
@@ -586,7 +573,6 @@ export default function HomeScreen() {
         lines.push('');
       }
 
-      // Meta info (for social, etc)
       if (data.meta) {
         processedKeys.add('meta');
         lines.push(indent('ℹ️  INFORMATIONS', 0));
@@ -597,7 +583,6 @@ export default function HomeScreen() {
         lines.push('');
       }
 
-      // Call to action
       if (data.cta || data.callToAction) {
         processedKeys.add('cta');
         processedKeys.add('callToAction');
@@ -609,7 +594,6 @@ export default function HomeScreen() {
         }
       }
 
-      // Display any remaining fields not yet processed
       const remainingKeys = Object.keys(data).filter(k => !processedKeys.has(k) && data[k] !== null && data[k] !== undefined);
       if (remainingKeys.length > 0) {
         lines.push('');
@@ -618,15 +602,10 @@ export default function HomeScreen() {
         remainingKeys.forEach(key => {
           const value = data[key];
           let displayValue = '';
-          if (typeof value === 'string') {
-            displayValue = value;
-          } else if (Array.isArray(value)) {
-            displayValue = value.join(', ');
-          } else if (typeof value === 'object') {
-            displayValue = JSON.stringify(value, null, 2);
-          } else {
-            displayValue = String(value);
-          }
+          if (typeof value === 'string') displayValue = value;
+          else if (Array.isArray(value)) displayValue = value.join(', ');
+          else if (typeof value === 'object') displayValue = JSON.stringify(value, null, 2);
+          else displayValue = String(value);
           lines.push(indent(`${key}: ${displayValue}`, 1));
         });
       }
@@ -644,37 +623,28 @@ export default function HomeScreen() {
 
           if (conversation) {
             console.log(conversation);
-
-            // Set the conversation ID for subsequent messages
             setConversationId(idToLoad);
-
-            // Check if this is a non-CHAT generation (Flyer, Social, Image, etc)
             const isNonChatGeneration = conversation.type && conversation.type !== 'CHAT';
             const uiMessages: Message[] = [];
 
             if (isNonChatGeneration) {
-              // For Flyer, Social, Image, etc: show the original prompt and result with image
               if (conversation.prompt) {
                 uiMessages.push({
                   id: `${idToLoad}-user`,
-                  text: formatUserMessage(conversation.prompt), // Use formatUserMessage here
+                  text: formatUserMessage(conversation.prompt),
                   sender: 'user',
                   timestamp: new Date(conversation.createdAt),
                   isTyping: false,
                 });
               }
 
-              // Add the result with the image - format structured data nicely
               if (conversation.result || conversation.imageUrl) {
                 let resultText = conversation.result || 'Génération complétée';
                 console.log('[DEBUG] Raw result:', resultText);
 
-                // Try to parse and format JSON result
                 if (resultText && resultText !== 'Génération complétée') {
                   try {
                     let textToParse = resultText;
-
-                    // Handle different JSON formats
                     if (typeof textToParse === 'string') {
                       textToParse = textToParse
                         .trim()
@@ -682,30 +652,20 @@ export default function HomeScreen() {
                         .replace(/^```\n?/, '')
                         .replace(/\n?```$/, '')
                         .trim();
-
                       console.log('[DEBUG] Text to parse:', textToParse.substring(0, 100));
-
                       const parsed = JSON.parse(textToParse);
                       const formatted = formatStructuredData(parsed);
                       console.log('[DEBUG] Formatted result length:', formatted.length);
-
-                      if (formatted && formatted.length > 0) {
-                        resultText = formatted;
-                      }
+                      if (formatted && formatted.length > 0) resultText = formatted;
                     }
                   } catch (e) {
                     console.warn('[DEBUG] Parse error:', e, 'Original:', resultText.substring(0, 100));
-                    // Not JSON, use as-is
                   }
                 }
 
                 console.log('[DEBUG] Final resultText:', resultText.substring(0, 100));
-
-                // Determine media type based on generation type
                 let mediaType: 'image' | 'text' = 'image';
-                if (conversation.type === 'SOCIAL' || conversation.type === 'TEXT') {
-                  mediaType = 'text';
-                }
+                if (conversation.type === 'SOCIAL' || conversation.type === 'TEXT') mediaType = 'text';
 
                 uiMessages.push({
                   id: `${idToLoad}-result`,
@@ -718,32 +678,23 @@ export default function HomeScreen() {
                 });
               }
             } else {
-              // CHAT type: regular conversation loading
-              // Parse the stored conversation history
               let storedMessages: any[] = [];
               let isOldFormat = false;
 
               try {
-                // Try to parse as JSON (new format)
                 const parsed = JSON.parse(conversation.prompt);
-                if (Array.isArray(parsed)) {
-                  storedMessages = parsed;
-                } else {
-                  // Not an array, treat as old format
-                  isOldFormat = true;
-                }
+                if (Array.isArray(parsed)) storedMessages = parsed;
+                else isOldFormat = true;
               } catch (e) {
-                // Not valid JSON, it's old format (plain text)
                 isOldFormat = true;
                 console.log('[DEBUG] Old conversation format detected');
               }
 
               if (isOldFormat) {
-                // Old format: just show the prompt and result
                 if (conversation.prompt) {
                   uiMessages.push({
                     id: `${idToLoad}-user`,
-                    text: formatUserMessage(conversation.prompt), // Use formatUserMessage here
+                    text: formatUserMessage(conversation.prompt),
                     sender: 'user',
                     timestamp: new Date(conversation.createdAt),
                     isTyping: false,
@@ -759,12 +710,11 @@ export default function HomeScreen() {
                   });
                 }
               } else {
-                // New format: convert stored messages to UI format
                 storedMessages.forEach((msg, index) => {
                   if (msg.role === 'user' || msg.role === 'assistant') {
                     const uiMsg: Message = {
                       id: `${idToLoad}-${index}`,
-                      text: msg.role === 'user' ? formatUserMessage(msg.content) : msg.content, // Use formatUserMessage for user content
+                      text: msg.role === 'user' ? formatUserMessage(msg.content) : msg.content,
                       sender: (msg.role === 'user' ? 'user' : 'ai') as 'user' | 'ai',
                       timestamp: new Date(),
                       isTyping: false,
@@ -775,14 +725,10 @@ export default function HomeScreen() {
                   }
                 });
 
-                // Add the final AI response if it's not already in the messages
                 if (conversation.result) {
-                  // Check if the last message is already the result
                   const lastMsg = uiMessages[uiMessages.length - 1];
                   const resultMatches = lastMsg && lastMsg.sender === 'ai' && lastMsg.text === conversation.result;
-
                   if (!resultMatches) {
-                    // Add the result as a new AI message
                     uiMessages.push({
                       id: `${idToLoad}-result`,
                       text: conversation.result,
@@ -822,29 +768,10 @@ export default function HomeScreen() {
     return 'Bonsoir';
   };
 
-  const getEmojiForKey = (key: string): string => {
-    const k = key.toLowerCase();
-    if (k.includes('title') || k.includes('heading') || k.includes('name')) return '📌';
-    if (k.includes('description') || k.includes('content') || k.includes('text')) return '📝';
-    if (k.includes('color') || k.includes('style') || k.includes('design')) return '🎨';
-    if (k.includes('feature') || k.includes('benefit')) return '✨';
-    if (k.includes('price') || k.includes('cost')) return '💰';
-    if (k.includes('image') || k.includes('url') || k.includes('media')) return '📸';
-    if (k.includes('hashtag') || k.includes('tag') || k.includes('keyword')) return '#️⃣';
-    if (k.includes('cta') || k.includes('action') || k.includes('button')) return '🎯';
-    return '•';
-  };
-
   const handleSend = async () => {
     if ((!inputValue.trim() && !selectedImage) || isGenerating) return;
     if (isTextExhausted) { showModal('error', 'Limite atteinte', "Vous avez atteint votre limite d'utilisation. Vous pouvez encore générer des images ou passer à un pack supérieur !"); return; }
     const currentImage = selectedImage;
-
-    // Check credits
-    if (isTextExhausted) {
-      showModal('error', 'Limite atteinte', `Vous avez atteint votre limite d'utilisation. Vous pouvez encore générer des images ou passer à un pack supérieur !`);
-      return;
-    }
 
     const formattedText = formatUserMessage(inputValue.trim());
 
@@ -946,12 +873,11 @@ export default function HomeScreen() {
     clearChatStore(); setInputValue(''); setConversationId(null); resetCreationStore();
     const currentUser = useAuthStore.getState().user;
     if (currentUser?.job) setJob(currentUser.job);
+    if (fns.length > 0) setFunction(fns[0].label, fns[0].category);
     console.log('[DEBUG] Starting new conversation');
   };
 
   const completeTyping = (msgId: string) => setMessages(prev => prev.map(msg => msg.id === msgId ? { ...msg, isTyping: false } : msg));
-
-  const fns = getUniversalFunctions(planType);
 
   return (
     <BackgroundGradientOnboarding darkOverlay={true} blurIntensity={2}>
@@ -1036,11 +962,6 @@ export default function HomeScreen() {
                   })}
                 </View>
 
-                <View style={s.divider}>
-                  <View style={s.dividerLine} />
-                  <Text style={s.dividerText}>OU MODE LIBRE</Text>
-                  <View style={s.dividerLine} />
-                </View>
               </>
             ) : (
               <View style={s.messagesBlock}>
@@ -1112,48 +1033,24 @@ export default function HomeScreen() {
               paddingBottom: (Platform.OS === 'ios' ? insets.bottom : 0) + 12,
             }}
           >
-            {/* Limit warnings */}
-            {isPackCurieux && (
-              <View className="mb-3 px-1">
-                {/* Credits visible at top header */}
-              </View>
-            )}
-
             {isPaidPlanButInactive ? (
-              <View className="h-20" /> // Placeholder to keep layout stable
+              <View className="h-20" />
             ) : (
-              /*
-              <ChatInput
-                inputValue={inputValue}
-                onChangeText={setInputValue}
-                selectedImage={selectedImage}
-                onImageSelect={pickImage}
-                onImageRemove={() => setSelectedImage(null)}
-                onSend={handleSend}
-                isGenerating={isGenerating}
-                isDisabled={isInputDisabled}
-                placeholderText={placeholderText}
-                maxLength={500}
-              />
-              */
               null
             )}
           </View>
         </KeyboardAvoidingView>
 
-        {/* Freezing Overlay when payment is required */}
         {isPaidPlanButInactive && (
           <View
             style={[StyleSheet.absoluteFill, { zIndex: 999 }]}
             pointerEvents="box-none"
           >
-            {/* Dark semi-transparent background */}
             <View
               style={[StyleSheet.absoluteFill, { backgroundColor: colors.overlay }]}
               pointerEvents="auto"
             />
 
-            {/* Accessible Drawer Button on top of overlay */}
             <View
               style={{
                 position: 'absolute',
@@ -1169,7 +1066,6 @@ export default function HomeScreen() {
               </TouchableOpacity>
             </View>
 
-            {/* Blocker on top at the bottom */}
             <View
               style={{
                 position: 'absolute',
@@ -1206,30 +1102,22 @@ export default function HomeScreen() {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 const s = StyleSheet.create({
   topBar:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingBottom: 8 },
   menuBtn:       { borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.05)', padding: 8 },
   topRight:      { flexDirection: 'row', alignItems: 'center', gap: 8 },
   guidedBtn:     { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.primary.main + '1f', borderWidth: 1, borderColor: colors.primary.main + '4d', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
-  guidedBtnText: { color: colors.primary.main, fontSize: 12, fontWeight: '700', fontFamily: 'Arimo-Bold' },
-
+  guidedBtnText: { color: colors.primary.main, fontSize: 12, fontWeight: '700', fontFamily: fonts.arimo.bold },
   scroll:        { flex: 1, paddingHorizontal: H_PADDING },
   scrollContent: { flexGrow: 1, paddingTop: 40 },
-
-  // ── Titre ──
   titleBlock:    { alignItems: 'center', marginTop: 20, marginBottom: 24 },
-  greeting:      { fontFamily: 'Arimo-Regular', fontSize: 15, color: 'rgba(255,255,255,0.35)', marginBottom: 8, textAlign: 'center' },
-  titleArimo:    { fontFamily: 'Arimo-Bold', fontSize: 14, letterSpacing: 3, textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)', textAlign: 'center' },
-  titleBrittany: { fontFamily: 'Brittany-Signature', fontSize: 38, color: '#ffffff', textAlign: 'center', textShadowColor: '#00eaff', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 18, includeFontPadding: false, lineHeight: 48 },
+  greeting:      { fontFamily: fonts.arimo.regular, fontSize: 15, color: 'rgba(255,255,255,0.35)', marginBottom: 8, textAlign: 'center' },
+  titleArimo:    { fontFamily: fonts.arimo.bold, fontSize: 14, letterSpacing: 3, textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)', textAlign: 'center' },
+  titleBrittany: { fontFamily: fonts.brittany, fontSize: 38, color: 'white', textAlign: 'center', textShadowColor: NEON_BLUE, textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 3, paddingLeft : 20 },
   jobRow:        { marginTop: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
-  jobLabel:      { fontFamily: 'Arimo-Bold', fontSize: 13, color: 'rgba(255,255,255,0.45)', letterSpacing: 1.5, textTransform: 'uppercase' },
-
-  // ── Grille 2 colonnes ──
+  jobLabel:      { fontFamily: fonts.arimo.bold, fontSize: 13, color: 'rgba(255,255,255,0.45)', letterSpacing: 1.5, textTransform: 'uppercase' },
   grid:     { flexDirection: 'row', flexWrap: 'wrap', gap: COL_GAP, marginBottom: 8 },
   gridItem: { width: CARD_W },
-
-  // ── Card carrée ──
   card: {
     width: CARD_W,
     aspectRatio: 1,
@@ -1246,34 +1134,27 @@ const s = StyleSheet.create({
   cardSelected:      { backgroundColor: '#030814', borderWidth: 0 },
   iconBox:           { width: 64, height: 64, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.05)', alignItems: 'center', justifyContent: 'center' },
   iconBoxActive:     { backgroundColor: 'rgba(30,155,255,0.15)', borderWidth: 1, borderColor: 'rgba(30,155,255,0.4)' },
-  iconGlow:          { shadowColor: '#00eaff', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 12, elevation: 6 },
-  cardLabel:         { fontFamily: 'Arimo-Bold', fontSize: 13, color: colors.text.secondary, textAlign: 'center' },
-  cardLabelSelected: { color: '#ffffff', textShadowColor: '#00eaff', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 8 },
-
-  // ── NeonBorderCard ──
+  iconGlow:          { shadowColor: NEON_BLUE, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 12, elevation: 6 },
+  cardLabel:         { fontFamily: fonts.arimo.bold, fontSize: 13, color: colors.text.secondary, textAlign: 'center' },
+  cardLabelSelected: { color: 'white', textShadowColor: NEON_BLUE, textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 3 },
   neonWrapper: { position: 'relative', marginBottom: 2 },
   neonClip:    { position: 'absolute', top: -1, left: -1, right: -1, bottom: -0.5, borderRadius: 21, overflow: 'hidden', zIndex: 2 },
   neonTrack:   { position: 'absolute', top: 0, bottom: 0, left: 0 },
   neonMask:    { position: 'absolute', top: 1, left: 1, right: 1, bottom: 0.5, borderRadius: 20, zIndex: 1 },
-  bloomMid:    { position: 'absolute', top: -4, left: -4, right: -4, bottom: -4, borderRadius: 24, backgroundColor: 'transparent', shadowColor: '#00eaff', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.45, shadowRadius: 18, elevation: 8 },
-  bloomFar:    { position: 'absolute', top: -8, left: -8, right: -8, bottom: -8, borderRadius: 28, backgroundColor: 'transparent', shadowColor: '#1e9bff', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.25, shadowRadius: 28, elevation: 4 },
-  floorGlow:   { position: 'absolute', bottom: -16, alignSelf: 'center', width: '80%', height: 24, borderRadius: 50, backgroundColor: 'transparent', shadowColor: '#00eaff', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.6, shadowRadius: 16, elevation: 12 },
-
-  // ── Divider ──
+  bloomMid:    { position: 'absolute', top: -4, left: -4, right: -4, bottom: -4, borderRadius: 24, backgroundColor: 'transparent', shadowColor: NEON_BLUE, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.45, shadowRadius: 18, elevation: 8 },
+  bloomFar:    { position: 'absolute', top: -8, left: -8, right: -8, bottom: -8, borderRadius: 28, backgroundColor: 'transparent', shadowColor: NEON_BLUE_DARK, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.25, shadowRadius: 28, elevation: 4 },
+  floorGlow:   { position: 'absolute', bottom: -16, alignSelf: 'center', width: '80%', height: 24, borderRadius: 50, backgroundColor: 'transparent', shadowColor: NEON_BLUE, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.6, shadowRadius: 16, elevation: 12 },
   divider:     { flexDirection: 'row', alignItems: 'center', gap: 16, marginVertical: 20, opacity: 0.4 },
   dividerLine: { flex: 1, height: 1, backgroundColor: 'rgba(255,255,255,0.1)' },
-  dividerText: { fontFamily: 'Arimo-Bold', fontSize: 11, letterSpacing: 2, color: '#64748b' },
-
-  // ── Messages ──
+  dividerText: { fontFamily: fonts.arimo.bold, fontSize: 11, letterSpacing: 2, color: '#64748b' },
   messagesBlock: { gap: 12, paddingTop: 20 },
   loadingBlock:  { alignItems: 'center', justifyContent: 'center', paddingVertical: 40 },
-  loadingText:   { marginTop: 16, color: '#94a3b8', fontFamily: 'Arimo-Regular' },
+  loadingText:   { marginTop: 16, color: '#94a3b8', fontFamily: fonts.arimo.regular },
   bubble:        { maxWidth: '85%', borderRadius: 16, borderWidth: 1, padding: 16, marginTop: 8 },
   bubbleUser:    { backgroundColor: colors.primary.main + '33', borderColor: colors.primary.main + '66', alignSelf: 'flex-end', borderBottomRightRadius: 4 },
   bubbleAi:      { alignSelf: 'flex-start', borderBottomLeftRadius: 4, borderColor: 'rgba(255,255,255,0.2)', backgroundColor: 'rgba(255,255,255,0.15)' },
-  bubbleText:    { fontSize: 15, lineHeight: 24, color: '#cbd5e1', fontFamily: 'Arimo-Regular' },
+  bubbleText:    { fontSize: 15, lineHeight: 24, color: '#cbd5e1', fontFamily: fonts.arimo.regular },
   copyBtn:       { marginTop: 8, alignSelf: 'flex-end', padding: 4 },
   generatingDot: { width: 56, height: 44, alignItems: 'center', justifyContent: 'center', alignSelf: 'flex-start', borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', backgroundColor: 'rgba(255,255,255,0.05)', padding: 16 },
-
   inputWrapper: { paddingHorizontal: 20, paddingTop: 4 },
 });
