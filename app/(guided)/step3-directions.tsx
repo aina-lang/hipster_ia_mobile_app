@@ -236,14 +236,14 @@ const s = StyleSheet.create({
     color: '#ffffff',
     textShadowColor: colors.neonBlue,
     textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 3
+    textShadowRadius: 3,
+    marginBottom : 5
   },
   headerSub: {
     fontFamily: fonts.arimo.bold,
     fontSize: 13,
     letterSpacing: 3,
     color: colors.gray,
-    marginTop: -5,
     marginBottom: 20,
   },
   breadcrumb: {

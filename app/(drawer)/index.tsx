@@ -83,8 +83,8 @@ const getUniversalFunctions = (planType: string): JobFunction[] => {
     ];
   }
   return [
-    { label: 'Contenu réseaux', category: 'Social',   icon: Smartphone },
-    { label: 'Flyers',          category: 'Document', icon: FileText   },
+    { label: 'Réseaux sociaux',     category: 'Social',   icon: Smartphone },
+    { label: 'Textes libres',        category: 'Social',   icon: FileText   },
   ];
 };
 
