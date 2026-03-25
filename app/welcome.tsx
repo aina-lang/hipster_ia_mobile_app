@@ -53,7 +53,7 @@ const PARTICLES: ParticleConfig[] = [
   { x: 60, y: -78, size: 3, color: NEON_GLOW, delayMs: 760, durationMs: 1600 },
 ];
 
-interface ParticleProps extends ParticleConfig { }
+interface ParticleProps extends ParticleConfig {}
 
 const Particle = React.memo(({ x, y, size, color, delayMs, durationMs }: ParticleProps) => {
   const opacity = useSharedValue(0);
@@ -127,7 +127,6 @@ const TopBar = ({ textAnimProgress, isAuthenticated, userName }: TopBarProps) =>
   const insets = useSafeAreaInsets();
   const responsive = useResponsiveDimensions();
 
-  // Hidden when authenticated — no header shown
   if (isAuthenticated) return null;
 
   const animStyle = useAnimatedStyle(() => {
@@ -179,7 +178,6 @@ interface SubTextAnimationProps {
 }
 
 const SubTextAnimation = React.memo(({ textAnimProgress, isAuthenticated }: SubTextAnimationProps) => {
-  // Hidden when authenticated — no text shown
   if (isAuthenticated) return null;
 
   const responsive = useResponsiveDimensions();
@@ -235,14 +233,12 @@ const BottomAuthSection = React.memo(({ isAuthenticated, onVideoFinish, setIsRou
     opacity: interpolate(textAnimProgress?.value ?? 0, [0, 0.4, 1], [0, 0, 1], Extrapolate.CLAMP),
   }));
 
-  // Hidden when authenticated
   if (isAuthenticated) return null;
 
   return (
     <Animated.View style={[styles.container, { paddingHorizontal: responsive.containerPaddingHorizontal, gap: responsive.containerGap, bottom: responsive.containerBottom }, animStyle]}>
       <Pressable
         onPress={() => {
-          console.log('[Welcome] Commencer clicked');
           onVideoFinish?.();
           router.push({
             pathname: '/(auth)/register',
@@ -270,7 +266,6 @@ const BottomAuthSection = React.memo(({ isAuthenticated, onVideoFinish, setIsRou
         </Text>
         <Pressable
           onPress={() => {
-            console.log('[Welcome] Login clicked');
             onVideoFinish?.();
             router.push('/(auth)/login');
           }}
@@ -293,7 +288,7 @@ const BottomAuthSection = React.memo(({ isAuthenticated, onVideoFinish, setIsRou
         </Text>
         <Text style={[styles.separator, { fontSize: responsive.fontSize.xs }]}>·</Text>
         <Pressable
-          onPress={() => Linking.openURL('mailto:contact@hipster-ia.fr').catch(() => { })}
+          onPress={() => Linking.openURL('mailto:contact@hipster-ia.fr').catch(() => {})}
           style={styles.contactLink}
         >
           <Text style={[styles.contactText, { fontSize: responsive.fontSize.xs }]}>
@@ -305,7 +300,6 @@ const BottomAuthSection = React.memo(({ isAuthenticated, onVideoFinish, setIsRou
   );
 });
 
-// ─── Authenticated splash: plain video, 1s, then fade-out + navigate ───────────
 const AuthenticatedSplash = React.memo(({ onVideoFinish }: { onVideoFinish?: () => void }) => {
   const videoOpacity = useSharedValue(1);
   const isFinished = useRef(false);
@@ -318,7 +312,6 @@ const AuthenticatedSplash = React.memo(({ onVideoFinish }: { onVideoFinish?: () 
   const triggerExit = () => {
     if (isFinished.current) return;
     isFinished.current = true;
-    // Fade out the video over 400ms, then signal navigation
     videoOpacity.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.ease) }, (finished) => {
       if (finished) {
         runOnJS(onVideoFinish ?? (() => {}))();
@@ -358,7 +351,6 @@ const AuthenticatedSplash = React.memo(({ onVideoFinish }: { onVideoFinish?: () 
   return (
     <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: '#000' }, videoAnimStyle]}>
       <StatusBar style="light" />
-      {/* Video centered & slightly reduced (85% width) to avoid the bloated look */}
       <View style={styles.authVideoContainer}>
         <VideoView
           player={videoPlayer}
@@ -385,12 +377,9 @@ export default React.memo(function WelcomeScreen({ onVideoFinish, setIsRouting }
   const videoCompletedRef = useRef(false);
   const topBarHeight = responsive.topBarHeight + insets.top;
 
-  // ── Authenticated: render the dedicated splash, nothing else ──────────────
   if (isAuthenticated) {
     return <AuthenticatedSplash onVideoFinish={onVideoFinish} />;
   }
-
-  // ── Unauthenticated flow below (unchanged) ────────────────────────────────
 
   React.useEffect(() => {
     if (!isReturningFromBack) {
@@ -466,7 +455,7 @@ export default React.memo(function WelcomeScreen({ onVideoFinish, setIsRouting }
       if (status === 'readyToPlay') {
         setVideoReady(true);
         videoPlayer.play();
-        SplashScreen.hideAsync().catch(() => { });
+        SplashScreen.hideAsync().catch(() => {});
       }
     };
 
@@ -477,7 +466,7 @@ export default React.memo(function WelcomeScreen({ onVideoFinish, setIsRouting }
     if (videoPlayer.status === 'readyToPlay') {
       setVideoReady(true);
       videoPlayer.play();
-      SplashScreen.hideAsync().catch(() => { });
+      SplashScreen.hideAsync().catch(() => {});
     }
     if (videoPlayer.playing) startTracking();
 
@@ -550,7 +539,6 @@ export default React.memo(function WelcomeScreen({ onVideoFinish, setIsRouting }
 });
 
 const styles = StyleSheet.create({
-  // ── Authenticated splash ──────────────────────────────────────────────────
   authVideoContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -558,13 +546,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#000',
   },
   authVideo: {
-    // 85% of screen width keeps it sharp without the bloated full-bleed look
-    width: '85%',
-    aspectRatio: 9 / 16,   // adjust to your video's actual ratio
+    width: '100%',
+    aspectRatio: 9 / 16,
     maxHeight: '80%',
   },
-
-  // ── Shared / unauthenticated ──────────────────────────────────────────────
   center: {
     flex: 1,
     justifyContent: 'center',
