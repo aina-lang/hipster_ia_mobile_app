@@ -115,7 +115,9 @@ export default function SubscriptionScreen() {
         setLoading(true);
         const response = await api.post('/ai/payment/switch-plan', { newPlanId: plan.id });
         const data = response.data?.data ?? response.data;
-        const title = data.isRefill ? 'Renouvellement réussi !' : (data.isUpgrade ? 'Upgrade effectué !' : 'Downgrade planifié');
+        const title = data.isRefill
+        ? 'Renouvellement réussi !'
+        : (data.isUpgrade ? 'Mise à niveau effectuée !' : 'Rétrogradation planifiée');
         showModal('success', title, data.message);
         await updateAiProfile({ planType: plan.id });
         await fetchPlans();
