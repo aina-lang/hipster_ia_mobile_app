@@ -8,8 +8,8 @@ interface NeonBorderInputProps {
   isActive: boolean;
 }
 
-const NEON_BLUE = colors.neon.primary;
-const NEON_LIGHT = colors.primary.light;
+const NEON_BLUE = colors.neonBlue;
+const NEON_BLUE_DARK = colors.neonBlueDark;
 
 export function NeonBorderInput({ children, isActive }: NeonBorderInputProps) {
   const translateX = useRef(new Animated.Value(0)).current;
@@ -41,12 +41,14 @@ export function NeonBorderInput({ children, isActive }: NeonBorderInputProps) {
         <>
           <View style={nb.clip} pointerEvents="none">
             <Animated.View style={[nb.track, { transform: [{ translateX }] }]}>
+              
               <LinearGradient
-                colors={['transparent', NEON_BLUE, NEON_LIGHT, 'transparent', 'transparent', NEON_BLUE, NEON_LIGHT, 'transparent']}
-                locations={[0.05, 0.2, 0.3, 0.45, 0.55, 0.7, 0.8, 0.95]}
-                start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }}
-                style={{ width: 1600, height: '100%' }}
-              />
+                            colors={['transparent', NEON_BLUE, NEON_BLUE_DARK, 'transparent', 'transparent', NEON_BLUE, NEON_BLUE_DARK, 'transparent']}
+                            locations={[0.05, 0.2, 0.3, 0.45, 0.55, 0.7, 0.8, 0.95]}
+                            start={{ x: 0, y: 0.5 }}
+                            end={{ x: 1, y: 0.5 }}
+                           style={{ width: 1600, height: '100%' }}
+                          />
             </Animated.View>
             <View style={nb.mask} />
           </View>
@@ -80,7 +82,7 @@ const nb = StyleSheet.create({
     bottom: 0.5, 
     borderRadius: 12, 
     zIndex: 1, 
-    backgroundColor: colors.background.dark 
+    backgroundColor: 'transparent' 
   },
   bloomMid: { 
     position: 'absolute', 
@@ -88,13 +90,12 @@ const nb = StyleSheet.create({
     left: -4, 
     right: -4, 
     bottom: -4, 
-    borderRadius: 16, 
+    borderRadius: 15, 
     backgroundColor: 'transparent', 
-    shadowColor: NEON_BLUE, 
     shadowOffset: { width: 0, height: 0 }, 
     shadowOpacity: 0.45, 
-    shadowRadius: 14, 
-    elevation: 8 
+    shadowRadius: 12, 
+    elevation: 6
   },
   bloomFar: { 
     position: 'absolute', 
@@ -104,7 +105,6 @@ const nb = StyleSheet.create({
     bottom: -8, 
     borderRadius: 20, 
     backgroundColor: 'transparent', 
-    shadowColor: NEON_LIGHT, 
     shadowOffset: { width: 0, height: 0 }, 
     shadowOpacity: 0.22, 
     shadowRadius: 24, 

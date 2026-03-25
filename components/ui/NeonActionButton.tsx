@@ -5,7 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 interface NeonActionButtonProps {
   onPress: () => void;
   loading?: boolean;
-  disabled: boolean;
+  disabled?: boolean;
   label: string;
   icon?: React.ReactNode;
   small?: boolean;

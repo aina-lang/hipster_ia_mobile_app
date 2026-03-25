@@ -44,6 +44,7 @@ export const colors = {
   whiteOverlay : '#ffffff73',
   white: '#ffffff',
   gray : '#9ca3af',
+  whiteOverlayLight : '#ffffff59',
 
   // Background — pure deep black
   background: {

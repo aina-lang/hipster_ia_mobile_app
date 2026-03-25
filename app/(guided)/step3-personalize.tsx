@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -8,41 +8,36 @@ import {
   StyleSheet,
   Image,
   Modal,
-  Platform,
   Animated,
   Easing,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
-import { Palette, Minus, Check, X, Upload } from 'lucide-react-native';
+import { Sparkles, X, Upload } from 'lucide-react-native';
 import ColorPicker, { HueSlider, Panel1, Preview } from 'reanimated-color-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { runOnJS } from 'react-native-reanimated';
 import { useCreationStore } from '../../store/creationStore';
 import { useAuthStore } from '../../store/authStore';
 import { colors } from '../../theme/colors';
+import { fonts } from '../../theme/typography';
 import { GuidedScreenWrapper } from '../../components/layout/GuidedScreenWrapper';
-import { NeonButton } from '../../components/ui/NeonButton';
+import { NeonActionButton } from '../../components/ui/NeonActionButton';
+import { NeonBorderInput } from '../../components/ui/NeonBorderInput';
 import { GenericModal, ModalType } from '../../components/ui/GenericModal';
-
 import illus2 from '../../assets/Rouge_a_levre.jpeg';
 import illus3 from '../../assets/casquette.jpeg';
 import illus4 from '../../assets/TroisiemeCard.jpeg';
-import illus1 from '../../assets/montre.jpeg'; // Assuming illus1 exists, if not I'll handle it. Actually I will use illus2 again to be safe.
-//VERTICAL FASHION
+import illus1 from '../../assets/montre.jpeg';
 import vertical1 from '../../assets/vertical1.jpeg';
 import vertical2 from '../../assets/vertical2.jpeg';
 import vertical3 from '../../assets/vertical3.jpeg';
 import vertical4 from '../../assets/vertical4.jpeg';
-//Magazine cover
 import vertical5 from '../../assets/vertical5.jpeg';
-import vertical6 from '../../assets/vertical6.jpeg';
-import magazine1 from '../../assets/magazin1.jpeg';
 import magazine2 from '../../assets/magazine2_1.jpeg';
 import magazine3 from '../../assets/magazine3.jpeg';
 import magazine4 from '../../assets/magazine4.jpeg';
 import magazine5 from '../../assets/magazine5.jpeg';
-//Commerce Impact
 import mode from '../../assets/mode.jpeg';
 import chiot from '../../assets/chiot.jpeg';
 import casque from '../../assets/Casque.jpeg';
@@ -51,12 +46,123 @@ import signatureSplash1 from '../../assets/signatureSplash1.jpeg';
 import signatureSplash2 from '../../assets/signatureSplash2.jpeg';
 import signatureSplash3 from '../../assets/signatureSplash3.jpeg';
 import signatureSplash4 from '../../assets/signatureSplash4.jpeg';
-//Focus Circle
 import FocusCircle1 from '../../assets/FocusCircle1.jpeg';
 import FocusCircle2 from '../../assets/FocusCircle2.jpeg';
 import FocusCircle3 from '../../assets/FocusCircle3.jpeg';
 import FocusCircle4 from '../../assets/FocusCircle4.jpeg';
-// Fallback to illus2 if illus1 is not there.
+
+const NEON_BLUE = colors.neonBlue;
+const NEON_BLUE_DARK = colors.neonBlueDark;
+
+const TOGGLE_W = 150;
+
+function NeonBorderToggle({
+  children,
+  isSelected,
+}: {
+  children: React.ReactNode;
+  isSelected: boolean;
+}) {
+  const translateX = useRef(new Animated.Value(0)).current;
+  const loopRef = useRef<Animated.CompositeAnimation | null>(null);
+
+  React.useEffect(() => {
+    loopRef.current?.stop();
+    if (isSelected) {
+      translateX.setValue(0);
+      loopRef.current = Animated.loop(
+        Animated.timing(translateX, {
+          toValue: -TOGGLE_W,
+          duration: 2500,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        }),
+        { resetBeforeIteration: true }
+      );
+      loopRef.current.start();
+    } else {
+      translateX.setValue(0);
+    }
+    return () => { loopRef.current?.stop(); };
+  }, [isSelected]);
+
+  return (
+    <View style={t.neonWrapper}>
+      {isSelected && (
+        <View style={t.neonClip} pointerEvents="none">
+          <Animated.View style={[t.neonTrack, { transform: [{ translateX }] }]}>
+           <LinearGradient
+              colors={['transparent', NEON_BLUE, NEON_BLUE_DARK, 'transparent', 'transparent', NEON_BLUE, NEON_BLUE_DARK, 'transparent']}
+              locations={[0.05, 0.2, 0.3, 0.45, 0.55, 0.7, 0.8, 0.95]}
+              start={{ x: 0, y: 0.5 }}
+              end={{ x: 1, y: 0.5 }}
+              style={{ width: TOGGLE_W * 2, height: '100%' }}
+            />
+          </Animated.View>
+          <View style={[t.neonMask, { backgroundColor: '#030814' }]} />
+        </View>
+      )}
+      {isSelected && (
+        <>
+          <View style={[t.bloomMid, { shadowColor: NEON_BLUE }]} pointerEvents="none" />
+          <View style={[t.bloomFar, { shadowColor: NEON_BLUE }]} pointerEvents="none" />
+        </>
+      )}
+      {children}
+    </View>
+  );
+}
+
+const t = StyleSheet.create({
+  neonWrapper: { position: 'relative', flex: 1 },
+  neonClip:    { position: 'absolute', top: -1, left: -1, right: -1, bottom: -1, borderRadius: 12, overflow: 'hidden', zIndex: 2 },
+  neonTrack:   { position: 'absolute', top: 0, bottom: 0, left: 0 },
+  neonMask:    { position: 'absolute', top: 1, left: 1, right: 1, bottom: 1, borderRadius: 11, zIndex: 1 },
+  bloomMid:    { position: 'absolute', top: -4, left: -4, right: -4, bottom: -4, borderRadius: 15, backgroundColor: 'transparent', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.4, shadowRadius: 12, elevation: 6 },
+  bloomFar:    { position: 'absolute', top: -8, left: -8, right: -8, bottom: -8, borderRadius: 19, backgroundColor: 'transparent', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.2, shadowRadius: 20, elevation: 3 },
+});
+
+function NeonInputField({
+  label,
+  optional,
+  placeholder,
+  value,
+  onChangeText,
+  multiline,
+}: {
+  label?: string;
+  optional?: boolean;
+  placeholder: string;
+  value: string;
+  onChangeText: (v: string) => void;
+  multiline?: boolean;
+}) {
+  const [focused, setFocused] = useState(false);
+  return (
+    <View style={s.inputGroup}>
+      {label && (
+        <Text style={s.inputLabel}>
+          {label}
+          {optional && <Text style={s.optional}> (OPTIONNEL)</Text>}
+        </Text>
+      )}
+      <NeonBorderInput isActive={focused}>
+        <TextInput
+          style={[s.input, focused && s.inputActive, multiline && { height: 80, paddingTop: 14 }]}
+          placeholder={placeholder}
+          placeholderTextColor="rgba(255,255,255,0.3)"
+          value={value}
+          onChangeText={onChangeText}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          multiline={multiline}
+          textAlignVertical={multiline ? 'top' : 'center'}
+        />
+      </NeonBorderInput>
+    </View>
+  );
+}
+
 const EXAMPLES_DEFAULT = [
   { label: '', image: illus2, text: '' },
   { label: '', image: illus3, text: '' },
@@ -64,7 +170,7 @@ const EXAMPLES_DEFAULT = [
   { label: '', image: illus1, text: '' },
 ];
 
-const ARCHITECTURE_EXAMPLES = {
+const ARCHITECTURE_EXAMPLES: Record<string, { label: string; image: any; text: string }[]> = {
   'fashion-vertical-impact': [
     { label: '', image: vertical1, text: '' },
     { label: '', image: vertical2, text: '' },
@@ -158,15 +264,6 @@ export default function Step3PersonalizeScreen() {
     setQuery,
   } = useCreationStore();
 
-  React.useEffect(() => {
-    console.log('[DEBUG] Step3PersonalizeScreen MODIFIED MOUNT', {
-      selectedCategory,
-      selectedFunction,
-      selectedArchitecture,
-      selectedJob
-    });
-  }, []);
-
   const { user } = useAuthStore();
 
   React.useEffect(() => {
@@ -185,43 +282,15 @@ export default function Step3PersonalizeScreen() {
   const [modalTitle, setModalTitle] = React.useState('');
   const [modalMessage, setModalMessage] = React.useState('');
 
-  // Animation references for slide animations
-  const textButtonSlide = useRef(new Animated.Value(0)).current;
-  const imageButtonSlide = useRef(new Animated.Value(0)).current;
+  const [hexFocused, setHexFocused] = useState(false);
+
   const uploadCardSlide = useRef(new Animated.Value(0)).current;
   const imagePreviewSlide = useRef(new Animated.Value(0)).current;
 
-  const animateButtonSlide = (slideRef: any) => {
-    Animated.sequence([
-      Animated.timing(slideRef, {
-        toValue: -30,
-        duration: 280,
-        easing: Easing.bezier(0.25, 0.46, 0.45, 0.94),
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideRef, {
-        toValue: 0,
-        duration: 350,
-        easing: Easing.bezier(0.33, 0.66, 0.66, 1),
-        useNativeDriver: true,
-      }),
-    ]).start();
-  };
-
   const animateCardSlide = (slideRef: any) => {
     Animated.sequence([
-      Animated.timing(slideRef, {
-        toValue: -40,
-        duration: 320,
-        easing: Easing.bezier(0.25, 0.46, 0.45, 0.94),
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideRef, {
-        toValue: 0,
-        duration: 420,
-        easing: Easing.bezier(0.33, 0.66, 0.66, 1),
-        useNativeDriver: true,
-      }),
+      Animated.timing(slideRef, { toValue: -40, duration: 320, easing: Easing.bezier(0.25, 0.46, 0.45, 0.94), useNativeDriver: true }),
+      Animated.timing(slideRef, { toValue: 0, duration: 420, easing: Easing.bezier(0.33, 0.66, 0.66, 1), useNativeDriver: true }),
     ]).start();
   };
 
@@ -231,11 +300,8 @@ export default function Step3PersonalizeScreen() {
 
   const handleSourceTypeChange = (type: 'image' | 'text') => {
     setSubjectSourceType(type);
-    if (type === 'image') {
-      setSubject('');
-    } else {
-      setUploadedImage(null);
-    }
+    if (type === 'image') setSubject('');
+    else setUploadedImage(null);
   };
 
   const showModal = (title: string, message: string, type: ModalType = 'info') => {
@@ -289,7 +355,6 @@ export default function Step3PersonalizeScreen() {
   const handleHexChange = (text: string) => {
     const sanitized = text.toUpperCase().replace(/[^0-9A-F#]/g, '');
     setTempHex(sanitized);
-
     if (/^#([0-9A-F]{3,4}|[0-9A-F]{6}|[0-9A-F]{8})$/i.test(sanitized)) {
       updateColorState(sanitized);
     }
@@ -297,10 +362,7 @@ export default function Step3PersonalizeScreen() {
 
   const handleHexBlur = () => {
     let formatted = tempHex;
-    if (formatted.length > 0 && !formatted.startsWith('#')) {
-      formatted = '#' + formatted;
-    }
-
+    if (formatted.length > 0 && !formatted.startsWith('#')) formatted = '#' + formatted;
     if (/^#([0-9A-F]{3,4}|[0-9A-F]{6}|[0-9A-F]{8})$/i.test(formatted)) {
       updateColorState(formatted);
     } else {
@@ -315,408 +377,343 @@ export default function Step3PersonalizeScreen() {
     if (subTitle) queryParts.push(subTitle);
     if (textPromo) queryParts.push(textPromo);
     if (infoLine) queryParts.push(infoLine);
-
-    // Use a simple space-separated string for improvisation context
     setQuery(queryParts.join(' '));
-
     router.push('/(guided)/step4-result');
   };
+
+  const exampleData = selectedArchitecture && selectedArchitecture in ARCHITECTURE_EXAMPLES
+    ? ARCHITECTURE_EXAMPLES[selectedArchitecture]
+    : EXAMPLES_DEFAULT;
 
   return (
     <GuidedScreenWrapper
       currentStep={selectedCategory === 'Social' || selectedCategory === 'Image' ? 3 : 4}
       totalSteps={selectedCategory === 'Social' || selectedCategory === 'Image' ? 3 : 4}
-      footer={
-        <View style={styles.fixedFooter}>
-          <View style={styles.ctaWrapper}>
-            <NeonButton
-              title="GÉNÉRER MON VISUEL"
-              onPress={handleCreate}
-              variant="premium"
-              size="lg"
-              style={{ width: '100%' }}
-            />
-          </View>
-        </View>
-      }
     >
-      <View style={styles.container}>
-        {/* Header Content */}
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Personnaliser le visuel</Text>
+      <View style={s.container}>
+
+        <View style={s.header}>
+          <Text style={s.headerScript}>Personnaliser</Text>
+          <Text style={s.headerSub}>VOTRE VISUEL</Text>
         </View>
-        {/* EXAMPLES OR STYLES SECTION */}
+
         {selectedCategory === 'Social' ? (
-          <>
-            <Text style={styles.sectionTitle}>Chosissez votre DA</Text>
-            <Text style={styles.sectionSubtitle}>Sélectionnez l'ambiance de votre contenu</Text>
-            <View style={styles.stylesGrid}>
+          <View style={s.section}>
+            <Text style={s.sectionLabel}>DIRECTION ARTISTIQUE</Text>
+            <Text style={s.sectionSub}>Sélectionnez l'ambiance de votre contenu</Text>
+            <View style={s.stylesGrid}>
               {VISUAL_STYLES.map((item) => {
                 const isSelected = selectedStyle === item.label;
                 return (
                   <TouchableOpacity
                     key={item.label}
-                    style={[styles.styleCard, isSelected && styles.styleCardSelected]}
+                    style={[s.styleCard, isSelected && s.styleCardSelected]}
                     onPress={() => setStyle(item.label as any)}
                     activeOpacity={0.85}
                   >
-                    {isSelected && (
-                      <>
-                        <View style={styles.cardBorderGlow} pointerEvents="none" />
-                        <View style={styles.cardBloom} pointerEvents="none" />
-                      </>
-                    )}
-                    <Image source={item.image} style={styles.styleCardImage} />
-                    <View style={[styles.styleCardFooter, isSelected && styles.styleCardFooterSelected]}>
-                      <Text style={styles.styleCardLabel}>{item.label}</Text>
-                      <Text style={styles.styleCardDesc}>{item.description}</Text>
+                    <Image source={item.image} style={s.styleCardImage} />
+                    <View style={[s.styleCardFooter, isSelected && s.styleCardFooterSelected]}>
+                      <Text style={s.styleCardLabel}>{item.label}</Text>
+                      <Text style={s.styleCardDesc}>{item.description}</Text>
                     </View>
                   </TouchableOpacity>
                 );
               })}
             </View>
-          </>
+          </View>
         ) : (
-          <>
-            <Text style={styles.sectionTitle}>Ce modèle s'adapte à tous les produits</Text>
-            <Text style={styles.sectionSubtitle}>Voici quelques exemples</Text>
-
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.carousel}>
-              {(selectedArchitecture && selectedArchitecture in ARCHITECTURE_EXAMPLES
-                ? ARCHITECTURE_EXAMPLES[selectedArchitecture as keyof typeof ARCHITECTURE_EXAMPLES]
-                : EXAMPLES_DEFAULT
-              ).map((item, index) => (
-                <View key={index} style={styles.exampleCard}>
-                  <View style={[StyleSheet.absoluteFill, { backgroundColor: index === 0 ? '#ffb6b9' : index === 1 ? '#e2e8f0' : index === 2 ? '#fde047' : '#94a3b8' }]} />
-                  <Image source={item.image} style={styles.exampleImage} />
-
-                  <Text style={styles.exampleOverlayText}>{item.text}</Text>
-
+          <View style={s.section}>
+            <Text style={s.sectionLabel}>EXEMPLES</Text>
+            <Text style={s.sectionSub}>Ce modèle s'adapte à tous les produits</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.carousel}>
+              {exampleData.map((item, index) => (
+                <View key={index} style={s.exampleCard}>
+                  <Image source={item.image} style={s.exampleImage} />
+                  {!!item.text && <Text style={s.exampleOverlayText}>{item.text}</Text>}
                 </View>
               ))}
             </ScrollView>
-
-            <View style={styles.paginationDots}>
-              <View style={[styles.dot, styles.dotInactive]} />
-              <View style={styles.dotActiveWrapper}>
-                <View style={[styles.dot, styles.dotActive]} />
-              </View>
-              <View style={[styles.dot, styles.dotInactive]} />
-            </View>
-          </>
+          </View>
         )}
 
-        <View style={styles.separator} />
+        <View style={s.divider} />
 
-        {/* SUBJECT SOURCE TOGGLE */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>SOURCE DU SUJET</Text>
-          <Text style={styles.inputDescription}>Comment voulez-vous définir le sujet principal ?</Text>
+        <View style={s.inputGroup}>
+          <Text style={s.inputLabel}>SOURCE DU SUJET</Text>
+          <Text style={s.inputSub}>Comment voulez-vous définir le sujet principal ?</Text>
 
-          <View style={styles.sourceToggleContainer}>
-            <TouchableOpacity
-              style={[styles.sourceToggleButton, subjectSourceType === 'text' && styles.sourceToggleButtonActive]}
-              onPress={() => {
-                animateButtonSlide(textButtonSlide);
-                handleSourceTypeChange('text');
-              }}
-              activeOpacity={1}
-            >
-              {subjectSourceType === 'text' && (
-                <LinearGradient
-                  colors={['rgba(26, 143, 255, 0.4)', 'rgba(26, 143, 255, 0.1)', 'transparent']}
-                  start={{ x: 0.5, y: 0 }}
-                  end={{ x: 0.5, y: 1 }}
-                  style={StyleSheet.absoluteFill}
-                  pointerEvents="none"
-                />
-              )}
-              <Animated.View style={{ position: 'absolute', inset: 0, transform: [{ translateX: textButtonSlide }], borderRadius: 12 }} />
-              <Text style={[styles.sourceToggleText, subjectSourceType === 'text' && styles.sourceToggleTextActive, { zIndex: 1 }]}>Texte</Text>
-            </TouchableOpacity>
+          <View style={s.toggleRow}>
+            <NeonBorderToggle isSelected={subjectSourceType === 'text'}>
+              <TouchableOpacity
+                style={[s.toggleBtn, subjectSourceType === 'text' && s.toggleBtnActive]}
+                onPress={() => handleSourceTypeChange('text')}
+                activeOpacity={0.9}
+              >
+                {subjectSourceType === 'text' && (
+                  <LinearGradient
+                    colors={['rgba(26,143,255,0.4)', 'rgba(26,143,255,0.1)', 'transparent']}
+                    start={{ x: 0.5, y: 0 }}
+                    end={{ x: 0.5, y: 1 }}
+                    style={StyleSheet.absoluteFill}
+                    pointerEvents="none"
+                  />
+                )}
+                <Text style={[s.toggleText, subjectSourceType === 'text' && s.toggleTextActive]}>Texte</Text>
+              </TouchableOpacity>
+            </NeonBorderToggle>
 
-            <TouchableOpacity
-              style={[styles.sourceToggleButton, subjectSourceType === 'image' && styles.sourceToggleButtonActive]}
-              onPress={() => {
-                animateButtonSlide(imageButtonSlide);
-                handleSourceTypeChange('image');
-              }}
-              activeOpacity={1}
-            >
-              {subjectSourceType === 'image' && (
-                <LinearGradient
-                  colors={['rgba(26, 143, 255, 0.4)', 'rgba(26, 143, 255, 0.1)', 'transparent']}
-                  start={{ x: 0.5, y: 0 }}
-                  end={{ x: 0.5, y: 1 }}
-                  style={StyleSheet.absoluteFill}
-                  pointerEvents="none"
-                />
-              )}
-              <Animated.View style={{ position: 'absolute', inset: 0, transform: [{ translateX: imageButtonSlide }], borderRadius: 12 }} />
-              <Text style={[styles.sourceToggleText, subjectSourceType === 'image' && styles.sourceToggleTextActive, { zIndex: 1 }]}>Photo</Text>
-            </TouchableOpacity>
+            <NeonBorderToggle isSelected={subjectSourceType === 'image'}>
+              <TouchableOpacity
+                style={[s.toggleBtn, subjectSourceType === 'image' && s.toggleBtnActive]}
+                onPress={() => handleSourceTypeChange('image')}
+                activeOpacity={0.9}
+              >
+                {subjectSourceType === 'image' && (
+                  <LinearGradient
+                    colors={['rgba(26,143,255,0.4)', 'rgba(26,143,255,0.1)', 'transparent']}
+                    start={{ x: 0.5, y: 0 }}
+                    end={{ x: 0.5, y: 1 }}
+                    style={StyleSheet.absoluteFill}
+                    pointerEvents="none"
+                  />
+                )}
+                <Text style={[s.toggleText, subjectSourceType === 'image' && s.toggleTextActive]}>Photo</Text>
+              </TouchableOpacity>
+            </NeonBorderToggle>
           </View>
         </View>
 
         {subjectSourceType === 'image' ? (
-          /* IMAGE UPLOAD SECTION */
-          <View style={styles.inputGroup}>
+          <View style={s.inputGroup}>
             <Animated.View style={{ transform: [{ translateX: uploadCardSlide }] }}>
               <TouchableOpacity
-                style={styles.uploadCard}
-                onPress={() => {
-                  animateCardSlide(uploadCardSlide);
-                  pickImage();
-                }}
-                activeOpacity={1}
+                style={s.uploadCard}
+                onPress={pickImage}
+                activeOpacity={0.9}
               >
                 {uploadedImage ? (
-                  <Animated.View
-                    style={[
-                      styles.imagePreviewContainer,
-                      { transform: [{ translateX: imagePreviewSlide }] }
-                    ]}
-                  >
-                    <Image source={{ uri: uploadedImage }} style={styles.uploadedImage} />
+                  <Animated.View style={[s.imagePreviewContainer, { transform: [{ translateX: imagePreviewSlide }] }]}>
+                    <Image source={{ uri: uploadedImage }} style={s.uploadedImage} />
                     <TouchableOpacity
-                      style={styles.removeImageButton}
-                      onPress={() => {
-                        animateCardSlide(imagePreviewSlide);
-                        setUploadedImage(null);
-                      }}
+                      style={s.removeImageButton}
+                      onPress={() => setUploadedImage(null)}
                     >
                       <X size={16} color="#fff" />
                     </TouchableOpacity>
                   </Animated.View>
                 ) : (
-                  <View style={styles.uploadPlaceholder}>
-                    <View style={styles.uploadIconCircle}>
-                      <Upload size={20} color={colors.primary.main} />
+                  <View style={s.uploadPlaceholder}>
+                    <View style={s.uploadIconCircle}>
+                      <View style={s.uploadIconGlow}>
+                        <Upload size={20} color={NEON_BLUE} />
+                      </View>
                     </View>
-                    <Text style={styles.uploadText}>Sélectionner une image</Text>
-                    <Text style={styles.uploadSubtext}>JPG, PNG ou WebP</Text>
+                    <Text style={s.uploadText}>Sélectionner une image</Text>
+                    <Text style={s.uploadSubtext}>JPG, PNG ou WebP</Text>
                   </View>
                 )}
               </TouchableOpacity>
             </Animated.View>
           </View>
         ) : (
-          /* SUBJECT FIELD */
-          <View style={styles.inputGroup}>
-            <TextInput
-              style={styles.input}
+          <View style={s.inputGroup}>
+            <NeonInputField
               placeholder="Ex: un bouquet de fleurs, un sac à main..."
-              placeholderTextColor="rgba(255,255,255,0.3)"
               value={subject}
               onChangeText={setSubject}
             />
-            <Text style={styles.helperText}>Décris en 3-8 mots ce que tu veux au centre du visuel</Text>
+            <Text style={s.helperText}>Décris en 3-8 mots ce que tu veux au centre du visuel</Text>
           </View>
         )}
 
-        {/* INPUT FORM SECTION */}
+        <NeonInputField
+          label="TITRE PRINCIPAL"
+          placeholder="Ajouter un titre"
+          value={mainTitle}
+          onChangeText={setMainTitle}
+        />
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>TITRE PRINCIPAL</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="TON TITRE ICI"
-            placeholderTextColor="rgba(255,255,255,0.3)"
-            value={mainTitle}
-            onChangeText={setMainTitle}
-          />
-        </View>
-
-        <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>SOUS-TITRE (OPTIONNEL)</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Ajouter un sous-titre ici"
-            placeholderTextColor="rgba(255,255,255,0.3)"
-            value={subTitle}
-            onChangeText={setSubTitle}
-          />
-        </View>
+        <NeonInputField
+          label="SOUS-TITRE"
+          optional
+          placeholder="Ajouter un sous-titre"
+          value={subTitle}
+          onChangeText={setSubTitle}
+        />
 
         {selectedArchitecture === 'impact-commercial' && (
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>TEXTE PROMO (POUR LE BADGE)</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Ex: -50% ou NOUVEAU"
-              placeholderTextColor="rgba(255,255,255,0.3)"
-              value={textPromo}
-              onChangeText={setTextPromo}
-            />
-          </View>
+          <NeonInputField
+            label="TEXTE PROMO (BADGE)"
+            placeholder="Ex: -50% ou NOUVEAU"
+            value={textPromo}
+            onChangeText={setTextPromo}
+          />
         )}
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>LIGNE D'INFO</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Date ou info brève ici"
-            placeholderTextColor="rgba(255,255,255,0.3)"
-            value={infoLine}
-            onChangeText={setInfoLine}
+        <NeonInputField
+          label="LIGNE D'INFO"
+          placeholder="Date ou info brève"
+          value={infoLine}
+          onChangeText={setInfoLine}
+        />
+
+        <View style={s.inputGroup}>
+          <Text style={s.inputLabel}>COULEURS</Text>
+          <View style={s.colorRow}>
+            {selectedArchitecture !== 'mono-accent' && (
+              <View style={s.colorConfig}>
+                <Text style={s.colorLabel}>
+                  {selectedArchitecture === 'impact-commercial' ? 'FOND' : 'PRINCIPALE'}
+                </Text>
+                <TouchableOpacity style={[s.input, s.colorButton]} onPress={() => openPicker('left')}>
+                  <View style={[s.colorPreview, { backgroundColor: colorLeft }]} />
+                  <Text style={s.colorValue}>{colorLeft.toUpperCase()}</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+            {selectedArchitecture !== 'magazine-cover-poster' && (
+              <View style={s.colorConfig}>
+                <Text style={s.colorLabel}>
+                  {selectedArchitecture === 'impact-commercial' ? 'SUJET' : 'SECONDAIRE'}
+                </Text>
+                <TouchableOpacity style={[s.input, s.colorButton]} onPress={() => openPicker('right')}>
+                  <View style={[s.colorPreview, { backgroundColor: colorRight }]} />
+                  <Text style={s.colorValue}>{colorRight.toUpperCase()}</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        </View>
+
+        <View style={s.buttonWrapper}>
+          <NeonActionButton
+            label="GÉNÉRER MON VISUEL"
+            icon={<Sparkles size={16} color="#ffffff" />}
+            onPress={handleCreate}
           />
         </View>
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>PERSONNALISATION DES COULEURS</Text>
-          <View style={styles.colorRow}>
-            {selectedArchitecture !== 'mono-accent' && (
-              <View style={styles.colorConfig}>
-                <View style={styles.colorHeader}>
-                  <View style={styles.iconCircle}>
-                    <Palette size={12} color="#fff" />
-                  </View>
-                  <Text style={styles.colorLabel}>
-                    {selectedArchitecture === 'impact-commercial' ? 'COULEUR DE FOND' : 'COULEUR PRINCIPALE'}
-                  </Text>
-                </View>
-                <TouchableOpacity
-                  style={[styles.input, styles.colorButton]}
-                  onPress={() => openPicker('left')}
-                >
-                  <View style={[styles.colorPreview, { backgroundColor: colorLeft }]} />
-                  <Text style={styles.colorValue}>{colorLeft.toUpperCase()}</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-
-            {/* SECONDAIRE - HIDDEN FOR STREET SALE (single-color architecture) */}
-            {selectedArchitecture !== 'magazine-cover-poster' && (
-              <View style={styles.colorConfig}>
-                <View style={styles.colorHeader}>
-                  <View style={styles.iconCircle}>
-                    <Palette size={12} color="#fff" />
-                  </View>
-                  <Text style={styles.colorLabel}>
-                    {selectedArchitecture === 'impact-commercial' ? 'COULEUR DU SUJET' : 'COULEUR SECONDAIRE'}
-                  </Text>
-                </View>
-                <TouchableOpacity
-                  style={[styles.input, styles.colorButton]}
-                  onPress={() => openPicker('right')}
-                >
-                  <View style={[styles.colorPreview, { backgroundColor: colorRight }]} />
-                  <Text style={styles.colorValue}>{colorRight.toUpperCase()}</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          </View>
-        </View>
-
-        {/* Color Picker Modal */}
-        < Modal visible={pickerVisible} animationType="fade" transparent >
-          <View style={styles.modalOverlay}>
-            <View style={styles.pickerContainer}>
-              <View style={styles.pickerHeader}>
-                <Text style={styles.pickerTitle}>
-                  Choisir la couleur {activeColorSide === 'left' ? 'principale' : 'secondaire'}
+        <Modal visible={pickerVisible} animationType="fade" transparent>
+          <View style={s.modalOverlay}>
+            <View style={s.pickerContainer}>
+              <View style={s.pickerHeader}>
+                <Text style={s.pickerTitle}>
+                  Couleur {activeColorSide === 'left' ? 'principale' : 'secondaire'}
                 </Text>
-                <TouchableOpacity onPress={() => setPickerVisible(false)} style={styles.closeButton}>
+                <TouchableOpacity onPress={() => setPickerVisible(false)} style={s.closeButton}>
                   <X size={20} color="#fff" />
                 </TouchableOpacity>
               </View>
 
-              <ColorPicker
-                value={tempColor}
-                onComplete={handleColorSelect}
-                style={{ gap: 20 }}
-              >
-                <Panel1 style={styles.colorPanel} />
-                <HueSlider style={styles.hueSlider} />
-
-                <View style={styles.pickerFooter}>
-                  <Preview style={styles.previewContainer} hideText colorFormat="hex" />
-                  <TextInput
-                    style={styles.hexInput}
-                    value={tempHex}
-                    onChangeText={handleHexChange}
-                    onBlur={handleHexBlur}
-                    placeholder="#FFFFFF"
-                    placeholderTextColor="rgba(255,255,255,0.3)"
-                    maxLength={9}
-                    autoCapitalize="characters"
-                    spellCheck={false}
-                    autoCorrect={false}
-                  />
+              <ColorPicker value={tempColor} onComplete={handleColorSelect} style={{ gap: 20 }}>
+                <Panel1 style={s.colorPanel} />
+                <HueSlider style={s.hueSlider} />
+                <View style={s.pickerFooter}>
+                  <Preview style={s.previewContainer} hideText colorFormat="hex" />
+                  <View style={{ flex: 1 }}>
+                    <NeonBorderInput isActive={hexFocused}>
+                      <TextInput
+                        style={[s.hexInput, hexFocused && s.hexInputActive]}
+                        value={tempHex}
+                        onChangeText={handleHexChange}
+                        onBlur={() => { setHexFocused(false); handleHexBlur(); }}
+                        onFocus={() => setHexFocused(true)}
+                        placeholder="#FFFFFF"
+                        placeholderTextColor="rgba(255,255,255,0.3)"
+                        maxLength={9}
+                        autoCapitalize="characters"
+                        spellCheck={false}
+                        autoCorrect={false}
+                      />
+                    </NeonBorderInput>
+                  </View>
                 </View>
               </ColorPicker>
 
-              <TouchableOpacity
-                style={styles.confirmButton}
+             <TouchableOpacity
                 onPress={() => setPickerVisible(false)}
+                style={s.confirmButtonPressable}
               >
-                <Text style={styles.confirmButtonText}>Valider</Text>
+                <LinearGradient
+                  colors={['#264F8C', '#0a1628', '#040612']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  locations={[0, 0.46, 1]}
+                  style={s.confirmButtonGradient}
+                >
+                  <Text style={s.confirmButtonText}>VALIDER</Text>
+                </LinearGradient>
               </TouchableOpacity>
             </View>
           </View>
-        </Modal >
+        </Modal>
 
-        {/* Info/Error Modal */}
-        < GenericModal
+        <GenericModal
           visible={modalVisible}
           type={modalType}
           title={modalTitle}
           message={modalMessage}
-          onClose={() => setModalVisible(false)
-          }
+          onClose={() => setModalVisible(false)}
         />
-      </View >
-    </GuidedScreenWrapper >
+      </View>
+    </GuidedScreenWrapper>
   );
 }
 
-const styles = StyleSheet.create({
+const s = StyleSheet.create({
   container: {
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-    paddingTop: 10,
+    paddingHorizontal: 24
   },
+
   header: {
     alignItems: 'center',
-    marginBottom: 24,
-    paddingTop: 4,
+    paddingTop: 8,
+    marginBottom: 28,
   },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: colors.text.primary,
+  headerScript: {
+    fontFamily: 'Brittany-Signature',
+    fontSize: 42,
+    color: '#ffffff',
+    paddingVertical: 10,
+    textShadowColor: NEON_BLUE,
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 3,
+  },
+  headerSub: {
+    fontFamily: fonts.arimo.bold,
+    fontSize: 13,
+    letterSpacing: 3,
+    color: colors.gray,
+  },
+
+  section: {
+    marginBottom: 8,
+  },
+  sectionLabel: {
+    fontFamily: fonts.arimo.bold,
+    fontSize: 11,
+    letterSpacing: 2,
+    color: colors.gray,
     marginBottom: 4,
   },
-  fixedFooter: {
-    paddingHorizontal: 20,
-    paddingTop: 10,
+  sectionSub: {
+    fontFamily: fonts.arimo.regular,
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.45)',
+    marginBottom: 16,
+  },
 
-    paddingBottom: 20,
-  },
-  ctaWrapper: {
-    overflow: 'visible',
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#fff',
-    marginBottom: 6,
-  },
-  sectionSubtitle: {
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.5)',
-    marginBottom: 24,
-  },
   carousel: {
     gap: 12,
+    paddingBottom: 8,
   },
   exampleCard: {
     width: 125,
     height: 160,
-    borderRadius: 12,
+    borderRadius: 14,
     overflow: 'hidden',
-    position: 'relative',
     backgroundColor: '#1c1c1e',
+    position: 'relative',
   },
   exampleImage: {
     width: '100%',
@@ -733,246 +730,31 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.85)',
     textTransform: 'uppercase',
   },
-  exampleBadge: {
-    position: 'absolute',
-    top: 6,
-    right: 6,
-    backgroundColor: '#000',
-    paddingHorizontal: 6,
-    paddingVertical: 4,
-    borderRadius: 4,
-    alignItems: 'center',
-    zIndex: 10,
-  },
-  exampleBadgeText: {
-    color: '#fff',
-    fontSize: 6,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-  },
-  exampleBadgeSale: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '800',
-  },
-  exampleLabelContainer: {
-    position: 'absolute',
-    bottom: 12,
-    left: 14,
-    right: 14,
-    backgroundColor: '#1E1E24',
-    paddingVertical: 6,
-    borderRadius: 16,
-    alignItems: 'center',
-  },
-  exampleLabelText: {
-    color: '#fff',
-    fontSize: 10,
-    fontWeight: '700',
-  },
-  paginationDots: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 6,
-    marginTop: 20,
-    marginBottom: 24,
-  },
-  dot: {
-    height: 4,
-    borderRadius: 2,
-  },
-  dotActiveWrapper: {
-    width: 20,
-    height: 4,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    borderRadius: 2,
-    overflow: 'hidden',
-  },
-  dotActive: {
-    width: '50%',
-    backgroundColor: '#3b82f6',
-    height: '100%',
-  },
-  dotInactive: {
-    width: 4,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-  },
-  separator: {
-    height: 1,
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    marginBottom: 24,
-  },
-  formTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#fff',
-    marginBottom: 16,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  inputGroup: {
-    marginBottom: 16,
-  },
-  inputLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: 'rgba(255,255,255,0.8)',
-    marginBottom: 8,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  inputDescription: {
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.6)',
-    marginBottom: 8,
-    fontStyle: 'italic',
-  },
-  helperText: {
-    fontSize: 11,
-    color: 'rgba(255,255,255,0.5)',
-    marginTop: 8,
-    fontStyle: 'italic',
-  },
-  input: {
-    backgroundColor: 'rgba(255,255,255,0.03)',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
-    height: 48,
-    paddingHorizontal: 16,
-    fontSize: 14,
-    color: '#fff',
-  },
-  sourceToggleContainer: {
-    flexDirection: 'row',
-    backgroundColor: 'rgba(15, 23, 42, 0.8)',
-    borderRadius: 14,
-    borderWidth: 1.5,
-    borderColor: 'rgba(0, 212, 255, 0.15)',
-    overflow: 'visible',
-    position: 'relative',
-    marginTop: 12,
-    marginBottom: 12,
-    gap: 1,
-    padding: 2,
-    shadowColor: 'rgba(0, 212, 255, 0.2)',
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 4 },
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  sourceToggleButton: {
-    flex: 1,
-    paddingVertical: 13,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 12,
-    backgroundColor: 'rgba(15, 30, 60, 0.6)',
-    borderWidth: 1.5,
-    borderColor: 'rgba(0, 212, 255, 0.25)',
-  },
-  sourceToggleButtonActive: {
-    backgroundColor: colors.primary.main,
-    borderColor: '#1e9bff',
-    borderWidth: 2,
-    shadowColor: '#1a8fff',
-    shadowOpacity: 1,
-    shadowOffset: { width: 0, height: 0 },
-    shadowRadius: 10,
-    elevation: 20,
-  },
-  sourceToggleText: {
-    color: 'rgba(255,255,255,0.7)',
-    fontSize: 14,
-    fontWeight: '700',
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-  },
-  sourceToggleTextActive: {
-    color: '#000',
-    fontWeight: '800',
-  },
-  colorRow: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 4,
-  },
-  colorConfig: {
-    flex: 1,
-  },
-  colorHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-    gap: 6,
-    height: 20,
-  },
-  iconCircle: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  tag: {
-    backgroundColor: 'rgba(30,155,255,0.15)',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  tagText: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: '#60a5fa',
-  },
-  colorLabel: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: 'rgba(255,255,255,0.6)',
-  },
-  colorInput: {
-    fontWeight: '500',
-    fontFamily: 'monospace',
-  },
+
   stylesGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 12,
-    marginBottom: 20,
+    marginBottom: 8,
   },
   styleCard: {
-    width: '48%', // Approx 2 columns
+    width: '48%',
     aspectRatio: 0.8,
-    borderRadius: 12,
+    borderRadius: 14,
     overflow: 'hidden',
     backgroundColor: 'rgba(255,255,255,0.03)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.08)',
-    position: 'relative',
   },
   styleCardSelected: {
-    borderColor: colors.primary.main,
-    borderWidth: 2,
+    borderColor: NEON_BLUE,
+    borderWidth: 1.5,
   },
   styleCardImage: {
     width: '100%',
     height: '100%',
     position: 'absolute',
     opacity: 0.6,
-  },
-  styleCardCheckBadge: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: colors.primary.main,
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 10,
   },
   styleCardFooter: {
     marginTop: 'auto',
@@ -982,57 +764,111 @@ const styles = StyleSheet.create({
   styleCardFooterSelected: {
     backgroundColor: 'rgba(30,155,255,0.2)',
   },
-  cardBorderGlow: {
-    position: 'absolute',
-    top: 0, left: 0, right: 0, bottom: 0,
-    borderRadius: 12,
-    backgroundColor: 'transparent',
-    shadowColor: '#1a8fff',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.9,
-    shadowRadius: 16,
-    elevation: 12,
-    zIndex: -1,
-  },
-  cardBloom: {
-    position: 'absolute',
-    top: -6, left: -6, right: -6, bottom: -6,
-    borderRadius: 18,
-    backgroundColor: 'transparent',
-    shadowColor: '#0840bb',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.35,
-    shadowRadius: 20,
-    elevation: 4,
-    zIndex: -1,
-  },
   styleCardLabel: {
+    fontFamily: fonts.arimo.bold,
+    fontSize: 13,
     color: '#fff',
-    fontSize: 14,
-    fontWeight: '700',
   },
   styleCardDesc: {
-    color: 'rgba(255,255,255,0.5)',
+    fontFamily: fonts.arimo.regular,
     fontSize: 10,
+    color: colors.gray,
     marginTop: 2,
   },
-  // Upload Card
+
+  divider: {
+    height: 1,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    marginVertical: 24,
+  },
+
+  inputGroup: {
+    marginBottom: 16,
+  },
+  inputLabel: {
+    fontFamily: fonts.arimo.bold,
+    fontSize: 11,
+    letterSpacing: 1.5,
+    color: colors.gray,
+    marginBottom: 8,
+  },
+  inputSub: {
+    fontFamily: fonts.arimo.regular,
+    fontSize: 12,
+    color: colors.whiteOverlayLight,
+    marginBottom: 12,
+    fontStyle: 'italic',
+  },
+  optional: {
+    fontFamily: fonts.arimo.regular,
+    fontSize: 10,
+    color: colors.whiteOverlayLight,
+    letterSpacing: 0,
+  },
+  helperText: {
+    fontFamily: fonts.arimo.regular,
+    fontSize: 11,
+    color: colors.whiteOverlayLight,
+    marginBottom: 10,
+    fontStyle: 'italic',
+  },
+  input: {
+    backgroundColor: colors.darkSlateBlue,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+    height: 48,
+    paddingHorizontal: 16,
+    fontFamily: fonts.arimo.regular,
+    fontSize: 14,
+    color: '#fff',
+    zIndex: 3,
+  },
+  inputActive: {
+    borderColor: 'transparent',
+    backgroundColor: colors.midnightBlue,
+  },
+  toggleRow: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(15,23,42,0.8)',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(0,212,255,0.15)',
+    padding: 3,
+    gap: 3,
+  },
+  toggleBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 11,
+    overflow: 'hidden',
+    zIndex: 3,
+  },
+  toggleBtnActive: {
+  },
+  toggleText: {
+    fontFamily: fonts.arimo.bold,
+    fontSize: 13,
+    letterSpacing: 0.5,
+    color: colors.gray,
+    zIndex: 4,
+  },
+  toggleTextActive: {
+    color: '#ffffff',
+  },
   uploadCard: {
-    backgroundColor: 'rgba(15, 23, 42, 0.7)',
+    backgroundColor: 'rgba(15,23,42,0.7)',
     borderRadius: 16,
     borderWidth: 1.5,
-    borderColor: 'rgba(0, 212, 255, 0.20)',
+    borderColor: 'rgba(0,212,255,0.2)',
     borderStyle: 'dashed',
     paddingVertical: 24,
     paddingHorizontal: 18,
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 140,
-    shadowColor: 'rgba(0, 212, 255, 0.15)',
-    shadowOpacity: 0.08,
-    shadowOffset: { width: 0, height: 4 },
-    shadowRadius: 12,
-    elevation: 3,
   },
   uploadPlaceholder: {
     alignItems: 'center',
@@ -1042,41 +878,37 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 12,
-    backgroundColor: 'rgba(0, 212, 255, 0.10)',
+    backgroundColor: 'rgba(0,212,255,0.08)',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1.5,
-    borderColor: 'rgba(0, 212, 255, 0.25)',
-    shadowColor: colors.primary.main,
-    shadowOpacity: 0.12,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 6,
-    elevation: 2,
+    borderColor: `${NEON_BLUE}55`,
+  },
+  uploadIconGlow: {
+    shadowColor: NEON_BLUE,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 1,
+    shadowRadius: 10,
+    elevation: 6,
   },
   uploadText: {
+    fontFamily: fonts.arimo.bold,
+    fontSize: 14,
     color: '#fff',
-    fontSize: 15,
-    fontWeight: '700',
-    letterSpacing: -0.2,
   },
   uploadSubtext: {
-    color: 'rgba(255,255,255,0.5)',
+    fontFamily: fonts.arimo.regular,
     fontSize: 12,
-    fontWeight: '500',
+    color: 'rgba(255,255,255,0.4)',
   },
   imagePreviewContainer: {
     position: 'relative',
     width: '100%',
     height: 140,
-    borderRadius: 16,
+    borderRadius: 14,
     overflow: 'hidden',
     borderWidth: 1.5,
-    borderColor: 'rgba(0, 212, 255, 0.20)',
-    shadowColor: colors.primary.main,
-    shadowOpacity: 0.15,
-    shadowOffset: { width: 0, height: 6 },
-    shadowRadius: 12,
-    elevation: 4,
+    borderColor: 'rgba(0,212,255,0.2)',
   },
   uploadedImage: {
     width: '100%',
@@ -1090,80 +922,28 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 10,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    backgroundColor: 'rgba(255, 58, 48, 0.9)',
     borderWidth: 1.5,
-    borderColor: 'rgba(255, 59, 48, 0.4)',
+    borderColor: 'rgba(255,59,48,0.4)',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.3,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 6,
-    elevation: 3,
   },
-  // Neon Toggle Button Glow Effects
-  toggleBorderGlow: {
-    position: 'absolute',
-    top: -4,
-    left: -4,
-    right: -4,
-    bottom: -4,
-    borderRadius: 12,
-    backgroundColor: 'transparent',
-    shadowColor: '#1e9bff',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 1,
-    shadowRadius: 10,
-    elevation: 18,
-    zIndex: -1,
+
+  colorRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 4,
   },
-  toggleBloomMid: {
-    position: 'absolute',
-    top: -8,
-    left: -8,
-    right: -8,
-    bottom: -8,
-    borderRadius: 14,
-    backgroundColor: 'transparent',
-    shadowColor: '#0060e0',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.7,
-    shadowRadius: 20,
-    elevation: 12,
-    zIndex: -2,
+  colorConfig: {
+    flex: 1,
   },
-  toggleBloomFar: {
-    position: 'absolute',
-    top: -12,
-    left: -12,
-    right: -12,
-    bottom: -12,
-    borderRadius: 16,
-    backgroundColor: 'transparent',
-    shadowColor: '#0a50cc',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 30,
-    elevation: 8,
-    zIndex: -3,
+  colorLabel: {
+    fontFamily: fonts.arimo.bold,
+    fontSize: 10,
+    letterSpacing: 1,
+    color: 'rgba(255,255,255,0.4)',
+    marginBottom: 8,
   },
-  toggleFloorGlow: {
-    position: 'absolute',
-    bottom: -40,
-    left: '50%',
-    marginLeft: -90,
-    width: 180,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: 'transparent',
-    shadowColor: '#1a6fff',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.9,
-    shadowRadius: 35,
-    elevation: 30,
-    zIndex: -4,
-  },
-  // Color Picker styles
   colorButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1171,17 +951,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   colorPreview: {
-    width: 24,
-    height: 24,
+    width: 22,
+    height: 22,
     borderRadius: 6,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.2)',
   },
   colorValue: {
+    fontFamily: fonts.arimo.bold,
     fontSize: 13,
     color: '#fff',
-    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
-    fontWeight: '600',
+    letterSpacing: 0.5,
+  },
+
+  buttonWrapper: {
+    marginTop: 12,
   },
   modalOverlay: {
     flex: 1,
@@ -1193,11 +977,11 @@ const styles = StyleSheet.create({
   pickerContainer: {
     width: '100%',
     maxWidth: 340,
-    backgroundColor: '#1c1c1e',
+    backgroundColor: '#0f172a',
     borderRadius: 24,
     padding: 24,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: 'rgba(255,255,255,0.08)',
   },
   pickerHeader: {
     flexDirection: 'row',
@@ -1206,25 +990,31 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   pickerTitle: {
+    fontFamily: fonts.arimo.bold,
     fontSize: 16,
-    fontWeight: '700',
     color: '#fff',
   },
   closeButton: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: 'rgba(255,255,255,0.08)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   colorPanel: {
     height: 200,
-    borderRadius: 16,
+    borderRadius: 14,
   },
   hueSlider: {
     height: 24,
     borderRadius: 12,
+  },
+  pickerFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    paddingTop: 8,
   },
   previewContainer: {
     width: 48,
@@ -1233,39 +1023,72 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: 'rgba(255,255,255,0.1)',
   },
-  pickerFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 16,
-    paddingTop: 8,
-  },
   hexInput: {
-    flex: 1,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: colors.darkSlateBlue,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: 'rgba(255,255,255,0.08)',
     height: 48,
     paddingHorizontal: 16,
+    fontFamily: fonts.arimo.bold,
     fontSize: 16,
     color: '#fff',
-    fontWeight: '700',
     letterSpacing: 1,
     textAlign: 'center',
-    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    zIndex: 3,
+  },
+  hexInputActive: {
+    borderColor: 'transparent',
+    backgroundColor: colors.midnightBlue,
   },
   confirmButton: {
-    backgroundColor: colors.primary.main,
-    height: 50,
-    borderRadius: 12,
+    height: 52,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 24,
+    backgroundColor: 'rgba(0,212,255,0.08)',
+    borderWidth: 1.5,
+    borderColor: NEON_BLUE,
+    overflow: 'hidden',
+    position: 'relative',
+    shadowColor: NEON_BLUE,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.55,
+    shadowRadius: 14,
+    elevation: 8,
+  },
+  confirmGlow: {
+    position: 'absolute',
+    bottom: -10,
+    alignSelf: 'center',
+    width: '70%',
+    height: 20,
+    borderRadius: 50,
+    backgroundColor: 'transparent',
+    shadowColor: NEON_BLUE,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.7,
+    shadowRadius: 14,
+    elevation: 10,
+  },
+  confirmButtonPressable: {
+    borderRadius: 12,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.42)',
+    marginTop: 24,
+  },
+  confirmButtonGradient: {
+    paddingVertical: 15,
+    paddingHorizontal: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   confirmButtonText: {
+    fontFamily: fonts.arimo.bold,
+    fontSize: 14,
+    letterSpacing: 0.6,
     color: '#fff',
-    fontSize: 16,
-    fontWeight: '700',
   },
 });

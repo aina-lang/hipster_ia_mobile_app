@@ -23,6 +23,7 @@ export default function GuidedLayout() {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1
+    flex: 1,
+    backgroundColor : colors.background.primary
   },
 });
