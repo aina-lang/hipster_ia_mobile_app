@@ -1114,7 +1114,7 @@ const s = StyleSheet.create({
   greeting:      { fontFamily: fonts.arimo.regular, fontSize: 15, color: 'rgba(255,255,255,0.35)', marginBottom: 8, textAlign: 'center' },
   titleArimo:    { fontFamily: fonts.arimo.bold, fontSize: 14, letterSpacing: 3, textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)', textAlign: 'center' },
   titleBrittany: { fontFamily: fonts.brittany, fontSize: 38, color: 'white', textAlign: 'center', textShadowColor: NEON_BLUE, textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 3, paddingLeft : 20 },
-  jobRow:        { marginTop: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+  jobRow:        { marginTop: 40, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
   jobLabel:      { fontFamily: fonts.arimo.bold, fontSize: 13, color: 'rgba(255,255,255,0.45)', letterSpacing: 1.5, textTransform: 'uppercase' },
   grid:     { flexDirection: 'row', flexWrap: 'wrap', gap: COL_GAP, marginBottom: 8 },
   gridItem: { width: CARD_W },
