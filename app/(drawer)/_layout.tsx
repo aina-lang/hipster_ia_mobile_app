@@ -8,7 +8,7 @@ import { DrawerContentScrollView, DrawerItemList, useDrawerStatus } from '@react
 import { useRouter, usePathname } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
-  Home, History as HistoryIcon, User, Sparkles, MessageCircle, FileText,
+  Home, History as HistoryIcon, User, Sparkles, MessageCircle,
   Plus, LogOut, Trash2, Users,
 } from 'lucide-react-native';
 import dayjs from 'dayjs';
@@ -362,19 +362,6 @@ export default function DrawerLayout() {
           drawerLabel: ({ focused, color }) => (
             <Text style={{ fontFamily: 'Arimo-Bold', fontSize: 15, letterSpacing: 0.3, color: focused ? '#ffffff' : color, textShadowColor: focused ? '#00eaff' : 'transparent', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: focused ? 3 : 0 }}>
               Accueil
-            </Text>
-          ),
-        }}
-      />
-      <Drawer.Screen
-        name="freetext"
-        options={{
-          drawerIcon: ({ color, focused }) => (
-            <FileText size={20} color={focused ? '#ffffff' : color} style={focused ? { shadowColor: '#00eaff', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 8, elevation: 4 } : undefined} />
-          ),
-          drawerLabel: ({ focused, color }) => (
-            <Text style={{ fontFamily: 'Arimo-Bold', fontSize: 15, letterSpacing: 0.3, color: focused ? '#ffffff' : color, textShadowColor: focused ? '#00eaff' : 'transparent', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: focused ? 3 : 0 }}>
-              Textes libres
             </Text>
           ),
         }}
