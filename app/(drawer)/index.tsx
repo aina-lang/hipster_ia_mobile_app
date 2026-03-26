@@ -67,24 +67,32 @@ const PACK_IMAGES: Record<string, any> = {
   studio:  require('../../assets/images/packs/studio.png'),
 };
 
+const JOB_IMAGES: Record<string, any> = {
+  'Réseaux sociaux':     require('../../assets/images/jobs/reseaux.png'),
+  'Textes libres':       require('../../assets/images/jobs/texte.png'),
+  'Flyer / Affiche':     require('../../assets/images/jobs/flyer.png'),
+  'Format impression HD': require('../../assets/images/jobs/impression.png'),
+};
+
 interface JobFunction {
   label: string;
   category: CreationCategory;
   icon: any;
+  image?: any;
 }
 
 const getUniversalFunctions = (planType: string): JobFunction[] => {
   if (planType === 'studio') {
     return [
-      { label: 'Réseaux sociaux',     category: 'Social',   icon: Smartphone },
-      { label: 'Textes libres',        category: 'Social',   icon: FileText   },
-      { label: 'Flyer / Affiche',      category: 'Document', icon: FileText   },
-      { label: 'Format impression HD', category: 'Document', icon: FileText   },
+      { label: 'Réseaux sociaux',      category: 'Social',   icon: Smartphone, image: JOB_IMAGES['Réseaux sociaux'] },
+      { label: 'Textes libres',         category: 'Social',   icon: FileText,   image: JOB_IMAGES['Textes libres'] },
+      { label: 'Flyer / Affiche',       category: 'Document', icon: FileText,   image: JOB_IMAGES['Flyer / Affiche'] },
+      { label: 'Format impression HD',  category: 'Document', icon: FileText,   image: JOB_IMAGES['Format impression HD'] },
     ];
   }
   return [
-    { label: 'Réseaux sociaux',     category: 'Social',   icon: Smartphone },
-    { label: 'Textes libres',        category: 'Social',   icon: FileText   },
+    { label: 'Réseaux sociaux', category: 'Social', icon: Smartphone, image: JOB_IMAGES['Réseaux sociaux'] },
+    { label: 'Textes libres',   category: 'Social', icon: FileText,   image: JOB_IMAGES['Textes libres'] },
   ];
 };
 
@@ -950,7 +958,15 @@ export default function HomeScreen() {
                         <NeonBorderCard isSelected={isSelected}>
                           <View style={[s.card, isSelected && s.cardSelected]}>
                             <View style={[s.iconBox, isSelected && s.iconBoxActive]}>
-                              <PackIcon planType={planType} size={44} isSelected={isSelected} />
+                              {fn.image ? (
+                                <Image
+                                  source={fn.image}
+                                  style={{ width: 44, height: 44, tintColor: isSelected ? NEON_BLUE : colors.text.muted }}
+                                  resizeMode="contain"
+                                />
+                              ) : (
+                                <PackIcon planType={planType} size={44} isSelected={isSelected} />
+                              )}
                             </View>
                             <Text style={[s.cardLabel, isSelected && s.cardLabelSelected]} numberOfLines={2}>
                               {fn.label}
