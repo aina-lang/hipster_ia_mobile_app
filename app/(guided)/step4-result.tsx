@@ -369,6 +369,7 @@ export default function Step4ResultScreen() {
     }
   };
 
+  
   useEffect(() => {
     const checkStoreAndGenerate = () => {
       const state = useCreationStore.getState();
@@ -522,11 +523,11 @@ export default function Step4ResultScreen() {
       </View>
 
       {hasImage ? (
-        <View style={styles.fullscreenContainer}>
+        <ScrollView style={styles.fullscreenContainer} showsVerticalScrollIndicator={false}>
           <Image source={{ uri: imageUrl }} style={styles.fullscreenImage} resizeMode="contain" />
           
           <View style={styles.bottomOverlay}>
-           <View style={styles.infoSection}>
+            {/* <View style={styles.infoSection}>
               {selectedCategory === 'Document' && (
                 <View style={styles.infoBadge}>
                   <Text style={styles.infoBadgeText}>Document structuré</Text>
@@ -538,7 +539,7 @@ export default function Step4ResultScreen() {
                   <Text style={styles.infoBadgeText}>Visuel généré</Text>
                 </View>
               )}
-            </View>
+            </View> */}
 
             <View style={styles.actionsRow}>
               <TouchableOpacity style={styles.actionButton} onPress={handleSaveToGallery}>
@@ -615,7 +616,7 @@ export default function Step4ResultScreen() {
               )}
             </View>
           </View>
-        </View>
+        </ScrollView>
       ) : (
         <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
           <View style={styles.contentContainer}>
@@ -800,17 +801,15 @@ const styles = StyleSheet.create({
   },
   fullscreenImage: {
     width: '100%',
-    height: '100%',
+    marginTop : 90,
+    height: height * 0.7 ,
+    backgroundColor: 'transparent',
   },
   bottomOverlay: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
     paddingHorizontal: 16,
     paddingBottom: 40,
     paddingTop: 16,
-    backgroundColor: 'rgba(0,0,0,0.7)',
+    backgroundColor: colors.midnightBlue,
   },
   captionContainer: {
     backgroundColor: 'rgba(0,0,0,0.8)',
