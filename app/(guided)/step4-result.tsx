@@ -522,7 +522,7 @@ export default function Step4ResultScreen() {
       </View>
 
       {hasImage ? (
-        <View style={styles.fullscreenContainer}>
+        <ScrollView style={styles.fullscreenContainer} showsVerticalScrollIndicator={false}>
           <Image source={{ uri: imageUrl }} style={styles.fullscreenImage} resizeMode="contain" />
           
           <View style={styles.bottomOverlay}>
@@ -615,7 +615,7 @@ export default function Step4ResultScreen() {
               )}
             </View>
           </View>
-        </View>
+        </ScrollView>
       ) : (
         <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
           <View style={styles.contentContainer}>
@@ -800,17 +800,15 @@ const styles = StyleSheet.create({
   },
   fullscreenImage: {
     width: '100%',
-    height: '100%',
+    marginTop : 90,
+    height: height * 0.7 ,
+    backgroundColor: 'transparent',
   },
   bottomOverlay: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
     paddingHorizontal: 16,
     paddingBottom: 40,
     paddingTop: 16,
-    backgroundColor: 'rgba(0,0,0,0.7)',
+    backgroundColor: colors.midnightBlue,
   },
   captionContainer: {
     backgroundColor: 'rgba(0,0,0,0.8)',
