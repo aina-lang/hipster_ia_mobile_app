@@ -366,6 +366,7 @@ const AuthenticatedSplash = React.memo(({ onVideoFinish }: { onVideoFinish?: () 
 export default React.memo(function WelcomeScreen({ onVideoFinish, setIsRouting }: WelcomeScreenProps) {
   const [videoReady, setVideoReady] = React.useState(false);
   const { isReturningFromBack, setIsReturningFromBack, videoCompleted, setVideoCompleted } = useWelcomeVideoStore();
+  const showImage = isReturningFromBack;
   const shouldSkipPlay = videoCompleted || isReturningFromBack;
 
   const textAnimProgress = useSharedValue(shouldSkipPlay ? 1 : 0);
@@ -391,8 +392,9 @@ export default React.memo(function WelcomeScreen({ onVideoFinish, setIsRouting }
       textAnimProgress.value = 1;
       videoMarginTop.value = 100;
       isFinishedRef.current = true;
+      onVideoFinish?.();
     }
-  }, [isReturningFromBack, textAnimProgress, videoMarginTop]);
+  }, [isReturningFromBack, textAnimProgress, videoMarginTop, onVideoFinish]);
 
   const videoPlayer = useVideoPlayer(videobg, (player) => {
     player.loop = false;
@@ -416,7 +418,6 @@ export default React.memo(function WelcomeScreen({ onVideoFinish, setIsRouting }
 
     const onPlaybackFinish = () => {
       if (isFinishedRef.current) return;
-      isFinishedRef.current = true;
       videoCompletedRef.current = true;
 
       if (playbackTimerRef.current) {
@@ -424,27 +425,25 @@ export default React.memo(function WelcomeScreen({ onVideoFinish, setIsRouting }
         playbackTimerRef.current = null;
       }
 
-      // Pause et garde le dernier frame visible
-      const duration = videoPlayer?.duration ?? 0;
-      if (duration > 0 && videoPlayer) {
-        videoPlayer.pause();
-      }
-
-      // Animation fluide des éléments du bas
       videoMarginTop.value = withTiming(100, {
-        duration: 1200,
+        duration: 1500,
         easing: Easing.inOut(Easing.quad),
       });
 
       textAnimProgress.value = withTiming(1, {
-        duration: 1200,
+        duration: 1500,
         easing: Easing.inOut(Easing.quad),
       });
 
       playbackTimerRef.current = setTimeout(() => {
+        const duration = videoPlayer?.duration ?? 0;
+        if (duration > 0 && videoPlayer) {
+          videoPlayer.seekBy(duration - videoPlayer.currentTime);
+          videoPlayer.pause();
+        }
         setVideoCompleted(true);
         onVideoFinish?.();
-      }, 1200);
+      }, 2000);
     };
 
     const startTracking = () => {
@@ -492,19 +491,19 @@ export default React.memo(function WelcomeScreen({ onVideoFinish, setIsRouting }
       <StatusBar style="light" />
       {!videoReady && <View style={[StyleSheet.absoluteFill, { backgroundColor: '#000' }]} />}
 
-      <Animated.View style={[StyleSheet.absoluteFill, videoAnimatedStyle]}>
-        <VideoView player={videoPlayer} style={StyleSheet.absoluteFill} contentFit="cover" nativeControls={false} />
-      </Animated.View>
-
-      {isReturningFromBack && (
-        <Animated.View style={[{ position: 'absolute', top: topBarHeight + 20, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center' }]}>
-          <Image source={bgAfterBack} style={{ width: '110%', height: '100%' }} resizeMode="contain" />
+      {showImage ? (
+        <Animated.View style={[{ position: 'absolute', top: topBarHeight - 180, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center' }]}>
+          <Image source={bgAfterBack} style={{ width: '120%', height: '120%' }} resizeMode="contain" />
+        </Animated.View>
+      ) : (
+        <Animated.View style={[StyleSheet.absoluteFill, videoAnimatedStyle]}>
+          <VideoView player={videoPlayer} style={StyleSheet.absoluteFill} contentFit="cover" nativeControls={false} />
         </Animated.View>
       )}
 
       <LinearGradient
-        colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.3)', 'rgba(0,0,0,0.7)']}
-        locations={[0, 0.4, 1]}
+        colors={['transparent', 'rgba(0,0,0,0.5)', 'rgba(0,0,0,0.8)']}
+        locations={[0, 0.5, 1]}
         start={{ x: 0.5, y: 0 }}
         end={{ x: 0.5, y: 1 }}
         style={styles.globalOverlay}
@@ -605,8 +604,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    height: '75%',
-    pointerEvents: 'none',
+    height: '70%',
   },
   container: {
     position: 'absolute',
