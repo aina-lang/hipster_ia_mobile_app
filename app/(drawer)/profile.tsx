@@ -28,6 +28,17 @@ import { NeonBackButton } from '../../components/ui/NeonBackButton';
 
 const AVATAR_SIZE = 110;
 
+const JOB_OPTIONS = [
+  'Coiffure & Esthétique',
+  'Restaurant / Bar',
+  'Commerce / Boutique',
+  "Artisans du bâtiment",
+  'Service local',
+  'Profession libérale',
+  'Bien-être / Santé alternative',
+  'Autre',
+];
+
 function AvatarNeonBorder({ children, size }: { children: React.ReactNode; size: number }) {
   const translateX = useRef(new RNAnimated.Value(0)).current;
   const TRACK_W = size * Math.PI;
@@ -150,6 +161,53 @@ function SectionTitle({ title }: { title: string }) {
   );
 }
 
+function JobSelector({
+  job,
+  customJob,
+  onJobChange,
+  onCustomJobChange,
+  isEditing,
+  onShowPicker,
+}: {
+  job: string;
+  customJob: string;
+  onJobChange: (j: string) => void;
+  onCustomJobChange: (c: string) => void;
+  isEditing: boolean;
+  onShowPicker: () => void;
+}) {
+  return (
+    <View style={s.inputGroup}>
+      <Text style={s.label}>Métier / Secteur</Text>
+      <NeonBorderInput isActive={false}>
+        <TouchableOpacity
+          style={s.inputContainer}
+          onPress={onShowPicker}
+          disabled={!isEditing}
+        >
+          <Briefcase size={16} color={colors.text.muted} style={{ marginRight: 12 }} />
+          <Text style={[s.input, { color: colors.text.primary, flex: 1 }]}>
+            {job && job !== 'Autre' ? job : (customJob ? customJob : 'Sélectionner')}
+          </Text>
+          {isEditing && <ChevronDown size={14} color={colors.text.muted} />}
+        </TouchableOpacity>
+      </NeonBorderInput>
+
+      {job === 'Autre' && isEditing && (
+        <View style={{ marginTop: 12 }}>
+          <TextInput
+            style={[s.customJobInput, { paddingHorizontal: 16, paddingVertical: 12, borderRadius: 12, backgroundColor: 'rgba(15,23,42,0.9)', borderWidth: 1, borderColor: 'rgba(0,212,255,0.2)', color: colors.text.primary }]}
+            value={customJob}
+            onChangeText={onCustomJobChange}
+            placeholder="Ex: Boulanger, Plombier..."
+            placeholderTextColor={colors.text.muted}
+          />
+        </View>
+      )}
+    </View>
+  );
+}
+
 export default function ProfileScreen() {
   const router = useRouter();
   const { user, updateAiProfile, changePassword, logout, isLoading } = useAuthStore();
@@ -167,6 +225,8 @@ export default function ProfileScreen() {
   const [vatNumber, setVatNumber]                     = useState(user?.vatNumber || '');
   const [websiteUrl, setWebsiteUrl]                   = useState(user?.websiteUrl || '');
   const [job, setJob]                                 = useState(user?.job || '');
+  const [customJob, setCustomJob]                     = useState('');
+  const [showJobPicker, setShowJobPicker]             = useState(false);
   const [selectedCountry, setSelectedCountry]         = useState<any>(null);
   const [showCountryPicker, setShowCountryPicker]     = useState(false);
   const [showPasswordModal, setShowPasswordModal]     = useState(false);
@@ -194,7 +254,18 @@ export default function ProfileScreen() {
     setSiret(user.siret || '');
     setVatNumber(user.vatNumber || '');
     setWebsiteUrl(user.websiteUrl || '');
-    setJob(user.job || '');
+    if (user.job) {
+      if (JOB_OPTIONS.includes(user.job)) {
+        setJob(user.job);
+        setCustomJob('');
+      } else {
+        setJob('Autre');
+        setCustomJob(user.job);
+      }
+    } else {
+      setJob('');
+      setCustomJob('');
+    }
     const c = user.country ? getCountryByName(user.country) : getCountryByName('France');
     setSelectedCountry(c);
     setProfessionalPhone(getLocalNumber(user.professionalPhone || '', c?.phoneCode));
@@ -204,11 +275,12 @@ export default function ProfileScreen() {
   const handleSave = async () => {
     try {
       const phone = (raw: string) => raw && selectedCountry ? `${selectedCountry.phoneCode} ${raw.trim()}` : raw;
+      const finalJob = job === 'Autre' ? (customJob ? customJob.trim() : '') : job;
       await updateAiProfile({
         name, professionalEmail, professionalAddress, city, postalCode, country,
         professionalPhone: phone(professionalPhone),
         professionalPhone2: phone(professionalPhone2),
-        siret, vatNumber, websiteUrl, job,
+        siret, vatNumber, websiteUrl, job: finalJob,
       });
       setIsEditing(false);
       showModal('success', 'Succès', 'Profil mis à jour avec succès.');
@@ -315,7 +387,14 @@ export default function ProfileScreen() {
             <View style={s.card}>
               <SectionTitle title="Informations générales" />
               <InputField label="Nom / Nom d'entreprise" icon={<Briefcase size={16} color={colors.text.muted} />} value={name} onChangeText={setName} placeholder="Jean Dupont ou Ma Société" editable={isEditing} />
-              <InputField label="Métier / Secteur" icon={<Briefcase size={16} color={colors.text.muted} />} value={job} onChangeText={setJob} placeholder="Coiffeur, Restaurateur..." editable={isEditing} />
+              <JobSelector
+                job={job}
+                customJob={customJob}
+                onJobChange={setJob}
+                onCustomJobChange={setCustomJob}
+                isEditing={isEditing}
+                onShowPicker={() => setShowJobPicker(true)}
+              />
               <InputField label="Email de connexion" icon={<Lock size={16} color={colors.text.muted} />} value={user?.email || ''} editable={false} dimmed />
               <InputField label="Email professionnel" icon={<Mail size={16} color={colors.text.muted} />} value={professionalEmail} onChangeText={setProfessionalEmail} placeholder="email@contact.com" editable={isEditing} keyboardType="email-address" />
 
@@ -414,6 +493,34 @@ export default function ProfileScreen() {
         </KeyboardAvoidingView>
       </SafeAreaView>
 
+      <Modal visible={showJobPicker} transparent animationType="slide">
+        <View style={[s.modalOverlay, { backgroundColor: 'rgba(0,0,0,0.7)' }]}> 
+          <View style={[s.modalContent, { maxHeight: '70%' }]}> 
+            <View style={s.modalHeader}>
+              <Text style={s.modalTitle}>Choisir un métier</Text>
+              <TouchableOpacity onPress={() => setShowJobPicker(false)}>
+                <X size={22} color={colors.text.secondary} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={{ marginTop: 12 }} contentContainerStyle={{ gap: 8 }}>
+              {JOB_OPTIONS.map((opt) => (
+                <Pressable key={opt} style={[s.inputContainer, { justifyContent: 'flex-start' }]} onPress={() => {
+                  if (opt === 'Autre') {
+                    setJob('Autre');
+                  } else {
+                    setJob(opt);
+                    setCustomJob('');
+                  }
+                  setShowJobPicker(false);
+                }}>
+                  <Text style={[s.input, { color: colors.text.primary }]}>{opt}</Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
       <Modal visible={showPasswordModal} transparent animationType="fade">
         <View style={s.modalOverlay}>
           <View style={s.modalContent}>
@@ -488,7 +595,11 @@ const s = StyleSheet.create({
   label:          { fontFamily: 'Arimo-Bold', fontSize: 12, color: colors.text.secondary, letterSpacing: 0.3 },
   inputContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.background.secondary + 'e6', borderRadius: 12, padding: 14, borderWidth: 1, borderColor: colors.white + '14', zIndex: 3 },
   inputActive:    { borderColor: 'transparent', backgroundColor: '#030814' },
-  inputDimmed:    { opacity: 0.5 },
+  inputDimmed: { opacity: 0.5 },
+  customJobInput: {
+    fontFamily: 'Arimo-Regular',
+    fontSize: 14,
+  },
   input:          { flex: 1, fontFamily: 'Arimo-Regular', fontSize: 14, color: colors.text.primary },
 
   phonePrefix: { flexDirection: 'row', alignItems: 'center', paddingRight: 10, borderRightWidth: 1, borderRightColor: 'rgba(255,255,255,0.1)', marginRight: 10, gap: 4 },
