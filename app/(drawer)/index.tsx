@@ -942,8 +942,13 @@ export default function HomeScreen() {
                         onPress={() => {
                           setFunction(fn.label, fn.category);
                           setTimeout(() => {
-                            if (fn.category === 'Document') router.push('/(guided)/step3-directions');
-                            else router.push('/(guided)/step4-personalize');
+                            if (fn.label === 'Textes libres') {
+                              router.push('/(drawer)/freetext');
+                            } else if (fn.category === 'Document') {
+                              router.push('/(guided)/step3-directions');
+                            } else {
+                              router.push('/(guided)/step4-personalize');
+                            }
                           }, 300);
                         }}
                       >
