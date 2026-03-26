@@ -64,6 +64,7 @@ import { MediaDisplay } from '../../components/MediaDisplay';
 import { TypingMessage, TypingPlaceholder } from '../../components/TypingMessage';
 import { PaymentBlocker } from '../../components/PaymentBlocker';
 import { ChatInput } from '../../components/ChatInput';
+import { useSpeechToText } from '../../hooks/useSpeechToText';
 
 
 
@@ -77,6 +78,7 @@ export default function FreetextScreen() {
   const navigation = useNavigation<DrawerNavigationProp<any>>();
   const scrollViewRef = useRef<ScrollView>(null);
   const insets = useSafeAreaInsets();
+  const { isRecording, isProcessing, resetTranscript } = useSpeechToText();
 
   const [inputValue, setInputValue] = useState('');
   const { messages, setMessages, conversationId, setConversationId, resetChat: clearChatStore } = useChatStore();
@@ -393,110 +395,107 @@ export default function FreetextScreen() {
 
   useEffect(() => {
     const loadConversation = async () => {
-      if (!idToLoad) {
-        setIsLoadingConversation(false);
-        return;
-      }
-      
-      setIsLoadingConversation(true);
-      try {
-        console.log('[DEBUG] Loading conversation:', idToLoad);
-        const conversation = await AiService.getConversation(idToLoad);
+      if (idToLoad) {
+        setIsLoadingConversation(true);
+        try {
+          console.log('[DEBUG] Loading conversation:', idToLoad);
+          const conversation = await AiService.getConversation(idToLoad);
 
-        if (conversation) {
-          console.log(conversation);
+          if (conversation) {
+            console.log(conversation);
 
-          // Set the conversation ID for subsequent messages
-          setConversationId(idToLoad);
+            // Set the conversation ID for subsequent messages
+            setConversationId(idToLoad);
 
-          // Parse the stored conversation history
-          let storedMessages: any[] = [];
-          let isOldFormat = false;
+            // Parse the stored conversation history
+            let storedMessages: any[] = [];
+            let isOldFormat = false;
 
-          try {
-            // Try to parse as JSON (new format)
-            const parsed = JSON.parse(conversation.prompt);
-            if (Array.isArray(parsed)) {
-              storedMessages = parsed;
-            } else {
-              // Not an array, treat as old format
-              isOldFormat = true;
-            }
-          } catch (e) {
-            // Not valid JSON, it's old format (plain text)
-            isOldFormat = true;
-            console.log('[DEBUG] Old conversation format detected');
-          }
-
-          const uiMessages: Message[] = [];
-
-          if (isOldFormat) {
-            // Old format: just show the prompt and result
-            if (conversation.prompt) {
-              uiMessages.push({
-                id: `${idToLoad}-user`,
-                text: conversation.prompt,
-                sender: 'user',
-                timestamp: new Date(conversation.createdAt),
-                isTyping: false,
-              });
-            }
-            if (conversation.result) {
-              uiMessages.push({
-                id: `${idToLoad}-ai`,
-                text: conversation.result,
-                sender: 'ai',
-                timestamp: new Date(conversation.createdAt),
-                isTyping: false,
-              });
-            }
-          } else {
-            // New format: convert stored messages to UI format
-            storedMessages.forEach((msg, index) => {
-              if (msg.role === 'user' || msg.role === 'assistant') {
-                const uiMsg: Message = {
-                  id: `${idToLoad}-${index}`,
-                  text: msg.content,
-                  sender: (msg.role === 'user' ? 'user' : 'ai') as 'user' | 'ai',
-                  timestamp: new Date(),
-                  isTyping: false,
-                  type: msg.type || 'text',
-                  mediaUrl: msg.url || msg.mediaUrl,
-                };
-                uiMessages.push(uiMsg);
+            try {
+              // Try to parse as JSON (new format)
+              const parsed = JSON.parse(conversation.prompt);
+              if (Array.isArray(parsed)) {
+                storedMessages = parsed;
+              } else {
+                // Not an array, treat as old format
+                isOldFormat = true;
               }
-            });
+            } catch (e) {
+              // Not valid JSON, it's old format (plain text)
+              isOldFormat = true;
+              console.log('[DEBUG] Old conversation format detected');
+            }
 
-            // Add the final AI response if it's not already in the messages
-            if (conversation.result) {
-              // Check if the last message is already the result
-              const lastMsg = uiMessages[uiMessages.length - 1];
-              const resultMatches = lastMsg && lastMsg.sender === 'ai' && lastMsg.text === conversation.result;
+            const uiMessages: Message[] = [];
 
-              if (!resultMatches) {
-                // Add the result as a new AI message
+            if (isOldFormat) {
+              // Old format: just show the prompt and result
+              if (conversation.prompt) {
                 uiMessages.push({
-                  id: `${idToLoad}-result`,
-                  text: conversation.result,
-                  sender: 'ai',
-                  timestamp: new Date(),
+                  id: `${idToLoad}-user`,
+                  text: conversation.prompt,
+                  sender: 'user',
+                  timestamp: new Date(conversation.createdAt),
                   isTyping: false,
                 });
               }
-            }
-          }
+              if (conversation.result) {
+                uiMessages.push({
+                  id: `${idToLoad}-ai`,
+                  text: conversation.result,
+                  sender: 'ai',
+                  timestamp: new Date(conversation.createdAt),
+                  isTyping: false,
+                });
+              }
+            } else {
+              // New format: convert stored messages to UI format
+              storedMessages.forEach((msg, index) => {
+                if (msg.role === 'user' || msg.role === 'assistant') {
+                  const uiMsg: Message = {
+                    id: `${idToLoad}-${index}`,
+                    text: msg.content,
+                    sender: (msg.role === 'user' ? 'user' : 'ai') as 'user' | 'ai',
+                    timestamp: new Date(),
+                    isTyping: false,
+                    type: msg.type || 'text',
+                    mediaUrl: msg.url || msg.mediaUrl,
+                  };
+                  uiMessages.push(uiMsg);
+                }
+              });
 
-          setMessages(uiMessages);
+              // Add the final AI response if it's not already in the messages
+              if (conversation.result) {
+                // Check if the last message is already the result
+                const lastMsg = uiMessages[uiMessages.length - 1];
+                const resultMatches = lastMsg && lastMsg.sender === 'ai' && lastMsg.text === conversation.result;
+
+                if (!resultMatches) {
+                  // Add the result as a new AI message
+                  uiMessages.push({
+                    id: `${idToLoad}-result`,
+                    text: conversation.result,
+                    sender: 'ai',
+                    timestamp: new Date(),
+                    isTyping: false,
+                  });
+                }
+              }
+            }
+
+            setMessages(uiMessages);
+          }
+        } catch (error) {
+          console.error('[DEBUG] Failed to load conversation:', error);
+        } finally {
+          setIsLoadingConversation(false);
         }
-      } catch (error) {
-        console.error('[DEBUG] Failed to load conversation:', error);
-      } finally {
-        setIsLoadingConversation(false);
       }
     };
 
     loadConversation();
-  }, [idToLoad, setConversationId, setMessages]);
+  }, [idToLoad]);
 
   const placeholderText = 'Décrivez votre idée, ajoutez une image ou un audio...';
   const hasMessages = messages.length > 0;
@@ -707,32 +706,24 @@ export default function FreetextScreen() {
   };
 
   const handleDeleteConfirm = async () => {
-    console.log('[FreetextScreen] handleDeleteConfirm triggered. conversationId:', conversationId);
-    
+    console.log('[HomeScreen] handleDeleteConfirm triggered. conversationId:', conversationId);
+    setShowDeleteConfirm(false);
     if (!conversationId) {
-      console.warn('[FreetextScreen] No conversationId, resetting local state only.');
-      setShowDeleteConfirm(false);
+      console.warn('[HomeScreen] No conversationId to delete, just resetting local state.');
       resetChat();
-      showModal('success', 'Succès', 'Conversation vidée avec succès.');
       return;
     }
 
     try {
       setIsGenerating(true);
-      console.log('[FreetextScreen] Calling AiService.deleteGeneration with ID:', conversationId);
+      console.log('[HomeScreen] Calling AiService.deleteGeneration with ID:', conversationId);
       const result = await AiService.deleteGeneration(conversationId);
-      console.log('[FreetextScreen] Deletion result from API:', result);
-      
-      // Vider complètement la conversation locale
-      setMessages([]);
-      setInputValue('');
-      setConversationId(null);
-      setShowDeleteConfirm(false);
-      
+      console.log('[HomeScreen] Deletion result from API:', result);
+      resetChat();
+      router.setParams({ chatId: undefined, conversationId: undefined });
       showModal('success', 'Succès', 'Conversation supprimée avec succès.');
     } catch (error) {
-      console.error('[FreetextScreen] Delete conversation error:', error);
-      setShowDeleteConfirm(false);
+      console.error('[HomeScreen] Delete conversation error:', error);
       showModal('error', 'Erreur', 'Impossible de supprimer la conversation.');
     } finally {
       setIsGenerating(false);
@@ -744,6 +735,20 @@ export default function FreetextScreen() {
     setInputValue('');
     setConversationId(null);
     console.log('[DEBUG] Starting new conversation');
+  };
+
+  const handleMicrophonePress = async () => {
+    if (isRecording) {
+      // Stop recording and get transcript
+      const transcript = await stopRecording();
+      if (transcript) {
+        setInputValue(transcript);
+        resetTranscript();
+      }
+    } else {
+      // Start recording
+      await startRecording();
+    }
   };
 
   const completeTyping = (msgId: string) => {
@@ -892,18 +897,42 @@ export default function FreetextScreen() {
                 loading={isPaymentLoading}
               />
             ) : (
-              <ChatInput
-                inputValue={inputValue}
-                onChangeText={setInputValue}
-                selectedImage={selectedImage}
-                onImageSelect={pickImage}
-                onImageRemove={() => setSelectedImage(null)}
-                onSend={handleSend}
-                isGenerating={isGenerating}
-                isDisabled={isInputDisabled}
-                placeholderText={placeholderText}
-                maxLength={500}
-              />
+              <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 10 }}>
+                <View style={{ flex: 1 }}>
+                  <ChatInput
+                    inputValue={inputValue}
+                    onChangeText={setInputValue}
+                    selectedImage={selectedImage}
+                    onImageSelect={pickImage}
+                    onImageRemove={() => setSelectedImage(null)}
+                    onSend={handleSend}
+                    isGenerating={isGenerating}
+                    isDisabled={isInputDisabled}
+                    placeholderText={placeholderText}
+                    maxLength={500}
+                  />
+                </View>
+                <TouchableOpacity
+                  onPress={handleMicrophonePress}
+                  disabled={isGenerating || isProcessing}
+                  style={{
+                    marginBottom: 8,
+                    paddingVertical: 12,
+                    paddingHorizontal: 12,
+                    borderRadius: 12,
+                    backgroundColor: isRecording ? 'rgba(255, 68, 68, 0.15)' : 'rgba(255, 255, 255, 0.08)',
+                    borderWidth: 1,
+                    borderColor: isRecording ? 'rgba(255, 68, 68, 0.5)' : 'rgba(255, 255, 255, 0.1)',
+                    opacity: isGenerating || isProcessing ? 0.5 : 1,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                  }}>
+                  <Mic
+                    size={24}
+                    color={isRecording ? '#ff4444' : colors.text.muted}
+                  />
+                </TouchableOpacity>
+              </View>
             )}
           </View>
         </KeyboardAvoidingView>
