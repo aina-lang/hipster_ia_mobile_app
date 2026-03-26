@@ -121,6 +121,10 @@ export default function SubscriptionScreen() {
         showModal('success', title, data.message);
         await updateAiProfile({ planType: plan.id });
         await fetchPlans();
+        setTimeout(() => {
+          setModalVisible(false);
+          router.push('/(drawer)/');
+        }, 3000);
       } catch (error: any) {
         showModal('error', 'Erreur', error?.message || error?.response?.data?.message || 'Impossible de changer de plan');
       } finally {
@@ -143,7 +147,10 @@ export default function SubscriptionScreen() {
         ? `\n\nVos limites:\n• ${limits.promptsLimit} textes\n• ${limits.imagesLimit} images\n• ${limits.videosLimit} vidéos\n• ${limits.audioLimit} audios`
         : '';
       showModal('success', 'Succès ! 🎉', `Abonnement activé avec succès.${limitsText}`);
-      setTimeout(() => setModalVisible(false), 3000);
+      setTimeout(() => {
+        setModalVisible(false);
+        router.push('/(drawer)/');
+      }, 3000);
     } catch {
       showModal('error', 'Erreur', 'Impossible de sauvegarder votre plan.');
     }
