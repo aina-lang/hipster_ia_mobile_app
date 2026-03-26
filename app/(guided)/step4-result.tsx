@@ -371,7 +371,6 @@ export default function Step4ResultScreen() {
 
   
   useEffect(() => {
-    if(true) return;
     const checkStoreAndGenerate = () => {
       const state = useCreationStore.getState();
 
