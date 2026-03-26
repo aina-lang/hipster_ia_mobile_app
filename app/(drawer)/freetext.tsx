@@ -1,266 +1,913 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import {
   View,
   Text,
+  TouchableOpacity,
   ScrollView,
+  TextInput,
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
-  StyleSheet,
-  Pressable,
-  TextInput,
-  Keyboard,
-  SafeAreaView,
+  Image,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
-import { ArrowLeft, Send, Mic, Copy, Trash2 } from 'lucide-react-native';
 import { Audio } from 'expo-av';
+import * as MediaLibrary from 'expo-media-library';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter, useNavigation, useGlobalSearchParams } from 'expo-router';
+import { DrawerNavigationProp } from '@react-navigation/drawer';
+import * as Notifications from 'expo-notifications';
+import { Modal } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 
-import { colors } from '../../theme/colors';
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    // shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+    shouldShowBanner: true,
+    shouldShowList: true,
+  }),
+});
+
+
+import {
+  Compass,
+  Menu,
+  Image as ImageIcon,
+  Paperclip,
+  Send,
+  Mic,
+  Copy,
+  Trash2,
+  Plus,
+  CreditCard,
+  X,
+  Lock,
+  ChevronRight,
+  ExternalLink,
+  MessageSquare,
+  ArrowUpRight,
+} from 'lucide-react-native';
+import { useStripe } from '@stripe/stripe-react-native';
+import { DeerAnimation } from '../../components/ui/DeerAnimation';
+import { UsageBar } from '../../components/UsageBar';
 import { useAuthStore } from '../../store/authStore';
-import { useChatStore, Message } from '../../store/chatStore';
+import { useCreationStore } from '../../store/creationStore';
+import { useChatStore, Message, generateConversationId } from '../../store/chatStore';
 import { AiService } from '../../api/ai.service';
-import { GenericModal } from '../../components/ui/GenericModal';
-import { TypingMessage } from '../../components/TypingMessage';
+import { api } from '../../api/client';
+import { colors } from '../../theme/colors';
+import { GenericModal, ModalType } from '../../components/ui/GenericModal';
+import { BackgroundGradientOnboarding } from '../../components/ui/BackgroundGradientOnboarding';
+import { NeonButton } from '../../components/ui/NeonButton';
+import { MediaDisplay } from '../../components/MediaDisplay';
+import { TypingMessage, TypingPlaceholder } from '../../components/TypingMessage';
 import { PaymentBlocker } from '../../components/PaymentBlocker';
+import { ChatInput } from '../../components/ChatInput';
 
-const NEON_BLUE = colors.neonBlue;
 
-interface FreetextMessage extends Message {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  timestamp: number;
-}
+
+
 
 export default function FreetextScreen() {
-  const insets = useSafeAreaInsets();
-  const router = useRouter();
   const { user } = useAuthStore();
+  const router = useRouter();
+  const { chatId, conversationId: paramConversationId, reset } = useGlobalSearchParams();
+  const idToLoad = (paramConversationId ?? chatId) as string | undefined;
+  const navigation = useNavigation<DrawerNavigationProp<any>>();
+  const scrollViewRef = useRef<ScrollView>(null);
+  const insets = useSafeAreaInsets();
 
-  const [messages, setMessages] = useState<FreetextMessage[]>([]);
-  const [textInput, setTextInput] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [isRecording, setIsRecording] = useState(false);
-  const scrollRef = useRef<ScrollView>(null);
-  const recordingRef = useRef<Audio.Recording | null>(null);
+  const [inputValue, setInputValue] = useState('');
+  const { messages, setMessages, conversationId, setConversationId, resetChat: clearChatStore } = useChatStore();
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [isBackendConnected, setIsBackendConnected] = useState<boolean | null>(null);
+  const [isLoadingConversation, setIsLoadingConversation] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
+  // Plans State
+  const [plans, setPlans] = useState<any[]>([]);
+  const [loadingPlans, setLoadingPlans] = useState(false);
+
+  // Modal State
   const [modalVisible, setModalVisible] = useState(false);
-  const [modalType, setModalType] = useState<any>('info');
+  const [modalType, setModalType] = useState<ModalType>('info');
   const [modalTitle, setModalTitle] = useState('');
   const [modalMessage, setModalMessage] = useState('');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  const showModal = (type: any, title: string, message: string = '') => {
+  const [isPaymentLoading, setIsPaymentLoading] = useState(false);
+  const { initPaymentSheet, presentPaymentSheet } = useStripe();
+
+  // Audio Recording
+  const [recording, setRecording] = useState<Audio.Recording | null>(null);
+  const [permissionResponse, requestPermission] = Audio.usePermissions();
+
+  useEffect(() => {
+    fetchPlans();
+  }, []);
+
+  const fetchPlans = async () => {
+    try {
+      setLoadingPlans(true);
+      const resp = await api.get('/ai/payment/plans');
+      const backendPlans = resp.data?.data ?? resp.data ?? [];
+
+      const mappedPlans = backendPlans.map((p: any) => ({
+        ...p,
+        price: typeof p.price === 'number' ? `${p.price.toFixed(2)}€ / mois` : p.price,
+      }));
+
+      // Manual override for Curieux price display if needed or verify backend returns "Gratuit"
+      // Assuming backend consistency
+
+      setPlans(mappedPlans);
+    } catch (error) {
+      console.error('Error fetching plans:', error);
+    } finally {
+      setLoadingPlans(false);
+    }
+  };
+
+  async function startRecording() {
+    try {
+      if (permissionResponse?.status !== 'granted') {
+        const resp = await requestPermission();
+        if (resp.status !== 'granted') {
+          showModal('error', 'Permission refusée', 'Veuillez autoriser l\'accès au micro pour utiliser la dictée vocale.');
+          return;
+        }
+      }
+
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: true,
+        playsInSilentModeIOS: true,
+      });
+
+      const { recording } = await Audio.Recording.createAsync(
+        Audio.RecordingOptionsPresets.HIGH_QUALITY
+      );
+      setRecording(recording);
+    } catch (err) {
+      console.error('Failed to start recording', err);
+      showModal('error', 'Erreur', 'Impossible de démarrer l\'enregistrement.');
+    }
+  }
+
+  const pickImage = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        showModal('error', 'Permission refusée', 'Veuillez autoriser l\'accès à la galerie pour sélectionner une photo.');
+        return;
+      }
+
+      let result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        quality: 1,
+      });
+
+      if (!result.canceled) {
+        setSelectedImage(result.assets[0].uri);
+      }
+    } catch (error) {
+      console.error('Error picking image:', error);
+      showModal('error', 'Erreur', 'Impossible de sélectionner l\'image.');
+    }
+  };
+
+  async function stopRecording() {
+    if (!recording) return;
+
+    setRecording(null);
+    setIsGenerating(true); // Reuse generating state for loader
+
+    try {
+      await recording.stopAndUnloadAsync();
+      const uri = recording.getURI();
+      if (!uri) throw new Error('No URI');
+
+      const formData = new FormData();
+      formData.append('file', {
+        uri,
+        name: 'audio.m4a',
+        type: 'audio/m4a',
+      } as any);
+
+      const response = await api.post('/ai/transcribe', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+
+      if (response.data && response.data.text) {
+        setInputValue((prev) => (prev ? prev + ' ' + response.data.text : response.data.text));
+      }
+    } catch (err) {
+      console.error('Transcription error', err);
+      showModal('error', 'Erreur', 'Impossible de transcrire l\'audio.');
+    } finally {
+      setIsGenerating(false);
+    }
+  }
+
+  const planType = user?.planType || 'curieux';
+  const subStatus = user?.subscriptionStatus;
+  const stripeId = user?.stripeCustomerId;
+  const isSubscriptionActive = subStatus === 'active' || subStatus === 'trialing' || subStatus === 'trial';
+  const isPackCurieux = planType === 'curieux';
+
+  // Check Expiration
+  const now = new Date();
+  const endDate = user?.subscriptionEndDate ? new Date(user.subscriptionEndDate) : null;
+  const isExpired = endDate && now > endDate;
+
+  // If Curieux and expired => force Studio for blocker display
+  const effectivePlanId = (isPackCurieux && isExpired) ? 'studio' : planType;
+
+  // Find the effective plan object
+  const currentPlanObject = plans.find(p => p.id === effectivePlanId) || plans.find(p => p.id === 'atelier');
+
+  // Logic: Block if subscription is NOT active/trialing OR if Curieux trial hasn't been activated with a card
+  // OR if the trial has expired (even if active in Stripe, our local rule says 7 days).
+  const isTrialButNoCard = isPackCurieux && !stripeId;
+  const isPaidPlanButInactive = !isSubscriptionActive || isTrialButNoCard || (isPackCurieux && isExpired);
+
+  const showModal = (type: ModalType, title: string, message: string) => {
     setModalType(type);
     setModalTitle(title);
     setModalMessage(message);
     setModalVisible(true);
   };
 
-  // Scroll to bottom when messages change
-  useEffect(() => {
-    setTimeout(() => {
-      scrollRef.current?.scrollToEnd({ animated: true });
-    }, 100);
-  }, [messages]);
-
-  // Send message
-  const handleSendMessage = async () => {
-    if (!textInput.trim() || isLoading) return;
-
-    const userMessage: FreetextMessage = {
-      id: Date.now().toString(),
-      role: 'user',
-      content: textInput.trim(),
-      timestamp: Date.now(),
+  // Feature access control based on subscription plan
+  const hasFeatureAccess = (feature: 'text' | 'image' | 'audio' | 'video' | '3d'): boolean => {
+    const accessMatrix: Record<string, string[]> = {
+      text: ['curieux', 'atelier', 'studio', 'agence'],
+      image: ['curieux', 'atelier', 'studio', 'agence'],
+      audio: ['studio', 'agence'],
+      video: ['studio', 'agence'],
+      '3d': ['agence'],
     };
 
-    setMessages(prev => [...prev, userMessage]);
-    setTextInput('');
-    setIsLoading(true);
-    Keyboard.dismiss();
-
-    try {
-      const aiResponse = await AiService.generateContent(userMessage.content, {
-        tone: 'conversational',
-        context: 'freetext',
-      });
-
-      const assistantMessage: FreetextMessage = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: aiResponse.content || 'Désolé, je n\'ai pas pu générer une réponse.',
-        timestamp: Date.now(),
-      };
-
-      setMessages(prev => [...prev, assistantMessage]);
-    } catch (error: any) {
-      showModal('error', 'Erreur', error?.message || 'Impossible de générer la réponse');
-    } finally {
-      setIsLoading(false);
-    }
+    return accessMatrix[feature]?.includes(planType) || false;
   };
 
-  // Voice recording
-  const handleStartRecording = async () => {
+  const checkFeatureAccess = (feature: 'text' | 'image' | 'audio' | 'video' | '3d'): boolean => {
+    if (hasFeatureAccess(feature)) {
+      return true;
+    }
+
+    const requiredPlans: Record<string, string> = {
+      audio: 'Studio',
+      video: 'Studio',
+      '3d': 'Agence',
+    };
+
+    const featureNames: Record<string, string> = {
+      text: 'Génération de texte',
+      image: 'Génération d\'images',
+      audio: 'Génération audio',
+      video: 'Génération vidéo',
+      '3d': 'Génération 3D',
+    };
+
+    showModal(
+      'warning',
+      'Fonctionnalité non disponible',
+      `${featureNames[feature]} n'est disponible qu'à partir du pack ${requiredPlans[feature]}. Passez à un plan supérieur pour y accéder.`
+    );
+
+    return false;
+  };
+
+  const handleStripePayment = async () => {
+    const planConfig = plans.find(p => p.id === planType);
+
+    // Safety check: if plans aren't loaded yet or strictly curieux with stripePriceId null
+    // But for curieux we handle it specially below
+    if (!planConfig && planType !== 'curieux') return;
+
+    setIsPaymentLoading(true);
     try {
-      const { status } = await Audio.requestPermissionsAsync();
-      if (status !== 'granted') {
-        showModal('error', 'Permission refusée', 'Accès au micro refusé');
+      // Determine correct params based on plan
+      const isCurieux = planType === 'curieux';
+
+      const payload = {
+        priceId: !isCurieux ? planConfig?.stripePriceId : undefined,
+        planId: planType,
+        userId: user?.id,
+      };
+
+      const resp = await api.post(`/ai/payment/create-payment-sheet`, payload);
+
+      const data = resp.data?.data ?? resp.data ?? resp;
+      const paymentIntentClientSecret = data.paymentIntentClientSecret || (!data.setupIntentClientSecret ? (data.clientSecret || data.paymentIntent?.client_secret) : undefined);
+      const setupIntentClientSecret = data.setupIntentClientSecret;
+      const customerEphemeralKey = data.ephemeralKey || data.customer_ephemeral_key;
+      const customerId = data.customerId || data.customer || data.customer_id;
+      const subscriptionId = data.subscriptionId;
+
+      if (!paymentIntentClientSecret && !setupIntentClientSecret) {
+        throw new Error('Impossible de récupérer le client secret.');
+      }
+
+      const initResult = await initPaymentSheet({
+        paymentIntentClientSecret,
+        setupIntentClientSecret,
+        merchantDisplayName: 'Hipster IA',
+        customerEphemeralKeySecret: customerEphemeralKey,
+        customerId,
+      });
+
+      if (initResult.error) throw initResult.error;
+
+      const presentResult = await presentPaymentSheet();
+      if (presentResult.error) {
+        showModal('error', 'Paiement échoué', presentResult.error.message || 'Erreur lors du paiement');
         return;
       }
 
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        playsInSilentModeIOS: true,
-        shouldDuckAndroid: true,
+      // Success
+      await api.post('/ai/payment/confirm-plan', {
+        planId: planType,
+        subscriptionId: subscriptionId
       });
 
-      const recording = new Audio.Recording();
-      await recording.prepareToRecordAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
-      await recording.startAsync();
-      recordingRef.current = recording;
-      setIsRecording(true);
-    } catch (error) {
-      showModal('error', 'Erreur', 'Impossible de démarrer l\'enregistrement');
+      // Update local store
+      await useAuthStore.getState().updateAiProfile({
+        subscriptionStatus: (planType === 'curieux' ? 'trial' : 'active') as any,
+        stripeCustomerId: customerId,
+        stripeSubscriptionId: subscriptionId
+      });
+
+      showModal('success', 'Félicitations !', 'Votre abonnement est maintenant actif.');
+    } catch (e: any) {
+      console.error('Stripe error:', e);
+      showModal('error', 'Erreur', e?.message || 'Une erreur est survenue lors du paiement.');
+    } finally {
+      setIsPaymentLoading(false);
     }
   };
 
-  const handleStopRecording = async () => {
+  useEffect(() => {
+    const checkConnection = async () => {
+      try {
+        const response = await api.get('/ai/ping').catch(() => null);
+        setIsBackendConnected(!!response);
+        if (!response) console.warn('[DEBUG] Backend unreachable at', api.defaults.baseURL);
+      } catch (e) {
+        setIsBackendConnected(false);
+      }
+    };
+    checkConnection();
+    useAuthStore.getState().aiRefreshUser().catch(console.error);
+
+    // Request permissions upfront
+    const requestInitialPermissions = async () => {
+      try {
+        await MediaLibrary.requestPermissionsAsync();
+        await Notifications.requestPermissionsAsync();
+        await Audio.requestPermissionsAsync();
+        if (Platform.OS === 'android') {
+          await Notifications.setNotificationChannelAsync('default', {
+            name: 'default',
+            importance: Notifications.AndroidImportance.MAX,
+            vibrationPattern: [0, 250, 250, 250],
+            lightColor: '#FF231F7C',
+          });
+        }
+      } catch (e) {
+        console.warn('Error requesting permissions:', e);
+      }
+    };
+    requestInitialPermissions();
+  }, []);
+
+  useEffect(() => {
+    if (reset === 'true') {
+      resetChat();
+      // Clean URL params to avoid re-triggering on reload
+      router.setParams({ reset: undefined });
+    }
+  }, [reset]);
+
+  useEffect(() => {
+    const loadConversation = async () => {
+      if (!idToLoad) {
+        setIsLoadingConversation(false);
+        return;
+      }
+      
+      setIsLoadingConversation(true);
+      try {
+        console.log('[DEBUG] Loading conversation:', idToLoad);
+        const conversation = await AiService.getConversation(idToLoad);
+
+        if (conversation) {
+          console.log(conversation);
+
+          // Set the conversation ID for subsequent messages
+          setConversationId(idToLoad);
+
+          // Parse the stored conversation history
+          let storedMessages: any[] = [];
+          let isOldFormat = false;
+
+          try {
+            // Try to parse as JSON (new format)
+            const parsed = JSON.parse(conversation.prompt);
+            if (Array.isArray(parsed)) {
+              storedMessages = parsed;
+            } else {
+              // Not an array, treat as old format
+              isOldFormat = true;
+            }
+          } catch (e) {
+            // Not valid JSON, it's old format (plain text)
+            isOldFormat = true;
+            console.log('[DEBUG] Old conversation format detected');
+          }
+
+          const uiMessages: Message[] = [];
+
+          if (isOldFormat) {
+            // Old format: just show the prompt and result
+            if (conversation.prompt) {
+              uiMessages.push({
+                id: `${idToLoad}-user`,
+                text: conversation.prompt,
+                sender: 'user',
+                timestamp: new Date(conversation.createdAt),
+                isTyping: false,
+              });
+            }
+            if (conversation.result) {
+              uiMessages.push({
+                id: `${idToLoad}-ai`,
+                text: conversation.result,
+                sender: 'ai',
+                timestamp: new Date(conversation.createdAt),
+                isTyping: false,
+              });
+            }
+          } else {
+            // New format: convert stored messages to UI format
+            storedMessages.forEach((msg, index) => {
+              if (msg.role === 'user' || msg.role === 'assistant') {
+                const uiMsg: Message = {
+                  id: `${idToLoad}-${index}`,
+                  text: msg.content,
+                  sender: (msg.role === 'user' ? 'user' : 'ai') as 'user' | 'ai',
+                  timestamp: new Date(),
+                  isTyping: false,
+                  type: msg.type || 'text',
+                  mediaUrl: msg.url || msg.mediaUrl,
+                };
+                uiMessages.push(uiMsg);
+              }
+            });
+
+            // Add the final AI response if it's not already in the messages
+            if (conversation.result) {
+              // Check if the last message is already the result
+              const lastMsg = uiMessages[uiMessages.length - 1];
+              const resultMatches = lastMsg && lastMsg.sender === 'ai' && lastMsg.text === conversation.result;
+
+              if (!resultMatches) {
+                // Add the result as a new AI message
+                uiMessages.push({
+                  id: `${idToLoad}-result`,
+                  text: conversation.result,
+                  sender: 'ai',
+                  timestamp: new Date(),
+                  isTyping: false,
+                });
+              }
+            }
+          }
+
+          setMessages(uiMessages);
+        }
+      } catch (error) {
+        console.error('[DEBUG] Failed to load conversation:', error);
+      } finally {
+        setIsLoadingConversation(false);
+      }
+    };
+
+    loadConversation();
+  }, [idToLoad, setConversationId, setMessages]);
+
+  const placeholderText = 'Décrivez votre idée, ajoutez une image ou un audio...';
+  const hasMessages = messages.length > 0;
+
+  // Credit and message limit checks
+  const promptLimit = user?.promptsLimit || 0;
+  const promptUsed = user?.promptsUsed || 0;
+  const imagesLimit = user?.imagesLimit || 0;
+  const imagesUsed = user?.imagesUsed || 0;
+
+  const textRemaining = Math.max(0, promptLimit - promptUsed);
+  const imagesRemaining = Math.max(0, imagesLimit - imagesUsed);
+
+  const isTextExhausted = isPackCurieux && promptLimit > 0 && promptLimit !== 999999 && promptUsed >= promptLimit;
+  const isImagesExhausted = isPackCurieux && imagesLimit > 0 && imagesLimit !== 999999 && imagesUsed >= imagesLimit;
+  const isFullyExhausted = isPackCurieux && isTextExhausted && isImagesExhausted;
+
+  // Check if any message is currently typing visually
+  const isAnyMessageTyping = messages.some(m => m.isTyping);
+
+  // For the chat input, we only block if BOTH are reached or if currently generating or typing
+  const isInputDisabled = isGenerating || isFullyExhausted || isAnyMessageTyping;
+
+  useEffect(() => {
+    if (messages.length > 0) {
+      setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 100);
+    }
+  }, [messages]);
+
+  const handleSend = async () => {
+    if ((!inputValue.trim() && !selectedImage) || isGenerating) return;
+
+    const currentImage = selectedImage;
+
+    // Check credits
+    if (isTextExhausted) {
+      const textLimitMsg = promptLimit >= 999999 ? 'illimitée' : `de ${promptLimit} texte${promptLimit > 1 ? 's' : ''}`;
+      showModal('error', 'Limite textes atteinte', `Vous avez atteint votre limite ${textLimitMsg} ${isPackCurieux ? 'par jour' : 'par mois'}. Vous pouvez encore générer des images !`);
+      return;
+    }
+
+
+    const userMsg: Message = {
+      id: Date.now().toString(),
+      text: inputValue.trim(),
+      sender: 'user',
+      timestamp: new Date(),
+      type: currentImage ? 'image' : 'text',
+      mediaUrl: currentImage || undefined,
+    };
+
+    setMessages((prev) => [...prev, userMsg]);
+    setInputValue('');
+    setSelectedImage(null);
+    setIsGenerating(true);
+
     try {
-      if (!recordingRef.current) return;
+      const chatHistory = [];
+      const systemContext = `
+      Identité: Hipster IA
+      Rôle: Assistant créatif et intelligent
+      Cible: ${user?.email?.split('@')[0] || "l'utilisateur"}
+      Contexte: ${user?.type !== 'ai' && user?.job ? `Métier: ${user.job}` : ''}
+    `;
 
-      await recordingRef.current.stopAndUnloadAsync();
-      const uri = recordingRef.current.getURI();
-      recordingRef.current = null;
-      setIsRecording(false);
+      chatHistory.push({ role: 'system', content: `Tu es Hipster IA. ${systemContext}. IMPORTANT: Ne jamais utiliser d'emojis dans tes réponses. Garde un ton professionnel et direct.` });
 
-      // Note: Transcription would require API call to backend
-      showModal('info', 'Enregistrement', 'Transcription utilisée comme texte');
-    } catch (error) {
-      showModal('error', 'Erreur', 'Impossible de traiter l\'enregistrement');
+      messages.forEach((m) =>
+        chatHistory.push({ role: m.sender === 'user' ? 'user' : 'assistant', content: m.text })
+      );
+
+      chatHistory.push({ role: 'user', content: userMsg.text });
+
+      // Modern apps pattern: stable conversationId from first message, never rely on backend returning it
+      const convIdToSend = conversationId || generateConversationId();
+      if (!conversationId) {
+        setConversationId(convIdToSend);
+      }
+
+      console.log('[DEBUG] Free Mode Chat History:', JSON.stringify(chatHistory, null, 2));
+      console.log('[DEBUG] Conversation ID:', convIdToSend);
+
+      let response;
+      // Real Backend Call
+      if (currentImage) {
+        const formData = new FormData();
+        formData.append('messages', JSON.stringify(chatHistory));
+        formData.append('conversationId', convIdToSend);
+
+        const filename = currentImage.split('/').pop() || 'image.jpg';
+        const match = /\.(\w+)$/.exec(filename);
+        const ext = match ? match[1] : 'jpg';
+        const type = `image/${ext}`;
+
+        formData.append('file', {
+          uri: currentImage,
+          name: filename,
+          type,
+        } as any);
+
+        const res = await api.post('/ai/chat', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        response = res.data.data;
+      } else {
+        response = await AiService.chat(chatHistory, convIdToSend);
+      }
+
+      console.log('[DEBUG] Response:', JSON.stringify(response, null, 2));
+
+      // Keep conversationId stable (we set it before the call; backend echoes it back)
+      if (!conversationId && response.conversationId) {
+        setConversationId(response.conversationId);
+      }
+
+      // Handle nested response structure
+      const content = response.data?.content ?? response.content ?? response.message ?? response;
+
+      // Format image base64 for React Native
+      let mediaUrl: string | undefined;
+
+      // Check if image generation is async (url is null but generationId exists)
+      const isImageAsync = response.type === 'image' && !response.imageBase64 && !response.mediaUrl && response.generationId;
+      console.log('[DEBUG] Free Mode - isImageAsync:', isImageAsync, 'generationId:', response.generationId);
+
+      if (isImageAsync) {
+        // Implement polling like in guided mode
+        console.log('[DEBUG] ⏳ Starting Free Mode polling with generationId:', response.generationId);
+        let isCompleted = false;
+        let attempts = 0;
+        const maxAttempts = 30; // 60 seconds with 2s intervals
+
+        while (!isCompleted && attempts < maxAttempts) {
+          attempts++;
+          console.log(`[DEBUG] 🔄 Free Mode Poll attempt ${attempts}/${maxAttempts}`);
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          try {
+            const updatedGen = await AiService.getConversation(response.generationId.toString());
+            console.log('[DEBUG] Free Mode Poll response:', JSON.stringify(updatedGen, null, 2));
+            const imageUrl = updatedGen?.imageUrl || updatedGen?.url || updatedGen?.image;
+            console.log('[DEBUG] Extracted imageUrl:', imageUrl);
+
+            if (imageUrl && typeof imageUrl === 'string' && imageUrl.startsWith('http')) {
+              console.log('[DEBUG] ✅ Free Mode image found:', imageUrl);
+              mediaUrl = imageUrl;
+              isCompleted = true;
+            } else if (updatedGen?.result?.startsWith('ERROR')) {
+              throw new Error(updatedGen.result);
+            }
+          } catch (pollError) {
+            console.warn('[DEBUG] ⚠️ Free Mode poll error on attempt', attempts, ':', pollError);
+          }
+        }
+
+        if (!isCompleted) {
+          console.error('[DEBUG] ❌ Free Mode polling timed out');
+          throw new Error('Image generation timed out');
+        }
+      } else if (response.type === 'image' && response.imageBase64) {
+        mediaUrl = `data:image/png;base64,${response.imageBase64}`;
+      } else {
+        mediaUrl = response.mediaUrl;
+      }
+
+      const aiMsg: Message = {
+        id: (Date.now() + 1).toString(),
+        text: typeof content === 'string' ? content : JSON.stringify(content),
+        sender: 'ai',
+        timestamp: new Date(),
+        isTyping: !!(typeof content === 'string' && content.length > 0),
+        type: response.type || 'text',
+        mediaUrl: mediaUrl,
+      };
+
+      setMessages((prev) => [...prev, aiMsg]);
+    } catch (error: any) {
+      console.error('[DEBUG] Free Mode Error:', error);
+      const errMsg = error?.response?.data?.message || error.message || 'Erreur inconnue';
+      showModal('error', 'Erreur de génération', errMsg);
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: (Date.now() + 1).toString(),
+          text: 'Désolé, une erreur est survenue lors de la génération.',
+          sender: 'ai',
+          timestamp: new Date(),
+          isTyping: true,
+        },
+      ]);
+    } finally {
+      setIsGenerating(false);
+      // Refresh credits to update limits in real-time
+      useAuthStore.getState().aiRefreshUser().catch(console.error);
     }
   };
 
-  // Copy message
-  const handleCopyMessage = (content: string) => {
-    // In real implementation, would use expo-clipboard
-    showModal('success', 'Copié', 'Message copié au presse-papiers');
+  const copyToClipboard = (text: string) => {
+    try {
+      // Use Clipboard API or fallback
+      const clipboard = require('react-native').Clipboard;
+      clipboard.setString(text);
+      showModal('success', 'Copié !', 'Le message a été copié dans le presse-papiers.');
+    } catch (error) {
+      console.error('Copy error:', error);
+      showModal('error', 'Erreur', 'Impossible de copier le texte.');
+    }
   };
 
-  // Clear history
-  const handleClearHistory = () => {
-    setMessages([]);
+  const handleDeleteConfirm = async () => {
+    console.log('[FreetextScreen] handleDeleteConfirm triggered. conversationId:', conversationId);
+    
+    if (!conversationId) {
+      console.warn('[FreetextScreen] No conversationId, resetting local state only.');
+      setShowDeleteConfirm(false);
+      resetChat();
+      showModal('success', 'Succès', 'Conversation vidée avec succès.');
+      return;
+    }
+
+    try {
+      setIsGenerating(true);
+      console.log('[FreetextScreen] Calling AiService.deleteGeneration with ID:', conversationId);
+      const result = await AiService.deleteGeneration(conversationId);
+      console.log('[FreetextScreen] Deletion result from API:', result);
+      
+      // Vider complètement la conversation locale
+      setMessages([]);
+      setInputValue('');
+      setConversationId(null);
+      setShowDeleteConfirm(false);
+      
+      showModal('success', 'Succès', 'Conversation supprimée avec succès.');
+    } catch (error) {
+      console.error('[FreetextScreen] Delete conversation error:', error);
+      setShowDeleteConfirm(false);
+      showModal('error', 'Erreur', 'Impossible de supprimer la conversation.');
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
-  if (!user || (user.planType === 'curieux' && user.subscriptionStatus !== 'active')) {
-    return <PaymentBlocker />;
-  }
+  const resetChat = () => {
+    clearChatStore();
+    setInputValue('');
+    setConversationId(null);
+    console.log('[DEBUG] Starting new conversation');
+  };
+
+  const completeTyping = (msgId: string) => {
+    setMessages((prev) =>
+      prev.map((msg) => (msg.id === msgId ? { ...msg, isTyping: false } : msg))
+    );
+  };
+
+  const getGreetingByTime = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Bonjour';
+    if (hour < 18) return 'Bon après-midi';
+    return 'Bonsoir';
+  };
 
   return (
-    <SafeAreaView style={[s.container, { paddingTop: insets.top }]}>
-      {/* Header */}
-      <View style={s.header}>
-        <Pressable onPress={() => router.back()}>
-          <ArrowLeft size={24} color="#fff" />
-        </Pressable>
-        <Text style={s.headerTitle}>Textes libres</Text>
-        <Pressable onPress={handleClearHistory}>
-          <Trash2 size={20} color={colors.text.muted} />
-        </Pressable>
-      </View>
-
-      {/* Messages */}
-      <ScrollView
-        ref={scrollRef}
-        style={s.messagesContainer}
-        contentContainerStyle={s.messagesContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {messages.length === 0 ? (
-          <View style={s.emptyState}>
-            <Text style={s.emptyStateTitle}>Textes libres</Text>
-            <Text style={s.emptyStateSubtitle}>
-              Posez vos questions ou demandes sans limitation
-            </Text>
-          </View>
-        ) : (
-          messages.map(msg => (
-            <View key={msg.id} style={[s.messageWrapper, msg.role === 'user' ? s.userMessage : s.assistantMessage]}>
-              <View style={s.messageBubble}>
-                {msg.role === 'assistant' && (
-                  <Pressable
-                    onPress={() => handleCopyMessage(msg.content)}
-                    style={s.copyButton}
-                  >
-                    <Copy size={16} color={colors.neonBlue} />
-                  </Pressable>
-                )}
-                <Text style={[s.messageText, msg.role === 'user' && s.userText]}>
-                  {msg.content}
-                </Text>
-              </View>
-            </View>
-          ))
-        )}
-
-        {isLoading && <TypingMessage />}
-      </ScrollView>
-
-      {/* Input Area */}
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={s.inputContainer}
-      >
-        <View style={s.inputWrapper}>
-          <TextInput
-            style={s.input}
-            placeholder="Écrivez votre question..."
-            placeholderTextColor={colors.text.muted}
-            value={textInput}
-            onChangeText={setTextInput}
-            multiline
-            maxHeight={100}
-            editable={!isLoading}
-          />
-
-          {isRecording ? (
-            <Pressable
-              onPress={handleStopRecording}
-              style={[s.actionButton, s.recordingActive]}
-            >
-              <Mic size={20} color="#fff" />
-            </Pressable>
-          ) : (
-            <Pressable
-              onPress={handleStartRecording}
-              style={s.actionButton}
-            >
-              <Mic size={20} color={colors.neonBlue} />
-            </Pressable>
-          )}
-
-          <Pressable
-            onPress={handleSendMessage}
-            disabled={!textInput.trim() || isLoading}
-            style={[s.sendButton, (!textInput.trim() || isLoading) && s.sendButtonDisabled]}
+    <BackgroundGradientOnboarding darkOverlay={true} blurIntensity={2}>
+      <View className="flex-1" >
+        <KeyboardAvoidingView
+          className="flex-1"
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}>
+          <View
+            className="flex-row items-center justify-between px-5 pb-2"
+            style={{ paddingTop: insets.top + 10 }}
           >
-            <LinearGradient
-              colors={textInput.trim() && !isLoading ? ['#264F8C', '#0a1628'] : ['#1a1a1a', '#0d0d0d']}
-              style={s.sendGradient}
-            >
-              {isLoading ? (
-                <ActivityIndicator color={colors.neonBlue} size="small" />
-              ) : (
-                <Send size={18} color={textInput.trim() ? '#fff' : colors.text.muted} />
-              )}
-            </LinearGradient>
-          </Pressable>
-        </View>
-      </KeyboardAvoidingView>
+            <TouchableOpacity
+              className="rounded-lg bg-white/5 p-2"
+              onPress={() => navigation.openDrawer()}>
+              <Menu size={24} color={colors.text.primary} />
+            </TouchableOpacity>
 
+
+
+            <View className="flex-row items-center gap-2">
+              {hasMessages && (
+                <TouchableOpacity className="rounded-lg bg-white/5 p-2" onPress={() => setShowDeleteConfirm(true)}>
+                  <Trash2 size={20} color={colors.text.muted} />
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+
+          {/* Chat / Welcome */}
+          <ScrollView
+            ref={scrollViewRef}
+            className="flex-1 px-5 pt-12 "
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}>
+            {!hasMessages ? (
+              <>
+                <View className="mt-5 items-center">
+                  <Text className="mb-2 text-lg text-slate-500">
+                    {getGreetingByTime()}{' '}
+                    {user?.name || 'Utilisateur'}
+                  </Text>
+                  <Text className="text-center text-2xl font-bold leading-9 text-slate-300">
+                    {'Que créons-nous aujourd\'hui ?'}
+                  </Text>
+                </View>
+
+
+
+              </>
+            ) : (
+              <View className="space-y-3 pt-5">
+                {isLoadingConversation ? (
+                  <View className="items-center justify-center py-10">
+                    <ActivityIndicator size="large" color={colors.primary.main} />
+                    <Text className="mt-4 text-slate-400">Chargement de la conversation...</Text>
+                  </View>
+                ) : (
+                  <>
+                    {messages.map((msg) => (
+                      <View
+                        key={msg.id}
+                        className="max-w-[85%] rounded-2xl border p-4 mt-4"
+                        style={
+                          msg.sender === 'user'
+                            ? {
+                              backgroundColor: 'rgba(44, 70, 155, 0.2)',
+                              borderColor: 'rgba(44, 70, 155, 0.4)',
+                              alignSelf: 'flex-end',
+                              borderBottomRightRadius: 4,
+                            }
+                            : {
+                              alignSelf: 'flex-start',
+                              borderBottomLeftRadius: 4,
+                              borderColor: 'rgba(255, 255, 255, 0.2)',
+                              backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                            }
+                        }>
+                        {msg.type && msg.type !== 'text' && msg.mediaUrl && (
+                          <MediaDisplay type={msg.type} url={msg.mediaUrl} showModal={showModal} />
+                        )}
+
+                        {msg.sender === 'user' ? (
+                          msg.text ? <Text className="text-base leading-6 text-slate-300">{msg.text}</Text> : null
+                        ) : msg.isTyping ? (
+                          <TypingMessage text={msg.text} onComplete={() => completeTyping(msg.id)} />
+                        ) : (
+                          msg.text ? <Text className="text-base leading-6 text-slate-300">{msg.text}</Text> : null
+                        )}
+
+                        {msg.sender === 'ai' && !msg.isTyping && (!msg.type || msg.type === 'text') && msg.text && (
+                          <TouchableOpacity
+                            onPress={() => copyToClipboard(msg.text)}
+                            className="mt-2 self-end p-1">
+                            <Copy size={14} color={colors.text.muted} />
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                    ))}
+                  </>
+                )}
+
+                {isGenerating && (
+                  <View className="h-11 items-center justify-center self-start rounded-2xl border border-white/10 bg-white/5 p-4">
+                    <ActivityIndicator size="small" color={colors.primary.main} />
+                  </View>
+                )}
+              </View>
+            )}
+
+            {/* Extra space at bottom to allow scrolling past input */}
+            <View className="h-32" />
+          </ScrollView>
+
+          <View
+            className="px-5 pb-3 "
+            style={{
+              paddingBottom: (Platform.OS === 'ios' ? insets.bottom : 0) + 12,
+            }}
+          >
+            {/* Limit warnings */}
+            {isPackCurieux && (
+              <View className="mb-3 px-1">
+                {/* Credits visible at top header */}
+              </View>
+            )}
+
+            {isPaidPlanButInactive ? (
+              <PaymentBlocker
+                plan={currentPlanObject} // Pass full plan object
+                onPay={handleStripePayment}
+                loading={isPaymentLoading}
+              />
+            ) : (
+              <ChatInput
+                inputValue={inputValue}
+                onChangeText={setInputValue}
+                selectedImage={selectedImage}
+                onImageSelect={pickImage}
+                onImageRemove={() => setSelectedImage(null)}
+                onSend={handleSend}
+                isGenerating={isGenerating}
+                isDisabled={isInputDisabled}
+                placeholderText={placeholderText}
+                maxLength={500}
+              />
+            )}
+          </View>
+        </KeyboardAvoidingView>
+      </View>
       <GenericModal
         visible={modalVisible}
         type={modalType}
@@ -268,140 +915,17 @@ export default function FreetextScreen() {
         message={modalMessage}
         onClose={() => setModalVisible(false)}
       />
-    </SafeAreaView>
+
+      <GenericModal
+        visible={showDeleteConfirm}
+        type="warning"
+        title="Supprimer la conversation"
+        message="Voulez-vous vraiment supprimer définitivement cette discussion ?"
+        confirmText="Supprimer"
+        cancelText="Annuler"
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={handleDeleteConfirm}
+      />
+    </BackgroundGradientOnboarding>
   );
 }
-
-const s = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background.dark,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
-  },
-  headerTitle: {
-    fontFamily: 'Arimo-Bold',
-    fontSize: 16,
-    color: '#fff',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  messagesContainer: {
-    flex: 1,
-  },
-  messagesContent: {
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-  },
-  emptyState: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 60,
-  },
-  emptyStateTitle: {
-    fontFamily: 'Arimo-Bold',
-    fontSize: 20,
-    color: '#fff',
-    marginBottom: 8,
-  },
-  emptyStateSubtitle: {
-    fontFamily: 'Arimo-Regular',
-    fontSize: 14,
-    color: colors.text.secondary,
-    textAlign: 'center',
-    maxWidth: 280,
-  },
-  messageWrapper: {
-    marginBottom: 12,
-    flexDirection: 'row',
-  },
-  userMessage: {
-    justifyContent: 'flex-end',
-  },
-  assistantMessage: {
-    justifyContent: 'flex-start',
-  },
-  messageBubble: {
-    maxWidth: '85%',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
-  },
-  messageText: {
-    fontFamily: 'Arimo-Regular',
-    fontSize: 14,
-    color: colors.text.secondary,
-    lineHeight: 20,
-  },
-  userText: {
-    color: '#fff',
-  },
-  copyButton: {
-    marginBottom: 8,
-    opacity: 0.6,
-  },
-  inputContainer: {
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.05)',
-  },
-  inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: 8,
-  },
-  input: {
-    flex: 1,
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    color: '#fff',
-    fontFamily: 'Arimo-Regular',
-    fontSize: 14,
-    maxHeight: 100,
-  },
-  actionButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  recordingActive: {
-    backgroundColor: 'rgba(220, 38, 38, 0.15)',
-    borderColor: 'rgba(220, 38, 38, 0.4)',
-  },
-  sendButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
-    overflow: 'hidden',
-  },
-  sendButtonDisabled: {
-    opacity: 0.5,
-  },
-  sendGradient: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-});
