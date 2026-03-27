@@ -889,7 +889,7 @@ export default function HomeScreen() {
 
   return (
     <BackgroundGradientOnboarding darkOverlay={true} blurIntensity={2}>
-      <View style={{ flex: 1 }}>
+      <View style={{ flex: 1, backgroundColor : 'transaprent' }}>
         <KeyboardAvoidingView
           style={{ flex: 1 }}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
