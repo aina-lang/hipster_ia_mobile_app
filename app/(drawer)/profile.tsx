@@ -384,6 +384,19 @@ export default function ProfileScreen() {
               </View>
             </View>
 
+            {isEditing ? (
+                <View style={s.actionsRow}>
+                  <TouchableOpacity style={s.cancelBtn} onPress={handleCancel}>
+                    <Text style={s.cancelBtnText}>Annuler</Text>
+                  </TouchableOpacity>
+                  <NeonActionButton onPress={handleSave} loading={isLoading} disabled={isLoading} label="Enregistrer" />
+                </View>
+              ) : (
+                <View style={s.actionsCenter}>
+                  <NeonActionButton onPress={() => setIsEditing(true)} loading={false} disabled={false} label="Modifier le profil" />
+                </View>
+            )}
+
             <View style={s.card}>
               <SectionTitle title="Informations générales" />
               <InputField label="Nom / Nom d'entreprise" icon={<Briefcase size={16} color={colors.text.muted} />} value={name} onChangeText={setName} placeholder="Jean Dupont ou Ma Société" editable={isEditing} />
@@ -432,18 +445,7 @@ export default function ProfileScreen() {
               <SectionTitle title="Web" />
               <InputField label="Site Web" icon={<Link size={16} color={colors.text.muted} />} value={websiteUrl} onChangeText={setWebsiteUrl} placeholder="www.monsite.com" editable={isEditing} keyboardType="url" autoCapitalize="none" />
 
-              {isEditing ? (
-                <View style={s.actionsRow}>
-                  <TouchableOpacity style={s.cancelBtn} onPress={handleCancel}>
-                    <Text style={s.cancelBtnText}>Annuler</Text>
-                  </TouchableOpacity>
-                  <NeonActionButton onPress={handleSave} loading={isLoading} disabled={isLoading} label="Enregistrer" />
-                </View>
-              ) : (
-                <View style={s.actionsCenter}>
-                  <NeonActionButton onPress={() => setIsEditing(true)} loading={false} disabled={false} label="Modifier le profil" />
-                </View>
-              )}
+              
             </View>
 
             <View style={s.card}>
@@ -572,7 +574,7 @@ const s = StyleSheet.create({
   headerCenter:    { flex: 1, alignItems: 'center', marginRight: 58 },
   titleSub:        { fontFamily: 'Arimo-Bold', fontSize: 16,  textTransform: 'uppercase', color: '#ffffff' },
 
-  heroCard:          { borderRadius: 24, borderWidth: 1, borderColor: colors.primary.main + '1f', alignItems: 'center', paddingVertical: 32, paddingHorizontal: 24, marginBottom: 20, overflow: 'hidden', backgroundColor: colors.background.secondary + '99' },
+  heroCard:          { borderRadius: 24, borderWidth: 1, borderColor: colors.primary.main + '1f', alignItems: 'center', paddingVertical: 32, paddingHorizontal: 24, overflow: 'hidden', backgroundColor: colors.background.secondary + '99' },
   heroAvatarWrapper: { position: 'relative', marginBottom: 16 },
   heroAvatar:        { width: AVATAR_SIZE, height: AVATAR_SIZE, borderRadius: AVATAR_SIZE / 2, backgroundColor: colors.background.tertiary },
   heroCameraBtn:     { position: 'absolute', bottom: 0, right: 0, width: 32, height: 32, borderRadius: 16, backgroundColor: colors.neon.primary, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: colors.background.primary },
@@ -606,8 +608,8 @@ const s = StyleSheet.create({
   prefixFlag:  { fontSize: 16 },
   prefixCode:  { fontFamily: 'Arimo-Bold', fontSize: 12, color: colors.text.secondary },
 
-  actionsRow:    { flexDirection: 'row', gap: 12, marginTop: 24, marginBottom: 8, alignItems: 'center' },
-  actionsCenter: { alignItems: 'center', marginTop: 24, marginBottom: 8 },
+  actionsRow:    { flexDirection: 'row', gap: 12, marginVertical : 20, alignItems: 'center' },
+  actionsCenter: { alignItems: 'center', marginVertical : 20 },
   cancelBtn:    { paddingVertical: 15, paddingHorizontal: 16, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.05)', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', minWidth: 90 },
   cancelBtnText: { fontFamily: 'Arimo-Bold', color: colors.text.secondary, fontSize: 14 },
 
