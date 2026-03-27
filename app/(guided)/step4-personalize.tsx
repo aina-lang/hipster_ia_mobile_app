@@ -4,17 +4,19 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
-  Animated,
+  Animated as RNAnimated,
   Dimensions,
   StyleSheet,
   Image,
   Modal,
-  FlatList,
   Platform,
   ActivityIndicator,
+  Easing,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
 import { colors } from '../../theme/colors';
 import { fonts } from '../../theme/typography';
 import { useCreationStore } from '../../store/creationStore';
@@ -35,14 +37,127 @@ const NEON_BLUE = colors.neonBlue;
 const NEON_BLUE_DARK = colors.neonBlueDark;
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_W_GRID = (SCREEN_WIDTH - 48 - 8) / 2;
-const CAROUSEL_ITEM_WIDTH = SCREEN_WIDTH * 0.75;
-const CAROUSEL_SPACING = (SCREEN_WIDTH - CAROUSEL_ITEM_WIDTH) / 2;
+const STYLE_CARD_W = (SCREEN_WIDTH - 48 - 12) / 2;
 
 const VISUAL_STYLES = [
   { label: 'Premium', description: 'Noir & blanc luxe', image: illus2 },
   { label: 'Hero', description: 'Impact fort', image: illus3 },
   { label: 'Minimal', description: 'Épuré & moderne', image: illus4 },
 ];
+
+function StyleNeonBorderCard({
+  children,
+  isSelected,
+}: {
+  children: React.ReactNode;
+  isSelected: boolean;
+}) {
+  const translateX = useRef(new RNAnimated.Value(0)).current;
+  const loopRef = useRef<RNAnimated.CompositeAnimation | null>(null);
+
+  useEffect(() => {
+    loopRef.current?.stop();
+    if (isSelected) {
+      translateX.setValue(0);
+      loopRef.current = RNAnimated.loop(
+        RNAnimated.timing(translateX, {
+          toValue: -STYLE_CARD_W,
+          duration: 3000,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        }),
+        { resetBeforeIteration: true }
+      );
+      loopRef.current.start();
+    } else {
+      translateX.setValue(0);
+    }
+    return () => { loopRef.current?.stop(); };
+  }, [isSelected]);
+
+  return (
+    <View style={neonStyles.wrapper}>
+      {isSelected && (
+        <View style={neonStyles.clip} pointerEvents="none">
+          <RNAnimated.View style={[neonStyles.track, { transform: [{ translateX }] }]}>
+            <LinearGradient
+              colors={['transparent', NEON_BLUE, NEON_BLUE, 'transparent', 'transparent', NEON_BLUE, NEON_BLUE, 'transparent']}
+              locations={[0.05, 0.2, 0.3, 0.45, 0.55, 0.7, 0.8, 0.95]}
+              start={{ x: 0, y: 0.5 }}
+              end={{ x: 1, y: 0.5 }}
+              style={{ width: STYLE_CARD_W * 2, height: '100%' }}
+            />
+          </RNAnimated.View>
+          <View style={[neonStyles.mask, { backgroundColor: '#030814' }]} />
+        </View>
+      )}
+      {isSelected && (
+        <>
+          <View style={neonStyles.bloomFar} pointerEvents="none" />
+          <View style={neonStyles.bloomMid} pointerEvents="none" />
+          <View style={neonStyles.floorGlow} pointerEvents="none" />
+        </>
+      )}
+      {children}
+    </View>
+  );
+}
+
+function StyleCard({
+  item,
+  isSelected,
+  onPress,
+}: {
+  item: { label: string; description: string; image: any };
+  isSelected: boolean;
+  onPress: () => void;
+}) {
+  const scale = useSharedValue(1);
+  const animatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+
+  return (
+    <Animated.View style={[{ width: STYLE_CARD_W }, animatedStyle]}>
+      <TouchableOpacity
+        onPressIn={() => { scale.value = withSpring(0.97, { damping: 15 }); }}
+        onPressOut={() => { scale.value = withSpring(1, { damping: 15 }); }}
+        onPress={onPress}
+        activeOpacity={0.9}
+        style={{ width: STYLE_CARD_W }}
+      >
+        <StyleNeonBorderCard isSelected={isSelected}>
+          <View style={[styles.styleCard, isSelected && styles.styleCardSelected]}>
+            <View style={styles.styleCardImageContainer}>
+              <Image
+                source={typeof item.image === 'string' ? { uri: item.image } : item.image}
+                style={styles.styleCardImage}
+                resizeMode="cover"
+              />
+              {isSelected && (
+                <View style={styles.styleCardCheckBadge}>
+                  <Check size={10} color="white" strokeWidth={3} />
+                </View>
+              )}
+            </View>
+            <View style={[styles.styleCardFooter, isSelected && styles.styleCardFooterSelected]}>
+              <Text style={[styles.styleCardLabel, isSelected && styles.styleCardLabelSelected]}>{item.label}</Text>
+              <Text style={styles.styleCardDesc}>{item.description}</Text>
+            </View>
+          </View>
+        </StyleNeonBorderCard>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+}
+
+const neonStyles = StyleSheet.create({
+  wrapper: { position: 'relative', marginBottom: 2 },
+  clip: { position: 'absolute', top: -1, left: -1, right: -1, bottom: -0.5, borderRadius: 21, overflow: 'hidden', zIndex: 2 },
+  track: { position: 'absolute', top: 0, bottom: 0, left: 0 },
+  mask: { position: 'absolute', top: 1, left: 1, right: 1, bottom: 0.5, borderRadius: 20, zIndex: 1 },
+  bloomMid: { position: 'absolute', top: -4, left: -4, right: -4, bottom: -4, borderRadius: 24, backgroundColor: 'transparent', shadowColor: NEON_BLUE, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.45, shadowRadius: 18, elevation: 8 },
+  bloomFar: { position: 'absolute', top: -8, left: -8, right: -8, bottom: -8, borderRadius: 28, backgroundColor: 'transparent', shadowColor: NEON_BLUE, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.25, shadowRadius: 28, elevation: 4 },
+  floorGlow: { position: 'absolute', bottom: -16, alignSelf: 'center', width: '80%', height: 24, borderRadius: 50, backgroundColor: 'transparent', shadowColor: NEON_BLUE, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.6, shadowRadius: 16, elevation: 12 },
+});
 
 function CategoryTabs({
   categories,
@@ -139,12 +254,6 @@ function ModelGridItem({
       style={[styles.flyerGridItem, isSelected && styles.flyerGridItemSelected]}
       onPress={onPress}
     >
-      {isSelected && (
-        <>
-          <View style={styles.cardBorderGlow} pointerEvents="none" />
-          <View style={styles.cardBloom} pointerEvents="none" />
-        </>
-      )}
       <Image source={modelImage} style={styles.flyerGridImage} />
       {isSelected && (
         <View style={styles.styleCardCheckBadge}>
@@ -299,122 +408,6 @@ const modalStyles = StyleSheet.create({
   emptyText: { color: 'rgba(255,255,255,0.4)', fontSize: 15, textAlign: 'center' },
 });
 
-function StyleCarousel({
-  styles: items,
-  selectedStyle,
-  onSelect,
-}: {
-  styles: any[];
-  selectedStyle: string | null;
-  onSelect: (style: string) => void;
-}) {
-  const scrollX = useRef(new Animated.Value(0)).current;
-  const flatListRef = useRef<FlatList>(null);
-  const [isInitialized, setIsInitialized] = useState(false);
-
-  const centerOnIndex = (index: number) => {
-    const offset = index * (CAROUSEL_ITEM_WIDTH + 14);
-    flatListRef.current?.scrollToOffset({ offset, animated: true });
-  };
-
-  // Trouver l'index du style sélectionné
-  const getSelectedIndex = useCallback(() => {
-    if (!selectedStyle) return 0;
-    const index = items.findIndex(item => item.label === selectedStyle);
-    return index >= 0 ? index : 0;
-  }, [items, selectedStyle]);
-
-  // Centrer sur l'élément sélectionné au montage et quand la sélection change
-  useEffect(() => {
-    if (!isInitialized) {
-      // Petit délai pour s'assurer que le FlatList est prêt
-      const timer = setTimeout(() => {
-        const selectedIndex = getSelectedIndex();
-        centerOnIndex(selectedIndex);
-        setIsInitialized(true);
-      }, 100);
-      return () => clearTimeout(timer);
-    } else {
-      const selectedIndex = getSelectedIndex();
-      centerOnIndex(selectedIndex);
-    }
-  }, [selectedStyle, getSelectedIndex, isInitialized]);
-
-  return (
-    <View style={carouselStyles.container}>
-      <Animated.FlatList
-        ref={flatListRef}
-        data={items}
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        snapToInterval={CAROUSEL_ITEM_WIDTH + 14}
-        decelerationRate="fast"
-        contentContainerStyle={{ paddingHorizontal: CAROUSEL_SPACING, paddingVertical: 10 }}
-        onScroll={Animated.event([{ nativeEvent: { contentOffset: { x: scrollX } } }], { useNativeDriver: true })}
-        onMomentumScrollEnd={(e) => {
-          const x = e.nativeEvent.contentOffset.x;
-          const index = Math.round(x / (CAROUSEL_ITEM_WIDTH + 14));
-          if (items[index] && items[index].label !== selectedStyle) {
-            onSelect(items[index].label);
-          }
-        }}
-        renderItem={({ item, index }) => {
-          const isSelected = selectedStyle === item.label;
-          const inputRange = [
-            (index - 1) * (CAROUSEL_ITEM_WIDTH + 14),
-            index * (CAROUSEL_ITEM_WIDTH + 14),
-            (index + 1) * (CAROUSEL_ITEM_WIDTH + 14),
-          ];
-          const scale = scrollX.interpolate({ inputRange, outputRange: [0.92, 1, 0.92], extrapolate: 'clamp' });
-          const opacity = scrollX.interpolate({ inputRange, outputRange: [0.6, 1, 0.6], extrapolate: 'clamp' });
-
-          return (
-            <Animated.View style={{ transform: [{ scale }], opacity }}>
-              <TouchableOpacity
-                activeOpacity={0.9}
-                onPress={() => { 
-                  onSelect(item.label); 
-                  centerOnIndex(index); 
-                }}
-                style={[
-                  styles.styleCard,
-                  { width: CAROUSEL_ITEM_WIDTH, aspectRatio: 1.4, marginRight: 14 },
-                  isSelected && styles.styleCardSelected,
-                ]}
-              >
-                {isSelected && (
-                  <>
-                    <View style={styles.cardBorderGlow} pointerEvents="none" />
-                    <View style={styles.cardBloom} pointerEvents="none" />
-                  </>
-                )}
-                <Image
-                  source={typeof item.image === 'string' ? { uri: item.image } : item.image}
-                  style={styles.styleCardImage}
-                  resizeMode="cover"
-                />
-                {isSelected && (
-                  <View style={styles.styleCardCheckBadge}>
-                    <Check size={10} color="white" strokeWidth={3} />
-                  </View>
-                )}
-                <View style={[styles.styleCardFooter, isSelected && styles.styleCardFooterSelected]}>
-                  <Text style={styles.styleCardLabel}>{item.label}</Text>
-                  <Text style={styles.styleCardDesc}>{item.description}</Text>
-                </View>
-              </TouchableOpacity>
-            </Animated.View>
-          );
-        }}
-      />
-    </View>
-  );
-}
-
-const carouselStyles = StyleSheet.create({
-  container: { marginHorizontal: -24, marginBottom: 8 },
-});
-
 export default function Step4PersonalizeScreen() {
   const router = useRouter();
   const {
@@ -436,7 +429,6 @@ export default function Step4PersonalizeScreen() {
   const [selectedFlyerCategory, setSelectedFlyerCategory] = useState(LOCAL_FLYER_CATEGORIES[0]?.id || '');
   const [showAllModels, setShowAllModels] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -535,22 +527,27 @@ export default function Step4PersonalizeScreen() {
             <View style={styles.visualBlock}>
 
               <Text style={styles.sectionLabel}>PHOTO DE RÉFÉRENCE</Text>
-              
+
               {uploadedImage ? (
-                <View style={styles.imagePillLarge}>
-                  <Image source={{ uri: uploadedImage }} style={styles.imageThumbLarge} />
-                  <TouchableOpacity onPress={pickImage} style={styles.imagePillTextLarge}>
-                    <Text style={styles.imagePillLabel} numberOfLines={1}>Changer l'image</Text>
+                <View style={styles.imagePill}>
+                  <Image source={{ uri: uploadedImage }} style={styles.imagePillThumb} />
+                  <TouchableOpacity onPress={pickImage} style={styles.imagePillText}>
+                    <Text style={styles.imagePillLabel} numberOfLines={1}>
+                      Changer l'image
+                    </Text>
                   </TouchableOpacity>
-                  <TouchableOpacity onPress={() => setUploadedImage(null)} style={styles.imagePillRemoveLarge}>
-                    <X size={14} color="white" />
+                  <TouchableOpacity onPress={() => setUploadedImage(null)} style={styles.imagePillRemove}>
+                    <View style={styles.iconGlow}>
+                      <X size={14} color="white" />
+                    </View>
                   </TouchableOpacity>
                 </View>
               ) : (
-                <TouchableOpacity style={styles.uploadLarge} onPress={pickImage}>
-                  <Upload size={20} color={colors.text.muted} />
-                  <Text style={styles.uploadLargeText}>Ajouter une photo</Text>
-                  <Text style={styles.uploadLargeSub}>JPG, PNG ou WebP</Text>
+                <TouchableOpacity style={styles.imagePill} onPress={pickImage}>
+                  <View style={styles.iconGlow}>
+                    <Upload size={16} color={'#fff'} />
+                  </View>
+                  <Text style={styles.uploadCompactText}>Ajouter une photo</Text>
                 </TouchableOpacity>
               )}
 
@@ -577,46 +574,18 @@ export default function Step4PersonalizeScreen() {
                   )}
                 </View>
               ) : (
-                <View style={{ marginTop: 20 }}>
+                <View style={{ marginTop: 30 }}>
                   <Text style={styles.sectionLabel}>STYLE ARTISTIQUE</Text>
-                  {selectedCategory === 'Social' ? (
-                    <StyleCarousel styles={VISUAL_STYLES} selectedStyle={selectedStyle} onSelect={(s) => setStyle(s as any)} />
-                  ) : (
-                    <View style={styles.stylesRow}>
-                      {VISUAL_STYLES.map((item) => {
-                        const isSelected = selectedStyle === item.label;
-                        return (
-                          <TouchableOpacity
-                            key={item.label}
-                            style={[styles.styleCard, isSelected && styles.styleCardSelected, { height: 160 }]}
-                            onPress={() => setStyle(item.label as any)}
-                            activeOpacity={0.85}
-                          >
-                            {isSelected && (
-                              <>
-                                <View style={styles.cardBorderGlow} pointerEvents="none" />
-                                <View style={styles.cardBloom} pointerEvents="none" />
-                              </>
-                            )}
-                            <Image
-                              source={typeof item.image === 'string' ? { uri: item.image } : item.image}
-                              style={styles.styleCardImage}
-                              resizeMode="cover"
-                            />
-                            {isSelected && (
-                              <View style={styles.styleCardCheckBadge}>
-                                <Check size={10} color="white" strokeWidth={3} />
-                              </View>
-                            )}
-                            <View style={[styles.styleCardFooter, isSelected && styles.styleCardFooterSelected]}>
-                              <Text style={styles.styleCardLabel}>{item.label}</Text>
-                              <Text style={styles.styleCardDesc}>{item.description}</Text>
-                            </View>
-                          </TouchableOpacity>
-                        );
-                      })}
-                    </View>
-                  )}
+                  <View style={styles.stylesGrid}>
+                    {VISUAL_STYLES.map((item) => (
+                      <StyleCard
+                        key={item.label}
+                        item={item}
+                        isSelected={selectedStyle === item.label}
+                        onPress={() => setStyle(item.label as any)}
+                      />
+                    ))}
+                  </View>
                 </View>
               )}
 
@@ -703,7 +672,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Brittany-Signature',
     fontSize: 42,
     color: '#ffffff',
-    paddingVertical: 10,
+    paddingVertical: 15,
     textShadowColor: NEON_BLUE,
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 3,
@@ -732,147 +701,87 @@ const styles = StyleSheet.create({
     fontSize: 11,
     letterSpacing: 2,
     color: colors.gray,
-    marginBottom: 10,
+    marginBottom: 15,
     textTransform: 'uppercase',
   },
   visualBlock: {
     marginBottom: 24,
   },
-  uploadLarge: {
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    borderRadius: 16,
-    borderWidth: 1.5,
-    borderColor: 'rgba(0,212,255,0.2)',
-    borderStyle: 'dashed',
-    paddingVertical: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 20,
-  },
-  uploadLargeText: {
-    fontFamily: fonts.arimo.bold,
-    fontSize: 14,
-    color: colors.text.muted,
-    marginTop: 8,
-  },
-  uploadLargeSub: {
-    fontFamily: fonts.arimo.regular,
-    fontSize: 11,
-    color: 'rgba(255,255,255,0.4)',
-    marginTop: 4,
-  },
-  imagePillLarge: {
+  stylesGrid: {
     flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderRadius: 16,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
-    marginBottom: 20,
-  },
-  imageThumbLarge: {
-    width: 60,
-    height: 60,
-    resizeMode: 'cover',
-  },
-  imagePillTextLarge: {
-    flex: 1,
-    paddingHorizontal: 12,
-  },
-  imagePillLabel: {
-    fontFamily: fonts.arimo.bold,
-    fontSize: 12,
-    color: colors.text.primary,
-  },
-  imagePillRemoveLarge: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 58, 48, 0.9)',
-    marginRight: 8,
-  },
-  stylesRow: {
-    flexDirection: 'row',
-    gap: 10,
+    flexWrap: 'wrap',
+    gap: 12,
   },
   styleCard: {
-    flex: 1,
-    borderRadius: 14,
-    overflow: 'visible',
-    borderWidth: 1.5,
+    width: STYLE_CARD_W,
+    backgroundColor: 'rgba(15,23,42,0.92)',
+    borderRadius: 20,
+    borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.08)',
-    backgroundColor: 'rgba(193, 31, 31, 0.04)',
-    position: 'relative',
+    overflow: 'hidden',
+    zIndex: 3,
   },
   styleCardSelected: {
-    borderColor: colors.text.muted
+    backgroundColor: '#030814',
+    borderWidth: 0,
+  },
+  styleCardImageContainer: {
+    height: 180,
+    width: '100%',
+    position: 'relative',
+    overflow: 'hidden',
   },
   styleCardImage: {
     width: '100%',
     height: '100%',
-    borderRadius: 12,
+  },
+  styleCardCheckBadge: {
     position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+    backgroundColor: '#293c68e6',
+    borderRadius: 10,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
+    shadowColor: colors.neonBlue,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 1,
+    shadowRadius: 8,
+    elevation: 4,
   },
   styleCardFooter: {
-    padding: 12,
-    backgroundColor: 'rgba(0,0,0,0.65)',
-    borderBottomLeftRadius: 12,
-    borderBottomRightRadius: 12,
-    marginTop: 'auto',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: 'rgba(10,12,18,0.85)',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.08)',
   },
   styleCardFooterSelected: {
     backgroundColor: colors.darkSlateBlue,
+    borderTopColor: colors.darkSlateBlue,
   },
   styleCardLabel: {
     fontFamily: fonts.arimo.bold,
     fontSize: 12,
-    color: '#fff',
-    marginBottom: 1,
+    fontWeight: '700',
+    color: colors.text.secondary,
+    marginBottom: 3,
+    letterSpacing: 0.3,
+  },
+  styleCardLabelSelected: {
+    color: '#ffffff',
   },
   styleCardDesc: {
     fontFamily: fonts.arimo.regular,
     fontSize: 10,
-    color: 'rgba(255,255,255,0.5)',
-    lineHeight: 13,
-  },
-  styleCardCheckBadge: {
-    position: 'absolute',
-    top: 6,
-    right: 6,
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: colors.gray,
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 10,
-  },
-  cardBorderGlow: {
-    position: 'absolute',
-    top: 0, left: 0, right: 0, bottom: 0,
-    borderRadius: 14,
-    backgroundColor: 'transparent',
-    shadowColor: NEON_BLUE,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.9,
-    shadowRadius: 16,
-    elevation: 12,
-    zIndex: -1,
-  },
-  cardBloom: {
-    position: 'absolute',
-    top: -6, left: -6, right: -6, bottom: -6,
-    borderRadius: 20,
-    backgroundColor: 'transparent',
-    shadowColor: '#0840bb',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.35,
-    shadowRadius: 20,
-    elevation: 4,
-    zIndex: -1,
+    color: 'rgba(255,255,255,0.45)',
+    lineHeight: 14,
   },
   modelsGrid: {
     flexDirection: 'row',
@@ -948,5 +857,66 @@ const styles = StyleSheet.create({
     fontFamily: fonts.arimo.bold,
     color: colors.primary.main,
     fontSize: 14,
+  },
+  uploadCompact: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(30,155,255,0.06)',
+  },
+  iconGlow: {
+    shadowColor: colors.neonBlue,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  uploadCompactText: {
+    fontSize: 13,
+    fontWeight: '600',
+    padding: 8,
+    fontFamily: 'Arimo-Regular',
+    color: '#fff',
+    textShadowColor: NEON_BLUE,
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 3,
+    elevation: 3,
+  },
+  imagePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.darkSlateBlue,
+    borderRadius: 20,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
+    maxWidth: 200,
+    gap: 10,
+  },
+  imagePillThumb: {
+    width: 32,
+    height: 32,
+    resizeMode: 'cover',
+  },
+  imagePillText: {
+    flex: 1,
+    paddingHorizontal: 10,
+  },
+  imagePillLabel: {
+    fontFamily: fonts.arimo.bold,
+    fontSize: 12,
+    color: '#fff',
+    textShadowColor: NEON_BLUE,
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 3,
+    elevation: 3,
+  },
+  imagePillRemove: {
+    width: 32,
+    height: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.05)',
   },
 });
