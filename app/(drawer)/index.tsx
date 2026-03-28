@@ -888,7 +888,7 @@ export default function HomeScreen() {
 
   return (
     <BackgroundGradientOnboarding darkOverlay={true} blurIntensity={2}>
-      <View style={{ flex: 1 }}>
+      <View style={{ flex: 1, backgroundColor : 'transaprent' }}>
         <KeyboardAvoidingView
           style={{ flex: 1 }}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -897,7 +897,9 @@ export default function HomeScreen() {
           <View style={[s.topBar, { paddingTop: insets.top + 10 }]}>
             {!isPaidPlanButInactive && (
               <TouchableOpacity style={s.menuBtn} onPress={() => navigation.openDrawer()}>
-                <Menu size={24} color={colors.text.primary} />
+                <View style={s.iconGlow}>
+                  <Menu size={24} color={'#fff'} />
+                </View>
               </TouchableOpacity>
             )}
             {hasMessages ? (
@@ -1126,12 +1128,12 @@ export default function HomeScreen() {
 
 const s = StyleSheet.create({
   topBar:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingBottom: 8 },
-  menuBtn:       { borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.05)', padding: 8 },
+  menuBtn:       { borderRadius: 8, backgroundColor: colors.darkSlateBlue, padding: 8 },
   topRight:      { flexDirection: 'row', alignItems: 'center', gap: 8 },
   guidedBtn:     { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.primary.main + '1f', borderWidth: 1, borderColor: colors.primary.main + '4d', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
   guidedBtnText: { color: colors.primary.main, fontSize: 12, fontWeight: '700', fontFamily: fonts.arimo.bold },
   scroll:        { flex: 1, paddingHorizontal: H_PADDING },
-  scrollContent: { flexGrow: 1, paddingTop: 40, backgroundColor : colors.background.primary },
+  scrollContent: { flexGrow: 1, paddingTop: 40, backgroundColor : 'transparent' },
   titleBlock:    { alignItems: 'center', marginTop: 20, marginBottom: 24 },
   greeting:      { fontFamily: fonts.arimo.regular, fontSize: 15, color: 'rgba(255,255,255,0.35)', marginBottom: 8, textAlign: 'center' },
   titleArimo:    { fontFamily: fonts.arimo.bold, fontSize: 14, letterSpacing: 3, textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)', textAlign: 'center' },
