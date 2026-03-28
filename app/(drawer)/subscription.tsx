@@ -53,7 +53,9 @@ export default function SubscriptionScreen() {
   const [plans, setPlans]               = useState<Plan[]>([]);
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const { initPaymentSheet, presentPaymentSheet } = useStripe();
-  const { user, updateAiProfile } = useAuthStore();
+  const user = useAuthStore(s => s.user);
+  const isHydrated = useAuthStore(s => s.isHydrated);
+  const { updateAiProfile, aiRefreshUser } = useAuthStore();
   const { credits, loading: creditsLoading } = useUserCredits();
 
   const [modalVisible, setModalVisible] = useState(false);
@@ -68,11 +70,15 @@ export default function SubscriptionScreen() {
     setModalVisible(true);
   };
 
-  useEffect(() => { fetchPlans(); }, []);
+  useEffect(() => {
+    if (!isHydrated) return;
+    fetchPlans();
+  }, [isHydrated]);
 
   const fetchPlans = async () => {
     try {
       setLoading(true);
+      const authUser = useAuthStore.getState().user;
       const resp = await api.get('/ai/payment/plans/me');
       const backendPlans = resp.data?.data ?? resp.data ?? [];
 
@@ -83,16 +89,16 @@ export default function SubscriptionScreen() {
         isComingSoon: p.id === 'agence',
       }));
 
-      const visiblePlans = (user?.subscriptionStatus === 'canceled' && user?.planType)
-        ? mappedPlans.filter(p => p.id !== user.planType)
+      const visiblePlans = (authUser?.subscriptionStatus === 'canceled' && authUser?.planType)
+        ? mappedPlans.filter(p => p.id !== authUser.planType)
         : mappedPlans;
 
       setPlans(visiblePlans);
 
-      const currentPlan = user?.planType;
+      const currentPlan = authUser?.planType;
       const defaultToSelect =
         visiblePlans.find(p => p.id === currentPlan && !p.isComingSoon)?.id ||
-        visiblePlans.find(p => p.id === 'atelier'   && !p.isComingSoon)?.id ||
+        visiblePlans.find(p => p.id === 'atelier' && !p.isComingSoon)?.id ||
         visiblePlans.find(p => !p.isComingSoon)?.id ||
         visiblePlans[0]?.id;
 
@@ -108,41 +114,75 @@ export default function SubscriptionScreen() {
     const plan = plans.find(p => p.id === selectedPlan);
     if (!plan || plan.isComingSoon) return;
 
-    const isRefill = selectedPlan === user?.planType;
+    // Toujours passer par la Payment Sheet Stripe (create-payment-sheet côté API),
+    // y compris changement de forfait pour un abonné déjà actif — même flux pour tous les packs.
+    await initializePaymentSheet(plan);
+  };
 
-    if (!isRefill && user?.stripeSubscriptionId && user?.planType !== 'curieux' && user?.subscriptionStatus === 'active') {
-      try {
-        setLoading(true);
-        const response = await api.post('/ai/payment/switch-plan', { newPlanId: plan.id });
-        const data = response.data?.data ?? response.data;
-        const title = data.isRefill
-        ? 'Renouvellement réussi !'
-        : (data.isUpgrade ? 'Mise à niveau effectuée !' : 'Rétrogradation planifiée');
-        showModal('success', title, data.message);
-        await updateAiProfile({ planType: plan.id });
-        await fetchPlans();
-        setTimeout(() => {
-          setModalVisible(false);
-          router.push('/(drawer)/');
-        }, 3000);
-      } catch (error: any) {
-        showModal('error', 'Erreur', error?.message || error?.response?.data?.message || 'Impossible de changer de plan');
-      } finally {
-        setLoading(false);
-      }
+  const initializePaymentSheet = async (plan: Plan) => {
+    const isCurieux = plan.id === 'curieux';
+    if (!isCurieux && !plan.stripePriceId) {
+      showModal('error', 'Erreur', 'Ce plan ne peut pas être souscrit pour le moment.');
       return;
     }
 
-    if (plan.stripePriceId === null) { await handlePlanConfirmation(plan.id); return; }
-    await initializePaymentSheet(plan.stripePriceId);
-  };
-
-  const handlePlanConfirmation = async (planId: string) => {
+    setLoading(true);
     try {
-      const confirmResp = await api.post('/ai/payment/confirm-plan', { planId });
-      await updateAiProfile({ planType: planId, subscriptionStatus: 'active' });
+      const priceId = !isCurieux ? plan.stripePriceId : undefined;
+      const resp = await api.post('/ai/payment/create-payment-sheet', {
+        priceId,
+        planId: plan.id,
+        userId: user?.id,
+      });
+      const data = resp.data?.data ?? resp.data ?? resp;
+      const paymentIntentClientSecret =
+        data.paymentIntentClientSecret ||
+        (!data.setupIntentClientSecret ? (data.clientSecret || data.paymentIntent?.client_secret) : undefined);
+      const setupIntentClientSecret = data.setupIntentClientSecret;
+      const ephem = data.ephemeralKey || data.customer_ephemeral_key;
+      const custId = data.customerId || data.customer || data.customer_id;
+      const subscriptionId = data.subscriptionId;
+
+      if (!paymentIntentClientSecret && !setupIntentClientSecret) {
+        throw new Error('Client secret non récupéré.');
+      }
+
+      const initResult = await initPaymentSheet({
+        paymentIntentClientSecret,
+        setupIntentClientSecret,
+        merchantDisplayName: 'Hipster IA',
+        customerEphemeralKeySecret: ephem,
+        customerId: custId,
+        allowsDelayedPaymentMethods: true,
+        returnURL: 'hipsteria://stripe-redirect',
+      });
+      if (initResult.error) throw new Error(initResult.error.message);
+
+      const result: any = await presentPaymentSheet();
+      if (result.error) {
+        const errorMsg = result.error.message?.includes('payment flow has been cancelled')
+          ? 'Le paiement a été annulé.'
+          : result.error.message;
+        showModal('error', 'Paiement échoué', errorMsg);
+        return;
+      }
+
+      const confirmResp = await api.post('/ai/payment/confirm-plan', {
+        planId: plan.id,
+        paymentIntentId: data.paymentIntent?.id,
+        subscriptionId,
+      });
+
+      await updateAiProfile({
+        planType: plan.id,
+        subscriptionStatus: (plan.id === 'curieux' ? 'trial' : 'active') as any,
+        stripeCustomerId: custId,
+        stripeSubscriptionId: subscriptionId,
+      });
+      await aiRefreshUser();
       await fetchPlans();
-      const limits     = confirmResp.data?.limits;
+
+      const limits = confirmResp.data?.limits ?? confirmResp.data?.data?.limits;
       const limitsText = limits
         ? `\n\nVos limites:\n• ${limits.promptsLimit} textes\n• ${limits.imagesLimit} images\n• ${limits.videosLimit} vidéos\n• ${limits.audioLimit} audios`
         : '';
@@ -151,31 +191,6 @@ export default function SubscriptionScreen() {
         setModalVisible(false);
         router.push('/(drawer)/');
       }, 3000);
-    } catch {
-      showModal('error', 'Erreur', 'Impossible de sauvegarder votre plan.');
-    }
-  };
-
-  const initializePaymentSheet = async (priceId: string) => {
-    setLoading(true);
-    try {
-      const resp   = await api.post('/ai/payment/create-payment-sheet', { priceId, planId: selectedPlan, userId: user?.id });
-      const data   = resp.data?.data ?? resp.data ?? resp;
-      const secret = data.paymentIntentClientSecret || data.clientSecret || data.paymentIntent?.client_secret;
-      const ephem  = data.ephemeralKey  || data.customer_ephemeral_key;
-      const custId = data.customerId    || data.customer || data.customer_id;
-      if (!secret) throw new Error('Client secret non récupéré.');
-      await initPaymentSheet({ paymentIntentClientSecret: secret, merchantDisplayName: 'Hipster IA', customerEphemeralKeySecret: ephem, customerId: custId, locale: 'fr' });
-      const result: any = await presentPaymentSheet();
-      if (result.error) { 
-        const errorMsg = result.error.message?.includes('payment flow has been cancelled') 
-          ? 'Le paiement a été annulé.' 
-          : result.error.message;
-        showModal('error', 'Paiement échoué', errorMsg); 
-        setLoading(false); 
-        return; 
-      }
-      await handlePlanConfirmation(selectedPlan!);
     } catch (e: any) {
       showModal('error', 'Erreur paiement', e?.message || "Impossible d'initialiser le paiement.");
     } finally {

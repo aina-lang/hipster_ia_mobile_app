@@ -268,6 +268,19 @@ export const AiService = {
     }
   },
 
+  getFlyerHistory: async () => {
+    console.log('[AiService] Fetching flyer history...');
+    try {
+      const response = await api.get('/ai/flyers');
+      const result = response.data.data?.data || response.data.data || response.data;
+      console.log('[AiService] Flyer history fetched, count:', result?.length);
+      return result;
+    } catch (e: any) {
+      console.error('[AiService] Fetch flyer history error:', e.message, e.response?.status);
+      throw e;
+    }
+  },
+
   getGroupedConversations: async () => {
     console.log('[AiService] Fetching grouped conversations...');
     try {

@@ -107,6 +107,31 @@ export default function Step4ResultScreen() {
     setModalVisible(true);
   };
 
+  /** Enregistre une affiche flyer dans l’historique Impression HD (écran dédié + même format que la sauvegarde galerie). */
+  const addFlyerToImpressionHistory = (url: string, genId?: number | null) => {
+    if (!url || typeof url !== 'string' || !url.startsWith('http')) return;
+    const state = useCreationStore.getState();
+    const fn = state.selectedFunction || '';
+    if (!fn.includes('Flyer') && !fn.includes('Affiche')) return;
+    addImage({
+      id: genId != null ? `gen-${genId}` : `gen-${Date.now()}`,
+      url,
+      title: state.mainTitle || 'Flyer / Affiche',
+      description: state.userQuery || 'Flyer généré',
+      format: 'impression-hd',
+      architecture: state.selectedArchitecture,
+      style: state.selectedStyle,
+      createdAt: Date.now(),
+      generationId: genId ?? undefined,
+      metadata: {
+        colorLeft: state.colorLeft,
+        colorRight: state.colorRight,
+        subTitle: state.subTitle,
+        infoLine: state.infoLine,
+      },
+    });
+  };
+
   useEffect(() => {
     setLocalQuery(userQuery || '');
   }, [userQuery]);
@@ -282,9 +307,12 @@ export default function Step4ResultScreen() {
               attempts++;
               await new Promise(resolve => setTimeout(resolve, 5000));
               const updatedGen = await AiService.getConversation(flyerResult.generationId.toString());
-              if (updatedGen?.imageUrl?.startsWith('http')) {
-                setImageUrl(updatedGen.imageUrl);
+              const img =
+                updatedGen?.imageUrl || updatedGen?.url || updatedGen?.image;
+              if (img && typeof img === 'string' && img.startsWith('http')) {
+                setImageUrl(img);
                 isCompleted = true;
+                addFlyerToImpressionHistory(img, flyerResult.generationId);
               } else if (updatedGen?.result?.startsWith('ERROR')) {
                 isCompleted = true;
                 throw new Error(updatedGen.result);
@@ -293,6 +321,7 @@ export default function Step4ResultScreen() {
           } else {
             setImageUrl(flyerResult.url);
             setGenerationId(flyerResult.generationId);
+            if (flyerResult.url) addFlyerToImpressionHistory(flyerResult.url, flyerResult.generationId);
           }
         } else if (isVisuelPub) {
           const resultData = await AiService.generateImage(params, (selectedStyle as any) || 'realistic', seed);
@@ -333,12 +362,14 @@ export default function Step4ResultScreen() {
               if (img && typeof img === 'string' && img.startsWith('http')) {
                 setImageUrl(img);
                 isCompleted = true;
+                addFlyerToImpressionHistory(img, flyerResult.generationId);
               }
             }
           } else {
             setImageUrl(flyerResult.url);
             setResult(flyerResult.url);
             setGenerationId(flyerResult.generationId);
+            if (flyerResult.url) addFlyerToImpressionHistory(flyerResult.url, flyerResult.generationId);
           }
         } else {
           const resultData = await AiService.generateDocument('business', params);
@@ -440,7 +471,7 @@ export default function Step4ResultScreen() {
       // Sauvegarder dans l'historique si c'est une catégorie Document
       if (selectedCategory === 'Document') {
         addImage({
-          id: `gen-${Date.now()}`,
+          id: generationId != null ? `gen-${generationId}` : `gen-${Date.now()}`,
           url: imageUrl,
           title: mainTitle || 'Impression HD',
           description: userQuery || 'Image générée',

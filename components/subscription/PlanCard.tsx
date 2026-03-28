@@ -192,8 +192,10 @@ export function PlanCard({ plan, isSelected, onSelect, loading }: PlanCardProps)
 }
 
 const s = StyleSheet.create({
-  planWrapper:   { flex: 1, position: 'relative', marginBottom: 12 },
-  touchableArea: { flex: 1 },
+  // Pas de flex:1 ici : dans un ScrollView ça étire les cartes et peut faire se chevaucher
+  // les zones tactiles (tap sur Studio capté par Atelier).
+  planWrapper:   { position: 'relative', marginBottom: 12, alignSelf: 'stretch' },
+  touchableArea: { alignSelf: 'stretch' },
   planCard: {
     backgroundColor: '#0f172aeb',
     borderRadius: 20,

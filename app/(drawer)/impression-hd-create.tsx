@@ -18,6 +18,7 @@ import {
   Plus,
   Sparkles,
   ChevronRight,
+  LayoutGrid,
 } from 'lucide-react-native';
 import { useCreationStore } from '../../store/creationStore';
 import { useAuthStore } from '../../store/authStore';
@@ -91,8 +92,10 @@ export default function ImpressionHDCreateScreen() {
         <TouchableOpacity onPress={() => router.back()}>
           <ArrowLeft size={24} color={colors.text.primary} />
         </TouchableOpacity>
-        <Text style={s.headerTitle}>Impression HD</Text>
-        <View style={{ width: 24 }} />
+        <Text style={s.headerTitle}>Nouveau flyer</Text>
+        <TouchableOpacity onPress={() => router.push('/(drawer)/impression-hd-history')}>
+          <LayoutGrid size={24} color={colors.neonBlue} />
+        </TouchableOpacity>
       </View>
 
       <ScrollView

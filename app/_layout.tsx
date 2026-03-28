@@ -135,6 +135,21 @@ export default function RootLayout() {
     return () => subscription.remove();
   }, []);
 
+  useEffect(() => {
+    const printDebug = () => {
+      console.log('[RootLayout] Current state:', {
+        pathname,
+        segments,
+        isAuthenticated,
+        isHydrated,
+        isInitialized,
+        hasFinishedOnboarding,
+      });
+    };
+    const timer = setInterval(printDebug, 2000);
+    return () => clearInterval(timer);
+  }, [pathname, segments, isAuthenticated]);
+
   // Check if we are in specific groups/pages
   const inAuthGroup = segments.some(s => s.includes('(auth)')) || segments.includes('login') || segments.includes('register') || segments.includes('verify-email');
   const inOnboardingGroup = segments.some(s => s.includes('(onboarding)')) || segments.includes('setup') || segments.includes('branding') || segments.includes('packs') || segments.includes('payment');
@@ -180,8 +195,11 @@ export default function RootLayout() {
           targetRoute = '/(onboarding)/branding';
         }
       }
-      else if (inAuthGroup || inOnboardingGroup || !segments.length || segments[0] === '' || segments[0] === 'welcome') {
-        targetRoute = '/(drawer)';
+      else {
+        // User is fully set up, should be in drawer
+        if (!segments.includes('(drawer)')) {
+          targetRoute = '/(drawer)';
+        }
       }
     } else {
       // If not authenticated, allow access to (auth) and (onboarding)
@@ -204,7 +222,13 @@ export default function RootLayout() {
         return;
       }
       console.log(`[RootLayout] Redirecting: auth=${isAuthenticated}, path=${pathname} → ${targetRoute}`);
-      router.replace(targetRoute as any);
+      try {
+        console.log('[RootLayout] About to call router.replace');
+        router.replace(targetRoute as any);
+        console.log('[RootLayout] router.replace called successfully');
+      } catch (error) {
+        console.error('[RootLayout] ERROR during router.replace:', error);
+      }
     }
   }, [isAuthenticated, hasFinishedOnboarding, isHydrated, isInitialized, segments, pathname, inUnauthPublicFlow, user]);
 
