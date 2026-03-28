@@ -35,6 +35,7 @@ import { NeonActionButton } from '../../components/ui/NeonActionButton';
 import { GenericModal, ModalType } from '../../components/ui/GenericModal';
 import { useCreationStore } from '../../store/creationStore';
 import { useAuthStore } from '../../store/authStore';
+import { useImageHistoryStore } from '../../store/imageHistoryStore';
 import { AiService, TextGenerationType } from '../../api/ai.service';
 import { VISUAL_ARCHITECTURES } from '../../constants/visualArchitectures';
 
@@ -70,6 +71,7 @@ export default function Step4ResultScreen() {
   } = useCreationStore();
 
   const { user, aiRefreshUser } = useAuthStore();
+  const { addImage } = useImageHistoryStore();
 
   const isRestricted = user?.planType === 'curieux';
   const [loading, setLoading] = useState(true);
@@ -433,6 +435,27 @@ export default function Step4ResultScreen() {
         await MediaLibrary.createAlbumAsync('Hipster', asset, false);
       } else {
         await MediaLibrary.addAssetsToAlbumAsync([asset], album, false);
+      }
+
+      // Sauvegarder dans l'historique si c'est une catégorie Document
+      if (selectedCategory === 'Document') {
+        addImage({
+          id: `gen-${Date.now()}`,
+          url: imageUrl,
+          title: mainTitle || 'Impression HD',
+          description: userQuery || 'Image générée',
+          format: 'impression-hd',
+          architecture: selectedArchitecture,
+          style: selectedStyle,
+          createdAt: Date.now(),
+          generationId,
+          metadata: {
+            colorLeft,
+            colorRight,
+            subTitle,
+            infoLine,
+          },
+        });
       }
 
       setModalVisible(false);

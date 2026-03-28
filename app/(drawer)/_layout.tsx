@@ -418,6 +418,18 @@ export default function DrawerLayout() {
           ),
         }}
       />
+      <Drawer.Screen
+        name="impression-hd-history"
+        options={{
+          drawerItemStyle: { display: 'none' },
+        }}
+      />
+      <Drawer.Screen
+        name="impression-hd-create"
+        options={{
+          drawerItemStyle: { display: 'none' },
+        }}
+      />
     </Drawer>
   );
 }

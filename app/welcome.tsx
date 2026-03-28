@@ -33,7 +33,6 @@ const NEON_GLOW = '#0099ff';
 const NEON_LIGHT = '#66e5ff';
 
 const videobg = require('../assets/video/splashVideo-fixed-mobile.mp4');
-const reloadingScreen = require('../assets/video/reloadingScreen.mp4');
 const bgAfterBack = require('../assets/bg_after_back.jpeg');
 
 interface ParticleConfig {
@@ -114,7 +113,6 @@ const Particle = React.memo(({ x, y, size, color, delayMs, durationMs }: Particl
 
 export interface WelcomeScreenProps {
   onVideoFinish?: () => void;
-  setIsRouting?: (routing: boolean) => void;
 }
 
 interface TopBarProps {
@@ -124,10 +122,10 @@ interface TopBarProps {
 }
 
 const TopBar = ({ textAnimProgress, isAuthenticated, userName }: TopBarProps) => {
+  if (isAuthenticated) return null;
+
   const insets = useSafeAreaInsets();
   const responsive = useResponsiveDimensions();
-
-  if (isAuthenticated) return null;
 
   const animStyle = useAnimatedStyle(() => {
     const opacity = interpolate(
@@ -215,12 +213,14 @@ const SubTextAnimation = React.memo(({ textAnimProgress, isAuthenticated }: SubT
 interface BottomAuthSectionProps {
   isAuthenticated: boolean;
   onVideoFinish?: () => void;
-  setIsRouting?: (routing: boolean) => void;
   textAnimProgress: SharedValue<number>;
   setIsReturningFromBack?: (returning: boolean) => void;
+  setFirstTimeUsed?: () => void;
 }
 
-const BottomAuthSection = React.memo(({ isAuthenticated, onVideoFinish, setIsRouting, textAnimProgress, setIsReturningFromBack }: BottomAuthSectionProps) => {
+const BottomAuthSection = React.memo(({ isAuthenticated, onVideoFinish, textAnimProgress, setIsReturningFromBack, setFirstTimeUsed }: BottomAuthSectionProps) => {
+  if (isAuthenticated) return null;
+
   const router = useRouter();
   const responsive = useResponsiveDimensions();
 
@@ -233,17 +233,16 @@ const BottomAuthSection = React.memo(({ isAuthenticated, onVideoFinish, setIsRou
     opacity: interpolate(textAnimProgress?.value ?? 0, [0, 0.4, 1], [0, 0, 1], Extrapolate.CLAMP),
   }));
 
-  if (isAuthenticated) return null;
-
   return (
     <Animated.View style={[styles.container, { paddingHorizontal: responsive.containerPaddingHorizontal, gap: responsive.containerGap, bottom: responsive.containerBottom }, animStyle]}>
       <Pressable
         onPress={() => {
-          onVideoFinish?.();
+          // Push before onVideoFinish so RootLayout sees inAuthGroup before videoCompleted flips.
           router.push({
             pathname: '/(auth)/register',
-            params: { from: 'welcome' }
+            params: { from: 'welcome' },
           });
+          onVideoFinish?.();
         }}
         style={[styles.primaryButton, { width: responsive.isSmallScreen ? '85%' : '70%' }]}
       >
@@ -266,8 +265,8 @@ const BottomAuthSection = React.memo(({ isAuthenticated, onVideoFinish, setIsRou
         </Text>
         <Pressable
           onPress={() => {
-            onVideoFinish?.();
             router.push('/(auth)/login');
+            onVideoFinish?.();
           }}
           style={({ pressed }) => ({
             padding: 10,
@@ -300,70 +299,8 @@ const BottomAuthSection = React.memo(({ isAuthenticated, onVideoFinish, setIsRou
   );
 });
 
-const AuthenticatedSplash = React.memo(({ onVideoFinish }: { onVideoFinish?: () => void }) => {
-  const videoOpacity = useSharedValue(1);
-  const isFinished = useRef(false);
-
-  const videoPlayer = useVideoPlayer(reloadingScreen, (player) => {
-    player.loop = false;
-    player.muted = true;
-  });
-
-  const triggerExit = () => {
-    if (isFinished.current) return;
-    isFinished.current = true;
-    videoOpacity.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.ease) }, (finished) => {
-      if (finished) {
-        runOnJS(onVideoFinish ?? (() => {}))();
-      }
-    });
-  };
-
-  useEffect(() => {
-    const timer = setTimeout(triggerExit, 1000);
-
-    const onStatusChange = ({ status }: { status: string }) => {
-      if (status === 'readyToPlay') {
-        videoPlayer.play();
-        SplashScreen.hideAsync().catch(() => {});
-      }
-    };
-
-    if (videoPlayer.status === 'readyToPlay') {
-      videoPlayer.play();
-      SplashScreen.hideAsync().catch(() => {});
-    }
-
-    videoPlayer.addListener('statusChange', onStatusChange);
-    videoPlayer.addListener('playToEnd', triggerExit);
-
-    return () => {
-      clearTimeout(timer);
-      videoPlayer.removeListener('statusChange', onStatusChange);
-      videoPlayer.removeListener('playToEnd', triggerExit);
-    };
-  }, [videoPlayer]);
-
-  const videoAnimStyle = useAnimatedStyle(() => ({
-    opacity: videoOpacity.value,
-  }));
-
-  return (
-    <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: '#000' }, videoAnimStyle]}>
-      <StatusBar style="light" />
-      <View style={styles.authVideoContainer}>
-        <VideoView
-          player={videoPlayer}
-          style={styles.authVideo}
-          contentFit="contain"
-          nativeControls={false}
-        />
-      </View>
-    </Animated.View>
-  );
-});
-
-export default React.memo(function WelcomeScreen({ onVideoFinish, setIsRouting }: WelcomeScreenProps) {
+function WelcomeScreenContent({ onVideoFinish }: WelcomeScreenProps) {
+  // Now declare all other hooks BEFORE any conditional rendering
   const [videoReady, setVideoReady] = React.useState(false);
   const { isReturningFromBack, setIsReturningFromBack, videoCompleted, setVideoCompleted } = useWelcomeVideoStore();
   const showImage = isReturningFromBack;
@@ -371,21 +308,23 @@ export default React.memo(function WelcomeScreen({ onVideoFinish, setIsRouting }
 
   const textAnimProgress = useSharedValue(shouldSkipPlay ? 1 : 0);
   const videoMarginTop = useSharedValue(shouldSkipPlay ? 100 : 0);
-  const { isAuthenticated, user, isHydrated } = useAuthStore();
-  const insets = useSafeAreaInsets();
+  const { user, isHydrated } = useAuthStore();
   const responsive = useResponsiveDimensions();
   const videoCompletedRef = useRef(false);
-  const topBarHeight = responsive.topBarHeight + insets.top;
-
-  if (isAuthenticated) {
-    return <AuthenticatedSplash onVideoFinish={onVideoFinish} />;
-  }
 
   React.useEffect(() => {
     if (!isReturningFromBack) {
       videoCompletedRef.current = false;
     }
   }, [isReturningFromBack]);
+
+  const isFinishedRef = React.useRef(shouldSkipPlay);
+  const playbackTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const videoPlayer = useVideoPlayer(videobg, (player) => {
+    player.loop = false;
+    player.muted = true;
+  });
 
   React.useEffect(() => {
     if (isReturningFromBack) {
@@ -395,14 +334,6 @@ export default React.memo(function WelcomeScreen({ onVideoFinish, setIsRouting }
       onVideoFinish?.();
     }
   }, [isReturningFromBack, textAnimProgress, videoMarginTop, onVideoFinish]);
-
-  const videoPlayer = useVideoPlayer(videobg, (player) => {
-    player.loop = false;
-    player.muted = true;
-  });
-
-  const isFinishedRef = React.useRef(shouldSkipPlay);
-  const playbackTimerRef = React.useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (!videoPlayer || shouldSkipPlay) {
@@ -480,21 +411,23 @@ export default React.memo(function WelcomeScreen({ onVideoFinish, setIsRouting }
       videoPlayer.removeListener('playToEnd', onPlaybackFinish);
       if (playbackTimerRef.current) clearTimeout(playbackTimerRef.current);
     };
-  }, [videoPlayer, onVideoFinish, isHydrated, isAuthenticated, isReturningFromBack]);
+  }, [onVideoFinish, isReturningFromBack, shouldSkipPlay, videoPlayer, videoCompleted, setVideoCompleted]);
 
   const videoAnimatedStyle = useAnimatedStyle(() => ({
     marginTop: videoMarginTop.value,
   }));
 
+  const hideVideoUntilReady = !showImage && !videoReady;
+
   return (
     <Animated.View exiting={FadeOut.duration(400)} style={[StyleSheet.absoluteFill, { backgroundColor: '#000' }]}>
       <StatusBar style="light" />
-      {!videoReady && <View style={[StyleSheet.absoluteFill, { backgroundColor: '#000' }]} />}
+      {hideVideoUntilReady && <View style={[StyleSheet.absoluteFill, { backgroundColor: '#000' }]} pointerEvents="none" />}
 
       {showImage ? (
-        <Animated.View style={[{ position: 'absolute', top: topBarHeight - 180, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center' }]}>
-          <Image source={bgAfterBack} style={{ width: '120%', height: '120%' }} resizeMode="contain" />
-        </Animated.View>
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: '#000' }]} pointerEvents="none">
+          <Image source={bgAfterBack} style={styles.staticWelcomeBg} resizeMode="contain" />
+        </View>
       ) : (
         <Animated.View style={[StyleSheet.absoluteFill, videoAnimatedStyle]}>
           <VideoView player={videoPlayer} style={StyleSheet.absoluteFill} contentFit="cover" nativeControls={false} />
@@ -513,7 +446,7 @@ export default React.memo(function WelcomeScreen({ onVideoFinish, setIsRouting }
       <View style={StyleSheet.absoluteFill}>
         <TopBar
           textAnimProgress={textAnimProgress}
-          isAuthenticated={isAuthenticated}
+          isAuthenticated={false}
           userName={user?.name || user?.email?.split('@')[0]}
         />
 
@@ -523,22 +456,39 @@ export default React.memo(function WelcomeScreen({ onVideoFinish, setIsRouting }
               <Particle key={i} {...p} />
             ))}
           </View>
-          <SubTextAnimation textAnimProgress={textAnimProgress} isAuthenticated={isAuthenticated} />
+          <SubTextAnimation textAnimProgress={textAnimProgress} isAuthenticated={false} />
         </View>
 
         <BottomAuthSection
-          isAuthenticated={isAuthenticated}
+          isAuthenticated={false}
           onVideoFinish={onVideoFinish}
-          setIsRouting={setIsRouting}
           textAnimProgress={textAnimProgress}
-          setIsReturningFromBack={setIsReturningFromBack}
+          setFirstTimeUsed={() => {}}
         />
       </View>
     </Animated.View>
   );
-});
+}
+
+// Wrapper component: EARLY RETURN HAPPENS HERE, NOT IN THE MAIN COMPONENT
+export default function WelcomeScreen({ onVideoFinish }: WelcomeScreenProps) {
+  const { isAuthenticated } = useAuthStore();
+
+  // Safety net: authenticated users should never see this component
+  if (isAuthenticated) {
+    console.log('[WelcomeScreen] Authenticated user detected, returning null');
+    return null;
+  }
+
+  return <WelcomeScreenContent onVideoFinish={onVideoFinish} />;
+}
 
 const styles = StyleSheet.create({
+  staticWelcomeBg: {
+    ...StyleSheet.absoluteFillObject,
+    width: '100%',
+    height: '100%',
+  },
   authVideoContainer: {
     flex: 1,
     justifyContent: 'center',

@@ -396,7 +396,6 @@ export default function HomeScreen() {
         merchantDisplayName: 'Hipster IA',
         customerEphemeralKeySecret: customerEphemeralKey,
         customerId,
-        locale: 'fr-FR',
       });
 
       if (initResult.error) throw initResult.error;
@@ -952,6 +951,8 @@ export default function HomeScreen() {
                           setTimeout(() => {
                             if (fn.label === 'Textes libres') {
                               router.push('/(drawer)/freetext');
+                            } else if (fn.label === 'Format impression HD') {
+                              router.push('/(drawer)/impression-hd-history');
                             } else if (fn.category === 'Document') {
                               router.push('/(guided)/step3-directions');
                             } else {

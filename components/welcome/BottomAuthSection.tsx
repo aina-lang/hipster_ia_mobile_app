@@ -14,12 +14,11 @@ import { Text } from '../ui/Text';
 interface BottomAuthSectionProps {
   isAuthenticated: boolean;
   onVideoFinish?: () => void;
-  setIsRouting?: (routing: boolean) => void;
   textAnimProgress: SharedValue<number>;
   setFirstTimeUsed?: () => void;
 }
 
-export const BottomAuthSection = React.memo(({ isAuthenticated, onVideoFinish, setIsRouting, textAnimProgress, setFirstTimeUsed }: BottomAuthSectionProps) => {
+export const BottomAuthSection = React.memo(({ isAuthenticated, onVideoFinish, textAnimProgress, setFirstTimeUsed }: BottomAuthSectionProps) => {
   const router = useRouter();
 
   const animStyle = useAnimatedStyle(() => ({
@@ -37,12 +36,12 @@ export const BottomAuthSection = React.memo(({ isAuthenticated, onVideoFinish, s
     <Animated.View style={[styles.container, animStyle]}>
       <Pressable
         onPress={() => {
-          console.log('[Welcome] Commencer clicked - calling setFirstTimeUsed()');
-          setFirstTimeUsed?.(); // Mark user as having started
-          console.log('[Welcome] setFirstTimeUsed() completed');
-          setIsRouting?.(true);
+          console.log('[Welcome] Commencer clicked');
+          setFirstTimeUsed?.();
           onVideoFinish?.();
-          router.push({ pathname: '/(onboarding)/packs', params: { from: 'welcome' } });
+          setTimeout(() => {
+            router.push({ pathname: '/(onboarding)/packs', params: { from: 'welcome' } });
+          }, 100);
         }}
         style={styles.primaryButton}
       >
@@ -61,12 +60,12 @@ export const BottomAuthSection = React.memo(({ isAuthenticated, onVideoFinish, s
         <Text small>Déjà un compte ?</Text>
         <Pressable 
           onPress={() => { 
-            console.log('[Welcome] Login clicked - calling setFirstTimeUsed()');
-            setFirstTimeUsed?.(); // Mark user as having started
-            console.log('[Welcome] setFirstTimeUsed() completed');
-            setIsRouting?.(true);
-            onVideoFinish?.(); 
-            router.push('/(auth)/login'); 
+            console.log('[Welcome] Login clicked');
+            setFirstTimeUsed?.();
+            onVideoFinish?.();
+            setTimeout(() => {
+              router.push('/(auth)/login');
+            }, 100);
           }}
           style={({ pressed }) => ({
             padding: 10,

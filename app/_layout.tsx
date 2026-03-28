@@ -23,15 +23,39 @@ import * as SystemUI from 'expo-system-ui';
 
 const initializeAuthRef = { current: false };
 
+/** Last path segment — works for `/login`, `/(auth)/login`, localized stacks, etc. */
+const AUTH_LAST_SEGMENTS = new Set([
+  'login',
+  'register',
+  'verify-email',
+  'verify-otp',
+  'forgot-password',
+  'reset-password',
+  'privacy-policy',
+]);
+const ONBOARDING_LAST_SEGMENTS = new Set(['packs', 'job', 'branding', 'setup', 'payment']);
+
+/** Flat paths only; kept for tooling / cache compatibility and as first check. */
+const AUTH_OR_ONBOARDING_PATH =
+  /^\/(login|register|verify-email|verify-otp|forgot-password|reset-password|privacy-policy|packs|job|branding|setup|payment)(\/|$)/i;
+
+function pathLooksLikePublicUnauthFlow(pathname: string | undefined): boolean {
+  if (!pathname || pathname === '/') return false;
+  if (AUTH_OR_ONBOARDING_PATH.test(pathname)) return true;
+  const parts = pathname.split('/').filter(Boolean);
+  const last = parts[parts.length - 1];
+  if (!last) return false;
+  const key = last.toLowerCase();
+  return AUTH_LAST_SEGMENTS.has(key) || ONBOARDING_LAST_SEGMENTS.has(key);
+}
+
 export default function RootLayout() {
   const { user, isAuthenticated, hasFinishedOnboarding, isHydrated, initializeAuth } = useAuthStore();
   const segments = useSegments();
   const pathname = usePathname();
   const router = useRouter();
-  const [isRouting, setIsRouting] = React.useState(true);
   const [isInitialized, setIsInitialized] = React.useState(false);
-  const { videoCompleted, setVideoCompleted, reset: resetWelcome } = useWelcomeVideoStore();
-  const routingRef = React.useRef(false);
+  const { videoCompleted, setVideoCompleted } = useWelcomeVideoStore();
 
   const [fontsLoaded, fontError] = useFonts({
     'Arimo-Regular': require('../assets/fonts/Arimo/Arimo-Regular.ttf'),
@@ -111,15 +135,27 @@ export default function RootLayout() {
     return () => subscription.remove();
   }, []);
 
+  // Check if we are in specific groups/pages
+  const inAuthGroup = segments.some(s => s.includes('(auth)')) || segments.includes('login') || segments.includes('register') || segments.includes('verify-email');
+  const inOnboardingGroup = segments.some(s => s.includes('(onboarding)')) || segments.includes('setup') || segments.includes('branding') || segments.includes('packs') || segments.includes('payment');
+  const pathInPublicUnauthFlow = pathLooksLikePublicUnauthFlow(pathname);
+  const inUnauthPublicFlow = inAuthGroup || inOnboardingGroup || pathInPublicUnauthFlow;
+
   useEffect(() => {
     if (!isHydrated || !isInitialized) {
       return;
     }
 
-    // Check if we are in specific groups/pages
-    const inAuthGroup = segments.some(s => s.includes('(auth)')) || segments.includes('login') || segments.includes('register') || segments.includes('verify-email');
-    const inOnboardingGroup = segments.some(s => s.includes('(onboarding)')) || segments.includes('setup') || segments.includes('branding') || segments.includes('packs') || segments.includes('payment');
+    console.log('[DEBUG] Path:', pathname, 'Auth:', isAuthenticated, 'Navigating');
+
     const isWelcomeScreen = segments.includes('welcome');
+    
+    // Authenticated users should never be on welcome screen
+    if (isAuthenticated && isWelcomeScreen) {
+      console.log('[RootLayout] Authenticated user on welcome, redirecting to drawer');
+      router.replace('/(drawer)');
+      return;
+    }
 
     let targetRoute: string | null = null;
 
@@ -148,78 +184,28 @@ export default function RootLayout() {
         targetRoute = '/(drawer)';
       }
     } else {
-      // If not authenticated, redirect to /welcome if we are in a protected area or at the root path
+      // If not authenticated, allow access to (auth) and (onboarding)
+      // Only redirect to /welcome if in protected area
       const inProtectedRoute = segments.some(s => s.includes('(drawer)') || s.includes('(guided)') || s.includes('(tabs)'));
       const isAtRoot = !segments.length || segments[0] === '' || segments[0] === 'index';
-
-      // ONLY redirect if we are NOT already routing somewhere
-      if (!isRouting && (inProtectedRoute || isAtRoot)) {
+      
+      if (!inUnauthPublicFlow && (inProtectedRoute || isAtRoot)) {
         targetRoute = '/welcome';
       }
     }
 
 
-    // Pathname normalization for comparison: removes parentheses for group names
-    // Examples: /(onboarding)/welcome -> /welcome, /(drawer) -> /
-    const normalizePath = (p: string) => {
-      if (!p) return '/';
-      let normalized = p.startsWith('/') ? p : '/' + p;
-      // Remove groups like (auth) or (drawer)
-      normalized = normalized.replace(/\/\([^)]+\)/g, '');
-      // Remove trailing index
-      normalized = normalized.replace(/\/index$/, '');
-      // Ensure it stays at least /
-      return normalized || '/';
-    };
-
-    const normalizedTarget = targetRoute ? normalizePath(targetRoute) : null;
-    const normalizedPathname = normalizePath(pathname);
-
-    // DEBUG: Only log if there's a potential redirection or routing in progress
-    if (targetRoute || isRouting) {
-      console.log(`[RootLayout] Redirection: auth=${isAuthenticated}, path=${pathname}, target=${targetRoute}, isRouting=${isRouting}`);
-    }
-
-    if (targetRoute && normalizedTarget !== normalizedPathname) {
-      // CRITICAL: Only redirect if video is finished (for authenticated flow) 
-      // or if we're not using the overlay splash (unauthenticated redirect).
-      const shouldWait = isAuthenticated && !videoCompleted;
-      if (shouldWait || routingRef.current) {
-        return;
-      }
-
-      routingRef.current = true;
-      setIsRouting(true);
+    // Check if we need to redirect - direct comparison
+    if (targetRoute && targetRoute !== pathname) {
+      console.log(`[RootLayout] Redirecting: auth=${isAuthenticated}, path=${pathname} → ${targetRoute}`);
       router.replace(targetRoute as any);
-    } else if (isRouting) {
-      // If we were routing and we are now on target (or no target is needed), finish routing
-      if (!targetRoute || normalizedTarget === normalizedPathname) {
-        setIsRouting(false);
-        routingRef.current = false;
-      }
     }
-  }, [isAuthenticated, hasFinishedOnboarding, isHydrated, isInitialized, segments, pathname, videoCompleted]);
+  }, [isAuthenticated, hasFinishedOnboarding, isHydrated, isInitialized, segments, pathname, inUnauthPublicFlow, user]);
 
   const handleVideoFinish = React.useCallback(() => {
     console.log('[RootLayout] handleVideoFinish called. Setting videoCompleted=true');
     setVideoCompleted(true);
   }, [setVideoCompleted]);
-
-  // Safety fallback: If we are stuck in isRouting for too long, force it to false
-  useEffect(() => {
-    if (isRouting) {
-      const timer = setTimeout(() => {
-        console.warn('[RootLayout] Safety timeout triggered: clearing isRouting hang');
-        setIsRouting(false);
-        routingRef.current = false;
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [isRouting]);
-
-  if (!fontsLoaded && !fontError) {
-    return null;
-  }
 
   return (
     <SafeAreaProvider>
@@ -227,9 +213,12 @@ export default function RootLayout() {
         <StripeProvider
           publishableKey="pk_test_51R15MnK5fB5lGbp8C5QAYcALGWTBBmTmYxsnMnigeUNUg2DvsR9u4xbsF1GNzDIqiQxFqz9Dg10kEttfcpbr5DVX00yGKXocyS"
           merchantIdentifier="merchant.com.hipster">
-          {isInitialized ? (
+          {fontsLoaded && !fontError && isInitialized ? (
             <Stack
-              screenOptions={{ headerShown: false }}>
+              screenOptions={{
+                headerShown: false,
+                contentStyle: { backgroundColor: '#11111a' },
+              }}>
               <Stack.Screen name="welcome" />
               <Stack.Screen name="(auth)" />
               <Stack.Screen name="(onboarding)" />
@@ -241,10 +230,9 @@ export default function RootLayout() {
           <StyledStatusBar theme="dark" translucent={true} />
 
           <>
-            {(!isHydrated || !isInitialized || !videoCompleted) && (
+            {!isAuthenticated && (!isHydrated || !isInitialized || !videoCompleted) && !inUnauthPublicFlow && (
               <WelcomeScreen
                 onVideoFinish={handleVideoFinish}
-                setIsRouting={setIsRouting}
               />
             )}
           </>
