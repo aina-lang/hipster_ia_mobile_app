@@ -197,6 +197,12 @@ export default function RootLayout() {
 
     // Check if we need to redirect - direct comparison
     if (targetRoute && targetRoute !== pathname) {
+      if (
+        targetRoute === '/welcome' &&
+        (pathLooksLikePublicUnauthFlow(pathname) || inAuthGroup || inOnboardingGroup)
+      ) {
+        return;
+      }
       console.log(`[RootLayout] Redirecting: auth=${isAuthenticated}, path=${pathname} → ${targetRoute}`);
       router.replace(targetRoute as any);
     }
@@ -230,11 +236,11 @@ export default function RootLayout() {
           <StyledStatusBar theme="dark" translucent={true} />
 
           <>
-            {!isAuthenticated && (!isHydrated || !isInitialized || !videoCompleted) && !inUnauthPublicFlow && (
-              <WelcomeScreen
-                onVideoFinish={handleVideoFinish}
-              />
-            )}
+            {!isAuthenticated &&
+              !inUnauthPublicFlow &&
+              (!isHydrated || !isInitialized || !videoCompleted) && (
+                <WelcomeScreen onVideoFinish={handleVideoFinish} />
+              )}
           </>
         </StripeProvider>
       </GestureHandlerRootView>

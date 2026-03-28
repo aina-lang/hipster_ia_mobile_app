@@ -71,6 +71,7 @@ export default function RegisterScreen() {
       showModal('success', 'Compte créé !', 'Vérifiez votre email pour activer votre compte.');
       setTimeout(() => {
         setModal(m => ({ ...m, visible: false }));
+        useWelcomeVideoStore.getState().clearOpenedAuthFromWelcome();
         router.push({ pathname: '/(auth)/verify-email', params: { email, userId: res.userId, planId: selectedPlan } });
       }, 1500);
     } catch (e: any) {

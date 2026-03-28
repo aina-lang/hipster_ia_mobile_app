@@ -90,12 +90,14 @@ export default function LoginScreen() {
     try {
       await aiLogin({ email, password });
       setModal(m => ({ ...m, visible: false }));
+      useWelcomeVideoStore.getState().clearOpenedAuthFromWelcome();
       const { hasFinishedOnboarding } = useAuthStore.getState();
       router.replace(hasFinishedOnboarding ? '/(drawer)' : '/(onboarding)/setup');
     } catch (e: any) {
       showModal('error', 'Échec de la connexion', e.response?.data?.message || e.message || 'Une erreur est survenue.');
       if (e.response?.data?.needsVerification) {
         setModal(m => ({ ...m, visible: false }));
+        useWelcomeVideoStore.getState().clearOpenedAuthFromWelcome();
         router.push({ pathname: '/(auth)/verify-email', params: { email } });
       }
     }

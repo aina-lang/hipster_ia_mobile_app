@@ -5,6 +5,10 @@ interface WelcomeVideoStore {
   setVideoCompleted: (completed: boolean) => void;
   isReturningFromBack: boolean;
   setIsReturningFromBack: (returning: boolean) => void;
+  /** True after navigating from welcome to login/register until welcome regains focus or auth succeeds. */
+  openedAuthFromWelcome: boolean;
+  markOpenedAuthFromWelcome: () => void;
+  clearOpenedAuthFromWelcome: () => void;
   reset: () => void;
 }
 
@@ -13,5 +17,9 @@ export const useWelcomeVideoStore = create<WelcomeVideoStore>((set) => ({
   setVideoCompleted: (completed: boolean) => set({ videoCompleted: completed }),
   isReturningFromBack: false,
   setIsReturningFromBack: (returning: boolean) => set({ isReturningFromBack: returning }),
-  reset: () => set({ videoCompleted: false, isReturningFromBack: false }),
+  openedAuthFromWelcome: false,
+  markOpenedAuthFromWelcome: () => set({ openedAuthFromWelcome: true }),
+  clearOpenedAuthFromWelcome: () => set({ openedAuthFromWelcome: false }),
+  reset: () =>
+    set({ videoCompleted: false, isReturningFromBack: false, openedAuthFromWelcome: false }),
 }));

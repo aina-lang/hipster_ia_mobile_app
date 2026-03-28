@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import { Linking } from 'react-native';
 import { View, StyleSheet, Pressable, Image } from 'react-native';
 import { Text } from '../components/ui/Text';
@@ -22,7 +22,7 @@ import Animated, {
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { useAuthStore } from '../store/authStore';
 import { useWelcomeVideoStore } from '../store/welcomeVideoStore';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FontAwesome5 } from '@expo/vector-icons';
@@ -212,13 +212,12 @@ const SubTextAnimation = React.memo(({ textAnimProgress, isAuthenticated }: SubT
 
 interface BottomAuthSectionProps {
   isAuthenticated: boolean;
-  onVideoFinish?: () => void;
   textAnimProgress: SharedValue<number>;
   setIsReturningFromBack?: (returning: boolean) => void;
   setFirstTimeUsed?: () => void;
 }
 
-const BottomAuthSection = React.memo(({ isAuthenticated, onVideoFinish, textAnimProgress, setIsReturningFromBack, setFirstTimeUsed }: BottomAuthSectionProps) => {
+const BottomAuthSection = React.memo(({ isAuthenticated, textAnimProgress, setIsReturningFromBack, setFirstTimeUsed }: BottomAuthSectionProps) => {
   if (isAuthenticated) return null;
 
   const router = useRouter();
@@ -237,12 +236,11 @@ const BottomAuthSection = React.memo(({ isAuthenticated, onVideoFinish, textAnim
     <Animated.View style={[styles.container, { paddingHorizontal: responsive.containerPaddingHorizontal, gap: responsive.containerGap, bottom: responsive.containerBottom }, animStyle]}>
       <Pressable
         onPress={() => {
-          // Push before onVideoFinish so RootLayout sees inAuthGroup before videoCompleted flips.
+          useWelcomeVideoStore.getState().markOpenedAuthFromWelcome();
           router.push({
             pathname: '/(auth)/register',
             params: { from: 'welcome' },
           });
-          onVideoFinish?.();
         }}
         style={[styles.primaryButton, { width: responsive.isSmallScreen ? '85%' : '70%' }]}
       >
@@ -265,8 +263,8 @@ const BottomAuthSection = React.memo(({ isAuthenticated, onVideoFinish, textAnim
         </Text>
         <Pressable
           onPress={() => {
+            useWelcomeVideoStore.getState().markOpenedAuthFromWelcome();
             router.push('/(auth)/login');
-            onVideoFinish?.();
           }}
           style={({ pressed }) => ({
             padding: 10,
@@ -302,7 +300,19 @@ const BottomAuthSection = React.memo(({ isAuthenticated, onVideoFinish, textAnim
 function WelcomeScreenContent({ onVideoFinish }: WelcomeScreenProps) {
   // Now declare all other hooks BEFORE any conditional rendering
   const [videoReady, setVideoReady] = React.useState(false);
-  const { isReturningFromBack, setIsReturningFromBack, videoCompleted, setVideoCompleted } = useWelcomeVideoStore();
+  const { isReturningFromBack, videoCompleted, setVideoCompleted } = useWelcomeVideoStore();
+
+  useFocusEffect(
+    useCallback(() => {
+      const { openedAuthFromWelcome: pending, setIsReturningFromBack, clearOpenedAuthFromWelcome } =
+        useWelcomeVideoStore.getState();
+      if (pending) {
+        setIsReturningFromBack(true);
+        clearOpenedAuthFromWelcome();
+      }
+    }, [])
+  );
+
   const showImage = isReturningFromBack;
   const shouldSkipPlay = videoCompleted || isReturningFromBack;
 
@@ -461,7 +471,6 @@ function WelcomeScreenContent({ onVideoFinish }: WelcomeScreenProps) {
 
         <BottomAuthSection
           isAuthenticated={false}
-          onVideoFinish={onVideoFinish}
           textAnimProgress={textAnimProgress}
           setFirstTimeUsed={() => {}}
         />
