@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -32,7 +32,6 @@ import { colors } from '../../theme/colors';
 import { GenericModal, ModalType } from '../../components/ui/GenericModal';
 import { BackgroundGradientOnboarding } from '../../components/ui/BackgroundGradientOnboarding';
 import { NeonBackButton } from '../../components/ui/NeonBackButton';
-import { AiService } from '../../api/ai.service';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 const SCROLL_PAD = 24;
@@ -48,61 +47,12 @@ export default function ImpressionHDHistoryScreen() {
   const removeImage = useImageHistoryStore((state) => state.removeImage);
   const clearHistory = useImageHistoryStore((state) => state.clearHistory);
 
-  // Backend flyers state
-  const [backendFlyers, setBackendFlyers] = useState<GeneratedImage[]>([]);
-  const [loadingFlyers, setLoadingFlyers] = useState(false);
-  const [flyersFetchError, setFlyersFetchError] = useState<string | null>(null);
-
-  // Fetch flyers from backend when screen is focused
-  useFocusEffect(
-    React.useCallback(() => {
-      const fetchFlyers = async () => {
-        try {
-          setLoadingFlyers(true);
-          setFlyersFetchError(null);
-          console.log('[ImpressionHDHistory] Fetching flyers from backend...');
-
-          const flyers = await AiService.getFlyerHistory();
-          console.log('[ImpressionHDHistory] Fetched', flyers?.length, 'flyers from backend');
-
-          // Transform backend data to GeneratedImage format
-          const transformedFlyers: GeneratedImage[] = (flyers || []).map((flyer: any) => ({
-            id: String(flyer.id),
-            url: flyer.imageUrl || '',
-            title: flyer.title || 'Sans titre',
-            description: flyer.title || 'Flyer généré',
-            format: 'flyer' as const,
-            architecture: flyer.attributes?.style || 'Personnalisé',
-            style: flyer.attributes?.style || 'Professional',
-            thumbnail: flyer.imageUrl,
-            createdAt: new Date(flyer.createdAt).getTime(),
-            generationId: flyer.id,
-            metadata: flyer.attributes,
-          }));
-
-          setBackendFlyers(transformedFlyers);
-        } catch (error: any) {
-          console.error('[ImpressionHDHistory] Error fetching flyers:', error.message);
-          setFlyersFetchError(error.message);
-          // Fall back to local storage on error
-          setBackendFlyers([]);
-        } finally {
-          setLoadingFlyers(false);
-        }
-      };
-
-      fetchFlyers();
-    }, [])
-  );
-
-  // Merge backend flyers with local images (backend takes precedence)
   const images = useMemo(() => {
-    // Prioritize backend flyers, but include local images if no backend data
-    const flyersToDisplay = backendFlyers.length > 0 ? backendFlyers : allImages.filter(
+    const flyerLike = allImages.filter(
       (img) => img.format === 'impression-hd' || img.format === 'flyer',
     );
-    return [...flyersToDisplay].sort((a, b) => b.createdAt - a.createdAt);
-  }, [backendFlyers, allImages]);
+    return [...flyerLike].sort((a, b) => b.createdAt - a.createdAt);
+  }, [allImages]);
 
   const [selectedImage, setSelectedImage] = useState<GeneratedImage | null>(null);
   const [showImageModal, setShowImageModal] = useState(false);
@@ -124,33 +74,9 @@ export default function ImpressionHDHistoryScreen() {
     setModalVisible(true);
   };
 
-  const onRefresh = async () => {
+  const onRefresh = () => {
     setRefreshing(true);
-    try {
-      // Refresh from backend
-      const flyers = await AiService.getFlyerHistory();
-      console.log('[ImpressionHDHistory] Refreshing flyers:', flyers?.length);
-
-      const transformedFlyers: GeneratedImage[] = (flyers || []).map((flyer: any) => ({
-        id: String(flyer.id),
-        url: flyer.imageUrl || '',
-        title: flyer.title || 'Sans titre',
-        description: flyer.title || 'Flyer généré',
-        format: 'flyer' as const,
-        architecture: flyer.attributes?.style || 'Personnalisé',
-        style: flyer.attributes?.style || 'Professional',
-        thumbnail: flyer.imageUrl,
-        createdAt: new Date(flyer.createdAt).getTime(),
-        generationId: flyer.id,
-        metadata: flyer.attributes,
-      }));
-
-      setBackendFlyers(transformedFlyers);
-    } catch (error: any) {
-      console.error('[ImpressionHDHistory] Error refreshing flyers:', error.message);
-    } finally {
-      setRefreshing(false);
-    }
+    setTimeout(() => setRefreshing(false), 350);
   };
 
   const openPreview = (image: GeneratedImage) => {
@@ -317,19 +243,12 @@ export default function ImpressionHDHistoryScreen() {
               <View style={s.header}>
                 <NeonBackButton onPress={() => router.back()} />
                 <View style={s.headerCenter}>
-                  <Text style={s.titleSub}>Impression HD</Text>
+                  <Text style={s.titleSub}>Historique flyers</Text>
                 </View>
                 <View style={{ width: 42 }} />
               </View>
 
               <Text style={s.subtitle}>Galerie de vos affiches et visuels HD</Text>
-
-              {loadingFlyers && images.length === 0 && (
-                <View style={s.loadingContainer}>
-                  <ActivityIndicator size="large" color={colors.neonBlue} />
-                  <Text style={s.loadingText}>Chargement de vos flyers...</Text>
-                </View>
-              )}
 
               {images.length > 0 && (
                 <TouchableOpacity style={s.clearButton} onPress={() => setShowClearModal(true)}>
@@ -338,18 +257,15 @@ export default function ImpressionHDHistoryScreen() {
                 </TouchableOpacity>
               )}
 
-              {images.length === 0 && !loadingFlyers && (
+              {images.length === 0 && (
                 <View style={s.emptyBlock}>
                   <View style={s.emptyIconBox}>
                     <LayoutGrid size={28} color={colors.neon.primary} />
                   </View>
                   <Text style={s.emptyText}>Aucun visuel enregistré</Text>
                   <Text style={s.emptyHint}>
-                    Les flyers générés depuis l'accueil apparaissent ici automatiquement.
+                    Les flyers générés depuis l’accueil apparaissent ici automatiquement.
                   </Text>
-                  {flyersFetchError && (
-                    <Text style={s.errorText}>Erreur : {flyersFetchError}</Text>
-                  )}
                   <TouchableOpacity
                     style={s.createBtn}
                     onPress={() => router.push('/(drawer)/impression-hd-create')}
@@ -608,23 +524,6 @@ const s = StyleSheet.create({
     fontFamily: 'Arimo-Bold',
     color: colors.neon.primary,
     fontSize: 14,
-  },
-  loadingContainer: {
-    alignItems: 'center',
-    paddingTop: 40,
-    paddingBottom: 24,
-    gap: 16,
-  },
-  loadingText: {
-    fontFamily: 'Arimo-Regular',
-    fontSize: 14,
-    color: colors.text.muted,
-  },
-  errorText: {
-    fontFamily: 'Arimo-Regular',
-    fontSize: 12,
-    color: colors.status.error,
-    marginTop: 8,
   },
   fab: {
     position: 'absolute',
