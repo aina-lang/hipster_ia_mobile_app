@@ -170,8 +170,8 @@ function CategoryTabs({
 }) {
   const tabWidths = useRef<Record<string, number>>({});
   const tabOffsets = useRef<Record<string, number>>({});
-  const slideX = useRef(new Animated.Value(0)).current;
-  const slideW = useRef(new Animated.Value(0)).current;
+  const slideX = useRef(new RNAnimated.Value(0)).current;
+  const slideW = useRef(new RNAnimated.Value(0)).current;
   const scrollRef = useRef<ScrollView>(null);
   const [ready, setReady] = useState(false);
 
@@ -179,9 +179,9 @@ function CategoryTabs({
     (id: string, scroll = true) => {
       const x = tabOffsets.current[id] ?? 0;
       const w = tabWidths.current[id] ?? 0;
-      Animated.parallel([
-        Animated.spring(slideX, { toValue: x, useNativeDriver: false, stiffness: 260, damping: 24 }),
-        Animated.spring(slideW, { toValue: w, useNativeDriver: false, stiffness: 260, damping: 24 }),
+      RNAnimated.parallel([
+        RNAnimated.spring(slideX, { toValue: x, useNativeDriver: false, stiffness: 260, damping: 24 }),
+        RNAnimated.spring(slideW, { toValue: w, useNativeDriver: false, stiffness: 260, damping: 24 }),
       ]).start();
       if (scroll) scrollRef.current?.scrollTo({ x: Math.max(0, x - 16), animated: true });
     },
@@ -576,16 +576,37 @@ export default function Step4PersonalizeScreen() {
               ) : (
                 <View style={{ marginTop: 30 }}>
                   <Text style={styles.sectionLabel}>STYLE ARTISTIQUE</Text>
-                  <View style={styles.stylesGrid}>
-                    {VISUAL_STYLES.map((item) => (
-                      <StyleCard
-                        key={item.label}
-                        item={item}
-                        isSelected={selectedStyle === item.label}
-                        onPress={() => setStyle(item.label as any)}
-                      />
-                    ))}
-                  </View>
+                  {selectedCategory === 'Social' ? (
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      contentContainerStyle={styles.stylesScrollContent}
+                      scrollEventThrottle={16}
+                      decelerationRate="fast"
+                      snapToInterval={STYLE_CARD_W + 12}
+                      snapToAlignment="start"
+                    >
+                      {VISUAL_STYLES.map((item) => (
+                        <StyleCard
+                          key={item.label}
+                          item={item}
+                          isSelected={selectedStyle === item.label}
+                          onPress={() => setStyle(item.label as any)}
+                        />
+                      ))}
+                    </ScrollView>
+                  ) : (
+                    <View style={styles.stylesGrid}>
+                      {VISUAL_STYLES.map((item) => (
+                        <StyleCard
+                          key={item.label}
+                          item={item}
+                          isSelected={selectedStyle === item.label}
+                          onPress={() => setStyle(item.label as any)}
+                        />
+                      ))}
+                    </View>
+                  )}
                 </View>
               )}
 
@@ -711,6 +732,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 12,
+  },
+  stylesScrollContent: {
+    gap: 12,
+    paddingHorizontal: 0,
+    paddingVertical: 4,
   },
   styleCard: {
     width: STYLE_CARD_W,

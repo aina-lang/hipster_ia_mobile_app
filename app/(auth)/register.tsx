@@ -72,7 +72,8 @@ export default function RegisterScreen() {
       setTimeout(() => {
         setModal(m => ({ ...m, visible: false }));
         useWelcomeVideoStore.getState().clearOpenedAuthFromWelcome();
-        router.push({ pathname: '/(auth)/verify-email', params: { email, userId: res.userId, planId: selectedPlan } });
+        // Navigate to packs after successful registration
+        router.push({ pathname: '/(onboarding)/packs', params: { from: 'register' } });
       }, 1500);
     } catch (e: any) {
       setLoading(false);

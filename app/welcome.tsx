@@ -257,9 +257,10 @@ const BottomAuthSection = React.memo(({ isAuthenticated, textAnimProgress, setIs
         </LinearGradient>
       </Pressable>
 
-      <View style={[styles.row, { gap: responsive.spacing.xs }]}>
+      {/* Ligne "Déjà un compte ? Se connecter" */}
+      <View style={styles.row}>
         <Text small style={{ fontSize: responsive.fontSize.xs }}>
-          Déjà un compte ?
+          Déjà un compte ?{'  '}
         </Text>
         <Pressable
           onPress={() => {
@@ -267,9 +268,7 @@ const BottomAuthSection = React.memo(({ isAuthenticated, textAnimProgress, setIs
             router.push('/(auth)/login');
           }}
           style={({ pressed }) => ({
-            padding: 10,
             opacity: pressed ? 0.7 : 1,
-            margin: -10,
           })}
         >
           <Text small style={[styles.highlight, { fontSize: responsive.fontSize.base }]}>
@@ -278,37 +277,56 @@ const BottomAuthSection = React.memo(({ isAuthenticated, textAnimProgress, setIs
         </Pressable>
       </View>
 
-      <View style={[styles.trial, { gap: responsive.spacing.xs, marginTop: responsive.spacing.lg }]}>
+      {/* ✅ Ligne trial : icône + texte tout-en-un + lien cliquable via Text imbriqué */}
+      <View style={[styles.trialRow, { marginTop: responsive.spacing.lg }]}>
         <FontAwesome5 name="angellist" size={responsive.isSmallScreen ? 16 : 18} style={styles.glowIcon} />
-        <Text small style={{ fontSize: responsive.fontSize.xs }}>
-          <Text style={styles.highlight}>7 jours</Text> d'essai gratuit
-        </Text>
-        <Text style={[styles.separator, { fontSize: responsive.fontSize.xs }]}>·</Text>
-        <Pressable
-          onPress={() => Linking.openURL('mailto:contact@hipster-ia.fr').catch(() => {})}
-          style={styles.contactLink}
+        {/* Tout le texte dans un seul bloc Text pour éviter tout débordement */}
+        <Text
+          style={[styles.trialText, { fontSize: responsive.fontSize.xs }]}
+          numberOfLines={1}
         >
-          <Text style={[styles.contactText, { fontSize: responsive.fontSize.xs }]}>
+          {'  '}
+          <Text style={styles.highlight}>7 jours</Text>
+          {" d'essai gratuit  ·  "}
+          <Text
+            style={styles.contactText}
+            onPress={() => Linking.openURL('mailto:contact@hipster-ia.fr').catch(() => {})}
+          >
             Besoin d'aide ?
           </Text>
-        </Pressable>
+        </Text>
       </View>
     </Animated.View>
   );
 });
 
 function WelcomeScreenContent({ onVideoFinish }: WelcomeScreenProps) {
-  // Now declare all other hooks BEFORE any conditional rendering
   const [videoReady, setVideoReady] = React.useState(false);
   const { isReturningFromBack, videoCompleted, setVideoCompleted } = useWelcomeVideoStore();
+  const { user } = useAuthStore();
+  const responsive = useResponsiveDimensions();
+
+  const isFinishedRef = useRef(false);
+  const playbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const videoCompletedRef = useRef(false);
+
+  const textAnimProgress = useSharedValue(0);
+  const videoMarginTop = useSharedValue(0);
+
+  const videoPlayer = useVideoPlayer(videobg, (player) => {
+    player.loop = false;
+    player.muted = true;
+  });
 
   useFocusEffect(
     useCallback(() => {
-      const { openedAuthFromWelcome: pending, setIsReturningFromBack, clearOpenedAuthFromWelcome } =
-        useWelcomeVideoStore.getState();
-      if (pending) {
-        setIsReturningFromBack(true);
-        clearOpenedAuthFromWelcome();
+      const store = useWelcomeVideoStore.getState();
+      console.log('[Welcome] Screen focused - openedAuthFromWelcome:', store.openedAuthFromWelcome);
+      
+      if (store.openedAuthFromWelcome) {
+        console.log('[Welcome] User returning from auth screen, showing static image');
+        store.setIsReturningFromBack(true);
+        store.clearOpenedAuthFromWelcome();
       }
     }, [])
   );
@@ -316,50 +334,40 @@ function WelcomeScreenContent({ onVideoFinish }: WelcomeScreenProps) {
   const showImage = isReturningFromBack;
   const shouldSkipPlay = videoCompleted || isReturningFromBack;
 
-  const textAnimProgress = useSharedValue(shouldSkipPlay ? 1 : 0);
-  const videoMarginTop = useSharedValue(shouldSkipPlay ? 100 : 0);
-  const { user, isHydrated } = useAuthStore();
-  const responsive = useResponsiveDimensions();
-  const videoCompletedRef = useRef(false);
-
-  React.useEffect(() => {
-    if (!isReturningFromBack) {
-      videoCompletedRef.current = false;
-    }
-  }, [isReturningFromBack]);
-
-  const isFinishedRef = React.useRef(shouldSkipPlay);
-  const playbackTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const videoPlayer = useVideoPlayer(videobg, (player) => {
-    player.loop = false;
-    player.muted = true;
-  });
-
   React.useEffect(() => {
     if (isReturningFromBack) {
+      console.log('[Welcome] Showing static image (returning from auth)');
       textAnimProgress.value = 1;
       videoMarginTop.value = 100;
       isFinishedRef.current = true;
-      onVideoFinish?.();
+    } else if (videoCompleted) {
+      console.log('[Welcome] Video was already completed, showing final state');
+      textAnimProgress.value = 1;
+      videoMarginTop.value = 100;
+      isFinishedRef.current = true;
+    } else {
+      console.log('[Welcome] Fresh start, resetting for video playback');
+      textAnimProgress.value = 0;
+      videoMarginTop.value = 0;
+      isFinishedRef.current = false;
+      videoCompletedRef.current = false;
     }
-  }, [isReturningFromBack, textAnimProgress, videoMarginTop, onVideoFinish]);
+  }, [isReturningFromBack, videoCompleted]);
 
   useEffect(() => {
-    if (!videoPlayer || shouldSkipPlay) {
-      if (videoPlayer && videoCompleted && !isReturningFromBack) {
-        const duration = videoPlayer.duration ?? 0;
-        if (duration > 0) {
-          videoPlayer.seekBy(duration - videoPlayer.currentTime);
-          videoPlayer.pause();
-        }
-      }
+    if (!videoPlayer) return;
+
+    if (shouldSkipPlay) {
+      console.log('[Welcome] Skipping video playback (shouldSkipPlay=true)');
       return;
     }
 
+    console.log('[Welcome] Setting up video playback');
+
     const onPlaybackFinish = () => {
       if (isFinishedRef.current) return;
-      videoCompletedRef.current = true;
+      console.log('[Welcome] Video playback finished, starting animations');
+      isFinishedRef.current = true;
 
       if (playbackTimerRef.current) {
         clearTimeout(playbackTimerRef.current);
@@ -377,39 +385,49 @@ function WelcomeScreenContent({ onVideoFinish }: WelcomeScreenProps) {
       });
 
       playbackTimerRef.current = setTimeout(() => {
-        const duration = videoPlayer?.duration ?? 0;
-        if (duration > 0 && videoPlayer) {
-          videoPlayer.seekBy(duration - videoPlayer.currentTime);
-          videoPlayer.pause();
-        }
+        console.log('[Welcome] Animations complete, marking video as completed');
         setVideoCompleted(true);
         onVideoFinish?.();
       }, 2000);
     };
 
-    const startTracking = () => {
-      if (isFinishedRef.current || playbackTimerRef.current) return;
-      playbackTimerRef.current = setTimeout(onPlaybackFinish, 5000);
-    };
-
-    const onStatusChange = ({ status }: { status: 'idle' | 'loading' | 'readyToPlay' | 'error' }) => {
-      if (status === 'readyToPlay') {
+    const startPlayback = () => {
+      console.log('[Welcome] Starting video playback');
+      if (videoPlayer.status === 'readyToPlay') {
         setVideoReady(true);
         videoPlayer.play();
         SplashScreen.hideAsync().catch(() => {});
       }
+
+      if (!isFinishedRef.current && !playbackTimerRef.current) {
+        playbackTimerRef.current = setTimeout(onPlaybackFinish, 5000);
+      }
+    };
+
+    const onStatusChange = ({ status }: { status: 'idle' | 'loading' | 'readyToPlay' | 'error' }) => {
+      console.log('[Welcome] Video status:', status);
+      if (status === 'readyToPlay') {
+        setVideoReady(true);
+        startPlayback();
+      } else if (status === 'error') {
+        console.error('[Welcome] Video error');
+        isFinishedRef.current = true;
+      }
     };
 
     const onPlayingChange = (payload: { isPlaying: boolean }) => {
-      if (payload.isPlaying) startTracking();
+      console.log('[Welcome] Video playing:', payload.isPlaying);
+      if (payload.isPlaying && !playbackTimerRef.current) {
+        if (!isFinishedRef.current) {
+          playbackTimerRef.current = setTimeout(onPlaybackFinish, 5000);
+        }
+      }
     };
 
     if (videoPlayer.status === 'readyToPlay') {
-      setVideoReady(true);
-      videoPlayer.play();
-      SplashScreen.hideAsync().catch(() => {});
+      console.log('[Welcome] Video already ready, starting playback immediately');
+      startPlayback();
     }
-    if (videoPlayer.playing) startTracking();
 
     videoPlayer.addListener('statusChange', onStatusChange);
     videoPlayer.addListener('playingChange', onPlayingChange);
@@ -419,20 +437,20 @@ function WelcomeScreenContent({ onVideoFinish }: WelcomeScreenProps) {
       videoPlayer.removeListener('statusChange', onStatusChange);
       videoPlayer.removeListener('playingChange', onPlayingChange);
       videoPlayer.removeListener('playToEnd', onPlaybackFinish);
-      if (playbackTimerRef.current) clearTimeout(playbackTimerRef.current);
+      if (playbackTimerRef.current) {
+        clearTimeout(playbackTimerRef.current);
+      }
     };
-  }, [onVideoFinish, isReturningFromBack, shouldSkipPlay, videoPlayer, videoCompleted, setVideoCompleted]);
+  }, [videoPlayer, shouldSkipPlay, onVideoFinish, setVideoCompleted]);
 
   const videoAnimatedStyle = useAnimatedStyle(() => ({
     marginTop: videoMarginTop.value,
+    opacity: videoReady ? 1 : 0.3,
   }));
-
-  const hideVideoUntilReady = !showImage && !videoReady;
 
   return (
     <Animated.View exiting={FadeOut.duration(400)} style={[StyleSheet.absoluteFill, { backgroundColor: '#000' }]}>
       <StatusBar style="light" />
-      {hideVideoUntilReady && <View style={[StyleSheet.absoluteFill, { backgroundColor: '#000' }]} pointerEvents="none" />}
 
       {showImage ? (
         <View style={[StyleSheet.absoluteFill, { backgroundColor: '#000' }]} pointerEvents="none">
@@ -479,11 +497,9 @@ function WelcomeScreenContent({ onVideoFinish }: WelcomeScreenProps) {
   );
 }
 
-// Wrapper component: EARLY RETURN HAPPENS HERE, NOT IN THE MAIN COMPONENT
 export default function WelcomeScreen({ onVideoFinish }: WelcomeScreenProps) {
   const { isAuthenticated } = useAuthStore();
 
-  // Safety net: authenticated users should never see this component
   if (isAuthenticated) {
     console.log('[WelcomeScreen] Authenticated user detected, returning null');
     return null;
@@ -590,14 +606,23 @@ const styles = StyleSheet.create({
     color: '#ffffff',
   },
   row: {
+    width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  trial: {
+  // ✅ Ligne trial : flexDirection row, pas de gap dynamique
+  trialRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: 20,
+  },
+  // ✅ Texte inline unique — pas de Pressable imbriqué qui réduit la largeur
+  trialText: {
+    color: 'rgba(255,255,255,0.6)',
+    textAlign: 'center',
+    flexShrink: 1,
   },
   link: {
     color: '#00a8cc',
@@ -605,7 +630,7 @@ const styles = StyleSheet.create({
   separator: {
     color: 'rgba(255,255,255,0.3)',
     fontSize: 12,
-    marginHorizontal: 4,
+    marginHorizontal: 6,
   },
   helpText: {
     color: 'rgba(255,255,255,0.5)',

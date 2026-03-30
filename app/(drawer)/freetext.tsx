@@ -65,6 +65,7 @@ import { TypingMessage, TypingPlaceholder } from '../../components/TypingMessage
 import { PaymentBlocker } from '../../components/PaymentBlocker';
 import { ChatInput } from '../../components/ChatInput';
 import { useSpeechToText } from '../../hooks/useSpeechToText';
+import { NeonBackButton } from 'components/ui/NeonBackButton';
 
 
 
@@ -775,14 +776,7 @@ export default function FreetextScreen() {
             className="flex-row items-center justify-between px-5 pb-2"
             style={{ paddingTop: insets.top + 10 }}
           >
-            <TouchableOpacity
-              className="rounded-lg bg-white/5 p-2"
-              onPress={() => navigation.openDrawer()}>
-              <Menu size={24} color={colors.text.primary} />
-            </TouchableOpacity>
-
-
-
+            <NeonBackButton onPress={() => router.back()} />
             <View className="flex-row items-center gap-2">
               {hasMessages && (
                 <TouchableOpacity className="rounded-lg bg-white/5 p-2" onPress={() => setShowDeleteConfirm(true)}>

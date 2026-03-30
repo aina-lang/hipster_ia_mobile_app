@@ -36,8 +36,14 @@ export const GuidedScreenWrapper: React.FC<GuidedScreenWrapperProps> = ({
     const handleBack = () => {
         if (onBack) {
             onBack();
-        } else if (router.canGoBack()) {
+            return;
+        }
+
+        if (router.canGoBack()) {
             router.back();
+        } else {
+            // No previous screen in the stack; stay on current screen gracefully.
+            console.log('[GuidedScreenWrapper] No previous screen to go back to.');
         }
     };
 

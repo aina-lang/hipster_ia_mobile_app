@@ -88,17 +88,29 @@ export default function LoginScreen() {
     }
     showModal('loading', 'Connexion en cours...', 'Veuillez patienter');
     try {
+      console.log('[Login] Starting login...');
       await aiLogin({ email, password });
+      console.log('[Login] aiLogin completed successfully');
       setModal(m => ({ ...m, visible: false }));
       useWelcomeVideoStore.getState().clearOpenedAuthFromWelcome();
-      const { hasFinishedOnboarding } = useAuthStore.getState();
+      const { hasFinishedOnboarding, isAuthenticated } = useAuthStore.getState();
+      console.log('[Login] Current auth state:', { hasFinishedOnboarding, isAuthenticated });
       router.replace(hasFinishedOnboarding ? '/(drawer)' : '/(onboarding)/setup');
     } catch (e: any) {
-      showModal('error', 'Échec de la connexion', e.response?.data?.message || e.message || 'Une erreur est survenue.');
+      console.error('[Login] Login error:', e);
+      // Always close loading modal on error
+      setModal(m => ({ ...m, visible: false }));
+      
+      const errorMessage = e.response?.data?.message || e.message || 'Une erreur est survenue lors de la connexion.';
+      console.log('[Login] Showing error modal:', errorMessage);
+      showModal('error', 'Échec de la connexion', errorMessage);
+      
       if (e.response?.data?.needsVerification) {
-        setModal(m => ({ ...m, visible: false }));
-        useWelcomeVideoStore.getState().clearOpenedAuthFromWelcome();
-        router.push({ pathname: '/(auth)/verify-email', params: { email } });
+        console.log('[Login] Email verification needed');
+        setTimeout(() => {
+          useWelcomeVideoStore.getState().clearOpenedAuthFromWelcome();
+          router.push({ pathname: '/(auth)/verify-email', params: { email } });
+        }, 500);
       }
     }
   };
@@ -138,7 +150,7 @@ export default function LoginScreen() {
 
               <View style={s.footer}>
                 <Text style={s.footerText}>Pas encore de compte ? </Text>
-                <NeonLink label="S'inscrire" onPress={() => router.push('/(onboarding)/packs')} />
+                <NeonLink label="S'inscrire" onPress={() => router.push('/(auth)/register')} />
               </View>
 
             </View>
