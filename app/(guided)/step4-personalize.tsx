@@ -170,8 +170,8 @@ function CategoryTabs({
 }) {
   const tabWidths = useRef<Record<string, number>>({});
   const tabOffsets = useRef<Record<string, number>>({});
-  const slideX = useRef(new Animated.Value(0)).current;
-  const slideW = useRef(new Animated.Value(0)).current;
+  const slideX = useRef(new RNAnimated.Value(0)).current;
+  const slideW = useRef(new RNAnimated.Value(0)).current;
   const scrollRef = useRef<ScrollView>(null);
   const [ready, setReady] = useState(false);
 
@@ -179,9 +179,9 @@ function CategoryTabs({
     (id: string, scroll = true) => {
       const x = tabOffsets.current[id] ?? 0;
       const w = tabWidths.current[id] ?? 0;
-      Animated.parallel([
-        Animated.spring(slideX, { toValue: x, useNativeDriver: false, stiffness: 260, damping: 24 }),
-        Animated.spring(slideW, { toValue: w, useNativeDriver: false, stiffness: 260, damping: 24 }),
+      RNAnimated.parallel([
+        RNAnimated.spring(slideX, { toValue: x, useNativeDriver: false, stiffness: 260, damping: 24 }),
+        RNAnimated.spring(slideW, { toValue: w, useNativeDriver: false, stiffness: 260, damping: 24 }),
       ]).start();
       if (scroll) scrollRef.current?.scrollTo({ x: Math.max(0, x - 16), animated: true });
     },

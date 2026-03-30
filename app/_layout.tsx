@@ -21,7 +21,8 @@ import * as Sharing from 'expo-sharing';
 
 import * as SystemUI from 'expo-system-ui';
 
-const initializeAuthRef = { current: false };
+/** Failsafe so a hung session check cannot block the app forever (splash / Stack). */
+const AUTH_INIT_TIMEOUT_MS = 5_000;
 
 /** Last path segment — works for `/login`, `/(auth)/login`, localized stacks, etc. */
 const AUTH_LAST_SEGMENTS = new Set([
@@ -71,29 +72,51 @@ export default function RootLayout() {
 
 
 
-  // On app startup, verify that stored session is still valid
+  // On app startup, verify that stored session is still valid.
+  // Do not use a module-level "ran once" ref: React 18 Strict Mode (dev) remounts and
+  // the first async completion can run after unmount (setState ignored), while a second
+  // effect would skip — leaving isInitialized false forever.
   useEffect(() => {
     // Set root background to black to prevent white flash
     SystemUI.setBackgroundColorAsync('#000000').catch(() => { });
     useWelcomeVideoStore.getState().reset();
 
-    if (!isHydrated || initializeAuthRef.current) {
+    if (!isHydrated) {
       return;
     }
 
-    initializeAuthRef.current = true;
-    const auth = useAuthStore.getState();
+    let cancelled = false;
+
     const initApp = async () => {
+      const auth = useAuthStore.getState();
       try {
-        await auth.initializeAuth();
-      } catch (error) {
-        console.error('[RootLayout] Initialization error:', error);
+        await Promise.race([
+          auth.initializeAuth(),
+          new Promise<void>((_, reject) =>
+            setTimeout(
+              () => reject(new Error('[RootLayout] initializeAuth timed out')),
+              AUTH_INIT_TIMEOUT_MS
+            )
+          ),
+        ]);
+      } catch (error: any) {
+        if (error?.message?.includes('timed out')) {
+          console.warn('[RootLayout] Auth init timed out; unlocking UI anyway.');
+        } else {
+          console.error('[RootLayout] Initialization error:', error);
+        }
       } finally {
-        setIsInitialized(true);
+        if (!cancelled) {
+          setIsInitialized(true);
+        }
       }
     };
 
     initApp();
+
+    return () => {
+      cancelled = true;
+    };
   }, [isHydrated]);
 
   useEffect(() => {
@@ -148,11 +171,12 @@ export default function RootLayout() {
     };
     const timer = setInterval(printDebug, 2000);
     return () => clearInterval(timer);
-  }, [pathname, segments, isAuthenticated]);
+  }, [pathname, segments, isAuthenticated, isHydrated, isInitialized, hasFinishedOnboarding]);
 
   // Check if we are in specific groups/pages
   const inAuthGroup = segments.some(s => s.includes('(auth)')) || segments.includes('login') || segments.includes('register') || segments.includes('verify-email');
   const inOnboardingGroup = segments.some(s => s.includes('(onboarding)')) || segments.includes('setup') || segments.includes('branding') || segments.includes('packs') || segments.includes('payment');
+  const inGuidedGroup = segments.some(s => s.includes('(guided)'));
   const pathInPublicUnauthFlow = pathLooksLikePublicUnauthFlow(pathname);
   const inUnauthPublicFlow = inAuthGroup || inOnboardingGroup || pathInPublicUnauthFlow;
 
@@ -196,8 +220,9 @@ export default function RootLayout() {
         }
       }
       else {
-        // User is fully set up, should be in drawer
-        if (!segments.includes('(drawer)')) {
+        // User is fully set up, should be in drawer by default,
+        // but allow explicit access to guided flows (/(guided)/...)
+        if (!segments.includes('(drawer)') && !inGuidedGroup) {
           targetRoute = '/(drawer)';
         }
       }
@@ -243,7 +268,7 @@ export default function RootLayout() {
         <StripeProvider
           publishableKey="pk_test_51R15MnK5fB5lGbp8C5QAYcALGWTBBmTmYxsnMnigeUNUg2DvsR9u4xbsF1GNzDIqiQxFqz9Dg10kEttfcpbr5DVX00yGKXocyS"
           merchantIdentifier="merchant.com.hipster">
-          {fontsLoaded && !fontError && isInitialized ? (
+          {isInitialized ? (
             <Stack
               screenOptions={{
                 headerShown: false,

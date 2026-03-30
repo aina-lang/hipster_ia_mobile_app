@@ -211,6 +211,7 @@ export default function HomeScreen() {
   const [inputValue, setInputValue]               = useState('');
   const { messages, setMessages, conversationId, setConversationId, resetChat: clearChatStore } = useChatStore();
   const { setFunction, selectedFunction, setJob }  = useCreationStore();
+  const { setArchitecture } = useCreationStore();
   const resetCreationStore = useCreationStore((state) => state.reset);
   const [isGenerating, setIsGenerating]           = useState(false);
   const [isBackendConnected, setIsBackendConnected] = useState<boolean | null>(null);
@@ -949,15 +950,24 @@ export default function HomeScreen() {
                         activeOpacity={0.9}
                         style={s.gridItem}
                         onPress={() => {
+                          console.log('[HOME] Card pressed:', fn.label, 'Category:', fn.category);
                           setFunction(fn.label, fn.category);
+                          
                           setTimeout(() => {
+                            console.log('[HOME] Navigation: label=', fn.label, ', category=', fn.category);
+                            
                             if (fn.label === 'Textes libres') {
+                              console.log('[HOME] → Navigating to freetext');
                               router.push('/(drawer)/freetext');
                             } else if (fn.label === 'Historique flyers') {
+                              console.log('[HOME] → Navigating to impression-hd-history');
                               router.push('/(drawer)/impression-hd-history');
                             } else if (fn.category === 'Document') {
+                              console.log('[HOME] → Navigating to step3-directions (Flyer/Affiche)');
+                              setArchitecture(null); // Reset architecture for fresh selection
                               router.push('/(guided)/step3-directions');
                             } else {
+                              console.log('[HOME] → Navigating to step4-personalize');
                               router.push('/(guided)/step4-personalize');
                             }
                           }, 300);

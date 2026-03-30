@@ -56,8 +56,17 @@ api.interceptors.request.use(
 );
 
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    console.log(`✅ [API SUCCESS] ${response.config.method?.toUpperCase()} ${response.config.url}:`, response.status);
+    return response;
+  },
   async (error) => {
+    console.error(`❌ [API ERROR] ${error.config?.method?.toUpperCase()} ${error.config?.url}:`, {
+      status: error.response?.status,
+      message: error.message,
+      data: error.response?.data,
+    });
+    
     const originalRequest = error.config;
     const isAuthEndpoint =
       originalRequest.url.includes('/login') ||

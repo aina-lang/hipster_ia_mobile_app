@@ -393,8 +393,19 @@ export const useAuthStore = create<AuthState>()(
       aiLogin: async (credentials) => {
         set({ isLoading: true, error: null });
         try {
-          const { data } = await api.post('/ai/auth/login', credentials);
-          const resData = data.data;
+          console.log('[AuthStore] aiLogin - Sending credentials:', { email: credentials.email });
+          const response = await api.post('/ai/auth/login', credentials);
+          console.log('[AuthStore] aiLogin - Full response:', JSON.stringify(response, null, 2));
+          
+          const { data } = response;
+          console.log('[AuthStore] aiLogin - data:', JSON.stringify(data, null, 2));
+          
+          const resData = data.data || data;
+          console.log('[AuthStore] aiLogin - resData:', JSON.stringify(resData, null, 2));
+          
+          if (!resData.user) {
+            throw new Error('No user data in response');
+          }
 
           console.log(
             '[AuthStore] AI Login Success. User data:',
@@ -438,6 +449,11 @@ export const useAuthStore = create<AuthState>()(
           }
         } catch (error: any) {
           console.error('[AuthStore] AI Login Error:', error);
+          console.error('[AuthStore] Error details:', {
+            message: error.message,
+            response: error.response?.data,
+            status: error.response?.status,
+          });
           const message = extractErrorMessage(
             error,
             'Une erreur est survenue lors de la connexion AI.'
