@@ -18,7 +18,10 @@ export const useWelcomeVideoStore = create<WelcomeVideoStore>((set) => ({
   isReturningFromBack: false,
   setIsReturningFromBack: (returning: boolean) => set({ isReturningFromBack: returning }),
   openedAuthFromWelcome: false,
-  markOpenedAuthFromWelcome: () => set({ openedAuthFromWelcome: true }),
+  markOpenedAuthFromWelcome: () => {
+    // Reset returning-from-back state when navigating to auth
+    set({ openedAuthFromWelcome: true, isReturningFromBack: false });
+  },
   clearOpenedAuthFromWelcome: () => set({ openedAuthFromWelcome: false }),
   reset: () =>
     set({ videoCompleted: false, isReturningFromBack: false, openedAuthFromWelcome: false }),

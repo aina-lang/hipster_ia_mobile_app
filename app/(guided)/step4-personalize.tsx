@@ -576,16 +576,37 @@ export default function Step4PersonalizeScreen() {
               ) : (
                 <View style={{ marginTop: 30 }}>
                   <Text style={styles.sectionLabel}>STYLE ARTISTIQUE</Text>
-                  <View style={styles.stylesGrid}>
-                    {VISUAL_STYLES.map((item) => (
-                      <StyleCard
-                        key={item.label}
-                        item={item}
-                        isSelected={selectedStyle === item.label}
-                        onPress={() => setStyle(item.label as any)}
-                      />
-                    ))}
-                  </View>
+                  {selectedCategory === 'Social' ? (
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      contentContainerStyle={styles.stylesScrollContent}
+                      scrollEventThrottle={16}
+                      decelerationRate="fast"
+                      snapToInterval={STYLE_CARD_W + 12}
+                      snapToAlignment="start"
+                    >
+                      {VISUAL_STYLES.map((item) => (
+                        <StyleCard
+                          key={item.label}
+                          item={item}
+                          isSelected={selectedStyle === item.label}
+                          onPress={() => setStyle(item.label as any)}
+                        />
+                      ))}
+                    </ScrollView>
+                  ) : (
+                    <View style={styles.stylesGrid}>
+                      {VISUAL_STYLES.map((item) => (
+                        <StyleCard
+                          key={item.label}
+                          item={item}
+                          isSelected={selectedStyle === item.label}
+                          onPress={() => setStyle(item.label as any)}
+                        />
+                      ))}
+                    </View>
+                  )}
                 </View>
               )}
 
@@ -711,6 +732,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 12,
+  },
+  stylesScrollContent: {
+    gap: 12,
+    paddingHorizontal: 0,
+    paddingVertical: 4,
   },
   styleCard: {
     width: STYLE_CARD_W,

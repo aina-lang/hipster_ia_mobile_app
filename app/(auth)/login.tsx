@@ -150,7 +150,7 @@ export default function LoginScreen() {
 
               <View style={s.footer}>
                 <Text style={s.footerText}>Pas encore de compte ? </Text>
-                <NeonLink label="S'inscrire" onPress={() => router.push('/(onboarding)/packs')} />
+                <NeonLink label="S'inscrire" onPress={() => router.push('/(auth)/register')} />
               </View>
 
             </View>
