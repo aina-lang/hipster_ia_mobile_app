@@ -442,39 +442,9 @@ export default function ImpressionHDHistoryScreen() {
                   <Text style={s.clearButtonText}>Tout effacer la galerie</Text>
                 </TouchableOpacity>
               )}
-
-              {images.length === 0 && (
-                <View style={s.emptyBlock}>
-                  <View style={s.emptyIconBox}>
-                    <LayoutGrid size={28} color={colors.neon.primary} />
-                  </View>
-                  <Text style={s.emptyText}>Aucun visuel enregistré</Text>
-                  <Text style={s.emptyHint}>
-                    Les flyers générés depuis l’accueil apparaissent ici automatiquement.
-                  </Text>
-                  <TouchableOpacity
-                    style={s.createBtn}
-                    onPress={() => router.push('/(drawer)/impression-hd-create')}
-                  >
-                    <Plus size={18} color={colors.neon.primary} />
-                    <Text style={s.createBtnText}>Nouveau flyer</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
             </>
           }
         />
-
-        {images.length > 0 && (
-          <TouchableOpacity
-            style={s.fab}
-            onPress={() => router.push('/(drawer)/impression-hd-create')}
-            accessibilityRole="button"
-            accessibilityLabel="Créer un nouveau flyer"
-          >
-            <Plus size={28} color="white" />
-          </TouchableOpacity>
-        )}
 
         <Modal visible={showImageModal} transparent animationType="fade">
           <View style={s.modalContainer}>
