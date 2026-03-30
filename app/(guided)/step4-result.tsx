@@ -109,16 +109,35 @@ export default function Step4ResultScreen() {
 
   /** Enregistre une affiche flyer dans l’historique Impression HD (écran dédié + même format que la sauvegarde galerie). */
   const addFlyerToImpressionHistory = (url: string, genId?: number | null) => {
-    if (!url || typeof url !== 'string' || !url.startsWith('http')) return;
+    console.log('[Step4Result] addFlyerToImpressionHistory called with:', { url, genId });
+    
+    if (!url || typeof url !== 'string') {
+      console.warn('[Step4Result] Invalid URL - skipping add to history');
+      return;
+    }
+    
+    // Allow base64 URLs as well as http URLs
+    const isValidUrl = url.startsWith('http') || url.startsWith('data:');
+    if (!isValidUrl) {
+      console.warn('[Step4Result] URL does not start with http or data: - skipping');
+      return;
+    }
+    
     const state = useCreationStore.getState();
     const fn = state.selectedFunction || '';
-    if (!fn.includes('Flyer') && !fn.includes('Affiche')) return;
-    addImage({
+    console.log('[Step4Result] Checking function:', fn);
+    
+    if (!fn.includes('Flyer') && !fn.includes('Affiche')) {
+      console.warn('[Step4Result] Function is not a Flyer/Affiche type - skipping');
+      return;
+    }
+
+    const imageEntry = {
       id: genId != null ? `gen-${genId}` : `gen-${Date.now()}`,
       url,
       title: state.mainTitle || 'Flyer / Affiche',
       description: state.userQuery || 'Flyer généré',
-      format: 'impression-hd',
+      format: 'impression-hd' as const,
       architecture: state.selectedArchitecture,
       style: state.selectedStyle,
       createdAt: Date.now(),
@@ -129,7 +148,10 @@ export default function Step4ResultScreen() {
         subTitle: state.subTitle,
         infoLine: state.infoLine,
       },
-    });
+    };
+    
+    console.log('[Step4Result] Adding image to history:', imageEntry);
+    addImage(imageEntry);
   };
 
   useEffect(() => {

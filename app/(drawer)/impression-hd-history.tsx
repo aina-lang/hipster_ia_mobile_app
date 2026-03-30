@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -32,6 +32,7 @@ import { colors } from '../../theme/colors';
 import { GenericModal, ModalType } from '../../components/ui/GenericModal';
 import { BackgroundGradientOnboarding } from '../../components/ui/BackgroundGradientOnboarding';
 import { NeonBackButton } from '../../components/ui/NeonBackButton';
+import { AiService } from '../../api/ai.service';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 const SCROLL_PAD = 24;
@@ -47,13 +48,6 @@ export default function ImpressionHDHistoryScreen() {
   const removeImage = useImageHistoryStore((state) => state.removeImage);
   const clearHistory = useImageHistoryStore((state) => state.clearHistory);
 
-  const images = useMemo(() => {
-    const flyerLike = allImages.filter(
-      (img) => img.format === 'impression-hd' || img.format === 'flyer',
-    );
-    return [...flyerLike].sort((a, b) => b.createdAt - a.createdAt);
-  }, [allImages]);
-
   const [selectedImage, setSelectedImage] = useState<GeneratedImage | null>(null);
   const [showImageModal, setShowImageModal] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
@@ -65,7 +59,75 @@ export default function ImpressionHDHistoryScreen() {
   const [showClearModal, setShowClearModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
+  const [backendFlyers, setBackendFlyers] = useState<GeneratedImage[]>([]);
+  const [loadingFlyers, setLoadingFlyers] = useState(false);
   const [permissionResponse, requestPermission] = MediaLibrary.usePermissions();
+
+  // Fetch flyers from backend
+  const fetchBackendFlyers = useCallback(async () => {
+    try {
+      console.log('[ImpressionHDHistory] Fetching backend flyers...');
+      setLoadingFlyers(true);
+      const flyers = await AiService.getFlyerHistory();
+      
+      if (!Array.isArray(flyers)) {
+        console.warn('[ImpressionHDHistory] Backend flyers not an array:', flyers);
+        setBackendFlyers([]);
+        return;
+      }
+
+      // Transform backend flyers to GeneratedImage format
+      const transformedFlyers: GeneratedImage[] = flyers.map((flyer: any) => ({
+        id: flyer.id?.toString() || `backend-${Date.now()}`,
+        url: flyer.imageUrl || flyer.url || '',
+        title: flyer.title || 'Flyer',
+        description: flyer.description || '',
+        format: 'impression-hd' as const,
+        thumbnail: flyer.thumbnail || undefined,
+        createdAt: new Date(flyer.createdAt || Date.now()).getTime(),
+        generationId: flyer.generationId,
+        metadata: flyer.metadata,
+      }));
+
+      console.log('[ImpressionHDHistory] Backend flyers transformed:', transformedFlyers.length);
+      setBackendFlyers(transformedFlyers);
+    } catch (error) {
+      console.error('[ImpressionHDHistory] Error fetching backend flyers:', error);
+      setBackendFlyers([]);
+    } finally {
+      setLoadingFlyers(false);
+    }
+  }, []);
+
+  // Load flyers when screen is focused
+  useFocusEffect(
+    useCallback(() => {
+      fetchBackendFlyers();
+    }, [fetchBackendFlyers])
+  );
+
+  const images = useMemo(() => {
+    console.log('[ImpressionHDHistory] All images in store:', allImages.length);
+    console.log('[ImpressionHDHistory] Backend flyers:', backendFlyers.length);
+    
+    // Combine store images and backend flyers
+    const storeFlyers = allImages.filter(
+      (img) => img.format === 'impression-hd' || img.format === 'flyer',
+    );
+    
+    // Merge and deduplicate by ID
+    const allFlyers = [...storeFlyers, ...backendFlyers];
+    const seen = new Set<string>();
+    const uniqueFlyers = allFlyers.filter(img => {
+      if (seen.has(img.id)) return false;
+      seen.add(img.id);
+      return true;
+    });
+    
+    const sorted = [...uniqueFlyers].sort((a, b) => b.createdAt - a.createdAt);
+    console.log('[ImpressionHDHistory] Final images to display:', sorted.length);
+    return sorted;
+  }, [allImages, backendFlyers]);
 
   const showModal = (type: ModalType, title: string, message: string) => {
     setModalType(type);
@@ -76,7 +138,9 @@ export default function ImpressionHDHistoryScreen() {
 
   const onRefresh = () => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 350);
+    fetchBackendFlyers().finally(() => {
+      setTimeout(() => setRefreshing(false), 350);
+    });
   };
 
   const openPreview = (image: GeneratedImage) => {
@@ -266,29 +330,12 @@ export default function ImpressionHDHistoryScreen() {
                   <Text style={s.emptyHint}>
                     Les flyers générés depuis l’accueil apparaissent ici automatiquement.
                   </Text>
-                  <TouchableOpacity
-                    style={s.createBtn}
-                    onPress={() => router.push('/(drawer)/impression-hd-create')}
-                  >
-                    <Plus size={18} color={colors.neon.primary} />
-                    <Text style={s.createBtnText}>Nouveau flyer</Text>
-                  </TouchableOpacity>
+
                 </View>
               )}
             </>
           }
         />
-
-        {images.length > 0 && (
-          <TouchableOpacity
-            style={s.fab}
-            onPress={() => router.push('/(drawer)/impression-hd-create')}
-            accessibilityRole="button"
-            accessibilityLabel="Créer un nouveau flyer"
-          >
-            <Plus size={28} color="white" />
-          </TouchableOpacity>
-        )}
 
         <Modal visible={showImageModal} transparent animationType="fade">
           <View style={s.modalContainer}>
@@ -413,17 +460,19 @@ const s = StyleSheet.create({
   },
   titleSub: {
     fontFamily: 'Arimo-Bold',
-    fontSize: 16,
-    textTransform: 'uppercase',
+    fontSize: 20,
+    fontWeight: '800',
     color: '#ffffff',
+    letterSpacing: 0.5,
   },
   subtitle: {
     fontFamily: 'Arimo-Regular',
-    fontSize: 13,
-    color: 'rgba(255,255,255,0.35)',
-    letterSpacing: 0.3,
+    fontSize: 14,
+    color: 'rgba(0, 212, 255, 0.6)',
+    letterSpacing: 0.5,
     textAlign: 'center',
-    marginBottom: 20,
+    marginBottom: 24,
+    fontWeight: '500',
   },
   clearButton: {
     flexDirection: 'row',
@@ -456,11 +505,16 @@ const s = StyleSheet.create({
   tileTouchable: {
     width: TILE,
     height: TILE,
-    borderRadius: 14,
+    borderRadius: 18,
     overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: colors.primary.main + '1a',
+    borderWidth: 1.5,
+    borderColor: 'rgba(0, 212, 255, 0.15)',
     backgroundColor: colors.background.secondary + '99',
+    shadowColor: 'rgba(0, 212, 255, 0.2)',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 5,
   },
   tileImage: {
     width: '100%',
@@ -468,16 +522,22 @@ const s = StyleSheet.create({
   },
   tileDelete: {
     position: 'absolute',
-    top: 6,
-    right: 6,
-    width: 30,
-    height: 30,
+    top: 8,
+    right: 8,
+    width: 32,
+    height: 32,
     borderRadius: 10,
-    backgroundColor: 'rgba(15,23,42,0.75)',
+    backgroundColor: 'rgba(15,23,42,0.85)',
+    backdropFilter: 'blur(10px)',
     borderWidth: 1,
-    borderColor: 'rgba(239,68,68,0.25)',
+    borderColor: 'rgba(239,68,68,0.35)',
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: 'rgba(239,68,68,0.3)',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 4,
   },
   emptyBlock: {
     alignItems: 'center',
@@ -527,21 +587,21 @@ const s = StyleSheet.create({
   },
   fab: {
     position: 'absolute',
-    bottom: 28,
+    bottom: 32,
     right: 24,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: 'rgba(0, 212, 255, 0.2)',
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: 'rgba(0, 212, 255, 0.25)',
     borderWidth: 2,
     borderColor: colors.neonBlue,
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: colors.neon.primary,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 8,
-    elevation: 10,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.6,
+    shadowRadius: 16,
+    elevation: 12,
   },
   modalContainer: {
     flex: 1,
@@ -552,12 +612,15 @@ const s = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    paddingTop: 16,
+    paddingVertical: 16,
+    paddingTop: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0, 212, 255, 0.1)',
   },
   modalTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 18,
+    fontWeight: '700',
+    fontFamily: 'Arimo-Bold',
     color: 'white',
     flex: 1,
     textAlign: 'center',
@@ -568,20 +631,46 @@ const s = StyleSheet.create({
   },
   modalActions: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 12,
     paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingVertical: 20,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.1)',
+    borderTopColor: 'rgba(0, 212, 255, 0.1)',
   },
   modalButton: {
     flex: 1,
-    paddingVertical: 12,
-    borderRadius: 8,
+    paddingVertical: 14,
+    borderRadius: 12,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
     gap: 8,
+    borderWidth: 1.5,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  downloadBtnLarge: {
+    backgroundColor: 'rgba(0, 212, 255, 0.15)',
+    borderColor: 'rgba(0, 212, 255, 0.4)',
+    shadowColor: 'rgba(0, 212, 255, 0.3)',
+  },
+  printBtnLarge: {
+    backgroundColor: 'rgba(102, 229, 255, 0.15)',
+    borderColor: 'rgba(102, 229, 255, 0.4)',
+    shadowColor: 'rgba(102, 229, 255, 0.3)',
+  },
+  shareBtnLarge: {
+    backgroundColor: 'rgba(0, 212, 255, 0.15)',
+    borderColor: 'rgba(0, 212, 255, 0.4)',
+    shadowColor: 'rgba(0, 212, 255, 0.3)',
+  },
+  modalButtonText: {
+    color: 'white',
+    fontWeight: '700',
+    fontFamily: 'Arimo-Bold',
+    fontSize: 13,
   },
   downloadBtnLarge: {
     backgroundColor: 'rgba(0, 212, 255, 0.3)',
