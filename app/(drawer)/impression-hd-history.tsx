@@ -25,6 +25,8 @@ import {
   Plus,
   ArrowLeft,
   LayoutGrid,
+  CheckCircle2,
+  X,
 } from 'lucide-react-native';
 
 import { useImageHistoryStore, GeneratedImage } from '../../store/imageHistoryStore';
@@ -44,10 +46,6 @@ const TILE = (CONTENT_W - GALLERY_GAP * (COLS - 1)) / COLS;
 export default function ImpressionHDHistoryScreen() {
   const router = useRouter();
 
-  const allImages = useImageHistoryStore((state) => state.images);
-  const removeImage = useImageHistoryStore((state) => state.removeImage);
-  const clearHistory = useImageHistoryStore((state) => state.clearHistory);
-
   const [selectedImage, setSelectedImage] = useState<GeneratedImage | null>(null);
   const [showImageModal, setShowImageModal] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
@@ -59,9 +57,15 @@ export default function ImpressionHDHistoryScreen() {
   const [showClearModal, setShowClearModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
+  const [permissionResponse, requestPermission] = MediaLibrary.usePermissions();
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [backendFlyers, setBackendFlyers] = useState<GeneratedImage[]>([]);
   const [loadingFlyers, setLoadingFlyers] = useState(false);
-  const [permissionResponse, requestPermission] = MediaLibrary.usePermissions();
+
+  const allImages = useImageHistoryStore((state) => state.images);
+  const removeImage = useImageHistoryStore((state) => state.removeImage);
+  const clearHistory = useImageHistoryStore((state) => state.clearHistory);
 
   // Fetch flyers from backend
   const fetchBackendFlyers = useCallback(async () => {
@@ -69,7 +73,7 @@ export default function ImpressionHDHistoryScreen() {
       console.log('[ImpressionHDHistory] Fetching backend flyers...');
       setLoadingFlyers(true);
       const flyers = await AiService.getFlyerHistory();
-      
+
       if (!Array.isArray(flyers)) {
         console.warn('[ImpressionHDHistory] Backend flyers not an array:', flyers);
         setBackendFlyers([]);
@@ -109,12 +113,12 @@ export default function ImpressionHDHistoryScreen() {
   const images = useMemo(() => {
     console.log('[ImpressionHDHistory] All images in store:', allImages.length);
     console.log('[ImpressionHDHistory] Backend flyers:', backendFlyers.length);
-    
+
     // Combine store images and backend flyers
     const storeFlyers = allImages.filter(
       (img) => img.format === 'impression-hd' || img.format === 'flyer',
     );
-    
+
     // Merge and deduplicate by ID
     const allFlyers = [...storeFlyers, ...backendFlyers];
     const seen = new Set<string>();
@@ -123,12 +127,11 @@ export default function ImpressionHDHistoryScreen() {
       seen.add(img.id);
       return true;
     });
-    
+
     const sorted = [...uniqueFlyers].sort((a, b) => b.createdAt - a.createdAt);
     console.log('[ImpressionHDHistory] Final images to display:', sorted.length);
     return sorted;
   }, [allImages, backendFlyers]);
-
   const showModal = (type: ModalType, title: string, message: string) => {
     setModalType(type);
     setModalTitle(title);
@@ -138,9 +141,40 @@ export default function ImpressionHDHistoryScreen() {
 
   const onRefresh = () => {
     setRefreshing(true);
-    fetchBackendFlyers().finally(() => {
-      setTimeout(() => setRefreshing(false), 350);
+    setTimeout(() => setRefreshing(false), 350);
+  };
+
+  const toggleSelection = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+        if (next.size === 0) setSelectionMode(false);
+      } else {
+        next.add(id);
+      }
+      return next;
     });
+  };
+
+  const handleLongPress = (id: string) => {
+    if (!selectionMode) {
+      setSelectionMode(true);
+      setSelectedIds(new Set([id]));
+    }
+  };
+
+  const handlePress = (item: GeneratedImage) => {
+    if (selectionMode) {
+      toggleSelection(item.id);
+    } else {
+      openPreview(item);
+    }
+  };
+
+  const exitSelectionMode = () => {
+    setSelectionMode(false);
+    setSelectedIds(new Set());
   };
 
   const openPreview = (image: GeneratedImage) => {
@@ -235,53 +269,109 @@ export default function ImpressionHDHistoryScreen() {
     }
   };
 
-  const confirmDeleteOne = () => {
-    if (!itemToDelete) return;
-    const deletedId = itemToDelete;
-    removeImage(deletedId);
-    setItemToDelete(null);
-    setShowDeleteModal(false);
-    if (selectedImage?.id === deletedId) {
-      setShowImageModal(false);
-      setSelectedImage(null);
+  const confirmDeleteOne = async () => {
+    try {
+      if (selectionMode) {
+        // Supprimer toutes les sélections
+        for (const id of Array.from(selectedIds)) {
+          removeImage(id);
+          AiService.deleteGeneration(id).catch(() => { });
+        }
+        setBackendFlyers((prev) => prev.filter((img) => !selectedIds.has(img.id)));
+        exitSelectionMode();
+      } else {
+        if (!itemToDelete) return;
+        const deletedId = itemToDelete;
+        removeImage(deletedId);
+        AiService.deleteGeneration(deletedId).catch(() => { });
+        setBackendFlyers((prev) => prev.filter((img) => img.id !== deletedId));
+        setItemToDelete(null);
+        if (selectedImage?.id === deletedId) {
+          setShowImageModal(false);
+          setSelectedImage(null);
+        }
+      }
+    } finally {
+      setShowDeleteModal(false);
     }
   };
 
   const confirmClearAll = () => {
     clearHistory();
+    setBackendFlyers([]);
+    AiService.clearHistory().catch(() => { });
     setShowClearModal(false);
     setShowImageModal(false);
     setSelectedImage(null);
   };
 
-  const renderGalleryTile = ({ item }: { item: GeneratedImage }) => (
-    <View style={s.tileWrap}>
-      <TouchableOpacity
-        style={s.tileTouchable}
-        onPress={() => openPreview(item)}
-        activeOpacity={0.85}
-      >
-        <LinearGradient
-          colors={[colors.primary.main + '0a', 'transparent']}
-          style={StyleSheet.absoluteFill}
+  const MemoizedGalleryTile = useCallback(
+    React.memo(({ item, isSelected, selectionMode, onPress, onLongPress, onDelete }: any) => {
+      return (
+        <View style={s.tileWrap}>
+          <TouchableOpacity
+            style={[
+              s.tileTouchable,
+              selectionMode && isSelected && s.tileSelected
+            ]}
+            onPress={onPress}
+            onLongPress={onLongPress}
+            delayLongPress={150}
+            activeOpacity={0.85}
+          >
+            <LinearGradient
+              colors={[colors.primary.main + '0a', 'transparent']}
+              style={StyleSheet.absoluteFill}
+            />
+            <Image
+              source={{ uri: item.thumbnail || item.url }}
+              style={[s.tileImage, selectionMode && isSelected && s.tileImageSelected]}
+              resizeMode="cover"
+            />
+            {selectionMode && (
+              <View style={s.selectionCircle}>
+                {isSelected && <CheckCircle2 size={22} color={colors.neon.primary} fill="white" />}
+                {!isSelected && <View style={s.selectionCircleEmpty} />}
+              </View>
+            )}
+          </TouchableOpacity>
+          {!selectionMode && (
+            <TouchableOpacity
+              style={s.tileDelete}
+              onPress={onDelete}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Trash2 size={14} color={colors.status.error} />
+            </TouchableOpacity>
+          )}
+        </View>
+      );
+    }, (prevProps, nextProps) => {
+      return prevProps.isSelected === nextProps.isSelected &&
+        prevProps.selectionMode === nextProps.selectionMode &&
+        prevProps.item.id === nextProps.item.id;
+    }),
+    []
+  );
+
+  const renderGalleryTile = useCallback(
+    ({ item }: { item: GeneratedImage }) => {
+      const isSelected = selectedIds.has(item.id);
+      return (
+        <MemoizedGalleryTile
+          item={item}
+          isSelected={isSelected}
+          selectionMode={selectionMode}
+          onPress={() => handlePress(item)}
+          onLongPress={() => handleLongPress(item.id)}
+          onDelete={() => {
+            setItemToDelete(item.id);
+            setShowDeleteModal(true);
+          }}
         />
-        <Image
-          source={{ uri: item.thumbnail || item.url }}
-          style={s.tileImage}
-          resizeMode="cover"
-        />
-      </TouchableOpacity>
-      <TouchableOpacity
-        style={s.tileDelete}
-        onPress={() => {
-          setItemToDelete(item.id);
-          setShowDeleteModal(true);
-        }}
-        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-      >
-        <Trash2 size={14} color={colors.status.error} />
-      </TouchableOpacity>
-    </View>
+      );
+    },
+    [selectionMode, selectedIds, handlePress, handleLongPress]
   );
 
   return (
@@ -295,6 +385,10 @@ export default function ImpressionHDHistoryScreen() {
           columnWrapperStyle={s.columnWrap}
           contentContainerStyle={s.listContent}
           showsVerticalScrollIndicator={false}
+          initialNumToRender={15}
+          maxToRenderPerBatch={10}
+          windowSize={5}
+          removeClippedSubviews={true}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -304,34 +398,49 @@ export default function ImpressionHDHistoryScreen() {
           }
           ListHeaderComponent={
             <>
-              <View style={s.header}>
-                <NeonBackButton onPress={() => router.back()} />
-                <View style={s.headerCenter}>
-                  <Text style={s.titleSub}>Impression HD</Text>
+              {selectionMode ? (
+                <View style={[s.header, s.headerSelectionMode]}>
+                  <TouchableOpacity onPress={exitSelectionMode} style={s.headerIconBtn}>
+                    <X size={24} color="white" />
+                  </TouchableOpacity>
+                  <Text style={s.selectionCount}>{selectedIds.size} sélectionné(s)</Text>
+                  <View style={s.headerActions}>
+                    <TouchableOpacity
+                      onPress={() => {
+                        if (selectedIds.size === images.length) setSelectedIds(new Set());
+                        else setSelectedIds(new Set(images.map(img => img.id)));
+                      }}
+                      style={s.headerTextBtn}
+                    >
+                      <Text style={s.headerActionText}>
+                        {selectedIds.size === images.length ? 'Annuler' : 'Tout'}
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => setShowDeleteModal(true)}
+                      style={s.headerIconBtn}
+                    >
+                      <Trash2 size={24} color={colors.status.error} />
+                    </TouchableOpacity>
+                  </View>
                 </View>
-                <View style={{ width: 42 }} />
-              </View>
+              ) : (
+                <View style={s.header}>
+                  <NeonBackButton onPress={() => router.back()} />
+                  <View style={s.headerCenter}>
+                    <Text style={s.titleSub}>Historique flyers</Text>
+                  </View>
+                  <View style={{ width: 42 }} />
+                </View>
+              )}
 
               <Text style={s.subtitle}>Galerie de vos affiches et visuels HD</Text>
 
-              {images.length > 0 && (
+              {images.length > 0 && !selectionMode && (
                 <TouchableOpacity style={s.clearButton} onPress={() => setShowClearModal(true)}>
                   <Trash2 size={14} color={colors.status.error} />
                   <Text style={s.clearButtonText}>Tout effacer la galerie</Text>
                 </TouchableOpacity>
-              )}
-
-              {images.length === 0 && (
-                <View style={s.emptyBlock}>
-                  <View style={s.emptyIconBox}>
-                    <LayoutGrid size={28} color={colors.neon.primary} />
-                  </View>
-                  <Text style={s.emptyText}>Aucun visuel enregistré</Text>
-                  <Text style={s.emptyHint}>
-                    Les flyers générés depuis l’accueil apparaissent ici automatiquement.
-                  </Text>
-
-                </View>
               )}
             </>
           }
@@ -351,19 +460,40 @@ export default function ImpressionHDHistoryScreen() {
 
             {selectedImage && (
               <>
-                <Image
-                  source={{ uri: selectedImage.url }}
-                  style={s.fullImage}
-                  resizeMode="contain"
+                <FlatList
+                  data={images}
+                  horizontal
+                  pagingEnabled
+                  showsHorizontalScrollIndicator={false}
+                  keyExtractor={(item) => item.id}
+                  initialNumToRender={1}
+                  maxToRenderPerBatch={2}
+                  windowSize={3}
+                  getItemLayout={(data, index) => ({
+                    length: SCREEN_W,
+                    offset: SCREEN_W * index,
+                    index,
+                  })}
+                  initialScrollIndex={Math.max(0, images.findIndex(i => i.id === selectedImage?.id))}
+                  onMomentumScrollEnd={(e) => {
+                    const index = Math.round(e.nativeEvent.contentOffset.x / SCREEN_W);
+                    if (images[index]) setSelectedImage(images[index]);
+                  }}
+                  renderItem={({ item }) => (
+                    <View style={{ width: SCREEN_W, flex: 1 }}>
+                      <Image
+                        source={{ uri: item.url }}
+                        style={s.fullImage}
+                        resizeMode="contain"
+                      />
+                    </View>
+                  )}
                 />
 
                 <View style={s.modalActions}>
                   <TouchableOpacity
                     style={[s.modalButton, s.downloadBtnLarge]}
-                    onPress={() => {
-                      handleDownloadImage(selectedImage);
-                      setShowImageModal(false);
-                    }}
+                    onPress={() => handleDownloadImage(selectedImage)}
                     disabled={downloading === selectedImage.id}
                   >
                     {downloading === selectedImage.id ? (
@@ -378,10 +508,7 @@ export default function ImpressionHDHistoryScreen() {
 
                   <TouchableOpacity
                     style={[s.modalButton, s.printBtnLarge]}
-                    onPress={() => {
-                      handlePrintImage(selectedImage);
-                      setShowImageModal(false);
-                    }}
+                    onPress={() => handlePrintImage(selectedImage)}
                   >
                     <Printer size={20} color="white" />
                     <Text style={s.modalButtonText}>Imprimer</Text>
@@ -389,10 +516,7 @@ export default function ImpressionHDHistoryScreen() {
 
                   <TouchableOpacity
                     style={[s.modalButton, s.shareBtnLarge]}
-                    onPress={() => {
-                      handleShareImage(selectedImage);
-                      setShowImageModal(false);
-                    }}
+                    onPress={() => handleShareImage(selectedImage)}
                   >
                     <Text style={s.modalButtonText}>Partager</Text>
                   </TouchableOpacity>
@@ -413,8 +537,8 @@ export default function ImpressionHDHistoryScreen() {
         <GenericModal
           visible={showDeleteModal}
           type="warning"
-          title="Supprimer"
-          message="Voulez-vous vraiment supprimer ce visuel de la galerie ?"
+          title={selectionMode ? "Supprimer la sélection" : "Supprimer"}
+          message={selectionMode ? `Voulez-vous vraiment supprimer les ${selectedIds.size} visuels sélectionnés ?` : "Voulez-vous vraiment supprimer ce visuel de la galerie ?"}
           confirmText="Supprimer"
           cancelText="Annuler"
           onClose={() => {
@@ -460,19 +584,17 @@ const s = StyleSheet.create({
   },
   titleSub: {
     fontFamily: 'Arimo-Bold',
-    fontSize: 20,
-    fontWeight: '800',
+    fontSize: 16,
+    textTransform: 'uppercase',
     color: '#ffffff',
-    letterSpacing: 0.5,
   },
   subtitle: {
     fontFamily: 'Arimo-Regular',
-    fontSize: 14,
-    color: 'rgba(0, 212, 255, 0.6)',
-    letterSpacing: 0.5,
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.35)',
+    letterSpacing: 0.3,
     textAlign: 'center',
-    marginBottom: 24,
-    fontWeight: '500',
+    marginBottom: 20,
   },
   clearButton: {
     flexDirection: 'row',
@@ -505,39 +627,51 @@ const s = StyleSheet.create({
   tileTouchable: {
     width: TILE,
     height: TILE,
-    borderRadius: 18,
+    borderRadius: 14,
     overflow: 'hidden',
-    borderWidth: 1.5,
-    borderColor: 'rgba(0, 212, 255, 0.15)',
+    borderWidth: 1,
+    borderColor: colors.primary.main + '1a',
     backgroundColor: colors.background.secondary + '99',
-    shadowColor: 'rgba(0, 212, 255, 0.2)',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 5,
+  },
+  tileSelected: {
+    borderColor: colors.neon.primary,
+    borderWidth: 2,
+    transform: [{ scale: 0.95 }],
   },
   tileImage: {
     width: '100%',
     height: '100%',
   },
-  tileDelete: {
+  tileImageSelected: {
+    opacity: 0.8,
+  },
+  selectionCircle: {
     position: 'absolute',
     top: 8,
     right: 8,
-    width: 32,
-    height: 32,
+    borderRadius: 12,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+  },
+  selectionCircleEmpty: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 1.5,
+    borderColor: 'white',
+    backgroundColor: 'rgba(255,255,255,0.2)',
+  },
+  tileDelete: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    width: 30,
+    height: 30,
     borderRadius: 10,
     backgroundColor: 'rgba(15,23,42,0.85)',
-    backdropFilter: 'blur(10px)',
     borderWidth: 1,
-    borderColor: 'rgba(239,68,68,0.35)',
+    borderColor: 'rgba(239,68,68,0.25)',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: 'rgba(239,68,68,0.3)',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 4,
   },
   emptyBlock: {
     alignItems: 'center',
@@ -587,21 +721,21 @@ const s = StyleSheet.create({
   },
   fab: {
     position: 'absolute',
-    bottom: 32,
+    bottom: 28,
     right: 24,
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: 'rgba(0, 212, 255, 0.25)',
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: 'rgba(0, 212, 255, 0.2)',
     borderWidth: 2,
     borderColor: colors.neonBlue,
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: colors.neon.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.6,
-    shadowRadius: 16,
-    elevation: 12,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+    elevation: 10,
   },
   modalContainer: {
     flex: 1,
@@ -612,15 +746,12 @@ const s = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 16,
-    paddingTop: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0, 212, 255, 0.1)',
+    paddingVertical: 12,
+    paddingTop: 16,
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    fontFamily: 'Arimo-Bold',
+    fontSize: 16,
+    fontWeight: '600',
     color: 'white',
     flex: 1,
     textAlign: 'center',
@@ -631,46 +762,20 @@ const s = StyleSheet.create({
   },
   modalActions: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 10,
     paddingHorizontal: 16,
-    paddingVertical: 20,
+    paddingVertical: 16,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(0, 212, 255, 0.1)',
+    borderTopColor: 'rgba(255, 255, 255, 0.1)',
   },
   modalButton: {
     flex: 1,
-    paddingVertical: 14,
-    borderRadius: 12,
+    paddingVertical: 12,
+    borderRadius: 8,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
     gap: 8,
-    borderWidth: 1.5,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  downloadBtnLarge: {
-    backgroundColor: 'rgba(0, 212, 255, 0.15)',
-    borderColor: 'rgba(0, 212, 255, 0.4)',
-    shadowColor: 'rgba(0, 212, 255, 0.3)',
-  },
-  printBtnLarge: {
-    backgroundColor: 'rgba(102, 229, 255, 0.15)',
-    borderColor: 'rgba(102, 229, 255, 0.4)',
-    shadowColor: 'rgba(102, 229, 255, 0.3)',
-  },
-  shareBtnLarge: {
-    backgroundColor: 'rgba(0, 212, 255, 0.15)',
-    borderColor: 'rgba(0, 212, 255, 0.4)',
-    shadowColor: 'rgba(0, 212, 255, 0.3)',
-  },
-  modalButtonText: {
-    color: 'white',
-    fontWeight: '700',
-    fontFamily: 'Arimo-Bold',
-    fontSize: 13,
   },
   downloadBtnLarge: {
     backgroundColor: 'rgba(0, 212, 255, 0.3)',
@@ -681,9 +786,36 @@ const s = StyleSheet.create({
   shareBtnLarge: {
     backgroundColor: 'rgba(0, 153, 255, 0.3)',
   },
-  modalButtonText: {
-    fontSize: 12,
-    fontWeight: '600',
+  headerSelectionMode: {
+    backgroundColor: 'rgba(0, 212, 255, 0.15)',
+    marginHorizontal: -SCROLL_PAD,
+    paddingHorizontal: SCROLL_PAD,
+    paddingVertical: 10,
+    borderRadius: 12,
+    marginBottom: 20,
+  },
+  selectionCount: {
+    fontFamily: 'Arimo-Bold',
     color: 'white',
+    fontSize: 18,
+    flex: 1,
+    marginLeft: 16,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  headerIconBtn: {
+    padding: 8,
+  },
+  headerTextBtn: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  headerActionText: {
+    fontFamily: 'Arimo-Bold',
+    color: colors.neon.primary,
+    fontSize: 16,
   },
 });
