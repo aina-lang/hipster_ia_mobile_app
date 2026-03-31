@@ -185,7 +185,7 @@ export default function SubscriptionScreen() {
       const planToUpgrade = plans.find(p => p.id === selectedPlan);
 
       if (planToUpgrade) {
-        showModal('success', 'Bravo ! 🎉', `Vous avez désormais accès au pack ${planToUpgrade.name}`);
+        showModal('success', 'Bravo ! 🎉', `Désormais vous avez accès au pack ${planToUpgrade.name}`);
       }
 
       setTimeout(() => {
