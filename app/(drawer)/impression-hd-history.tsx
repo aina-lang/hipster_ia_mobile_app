@@ -12,7 +12,7 @@ import {
   FlatList,
   RefreshControl,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Sharing from 'expo-sharing';
@@ -42,10 +42,11 @@ const GALLERY_GAP = 12;
 const COLS = 2;
 const CONTENT_W = SCREEN_W - SCROLL_PAD * 2;
 const TILE = (CONTENT_W - GALLERY_GAP * (COLS - 1)) / COLS;
-const TILE_H = TILE * 1.5; // Aspect ratio for taller images
+const TILE_H = TILE * 1.5;
 
 export default function ImpressionHDHistoryScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   const [selectedImage, setSelectedImage] = useState<GeneratedImage | null>(null);
   const [showImageModal, setShowImageModal] = useState(false);
@@ -435,45 +436,6 @@ export default function ImpressionHDHistoryScreen() {
           }
           ListHeaderComponent={
             <>
-<<<<<<< Updated upstream
-              {selectionMode ? (
-                <View style={[s.header, s.headerSelectionMode]}>
-                  <TouchableOpacity onPress={exitSelectionMode} style={s.headerIconBtn}>
-                    <X size={24} color="white" />
-                  </TouchableOpacity>
-                  <Text style={s.selectionCount}>{selectedIds.size} sélectionné(s)</Text>
-                  <View style={s.headerActions}>
-                    <TouchableOpacity
-                      onPress={() => {
-                        if (selectedIds.size === images.length) setSelectedIds(new Set());
-                        else setSelectedIds(new Set(images.map(img => img.id)));
-                      }}
-                      style={s.headerTextBtn}
-                    >
-                      <Text style={s.headerActionText}>
-                        {selectedIds.size === images.length ? 'Annuler' : 'Tout'}
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={() => setShowDeleteModal(true)}
-                      style={s.headerIconBtn}
-                    >
-                      <Trash2 size={24} color={colors.status.error} />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              ) : (
-                <View style={s.header}>
-                  <NeonBackButton onPress={() => router.back()} />
-                  <View style={s.headerCenter}>
-                    <Text style={s.titleSub}>Historique flyers</Text>
-                  </View>
-                  <View style={{ width: 42 }} />
-                </View>
-              )}
-
-=======
->>>>>>> Stashed changes
               <Text style={s.subtitle}>Galerie de vos affiches et visuels HD</Text>
 
               {images.length > 0 && !selectionMode && (
@@ -488,16 +450,11 @@ export default function ImpressionHDHistoryScreen() {
 
         <Modal visible={showImageModal} transparent animationType="fade">
           <View style={s.modalContainer}>
-<<<<<<< Updated upstream
-            <View style={s.modalHeader}>
-              <TouchableOpacity onPress={() => setShowImageModal(false)}>
-=======
             <View style={[s.modalHeader, { paddingTop: Math.max(insets.top, 20) }]}>
               <TouchableOpacity
                 onPress={() => setShowImageModal(false)}
                 style={s.modalCloseBtn}
               >
->>>>>>> Stashed changes
                 <ArrowLeft size={24} color="white" />
               </TouchableOpacity>
               <Text style={s.modalTitle} numberOfLines={1}>
