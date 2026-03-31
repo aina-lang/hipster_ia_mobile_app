@@ -309,6 +309,7 @@ function WelcomeScreenContent({ onVideoFinish }: WelcomeScreenProps) {
   const isFinishedRef = useRef(false);
   const playbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const videoCompletedRef = useRef(false);
+  const playbackStartedRef = useRef(false);
 
   const textAnimProgress = useSharedValue(0);
   const videoMarginTop = useSharedValue(0);
@@ -346,11 +347,13 @@ function WelcomeScreenContent({ onVideoFinish }: WelcomeScreenProps) {
       videoMarginTop.value = 100;
       isFinishedRef.current = true;
     } else {
-      console.log('[Welcome] Fresh start, resetting for video playback');
+      console.log('[Welcome] Fresh start, resetting for video playback - animations hidden');
+      // Keep animations hidden while video plays
       textAnimProgress.value = 0;
       videoMarginTop.value = 0;
       isFinishedRef.current = false;
       videoCompletedRef.current = false;
+      playbackStartedRef.current = false;
     }
   }, [isReturningFromBack, videoCompleted]);
 
@@ -374,6 +377,7 @@ function WelcomeScreenContent({ onVideoFinish }: WelcomeScreenProps) {
         playbackTimerRef.current = null;
       }
 
+      // Start animations immediately after video ends
       videoMarginTop.value = withTiming(100, {
         duration: 1500,
         easing: Easing.inOut(Easing.quad),
@@ -392,15 +396,19 @@ function WelcomeScreenContent({ onVideoFinish }: WelcomeScreenProps) {
     };
 
     const startPlayback = () => {
+      // Éviter le double lancement
+      if (playbackStartedRef.current) {
+        console.log('[Welcome] Playback already started, skipping');
+        return;
+      }
+      
       console.log('[Welcome] Starting video playback');
+      playbackStartedRef.current = true;
+      
       if (videoPlayer.status === 'readyToPlay') {
         setVideoReady(true);
         videoPlayer.play();
         SplashScreen.hideAsync().catch(() => {});
-      }
-
-      if (!isFinishedRef.current && !playbackTimerRef.current) {
-        playbackTimerRef.current = setTimeout(onPlaybackFinish, 5000);
       }
     };
 
@@ -411,16 +419,7 @@ function WelcomeScreenContent({ onVideoFinish }: WelcomeScreenProps) {
         startPlayback();
       } else if (status === 'error') {
         console.error('[Welcome] Video error');
-        isFinishedRef.current = true;
-      }
-    };
-
-    const onPlayingChange = (payload: { isPlaying: boolean }) => {
-      console.log('[Welcome] Video playing:', payload.isPlaying);
-      if (payload.isPlaying && !playbackTimerRef.current) {
-        if (!isFinishedRef.current) {
-          playbackTimerRef.current = setTimeout(onPlaybackFinish, 5000);
-        }
+        onPlaybackFinish();
       }
     };
 
@@ -430,12 +429,10 @@ function WelcomeScreenContent({ onVideoFinish }: WelcomeScreenProps) {
     }
 
     videoPlayer.addListener('statusChange', onStatusChange);
-    videoPlayer.addListener('playingChange', onPlayingChange);
     videoPlayer.addListener('playToEnd', onPlaybackFinish);
 
     return () => {
       videoPlayer.removeListener('statusChange', onStatusChange);
-      videoPlayer.removeListener('playingChange', onPlayingChange);
       videoPlayer.removeListener('playToEnd', onPlaybackFinish);
       if (playbackTimerRef.current) {
         clearTimeout(playbackTimerRef.current);

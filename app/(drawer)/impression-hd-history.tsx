@@ -307,7 +307,7 @@ export default function ImpressionHDHistoryScreen() {
               <View style={s.header}>
                 <NeonBackButton onPress={() => router.back()} />
                 <View style={s.headerCenter}>
-                  <Text style={s.titleSub}>Historique flyers</Text>
+                  <Text style={s.titleSub}>Impression HD</Text>
                 </View>
                 <View style={{ width: 42 }} />
               </View>

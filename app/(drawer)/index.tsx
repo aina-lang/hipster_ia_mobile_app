@@ -71,7 +71,7 @@ const JOB_IMAGES: Record<string, any> = {
   'Réseaux sociaux':     require('../../assets/images/jobs/reseaux.png'),
   'Textes libres':       require('../../assets/images/jobs/texte.png'),
   'Flyer / Affiche':     require('../../assets/images/jobs/flyer.png'),
-  'Historique flyers': require('../../assets/images/jobs/impression.png'),
+  'Impression HD': require('../../assets/images/jobs/impression.png'),
 };
 
 interface JobFunction {
