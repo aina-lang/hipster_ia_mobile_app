@@ -424,7 +424,6 @@ export default function Step4PersonalizeScreen() {
 
   const scrollRef = useRef<ScrollView>(null);
   const [localQuery, setLocalQuery] = useState(userQuery || '');
-  const [promptFocused, setPromptFocused] = useState(false);
   const [categories, setCategories] = useState<FlyerCategory[]>(LOCAL_FLYER_CATEGORIES);
   const [selectedFlyerCategory, setSelectedFlyerCategory] = useState(LOCAL_FLYER_CATEGORIES[0]?.id || '');
   const [showAllModels, setShowAllModels] = useState(false);
@@ -599,22 +598,6 @@ export default function Step4PersonalizeScreen() {
             </View>
           )
         )}
-
-        <View style={styles.promptBlock}>
-          <Text style={styles.sectionLabel}>PRÉCISEZ VOTRE BESOIN</Text>
-          <NeonBorderInput isActive={promptFocused}>
-            <TextInput
-              style={[styles.promptInput, promptFocused && styles.promptInputFocused]}
-              placeholder="Ex: Une offre spéciale pour la Saint-Valentin..."
-              placeholderTextColor="rgba(255,255,255,0.25)"
-              multiline
-              value={localQuery}
-              onChangeText={setLocalQuery}
-              onFocus={() => setPromptFocused(true)}
-              onBlur={() => setPromptFocused(false)}
-            />
-          </NeonBorderInput>
-        </View>
 
         <View style={styles.ctaWrapper}>
           <NeonActionButton
@@ -822,26 +805,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#fff',
     lineHeight: 14,
-  },
-  promptBlock: {
-    marginBottom: 20,
-  },
-  promptInput: {
-    backgroundColor: colors.darkSlateBlue,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
-    minHeight: 100,
-    padding: 14,
-    fontFamily: fonts.arimo.regular,
-    fontSize: 14,
-    color: colors.text.primary,
-    textAlignVertical: 'top',
-    zIndex: 3,
-  },
-  promptInputFocused: {
-    borderColor: 'transparent',
-    backgroundColor: colors.midnightBlue,
   },
   ctaWrapper: {
     paddingBottom: 20,
