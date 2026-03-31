@@ -16,6 +16,7 @@ import {
 } from 'lucide-react-native';
 import { colors } from '../../theme/colors';
 import { NeonBorderCard } from '../ui/NeonBorderCard';
+import { fonts } from '../../theme/typography';
 
 const NEON_BLUE = '#00d4ff';
 
@@ -114,7 +115,7 @@ export function PlanCard({ plan, isSelected, onSelect, loading }: PlanCardProps)
                 locations={[0, 0.46, 1]}
                 style={s.badge}
               >
-                <Text style={s.badgeText}>CONSEILLÉ</Text>
+                <Text style={s.badgeText}>PROMOTION</Text>
               </LinearGradient>
             )}
             {isComingSoon && (
@@ -140,16 +141,16 @@ export function PlanCard({ plan, isSelected, onSelect, loading }: PlanCardProps)
                 ]}>
                   {plan.name}
                 </Text>
-                <Text style={[
-                  s.planPrice,
-                  active && s.planPriceSelected,
-                  isComingSoon && { color: colors.text.muted },
-                ]}>
-                  {plan.price}
-                  {typeof plan.price === 'string' && plan.price.toLowerCase().includes('€') ? (
-                    <Text style={[s.pricePeriod, active && s.pricePeriodSelected]}>/mois</Text>
-                  ) : null}
-                </Text>
+                {plan.id === 'studio' ? (
+                                  <View style={{ gap: 4 }}>
+                                    <Text style={[s.oldPrice, isSelected && s.oldPriceSelected]}>29,90€</Text>
+                                    <Text style={[s.planPrice, isSelected && s.planPriceSelected]}>{plan.price}</Text>
+                                  </View>
+                                ) : (
+                                  <Text style={[s.planPrice, isSelected && s.planPriceSelected, plan.isComingSoon && { color: colors.text.muted }]}>
+                                    {plan.price}
+                                  </Text>
+                                )}
                 {plan.description && (
                   <Text style={s.planDesc}>{plan.description}</Text>
                 )}
@@ -269,8 +270,8 @@ const s = StyleSheet.create({
     fontWeight: '800',
   },
   planPrice: {
-    fontFamily: 'Arimo-Bold',
-    fontSize: 20,
+    fontFamily: fonts.arimo.bold,
+    fontSize: 26,
     fontWeight: '800',
     color: colors.text.primary,
   },
@@ -278,7 +279,7 @@ const s = StyleSheet.create({
     color: '#ffffff',
     textShadowColor: NEON_BLUE,
     textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 8,
+    textShadowRadius: 3,
   },
   pricePeriod: {
     fontFamily: 'Arimo-Regular',
@@ -321,9 +322,20 @@ const s = StyleSheet.create({
     borderTopColor: 'rgba(255,255,255,0.08)',
   },
   agencyText: {
-    fontFamily: 'Arimo-Bold',
+    fontFamily: fonts.arimo.bold,
     fontSize: 13,
     fontWeight: '700',
     color: colors.text.primary,
+  },
+  oldPrice: { 
+    fontFamily: fonts.arimo.bold, 
+    fontSize: 14, fontWeight: '700', 
+    color: 'rgba(255,255,255,0.4)', 
+    textDecorationLine: 'line-through', 
+    textDecorationColor: 'rgba(255,255,255,0.6)' 
+  },
+  oldPriceSelected: { 
+    color: 'rgba(255,255,255,0.5)', 
+    textDecorationColor: 'rgba(255,255,255,0.7)' 
   },
 });
