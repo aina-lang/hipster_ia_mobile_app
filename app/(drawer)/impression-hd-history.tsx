@@ -12,7 +12,7 @@ import {
   FlatList,
   RefreshControl,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Sharing from 'expo-sharing';
@@ -45,6 +45,7 @@ const TILE = (CONTENT_W - GALLERY_GAP * (COLS - 1)) / COLS;
 
 export default function ImpressionHDHistoryScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   const [selectedImage, setSelectedImage] = useState<GeneratedImage | null>(null);
   const [showImageModal, setShowImageModal] = useState(false);
@@ -448,7 +449,7 @@ export default function ImpressionHDHistoryScreen() {
 
         <Modal visible={showImageModal} transparent animationType="fade">
           <View style={s.modalContainer}>
-            <View style={s.modalHeader}>
+            <View style={[s.modalHeader, { paddingTop: insets.top + 40 }]}>
               <TouchableOpacity onPress={() => setShowImageModal(false)}>
                 <ArrowLeft size={24} color="white" />
               </TouchableOpacity>
