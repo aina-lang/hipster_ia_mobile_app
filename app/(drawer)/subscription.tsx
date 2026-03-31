@@ -182,11 +182,12 @@ export default function SubscriptionScreen() {
       await aiRefreshUser();
       await fetchPlans();
 
-      const limits = confirmResp.data?.limits ?? confirmResp.data?.data?.limits;
-      const limitsText = limits
-        ? `\n\nVos limites:\n• ${limits.promptsLimit} textes\n• ${limits.imagesLimit} images\n• ${limits.videosLimit} vidéos\n• ${limits.audioLimit} audios`
-        : '';
-      showModal('success', 'Succès ! 🎉', `Abonnement activé avec succès.${limitsText}`);
+      const planToUpgrade = plans.find(p => p.id === selectedPlan);
+
+      if (planToUpgrade) {
+        showModal('success', 'Bravo ! 🎉', `Vous avez désormais accès au pack ${planToUpgrade.name}`);
+      }
+
       setTimeout(() => {
         setModalVisible(false);
         router.push('/(drawer)/');
