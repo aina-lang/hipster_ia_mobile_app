@@ -277,10 +277,9 @@ const BottomAuthSection = React.memo(({ isAuthenticated, textAnimProgress, setIs
         </Pressable>
       </View>
 
-      {/* ✅ Ligne trial : icône + texte tout-en-un + lien cliquable via Text imbriqué */}
+      {/* Ligne trial : icône + texte tout-en-un + lien cliquable via Text imbriqué */}
       <View style={[styles.trialRow, { marginTop: responsive.spacing.lg }]}>
         <FontAwesome5 name="angellist" size={responsive.isSmallScreen ? 16 : 18} style={styles.glowIcon} />
-        {/* Tout le texte dans un seul bloc Text pour éviter tout débordement */}
         <Text
           style={[styles.trialText, { fontSize: responsive.fontSize.xs }]}
           numberOfLines={1}
@@ -308,7 +307,6 @@ function WelcomeScreenContent({ onVideoFinish }: WelcomeScreenProps) {
 
   const isFinishedRef = useRef(false);
   const playbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const videoCompletedRef = useRef(false);
 
   const textAnimProgress = useSharedValue(0);
   const videoMarginTop = useSharedValue(0);
@@ -322,7 +320,7 @@ function WelcomeScreenContent({ onVideoFinish }: WelcomeScreenProps) {
     useCallback(() => {
       const store = useWelcomeVideoStore.getState();
       console.log('[Welcome] Screen focused - openedAuthFromWelcome:', store.openedAuthFromWelcome);
-      
+
       if (store.openedAuthFromWelcome) {
         console.log('[Welcome] User returning from auth screen, showing static image');
         store.setIsReturningFromBack(true);
@@ -350,25 +348,23 @@ function WelcomeScreenContent({ onVideoFinish }: WelcomeScreenProps) {
       textAnimProgress.value = 0;
       videoMarginTop.value = 0;
       isFinishedRef.current = false;
-      videoCompletedRef.current = false;
     }
   }, [isReturningFromBack, videoCompleted]);
 
   useEffect(() => {
-    if (!videoPlayer) return;
+    if (!videoPlayer || shouldSkipPlay) return;
 
-    if (shouldSkipPlay) {
-      console.log('[Welcome] Skipping video playback (shouldSkipPlay=true)');
-      return;
-    }
+    // ─── Garde unique : une seule exécution possible par montage ───
+    let fired = false;
 
-    console.log('[Welcome] Setting up video playback');
-
-    const onPlaybackFinish = () => {
-      if (isFinishedRef.current) return;
-      console.log('[Welcome] Video playback finished, starting animations');
+    const triggerEndSequence = () => {
+      if (fired) return; // point d'entrée unique — ignore tout double déclenchement
+      fired = true;
       isFinishedRef.current = true;
 
+      console.log('[Welcome] triggerEndSequence → lancement des animations');
+
+      // Annule le safety timer si la vidéo a terminé normalement via playToEnd
       if (playbackTimerRef.current) {
         clearTimeout(playbackTimerRef.current);
         playbackTimerRef.current = null;
@@ -384,61 +380,63 @@ function WelcomeScreenContent({ onVideoFinish }: WelcomeScreenProps) {
         easing: Easing.inOut(Easing.quad),
       });
 
+      // setVideoCompleted calé exactement sur la durée des animations
       playbackTimerRef.current = setTimeout(() => {
-        console.log('[Welcome] Animations complete, marking video as completed');
+        playbackTimerRef.current = null;
+        console.log('[Welcome] Animations terminées, setVideoCompleted(true)');
         setVideoCompleted(true);
         onVideoFinish?.();
-      }, 2000);
+      }, 1600);
     };
 
     const startPlayback = () => {
-      console.log('[Welcome] Starting video playback');
-      if (videoPlayer.status === 'readyToPlay') {
-        setVideoReady(true);
-        videoPlayer.play();
-        SplashScreen.hideAsync().catch(() => {});
-      }
+      if (fired) return;
+      console.log('[Welcome] Démarrage de la lecture vidéo');
+      setVideoReady(true);
+      videoPlayer.play();
+      SplashScreen.hideAsync().catch(() => {});
 
-      if (!isFinishedRef.current && !playbackTimerRef.current) {
-        playbackTimerRef.current = setTimeout(onPlaybackFinish, 5000);
+      // Safety timer : ne se déclenche que si playToEnd n'est jamais émis
+      // Durée généreuse (vidéo ~5s → 8s de marge totale)
+      if (!playbackTimerRef.current) {
+        playbackTimerRef.current = setTimeout(() => {
+          console.log('[Welcome] Safety timer déclenché (playToEnd jamais reçu)');
+          triggerEndSequence();
+        }, 8000);
       }
     };
 
     const onStatusChange = ({ status }: { status: 'idle' | 'loading' | 'readyToPlay' | 'error' }) => {
       console.log('[Welcome] Video status:', status);
       if (status === 'readyToPlay') {
-        setVideoReady(true);
         startPlayback();
       } else if (status === 'error') {
-        console.error('[Welcome] Video error');
-        isFinishedRef.current = true;
+        console.error('[Welcome] Video error — déclenchement du fallback');
+        triggerEndSequence();
       }
     };
 
-    const onPlayingChange = (payload: { isPlaying: boolean }) => {
-      console.log('[Welcome] Video playing:', payload.isPlaying);
-      if (payload.isPlaying && !playbackTimerRef.current) {
-        if (!isFinishedRef.current) {
-          playbackTimerRef.current = setTimeout(onPlaybackFinish, 5000);
-        }
-      }
+    // Seul vrai trigger de fin de vidéo
+    const onPlayToEnd = () => {
+      console.log('[Welcome] playToEnd reçu');
+      triggerEndSequence();
     };
 
+    // Si la vidéo est déjà prête au moment du montage
     if (videoPlayer.status === 'readyToPlay') {
-      console.log('[Welcome] Video already ready, starting playback immediately');
+      console.log('[Welcome] Vidéo déjà prête, démarrage immédiat');
       startPlayback();
     }
 
     videoPlayer.addListener('statusChange', onStatusChange);
-    videoPlayer.addListener('playingChange', onPlayingChange);
-    videoPlayer.addListener('playToEnd', onPlaybackFinish);
+    videoPlayer.addListener('playToEnd', onPlayToEnd);
 
     return () => {
       videoPlayer.removeListener('statusChange', onStatusChange);
-      videoPlayer.removeListener('playingChange', onPlayingChange);
-      videoPlayer.removeListener('playToEnd', onPlaybackFinish);
+      videoPlayer.removeListener('playToEnd', onPlayToEnd);
       if (playbackTimerRef.current) {
         clearTimeout(playbackTimerRef.current);
+        playbackTimerRef.current = null;
       }
     };
   }, [videoPlayer, shouldSkipPlay, onVideoFinish, setVideoCompleted]);
@@ -611,14 +609,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  // ✅ Ligne trial : flexDirection row, pas de gap dynamique
   trialRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 20,
   },
-  // ✅ Texte inline unique — pas de Pressable imbriqué qui réduit la largeur
   trialText: {
     color: 'rgba(255,255,255,0.6)',
     textAlign: 'center',
