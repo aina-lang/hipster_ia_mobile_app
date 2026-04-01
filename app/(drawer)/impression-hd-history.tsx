@@ -12,7 +12,7 @@ import {
   FlatList,
   RefreshControl,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Sharing from 'expo-sharing';
@@ -37,14 +37,16 @@ import { NeonBackButton } from '../../components/ui/NeonBackButton';
 import { AiService } from '../../api/ai.service';
 
 const { width: SCREEN_W } = Dimensions.get('window');
-const SCROLL_PAD = 24;
-const GALLERY_GAP = 8;
+const SCROLL_PAD = 20;
+const GALLERY_GAP = 12;
 const COLS = 3;
 const CONTENT_W = SCREEN_W - SCROLL_PAD * 2;
 const TILE = (CONTENT_W - GALLERY_GAP * (COLS - 1)) / COLS;
+const TILE_H = TILE * 1.5;
 
 export default function ImpressionHDHistoryScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   const [selectedImage, setSelectedImage] = useState<GeneratedImage | null>(null);
   const [showImageModal, setShowImageModal] = useState(false);
@@ -335,7 +337,7 @@ export default function ImpressionHDHistoryScreen() {
               </View>
             )}
           </TouchableOpacity>
-          {!selectionMode && (
+          {/* {!selectionMode && (
             <TouchableOpacity
               style={s.tileDelete}
               onPress={onDelete}
@@ -343,7 +345,7 @@ export default function ImpressionHDHistoryScreen() {
             >
               <Trash2 size={14} color={colors.status.error} />
             </TouchableOpacity>
-          )}
+          )} */}
         </View>
       );
     }, (prevProps, nextProps) => {
@@ -377,6 +379,42 @@ export default function ImpressionHDHistoryScreen() {
   return (
     <BackgroundGradientOnboarding darkOverlay>
       <SafeAreaView style={s.safe}>
+        {selectionMode ? (
+          <View style={[s.header, s.headerSelectionMode]}>
+            <TouchableOpacity onPress={exitSelectionMode} style={s.headerIconBtn}>
+              <X size={24} color="white" />
+            </TouchableOpacity>
+            <Text style={s.selectionCount}>{selectedIds.size} sélectionné(s)</Text>
+            <View style={s.headerActions}>
+              <TouchableOpacity
+                onPress={() => {
+                  if (selectedIds.size === images.length) setSelectedIds(new Set());
+                  else setSelectedIds(new Set(images.map(img => img.id)));
+                }}
+                style={s.headerTextBtn}
+              >
+                <Text style={s.headerActionText}>
+                  {selectedIds.size === images.length ? 'Annuler' : 'Tout'}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setShowDeleteModal(true)}
+                style={s.headerIconBtn}
+              >
+                <Trash2 size={24} color={colors.status.error} />
+              </TouchableOpacity>
+            </View>
+          </View>
+        ) : (
+          <View style={s.header}>
+            <NeonBackButton onPress={() => router.back()} />
+            <View style={s.headerCenter}>
+              <Text style={s.titleSub}>Impression HD</Text>
+            </View>
+            <View style={{ width: 42 }} />
+          </View>
+        )}
+
         <FlatList
           data={images}
           keyExtractor={(item) => item.id}
@@ -398,42 +436,6 @@ export default function ImpressionHDHistoryScreen() {
           }
           ListHeaderComponent={
             <>
-              {selectionMode ? (
-                <View style={[s.header, s.headerSelectionMode]}>
-                  <TouchableOpacity onPress={exitSelectionMode} style={s.headerIconBtn}>
-                    <X size={24} color="white" />
-                  </TouchableOpacity>
-                  <Text style={s.selectionCount}>{selectedIds.size} sélectionné(s)</Text>
-                  <View style={s.headerActions}>
-                    <TouchableOpacity
-                      onPress={() => {
-                        if (selectedIds.size === images.length) setSelectedIds(new Set());
-                        else setSelectedIds(new Set(images.map(img => img.id)));
-                      }}
-                      style={s.headerTextBtn}
-                    >
-                      <Text style={s.headerActionText}>
-                        {selectedIds.size === images.length ? 'Annuler' : 'Tout'}
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={() => setShowDeleteModal(true)}
-                      style={s.headerIconBtn}
-                    >
-                      <Trash2 size={24} color={colors.status.error} />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              ) : (
-                <View style={s.header}>
-                  <NeonBackButton onPress={() => router.back()} />
-                  <View style={s.headerCenter}>
-                    <Text style={s.titleSub}>Historique flyers</Text>
-                  </View>
-                  <View style={{ width: 42 }} />
-                </View>
-              )}
-
               <Text style={s.subtitle}>Galerie de vos affiches et visuels HD</Text>
 
               {images.length > 0 && !selectionMode && (
@@ -448,8 +450,11 @@ export default function ImpressionHDHistoryScreen() {
 
         <Modal visible={showImageModal} transparent animationType="fade">
           <View style={s.modalContainer}>
-            <View style={s.modalHeader}>
-              <TouchableOpacity onPress={() => setShowImageModal(false)}>
+            <View style={[s.modalHeader, { paddingTop: Math.max(insets.top, 20) }]}>
+              <TouchableOpacity
+                onPress={() => setShowImageModal(false)}
+                style={s.modalCloseBtn}
+              >
                 <ArrowLeft size={24} color="white" />
               </TouchableOpacity>
               <Text style={s.modalTitle} numberOfLines={1}>
@@ -575,7 +580,10 @@ const s = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 28,
+    paddingHorizontal: SCROLL_PAD,
+    paddingVertical: 12,
+    zIndex: 10,
+    backgroundColor: 'rgba(15,23,42,0.8)',
   },
   headerCenter: {
     flex: 1,
@@ -626,7 +634,7 @@ const s = StyleSheet.create({
   },
   tileTouchable: {
     width: TILE,
-    height: TILE,
+    height: TILE_H,
     borderRadius: 14,
     overflow: 'hidden',
     borderWidth: 1,
@@ -743,11 +751,16 @@ const s = StyleSheet.create({
   },
   modalHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    paddingTop: 16,
+    paddingBottom: 12,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  modalCloseBtn: {
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'flex-start',
   },
   modalTitle: {
     fontSize: 16,
@@ -786,13 +799,16 @@ const s = StyleSheet.create({
   shareBtnLarge: {
     backgroundColor: 'rgba(0, 153, 255, 0.3)',
   },
+  modalButtonText: {
+    fontFamily: 'Arimo-Bold',
+    color: 'white',
+    fontSize: 14,
+  },
   headerSelectionMode: {
-    backgroundColor: 'rgba(0, 212, 255, 0.15)',
-    marginHorizontal: -SCROLL_PAD,
-    paddingHorizontal: SCROLL_PAD,
-    paddingVertical: 10,
-    borderRadius: 12,
-    marginBottom: 20,
+    backgroundColor: 'rgba(0, 212, 255, 0.25)',
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0, 212, 255, 0.3)',
   },
   selectionCount: {
     fontFamily: 'Arimo-Bold',
