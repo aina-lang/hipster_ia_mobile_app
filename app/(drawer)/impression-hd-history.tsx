@@ -39,7 +39,7 @@ import { AiService } from '../../api/ai.service';
 const { width: SCREEN_W } = Dimensions.get('window');
 const SCROLL_PAD = 20;
 const GALLERY_GAP = 12;
-const COLS = 2;
+const COLS = 3;
 const CONTENT_W = SCREEN_W - SCROLL_PAD * 2;
 const TILE = (CONTENT_W - GALLERY_GAP * (COLS - 1)) / COLS;
 const TILE_H = TILE * 1.5;
