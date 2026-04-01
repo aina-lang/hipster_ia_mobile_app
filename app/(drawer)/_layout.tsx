@@ -419,6 +419,12 @@ export default function DrawerLayout() {
         }}
       />
       <Drawer.Screen
+        name="freetext"
+        options={{
+          drawerItemStyle: { display: 'none' },
+        }}
+      />
+      <Drawer.Screen
         name="impression-hd-history"
         options={{
           drawerItemStyle: { display: 'none' },
