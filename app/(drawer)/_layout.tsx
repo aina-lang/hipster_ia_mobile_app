@@ -10,6 +10,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import {
   Home, History as HistoryIcon, User, Sparkles, MessageCircle,
   Plus, LogOut, Trash2, Users,
+  Bell,
 } from 'lucide-react-native';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -25,7 +26,7 @@ import { GenericModal } from '../../components/ui/GenericModal';
 dayjs.extend(relativeTime);
 dayjs.locale('fr');
 
-const NEON_BLUE  = colors.neonBlue;
+const NEON_BLUE = colors.neonBlue;
 const NEON_BLUE_DARK = colors.neonBlueDark;
 const AVATAR_SIZE = 190;
 
@@ -38,9 +39,9 @@ interface HistoryItem {
 
 function AvatarNeonBorder({ children, size }: { children: React.ReactNode; size: number }) {
   const translateX = useRef(new RNAnimated.Value(0)).current;
-  const TRACK_W    = size * Math.PI;
-  const outer      = size + 6;
-  const BORDER     = 2;
+  const TRACK_W = size * Math.PI;
+  const outer = size + 6;
+  const BORDER = 2;
 
   useEffect(() => {
     const loop = RNAnimated.loop(
@@ -82,9 +83,9 @@ function AvatarNeonBorder({ children, size }: { children: React.ReactNode; size:
 }
 
 function NouveauProjetButton({ onPress }: { onPress: () => void }) {
-  const scale    = useRef(new RNAnimated.Value(1)).current;
-  const pressIn  = () => RNAnimated.spring(scale, { toValue: 0.96, useNativeDriver: true, speed: 40 }).start();
-  const pressOut = () => RNAnimated.spring(scale, { toValue: 1,    useNativeDriver: true, speed: 20 }).start();
+  const scale = useRef(new RNAnimated.Value(1)).current;
+  const pressIn = () => RNAnimated.spring(scale, { toValue: 0.96, useNativeDriver: true, speed: 40 }).start();
+  const pressOut = () => RNAnimated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 20 }).start();
 
   return (
     <RNAnimated.View style={[s.nouveauBtnWrapper, { transform: [{ scale }] }]}>
@@ -104,18 +105,18 @@ function NouveauProjetButton({ onPress }: { onPress: () => void }) {
 }
 
 function CustomDrawerContent(props: any) {
-  const { user, logout }  = useAuthStore();
-  const router            = useRouter();
-  const isDrawerOpen      = useDrawerStatus() === 'open';
+  const { user, logout } = useAuthStore();
+  const router = useRouter();
+  const isDrawerOpen = useDrawerStatus() === 'open';
 
-  const [history, setHistory]               = useState<HistoryItem[]>([]);
-  const [allHistory, setAllHistory]         = useState<HistoryItem[]>([]);
-  const [loading, setLoading]               = useState(false);
-  const [historyError, setHistoryError]     = useState<string | null>(null);
+  const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [allHistory, setAllHistory] = useState<HistoryItem[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [historyError, setHistoryError] = useState<string | null>(null);
   const [displayedCount, setDisplayedCount] = useState(5);
-  const [showLogoutModal, setShowLogoutModal]   = useState(false);
-  const [showDeleteModal, setShowDeleteModal]   = useState(false);
-  const [itemToDelete, setItemToDelete]         = useState<string | null>(null);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<string | null>(null);
 
   useEffect(() => {
     if (user?.type === 'ai' && isDrawerOpen) loadHistory();
@@ -175,7 +176,7 @@ function CustomDrawerContent(props: any) {
     }
   };
 
-  const userName   = user?.name || 'Utilisateur';
+  const userName = user?.name || 'Utilisateur';
   const userAvatar = (user?.logoUrl || user?.avatarUrl)
     ? `https://hipster-api.fr${user.logoUrl || user.avatarUrl}`
     : `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=random`;
@@ -300,28 +301,28 @@ function CustomDrawerContent(props: any) {
 
 export default function DrawerLayout() {
   const { user } = useAuthStore();
-  const router   = useRouter();
+  const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
     if (!user) return;
-    const planType  = user.planType || 'curieux';
+    const planType = user.planType || 'curieux';
     const subStatus = user.subscriptionStatus;
-    const isActive  = subStatus === 'active' || subStatus === 'trialing' || subStatus === 'trial';
-    const endDate   = user.subscriptionEndDate ? new Date(user.subscriptionEndDate) : null;
+    const isActive = subStatus === 'active' || subStatus === 'trialing' || subStatus === 'trial';
+    const endDate = user.subscriptionEndDate ? new Date(user.subscriptionEndDate) : null;
     const isExpired = endDate && new Date() > endDate;
 
     const exhausted = (used: number, limit: number) => limit > 0 && limit !== 999999 && used >= limit;
     const isFullyExhausted =
       exhausted(user.promptsUsed || 0, user.promptsLimit || 0) &&
-      exhausted(user.imagesUsed  || 0, user.imagesLimit  || 0) &&
-      exhausted(user.videosUsed  || 0, user.videosLimit  || 0) &&
-      exhausted(user.audioUsed   || 0, user.audioLimit   || 0) &&
-      exhausted(user.threeDUsed  || 0, user.threeDLimit  || 0);
+      exhausted(user.imagesUsed || 0, user.imagesLimit || 0) &&
+      exhausted(user.videosUsed || 0, user.videosLimit || 0) &&
+      exhausted(user.audioUsed || 0, user.audioLimit || 0) &&
+      exhausted(user.threeDUsed || 0, user.threeDLimit || 0);
 
-    const isCritical     = !isActive || (planType === 'curieux' && isExpired);
-    const isBlockedHome  = isFullyExhausted && (pathname === '/' || pathname === '/(drawer)/' || pathname === '/(drawer)');
-    const onSubPage      = pathname === '/subscription' || pathname === '/(drawer)/subscription';
+    const isCritical = !isActive || (planType === 'curieux' && isExpired);
+    const isBlockedHome = isFullyExhausted && (pathname === '/' || pathname === '/(drawer)/' || pathname === '/(drawer)');
+    const onSubPage = pathname === '/subscription' || pathname === '/(drawer)/subscription';
 
     if ((isCritical || isBlockedHome) && !onSubPage && planType !== 'curieux') router.replace('/subscription');
   }, [user, pathname]);
@@ -353,7 +354,7 @@ export default function DrawerLayout() {
         },
       }}
     >
-     <Drawer.Screen
+      <Drawer.Screen
         name="index"
         options={{
           drawerIcon: ({ color, focused }) => (
@@ -396,7 +397,7 @@ export default function DrawerLayout() {
         name="subscription"
         options={{
           drawerIcon: ({ color, focused }) => (
-            <Sparkles size={20} color={focused ? '#ffffff' : color} style={focused ? { shadowColor: '#00eaff', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 8, elevation: 4 } : undefined} />
+            <Bell size={20} color={focused ? '#ffffff' : color} style={focused ? { shadowColor: '#00eaff', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 8, elevation: 4 } : undefined} />
           ),
           drawerLabel: ({ focused, color }) => (
             <Text style={{ fontFamily: 'Arimo-Bold', fontSize: 15, letterSpacing: 0.3, color: focused ? '#ffffff' : color, textShadowColor: focused ? '#00eaff' : 'transparent', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: focused ? 3 : 0 }}>
