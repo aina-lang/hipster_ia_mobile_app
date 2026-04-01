@@ -70,7 +70,7 @@ const PACK_IMAGES: Record<string, any> = {
 const JOB_IMAGES: Record<string, any> = {
   'Réseaux sociaux':     require('../../assets/images/jobs/reseaux.png'),
   'Textes libres':       require('../../assets/images/jobs/texte.png'),
-  'Flyer / Affiche':     require('../../assets/images/jobs/flyer.png'),
+  'Flyer / Affiche':     require('../../assets/images/jobs/texte.png'),
   'Impression HD': require('../../assets/images/jobs/impression.png'),
 };
 
@@ -87,7 +87,7 @@ const getUniversalFunctions = (planType: string): JobFunction[] => {
       { label: 'Réseaux sociaux',      category: 'Social',   icon: Smartphone, image: JOB_IMAGES['Réseaux sociaux'] },
       { label: 'Textes libres',         category: 'Social',   icon: FileText,   image: JOB_IMAGES['Textes libres'] },
       { label: 'Flyer / Affiche',       category: 'Document', icon: FileText,   image: JOB_IMAGES['Flyer / Affiche'] },
-      { label: 'Historique flyers',     category: 'Document', icon: FileText,   image: JOB_IMAGES['Historique flyers'] },
+      { label: 'Impression HD',         category: 'Document', icon: FileText,   image: JOB_IMAGES['Impression HD'] },
     ];
   }
   return [
