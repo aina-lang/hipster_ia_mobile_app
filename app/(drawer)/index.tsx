@@ -959,7 +959,7 @@ export default function HomeScreen() {
                             if (fn.label === 'Textes libres') {
                               console.log('[HOME] → Navigating to freetext');
                               router.push('/(drawer)/freetext');
-                            } else if (fn.label === 'Historique flyers') {
+                            } else if (fn.label === 'Impression HD') {
                               console.log('[HOME] → Navigating to impression-hd-history');
                               router.push('/(drawer)/impression-hd-history');
                             } else if (fn.category === 'Document') {
