@@ -25,6 +25,7 @@ import {
   Box,
   CheckCircle2,
   XCircle,
+  Bell,
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useStripe } from '@stripe/stripe-react-native';
@@ -43,14 +44,14 @@ const NEON_BLUE = colors.neon.primary;
 const planIcons: Record<string, LucideIcon> = {
   curieux: Shield,
   atelier: Sparkles,
-  studio:  Zap,
-  agence:  Crown,
+  studio: Zap,
+  agence: Crown,
 };
 
 export default function SubscriptionScreen() {
   const router = useRouter();
-  const [loading, setLoading]           = useState(false);
-  const [plans, setPlans]               = useState<Plan[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [plans, setPlans] = useState<Plan[]>([]);
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const { initPaymentSheet, presentPaymentSheet } = useStripe();
   const user = useAuthStore(s => s.user);
@@ -59,8 +60,8 @@ export default function SubscriptionScreen() {
   const { credits, loading: creditsLoading } = useUserCredits();
 
   const [modalVisible, setModalVisible] = useState(false);
-  const [modalType, setModalType]       = useState<any>('info');
-  const [modalTitle, setModalTitle]     = useState('');
+  const [modalType, setModalType] = useState<any>('info');
+  const [modalTitle, setModalTitle] = useState('');
   const [modalMessage, setModalMessage] = useState('');
 
   const showModal = (type: any, title: string, message: string = '') => {
@@ -85,7 +86,7 @@ export default function SubscriptionScreen() {
       const mappedPlans: Plan[] = backendPlans.map((p: any) => ({
         ...p,
         price: typeof p.price === 'number' ? `${p.price.toFixed(2)}€` : p.price,
-        icon:  planIcons[p.id] || Shield,
+        icon: planIcons[p.id] || Shield,
         isComingSoon: p.id === 'agence',
       }));
 
@@ -201,8 +202,8 @@ export default function SubscriptionScreen() {
 
   const buttonLabel = selectedPlan
     ? (plans.find(p => p.id === selectedPlan)?.isComingSoon
-        ? 'À venir'
-        : (selectedPlan === user?.planType ? 'Renouveler mon forfait' : 'Confirmer mon choix'))
+      ? 'À venir'
+      : (selectedPlan === user?.planType ? 'Renouveler mon forfait' : 'Confirmer mon choix'))
     : 'Sélectionnez un plan';
 
   return (
@@ -265,7 +266,7 @@ export default function SubscriptionScreen() {
             loading={loading}
             disabled={loading || !selectedPlan || !!plans.find(p => p.id === selectedPlan)?.isComingSoon}
             label={buttonLabel}
-            icon={<Sparkles size={16} color="#ffffff" />}
+            icon={<Bell size={16} color="#ffffff" />}
           />
           <Text style={s.secureText}>Paiement sécurisé via Stripe</Text>
         </View>
@@ -328,8 +329,8 @@ const s = StyleSheet.create({
     fontFamily: 'Brittany-Signature',
     fontSize: 28,
     color: '#fff',
-    
-    
+
+
   },
 
   loader: {
