@@ -498,7 +498,7 @@ export default function FreetextScreen() {
     loadConversation();
   }, [idToLoad]);
 
-  const placeholderText = 'Décrivez votre idée, ajoutez une image ou un audio...';
+  const placeholderText = 'On brainstorm autour d’un café ? ☕';
   const hasMessages = messages.length > 0;
 
   // Credit and message limit checks
