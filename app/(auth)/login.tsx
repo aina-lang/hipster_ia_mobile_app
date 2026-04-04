@@ -16,6 +16,8 @@ import { colors } from '../../theme/colors';
 import { fonts } from '../../theme/typography';
 import { useAuthStore } from '../../store/authStore';
 import { useWelcomeVideoStore } from '../../store/welcomeVideoStore';
+import { neonTextGlow } from '../../theme/commonStyles';
+import { loginSchema } from '../../validation/authSchemas';
 
 const EmailField = React.memo(({ value, onChange, onClear }: {
   value: string; onChange: (t: string) => void; onClear: () => void;
@@ -82,31 +84,26 @@ export default function LoginScreen() {
     setModal({ visible: true, type, title, message });
 
   const handleLogin = async () => {
-    if (!email || !password) {
-      showModal('warning', 'Champs manquants', 'Veuillez remplir tous les champs pour continuer.');
+    const result = loginSchema.safeParse({ email, password });
+
+    if (!result.success) {
+      const first = result.error.issues[0];
+      showModal('warning', 'Champs invalides', first.message);
       return;
     }
+
     showModal('loading', 'Connexion en cours...', 'Veuillez patienter');
     try {
-      console.log('[Login] Starting login...');
       await aiLogin({ email, password });
-      console.log('[Login] aiLogin completed successfully');
       setModal(m => ({ ...m, visible: false }));
       useWelcomeVideoStore.getState().clearOpenedAuthFromWelcome();
-      const { hasFinishedOnboarding, isAuthenticated } = useAuthStore.getState();
-      console.log('[Login] Current auth state:', { hasFinishedOnboarding, isAuthenticated });
+      const { hasFinishedOnboarding } = useAuthStore.getState();
       router.replace(hasFinishedOnboarding ? '/(drawer)' : '/(onboarding)/setup');
     } catch (e: any) {
-      console.error('[Login] Login error:', e);
-      // Always close loading modal on error
       setModal(m => ({ ...m, visible: false }));
-      
       const errorMessage = e.response?.data?.message || e.message || 'Une erreur est survenue lors de la connexion.';
-      console.log('[Login] Showing error modal:', errorMessage);
       showModal('error', 'Échec de la connexion', errorMessage);
-      
       if (e.response?.data?.needsVerification) {
-        console.log('[Login] Email verification needed');
         setTimeout(() => {
           useWelcomeVideoStore.getState().clearOpenedAuthFromWelcome();
           router.push({ pathname: '/(auth)/verify-email', params: { email } });
@@ -131,6 +128,8 @@ export default function LoginScreen() {
         <ScrollView contentContainerStyle={s.scrollContent} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} bounces={false}>
           <Animated.View entering={FadeInDown.duration(800)} style={s.content}>
             <View style={s.form}>
+
+              <Text style={s.welcomeBack}>Bon retour !</Text>
 
               <EmailField value={email} onChange={setEmail} onClear={() => { if (error) clearError(); }} />
               <PasswordField value={password} onChange={setPassword} onClear={() => { if (error) clearError(); }} />
@@ -165,18 +164,29 @@ export default function LoginScreen() {
 
 const s = StyleSheet.create({
   kav: { flex: 1 },
-  scrollContent: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 24, paddingBottom: 40, justifyContent: 'center' },
+
+  scrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: 24,
+    paddingBottom: 40,
+    justifyContent: 'center'
+  },
+
   content: { width: '100%' },
+
   form: { width: '100%' },
+
   inputContainer: { marginBottom: 20 },
+
   label: {
     fontFamily: fonts.arimo.bold,
     fontSize: 13,
     color: colors.gray,
     marginBottom: 8,
     fontWeight: '600',
-    letterSpacing: 0.3,
+    letterSpacing: 0.3
   },
+
   input: {
     backgroundColor: colors.darkSlateBlue,
     borderRadius: 12,
@@ -185,13 +195,55 @@ const s = StyleSheet.create({
     color: 'white',
     borderWidth: 1,
     borderColor: '#ffffff14',
-    zIndex: 3,
+    zIndex: 3
   },
-  inputActive: { borderColor: 'transparent', backgroundColor: colors.midnightBlue },
-  passwordWrapper: { position: 'relative', justifyContent: 'center' },
-  passwordInput: { paddingRight: 50 },
-  eyeIcon: { position: 'absolute', right: 16, height: '100%', justifyContent: 'center', zIndex: 4 },
-  forgotPassword: { alignSelf: 'flex-end', marginBottom: 24 },
-  footer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 20 },
-  footerText: { fontFamily: fonts.arimo.regular, color: '#9ca3af', fontSize: 14 },
+
+  inputActive: {
+    borderColor: 'transparent',
+    backgroundColor: colors.midnightBlue
+  },
+
+  passwordWrapper: {
+    position: 'relative',
+    justifyContent: 'center'
+  },
+
+  passwordInput: {
+    paddingRight: 50
+  },
+
+  eyeIcon: {
+    position: 'absolute',
+    right: 16,
+    height: '100%',
+    justifyContent: 'center',
+    zIndex: 4
+  },
+
+  forgotPassword: {
+    alignSelf: 'flex-end',
+    marginBottom: 24
+  },
+
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 20
+  },
+
+  footerText: {
+    fontFamily: fonts.arimo.regular,
+    color: '#9ca3af',
+    fontSize: 14
+  },
+
+  welcomeBack: {
+    fontFamily: fonts.brittany,
+    fontSize: 38,
+    textAlign: 'center',
+    marginBottom: 28,
+    paddingVertical: 10,
+    ...neonTextGlow
+  }
 });
