@@ -5,11 +5,11 @@ import {
   TouchableOpacity,
   ScrollView,
   TextInput,
-  KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
   Image,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { Audio } from 'expo-av';
 import * as MediaLibrary from 'expo-media-library';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -767,34 +767,32 @@ export default function FreetextScreen() {
 
   return (
     <BackgroundGradientOnboarding darkOverlay={true} blurIntensity={2}>
-      <View className="flex-1" >
-        <KeyboardAvoidingView
-          className="flex-1"
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}>
-          <View
-            className="flex-row items-center justify-between px-5 pb-2"
-            style={{ paddingTop: insets.top + 10 }}
-          >
-            <NeonBackButton onPress={() => router.back()} />
-            <View className="flex-row items-center gap-2">
-              {hasMessages && (
-                <TouchableOpacity className="rounded-lg bg-white/5 p-2" onPress={() => setShowDeleteConfirm(true)}>
-                  <Trash2 size={20} color={colors.text.muted} />
-                </TouchableOpacity>
-              )}
-            </View>
+      <KeyboardAwareScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ flexGrow: 1 }}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}>
+        <View
+          className="flex-row items-center justify-between px-5 pb-2"
+          style={{ paddingTop: insets.top + 10 }}
+        >
+          <NeonBackButton onPress={() => router.back()} />
+          <View className="flex-row items-center gap-2">
+            {hasMessages && (
+              <TouchableOpacity className="rounded-lg bg-white/5 p-2" onPress={() => setShowDeleteConfirm(true)}>
+                <Trash2 size={20} color={colors.text.muted} />
+              </TouchableOpacity>
+            )}
           </View>
+        </View>
 
-          {/* Chat / Welcome */}
-          <ScrollView
-            ref={scrollViewRef}
-            className="flex-1 px-5 pt-12 "
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}>
-            {!hasMessages ? (
-              <>
-                <View className="mt-5 items-center">
+        {/* Chat / Welcome */}
+        <View
+          className="flex-1 px-5 pt-12"
+          style={{ minHeight: 300 }}>
+          {!hasMessages ? (
+            <>
+              <View className="mt-5 items-center">
                   <Text className="mb-2 text-lg text-slate-500">
                     {getGreetingByTime()}{' '}
                     {user?.name || 'Utilisateur'}
@@ -869,14 +867,14 @@ export default function FreetextScreen() {
 
             {/* Extra space at bottom to allow scrolling past input */}
             <View className="h-32" />
-          </ScrollView>
+          </View>
 
-          <View
-            className="px-5 pb-3 "
-            style={{
-              paddingBottom: (Platform.OS === 'ios' ? insets.bottom : 0) + 12,
-            }}
-          >
+        <View
+          className="px-5 pb-3 "
+          style={{
+            paddingBottom: (Platform.OS === 'ios' ? insets.bottom : 0) + 12,
+          }}
+        >
             {/* Limit warnings */}
             {isPackCurieux && (
               <View className="mb-3 px-1">
@@ -929,8 +927,7 @@ export default function FreetextScreen() {
               </View>
             )}
           </View>
-        </KeyboardAvoidingView>
-      </View>
+        </KeyboardAwareScrollView>
       <GenericModal
         visible={modalVisible}
         type={modalType}

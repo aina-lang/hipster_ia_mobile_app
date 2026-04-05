@@ -258,7 +258,9 @@ const s = StyleSheet.create({
         borderRadius: 16,
         borderColor: colors.white + '14',
         backgroundColor: colors.darkSlateBlue,
-        padding: 16,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        paddingTop: 14,
         zIndex: 3,
     },
     innerActive: {
@@ -267,10 +269,13 @@ const s = StyleSheet.create({
 
     textInput: {
         marginBottom: 12,
-        maxHeight: 100,
-        minHeight: 24,
+        maxHeight: 120,
+        minHeight: 40,
         fontSize: 16,
+        paddingVertical: 10,
+        paddingHorizontal: 0,
         color: '#cbd5e1',
+        textAlignVertical: 'center',
     },
 
     imagePreview: {

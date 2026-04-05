@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { Stack, useRouter, useSegments, usePathname } from 'expo-router';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { useAuthStore } from '../store/authStore';
 import { useWelcomeVideoStore } from '../store/welcomeVideoStore';
 import '../global.css';
@@ -265,9 +266,10 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <GestureHandlerRootView style={{ flex: 1 }}>
-        <StripeProvider
-          publishableKey="pk_test_51R15MnK5fB5lGbp8C5QAYcALGWTBBmTmYxsnMnigeUNUg2DvsR9u4xbsF1GNzDIqiQxFqz9Dg10kEttfcpbr5DVX00yGKXocyS"
-          merchantIdentifier="merchant.com.hipster">
+        <KeyboardProvider>
+          <StripeProvider
+            publishableKey="pk_test_51R15MnK5fB5lGbp8C5QAYcALGWTBBmTmYxsnMnigeUNUg2DvsR9u4xbsF1GNzDIqiQxFqz9Dg10kEttfcpbr5DVX00yGKXocyS"
+            merchantIdentifier="merchant.com.hipster">
           {isInitialized ? (
             <Stack
               screenOptions={{
@@ -292,6 +294,7 @@ export default function RootLayout() {
               )}
           </>
         </StripeProvider>
+        </KeyboardProvider>
       </GestureHandlerRootView>
     </SafeAreaProvider>
   );
