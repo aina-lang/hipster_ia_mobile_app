@@ -428,6 +428,7 @@ export default function Step4PersonalizeScreen() {
   const [selectedFlyerCategory, setSelectedFlyerCategory] = useState(LOCAL_FLYER_CATEGORIES[0]?.id || '');
   const [showAllModels, setShowAllModels] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  
 
   useEffect(() => {
     const fetchCategories = async () => {

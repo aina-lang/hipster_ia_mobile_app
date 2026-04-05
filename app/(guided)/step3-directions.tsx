@@ -147,24 +147,10 @@ function ArchitectureCard({
 export default function Step3DirectionsScreen() {
   const router = useRouter();
   const scrollRef = useRef<ScrollView>(null);
-  const { selectedArchitecture, setArchitecture, selectedJob, selectedFunction, reset } = useCreationStore();
-
-  React.useEffect(() => {
-    console.log('[STEP3-DIRECTIONS] Mounted with state:', {
-      selectedJob,
-      selectedFunction,
-      selectedArchitecture,
-    });
-
-    // Reset architecture selection when entering this screen (for Flyer/Affiche flow)
-    if (!selectedArchitecture) {
-      console.log('[STEP3-DIRECTIONS] No architecture selected, screen ready');
-    }
-  }, [selectedFunction]);
+  const { selectedArchitecture, setArchitecture, selectedJob, selectedFunction } = useCreationStore();
 
   const handleContinue = () => {
     if (selectedArchitecture) {
-      console.log('[STEP3-DIRECTIONS] Continuing with architecture:', selectedArchitecture);
       router.push('/(guided)/step3-personalize');
     }
   };

@@ -35,7 +35,6 @@ import { NeonActionButton } from '../../components/ui/NeonActionButton';
 import { GenericModal, ModalType } from '../../components/ui/GenericModal';
 import { useCreationStore } from '../../store/creationStore';
 import { useAuthStore } from '../../store/authStore';
-import { useImageHistoryStore } from '../../store/imageHistoryStore';
 import { AiService, TextGenerationType } from '../../api/ai.service';
 import { VISUAL_ARCHITECTURES } from '../../constants/visualArchitectures';
 
@@ -71,7 +70,6 @@ export default function Step4ResultScreen() {
   } = useCreationStore();
 
   const { user, aiRefreshUser } = useAuthStore();
-  const { addImage } = useImageHistoryStore();
 
   const isRestricted = user?.planType === 'curieux';
   const [loading, setLoading] = useState(true);
@@ -105,53 +103,6 @@ export default function Step4ResultScreen() {
     setModalTitle(title);
     setModalMessage(message);
     setModalVisible(true);
-  };
-
-  /** Enregistre une affiche flyer dans l’historique Impression HD (écran dédié + même format que la sauvegarde galerie). */
-  const addFlyerToImpressionHistory = (url: string, genId?: number | null) => {
-    console.log('[Step4Result] addFlyerToImpressionHistory called with:', { url, genId });
-    
-    if (!url || typeof url !== 'string') {
-      console.warn('[Step4Result] Invalid URL - skipping add to history');
-      return;
-    }
-    
-    // Allow base64 URLs as well as http URLs
-    const isValidUrl = url.startsWith('http') || url.startsWith('data:');
-    if (!isValidUrl) {
-      console.warn('[Step4Result] URL does not start with http or data: - skipping');
-      return;
-    }
-    
-    const state = useCreationStore.getState();
-    const fn = state.selectedFunction || '';
-    console.log('[Step4Result] Checking function:', fn);
-    
-    if (!fn.includes('Flyer') && !fn.includes('Affiche')) {
-      console.warn('[Step4Result] Function is not a Flyer/Affiche type - skipping');
-      return;
-    }
-
-    const imageEntry = {
-      id: genId != null ? `gen-${genId}` : `gen-${Date.now()}`,
-      url,
-      title: state.mainTitle || 'Flyer / Affiche',
-      description: state.userQuery || 'Flyer généré',
-      format: 'impression-hd' as const,
-      architecture: state.selectedArchitecture,
-      style: state.selectedStyle,
-      createdAt: Date.now(),
-      generationId: genId ?? undefined,
-      metadata: {
-        colorLeft: state.colorLeft,
-        colorRight: state.colorRight,
-        subTitle: state.subTitle,
-        infoLine: state.infoLine,
-      },
-    };
-    
-    console.log('[Step4Result] Adding image to history:', imageEntry);
-    addImage(imageEntry);
   };
 
   useEffect(() => {
@@ -329,12 +280,9 @@ export default function Step4ResultScreen() {
               attempts++;
               await new Promise(resolve => setTimeout(resolve, 5000));
               const updatedGen = await AiService.getConversation(flyerResult.generationId.toString());
-              const img =
-                updatedGen?.imageUrl || updatedGen?.url || updatedGen?.image;
-              if (img && typeof img === 'string' && img.startsWith('http')) {
-                setImageUrl(img);
+              if (updatedGen?.imageUrl?.startsWith('http')) {
+                setImageUrl(updatedGen.imageUrl);
                 isCompleted = true;
-                addFlyerToImpressionHistory(img, flyerResult.generationId);
               } else if (updatedGen?.result?.startsWith('ERROR')) {
                 isCompleted = true;
                 throw new Error(updatedGen.result);
@@ -343,7 +291,6 @@ export default function Step4ResultScreen() {
           } else {
             setImageUrl(flyerResult.url);
             setGenerationId(flyerResult.generationId);
-            if (flyerResult.url) addFlyerToImpressionHistory(flyerResult.url, flyerResult.generationId);
           }
         } else if (isVisuelPub) {
           const resultData = await AiService.generateImage(params, (selectedStyle as any) || 'realistic', seed);
@@ -384,14 +331,12 @@ export default function Step4ResultScreen() {
               if (img && typeof img === 'string' && img.startsWith('http')) {
                 setImageUrl(img);
                 isCompleted = true;
-                addFlyerToImpressionHistory(img, flyerResult.generationId);
               }
             }
           } else {
             setImageUrl(flyerResult.url);
             setResult(flyerResult.url);
             setGenerationId(flyerResult.generationId);
-            if (flyerResult.url) addFlyerToImpressionHistory(flyerResult.url, flyerResult.generationId);
           }
         } else {
           const resultData = await AiService.generateDocument('business', params);
@@ -488,27 +433,6 @@ export default function Step4ResultScreen() {
         await MediaLibrary.createAlbumAsync('Hipster', asset, false);
       } else {
         await MediaLibrary.addAssetsToAlbumAsync([asset], album, false);
-      }
-
-      // Sauvegarder dans l'historique si c'est une catégorie Document
-      if (selectedCategory === 'Document') {
-        addImage({
-          id: generationId != null ? `gen-${generationId}` : `gen-${Date.now()}`,
-          url: imageUrl,
-          title: mainTitle || 'Impression HD',
-          description: userQuery || 'Image générée',
-          format: 'impression-hd',
-          architecture: selectedArchitecture,
-          style: selectedStyle,
-          createdAt: Date.now(),
-          generationId,
-          metadata: {
-            colorLeft,
-            colorRight,
-            subTitle,
-            infoLine,
-          },
-        });
       }
 
       setModalVisible(false);
