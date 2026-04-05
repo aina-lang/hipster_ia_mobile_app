@@ -12,7 +12,6 @@ import {
 import { Image as ImageIcon, Send, X } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors } from '../theme/colors';
-import { TypingPlaceholder } from './TypingMessage';
 import Reanimated, {
     useAnimatedStyle,
     useSharedValue,
@@ -106,7 +105,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 
 
             <View style={[s.inner, isNeonActive && s.innerActive]}>
-                <TypingPlaceholder text={placeholderText} inputValue={inputValue} />
                 <TextInput
                     value={inputValue}
                     onChangeText={onChangeText}
@@ -114,7 +112,10 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                     onBlur={() => setIsFocused(false)}
                     multiline
                     maxLength={maxLength}
-                    placeholderTextColor="transparent"
+                    placeholder={placeholderText}
+                    placeholderTextColor="rgba(255,255,255,0.35)"
+                    cursorColor={NEON_BLUE}
+                    selectionColor={NEON_BLUE + '55'}
                     style={s.textInput}
                     editable={!isDisabled}
                 />
@@ -259,8 +260,8 @@ const s = StyleSheet.create({
         borderColor: colors.white + '14',
         backgroundColor: colors.darkSlateBlue,
         paddingHorizontal: 16,
-        paddingVertical: 12,
-        paddingTop: 14,
+        paddingVertical: 10,
+        paddingTop: 10,
         zIndex: 3,
     },
     innerActive: {
@@ -272,10 +273,11 @@ const s = StyleSheet.create({
         maxHeight: 120,
         minHeight: 40,
         fontSize: 16,
-        paddingVertical: 10,
+        paddingVertical: 0,
         paddingHorizontal: 0,
+        paddingTop: 0,
         color: '#cbd5e1',
-        textAlignVertical: 'center',
+        textAlignVertical: 'top',
     },
 
     imagePreview: {
