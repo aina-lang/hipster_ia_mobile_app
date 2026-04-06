@@ -537,29 +537,33 @@ export default function Step4PersonalizeScreen() {
           isVisual && (
             <View style={styles.visualBlock}>
 
-              <Text style={styles.sectionLabel}>PHOTO DE RÉFÉRENCE</Text>
+              {selectedCategory !== 'Social' && (
+                <>
+                  <Text style={styles.sectionLabel}>PHOTO DE RÉFÉRENCE</Text>
 
-              {uploadedImage ? (
-                <View style={styles.imagePill}>
-                  <Image source={{ uri: uploadedImage }} style={styles.imagePillThumb} />
-                  <TouchableOpacity onPress={pickImage} style={styles.imagePillText}>
-                    <Text style={styles.imagePillLabel} numberOfLines={1}>
-                      Changer l'image
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity onPress={() => setUploadedImage(null)} style={styles.imagePillRemove}>
-                    <View style={styles.iconGlow}>
-                      <X size={14} color="white" />
+                  {uploadedImage ? (
+                    <View style={styles.imagePill}>
+                      <Image source={{ uri: uploadedImage }} style={styles.imagePillThumb} />
+                      <TouchableOpacity onPress={pickImage} style={styles.imagePillText}>
+                        <Text style={styles.imagePillLabel} numberOfLines={1}>
+                          Changer l'image
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={() => setUploadedImage(null)} style={styles.imagePillRemove}>
+                        <View style={styles.iconGlow}>
+                          <X size={14} color="white" />
+                        </View>
+                      </TouchableOpacity>
                     </View>
-                  </TouchableOpacity>
-                </View>
-              ) : (
-                <TouchableOpacity style={styles.imagePill} onPress={pickImage}>
-                  <View style={styles.iconGlow}>
-                    <Upload size={16} color={'#fff'} />
-                  </View>
-                  <Text style={styles.uploadCompactText}>Ajouter une photo</Text>
-                </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity style={styles.imagePill} onPress={pickImage}>
+                      <View style={styles.iconGlow}>
+                        <Upload size={16} color={'#fff'} />
+                      </View>
+                      <Text style={styles.uploadCompactText}>Ajouter une photo</Text>
+                    </TouchableOpacity>
+                  )}
+                </>
               )}
 
               {selectedCategory === 'Document' ? (
