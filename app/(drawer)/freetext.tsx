@@ -775,7 +775,7 @@
             <View
               className="px-5"
               style={{
-                paddingBottom: keyboardHeight > 0 ? keyboardHeight : insets.bottom + 12,
+                paddingBottom: keyboardHeight > 0 ? keyboardHeight * 0.004 : insets.bottom + 12,
                 paddingTop: 0,
               }}
             >
