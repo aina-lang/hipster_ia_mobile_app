@@ -107,20 +107,31 @@ function StyleCard({
   item,
   isSelected,
   onPress,
+  onNavigate,
 }: {
   item: { label: string; description: string; image: any };
   isSelected: boolean;
   onPress: () => void;
+  onNavigate?: () => void;
 }) {
   const scale = useSharedValue(1);
   const animatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+
+  const handlePress = () => {
+    onPress();
+    setTimeout(() => {
+      if (onNavigate) {
+        onNavigate();
+      }
+    }, 100);
+  };
 
   return (
     <Animated.View style={[{ width: STYLE_CARD_W }, animatedStyle]}>
       <TouchableOpacity
         onPressIn={() => { scale.value = withSpring(0.97, { damping: 15 }); }}
         onPressOut={() => { scale.value = withSpring(1, { damping: 15 }); }}
-        onPress={onPress}
+        onPress={handlePress}
         activeOpacity={0.9}
         style={{ width: STYLE_CARD_W }}
       >
@@ -583,6 +594,10 @@ export default function Step4PersonalizeScreen() {
                         item={item}
                         isSelected={selectedStyle === item.label}
                         onPress={() => setStyle(item.label as any)}
+                        onNavigate={() => router.push({
+                          pathname: '/(guided)/step4-content-customize',
+                          params: { style: item.label }
+                        })}
                       />
                     ))}
                   </View>
@@ -600,14 +615,16 @@ export default function Step4PersonalizeScreen() {
           )
         )}
 
-        <View style={styles.ctaWrapper}>
-          <NeonActionButton
-            label="Démarrer la création"
-            onPress={handleCreate}
-            icon={<Sparkles size={16} color="#ffffff" />}
-            small={false}
-          />
-        </View>
+        {selectedCategory !== 'Social' && (
+          <View style={styles.ctaWrapper}>
+            <NeonActionButton
+              label="Démarrer la création"
+              onPress={handleCreate}
+              icon={<Sparkles size={16} color="#ffffff" />}
+              small={false}
+            />
+          </View>
+        )}
 
       </View>
 
