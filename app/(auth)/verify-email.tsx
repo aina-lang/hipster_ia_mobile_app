@@ -73,7 +73,8 @@ export default function VerifyEmailScreen() {
     try {
       await aiVerifyEmail(email as string, code);
       allowNavRef.current = true;
-      router.replace({ pathname: '/(onboarding)/packs', params: { userId, planId } });
+      // ✅ Utiliser router.push au lieu de router.replace pour éviter les problèmes de navigation
+      router.push({ pathname: '/(onboarding)/packs', params: { userId, planId } });
     } catch (e: any) {
       setError(e.response?.data?.message || 'Code invalide ou expiré.');
     } finally {

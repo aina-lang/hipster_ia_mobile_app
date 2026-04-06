@@ -237,11 +237,37 @@ export default function PacksScreen() {
     if (!selectedPlan) return;
     setSubmitting(true);
     try {
+      // ✅Debug checks
+      console.log('[PacksScreen] User state:', { id: user?.id, email: user?.email, isEmailVerified: user?.isEmailVerified });
+      
+      // ✅Vérifier que l'utilisateur est bien connecté et email vérifié
+      if (!user?.id) {
+        Alert.alert('Erreur', 'Utilisateur non trouvé. Veuillez vous reconnecter.');
+        setSubmitting(false);
+        return;
+      }
+      
+      if (!user?.isEmailVerified) {
+        Alert.alert('Email non confirmé', 'Veuillez vérifier votre email avant de continuer.');
+        setSubmitting(false);
+        return;
+      }
+      
+      // ✅S'assurer que userId est un nombre
+      const userId = typeof user.id === 'number' ? user.id : parseInt(String(user.id), 10);
+      if (isNaN(userId)) {
+        Alert.alert('Erreur', 'ID utilisateur invalide.');
+        setSubmitting(false);
+        return;
+      }
+      
       const planConfig = plans.find(p => p.id === selectedPlan);
+      console.log('[PacksScreen] Sending payment request with userId:', userId, 'type:', typeof userId);
+      
       const { data } = await api.post('/ai/payment/create-payment-sheet', {
         planId: selectedPlan,
         priceId: selectedPlan !== 'curieux' ? planConfig?.stripePriceId : undefined,
-        userId: user?.id,
+        userId: userId,  // Assurer que c'est un number
       });
       const { paymentIntentClientSecret, setupIntentClientSecret, ephemeralKey, customerId } = data.data || data;
       const initResult = await initPaymentSheet({

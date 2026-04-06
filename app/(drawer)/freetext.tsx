@@ -214,7 +214,7 @@
     const isPackCurieux = planType === 'curieux';
 
     const now = new Date();
-    const endDate = user?.subscriptionEndDate ? new Date(user.subscriptionEndDate) : null;
+    const endDate = user?.subscriptionEndDate ? new Date(user?.subscriptionEndDate) : null;
     const isExpired = endDate && now > endDate;
 
     const effectivePlanId = (isPackCurieux && isExpired) ? 'studio' : planType;
@@ -242,6 +242,24 @@
     };
 
     const handleStripePayment = async () => {
+      if (!user?.id || typeof user.id !== 'number') {
+        showModal(
+          'error',
+          'Non authentifié',
+          'Veuillez vous reconnecter pour procéder au paiement.'
+        );
+        return;
+      }
+
+      if (!user?.isEmailVerified) {
+        showModal(
+          'error',
+          'Email non confirmé',
+          'Veuillez vérifier votre email avant de procéder au paiement.'
+        );
+        return;
+      }
+
       const planConfig = plans.find(p => p.id === planType);
       if (!planConfig && planType !== 'curieux') return;
 
@@ -480,7 +498,7 @@
           Identité: Hipster IA
           Rôle: Assistant créatif et intelligent
           Cible: ${user?.email?.split('@')[0] || "l'utilisateur"}
-          Contexte: ${user?.type !== 'ai' && user?.job ? `Métier: ${user.job}` : ''}
+          Contexte: ${user?.type !== 'ai' && user?.job ? `Métier: ${user?.job}` : ''}
         `;
 
         chatHistory.push({
