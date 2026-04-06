@@ -799,7 +799,7 @@ export default function HomeScreen() {
 
     try {
       const chatHistory: any[] = [];
-      const systemContext = `\n      Identité: Hipster IA\n      Rôle: Assistant créatif et intelligent\n      Cible: ${user?.email?.split('@')[0] || "l'utilisateur"}\n      Contexte: ${user?.type !== 'ai' && user?.job ? `Métier: ${user.job}` : ''}\n    `;
+      const systemContext = `\n      Identité: Hipster IA\n      Rôle: Assistant créatif et intelligent\n      Cible: ${user?.email?.split('@')[0] || "l'utilisateur"}\n      Contexte: ${user?.type !== 'ai' && user?.job ? `Métier: ${user?.job}` : ''}\n    `;
       chatHistory.push({ role: 'system', content: `Tu es Hipster IA. ${systemContext}. IMPORTANT: Ne jamais utiliser d'emojis dans tes réponses. Garde un ton professionnel et direct.` });
       messages.forEach(m => chatHistory.push({ role: m.sender === 'user' ? 'user' : 'assistant', content: m.text }));
       chatHistory.push({ role: 'user', content: userMsg.text });
@@ -936,7 +936,7 @@ export default function HomeScreen() {
                   <Text style={s.titleBrittany}>produire ?</Text>
                   {user?.job && (
                     <View style={s.jobRow}>
-                      <Text style={s.jobLabel}>{user.job}</Text>
+                      <Text style={s.jobLabel}>{user?.job}</Text>
                     </View>
                   )}
                 </View>

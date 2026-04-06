@@ -2,6 +2,9 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api, BASE_URL } from '../api/client';
+import { useCreationStore } from './creationStore';
+import { useOnboardingStore } from './onboardingStore';
+import { useWelcomeVideoStore } from './welcomeVideoStore';
 
 const extractErrorMessage = (error: any, defaultMessage: string) => {
   const responseData = error.response?.data;
@@ -487,8 +490,25 @@ export const useAuthStore = create<AuthState>()(
 
       aiRegister: async (registerData) => {
         set({ isLoading: true, error: null });
+        // Reset all creation stores when registering new account
+        useCreationStore.getState().reset();
+        useOnboardingStore.getState().reset();
         try {
           const { data } = await api.post('/ai/auth/register', registerData);
+          
+          const userData = data.data ?? data;
+          if (userData?.userId) {
+            set({
+              user: {
+                id: userData.userId,
+                email: registerData.email,
+                type: 'ai',
+                isEmailVerified: false,
+                isSetupComplete: false,
+              } as any,
+            });
+          }
+          
           set({ isLoading: false });
           return data;
         } catch (error: any) {
@@ -509,16 +529,23 @@ export const useAuthStore = create<AuthState>()(
           // Backend is wrapped by TransformInterceptor:
           // { status, statusCode, message, data: { access_token, refresh_token, user, ... } }
           const resData = data?.data ?? data;
+          console.log('[AuthStore] aiVerifyEmail response user:', { id: resData.user?.id, email: resData.user?.email, isEmailVerified: resData.user?.isEmailVerified });
 
           await AsyncStorage.setItem('access_token', resData.access_token);
           await AsyncStorage.setItem('refresh_token', resData.refresh_token);
 
+          // Ensure user.id is properly defined as a number
+          const userData = {
+            ...resData.user,
+            id: resData.user?.id ? parseInt(String(resData.user.id), 10) : undefined,
+            type: 'ai',
+            isFirstTime: true, // Mark as first time user
+          };
+          
+          console.log('[AuthStore] Setting authenticated user:', { id: userData.id, email: userData.email, isEmailVerified: userData.isEmailVerified });
+          
           set({
-            user: {
-              ...resData.user,
-              type: 'ai',
-              isFirstTime: true, // Mark as first time user
-            },
+            user: userData,
             isAuthenticated: true,
             accessToken: resData.access_token,
             refreshToken: resData.refreshToken || resData.refresh_token,
@@ -571,6 +598,11 @@ export const useAuthStore = create<AuthState>()(
           // General error handling if needed, but finally block will run
         } finally {
           await AsyncStorage.multiRemove(['access_token', 'refresh_token']);
+          // Reset creation/onboarding stores on logout (but NOT welcome video)
+          useCreationStore.getState().reset();
+          useOnboardingStore.getState().reset();
+          // Show static background on welcome screen after logout
+          useWelcomeVideoStore.getState().setIsReturningFromBack(true);
           set({
             user: null,
             isAuthenticated: false,

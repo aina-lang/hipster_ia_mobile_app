@@ -63,17 +63,19 @@ export default function RegisterScreen() {
       const { brandingColor, job } = useOnboardingStore.getState();
       const response = await aiRegister({
         name: fullName, email, password,
-        planId: selectedPlan || 'curieux',
+        // ✅ Ne pas envoyer planId ici - le paiement sera géré dans packs.tsx après vérification email
         brandingColor, job,
         referralCode: referralCode.trim() || undefined,
       });
       const res = response?.data ?? response;
+      const userId = res?.userId || res?.data?.userId;
+      
       showModal('success', 'Compte créé !', 'Vérifiez votre email pour activer votre compte.');
       setTimeout(() => {
         setModal(m => ({ ...m, visible: false }));
         useWelcomeVideoStore.getState().clearOpenedAuthFromWelcome();
-        // Navigate to packs after successful registration
-        router.push({ pathname: '/(onboarding)/packs', params: { from: 'register' } });
+        // ✅ Naviguer vers la vérification d'email, PAS directement vers packs!
+        router.push({ pathname: '/(auth)/verify-email', params: { email, userId } });
       }, 1500);
     } catch (e: any) {
       setLoading(false);
