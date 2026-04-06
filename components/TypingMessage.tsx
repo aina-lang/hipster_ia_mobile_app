@@ -48,5 +48,5 @@ export const TypingPlaceholder = ({ text, inputValue }: TypingPlaceholderProps) 
     }, [text, inputValue]);
 
     if (inputValue) return null;
-    return <Text className="absolute left-4 top-4 text-base text-white/60">{displayedText}</Text>;
+    return <Text className="absolute left-4 top-3 text-base text-white/50">{displayedText}</Text>;
 };
