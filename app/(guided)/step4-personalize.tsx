@@ -513,7 +513,11 @@ export default function Step4PersonalizeScreen() {
   const activeFlyerCategory = categories.find((c) => c.id === selectedFlyerCategory);
 
   return (
-    <GuidedScreenWrapper currentStep={3} totalSteps={4} scrollViewRef={scrollRef}>
+    <GuidedScreenWrapper
+      currentStep={1}
+      totalSteps={selectedCategory === 'Social' ? 2 : 1}
+      scrollViewRef={scrollRef}
+    >
       <View style={styles.container}>
 
         <View style={styles.header}>
