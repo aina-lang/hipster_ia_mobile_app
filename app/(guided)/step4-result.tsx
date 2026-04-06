@@ -234,6 +234,14 @@ export default function Step4ResultScreen() {
         }
       } else {
         params.style = selectedStyle;
+        if (storeSubject && !storeImage) {
+          params.subject = storeSubject;
+          params.userQuery = params.userQuery ? `${params.userQuery} - Sujet: ${storeSubject}` : `Sujet: ${storeSubject}`;
+        }
+        if (storeColorLeft) {
+          params.colorPrincipale = storeColorLeft;
+          params.userQuery = `${params.userQuery} - Couleurs souhaitées: ${storeColorLeft}`;
+        }
       }
 
       if (effectiveCategory === 'Social') {

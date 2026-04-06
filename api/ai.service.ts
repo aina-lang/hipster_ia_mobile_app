@@ -10,6 +10,9 @@ export type TextGenerationType =
   | 'text'
   | 'texte';
 export type ImageStyle =
+  | 'Noir Dominance'
+  | 'Digital Drift'
+  | 'Smoke'
   | 'Premium'
   | 'Hero Studio'
   | 'Minimal Studio'

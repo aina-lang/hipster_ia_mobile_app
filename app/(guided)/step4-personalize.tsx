@@ -40,9 +40,9 @@ const CARD_W_GRID = (SCREEN_WIDTH - 48 - 8) / 2;
 const STYLE_CARD_W = (SCREEN_WIDTH - 48 - 12) / 2;
 
 const VISUAL_STYLES = [
-  { label: 'Premium', description: 'Noir & blanc luxe', image: illus2 },
-  { label: 'Hero', description: 'Impact fort', image: illus3 },
-  { label: 'Minimal', description: 'Épuré & moderne', image: illus4 },
+  { label: 'Noir Dominance', description: 'Noir & blanc luxe', image: illus2 },
+  { label: 'Digital Drift', description: 'Impact fort', image: illus3 },
+  { label: 'Smoke', description: 'Épuré & moderne', image: illus4 },
 ];
 
 function StyleNeonBorderCard({
@@ -622,6 +622,8 @@ export default function Step4PersonalizeScreen() {
               onPress={handleCreate}
               icon={<Sparkles size={16} color="#ffffff" />}
               small={false}
+              loading={false}
+              disabled={false}
             />
           </View>
         )}

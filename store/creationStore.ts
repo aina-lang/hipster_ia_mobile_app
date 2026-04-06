@@ -16,6 +16,9 @@ export type JobType =
 export type CreationCategory = 'Texte' | 'Image' | 'Document' | 'Social' | 'Video' | 'Audio';
 
 export type VisualStyle =
+  | 'Noir Dominance'
+  | 'Digital Drift'
+  | 'Smoke'
   | 'Premium'
   | 'Hero Studio'
   | 'Minimal Studio'
