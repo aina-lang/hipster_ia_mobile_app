@@ -212,6 +212,11 @@ export default function ProfileScreen() {
   const router = useRouter();
   const { user, updateAiProfile, changePassword, logout, isLoading } = useAuthStore();
 
+  // Protect against null user during logout
+  if (!user) {
+    return null;
+  }
+
   const [isEditing, setIsEditing]                     = useState(false);
   const [name, setName]                               = useState(user?.name || '');
   const [professionalEmail, setProfessionalEmail]     = useState(user?.professionalEmail || '');
@@ -342,7 +347,7 @@ export default function ProfileScreen() {
   );
 
   const userAvatar = (user?.avatarUrl || user?.logoUrl)
-    ? `https://hipster-api.fr${user.avatarUrl || user.logoUrl}`
+    ? `https://hipster-api.fr${user?.avatarUrl || user?.logoUrl}`
     : `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'U')}&background=random`;
 
   return (

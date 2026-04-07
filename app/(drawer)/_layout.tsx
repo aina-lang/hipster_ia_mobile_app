@@ -71,6 +71,11 @@ function CustomDrawerContent(props: any) {
   const router = useRouter();
   const [showLogoutModal, setShowLogoutModal] = React.useState(false);
 
+  // Protect against null user during logout
+  if (!user) {
+    return null;
+  }
+
   const handleLogout = async () => {
     setShowLogoutModal(false);
     useWelcomeVideoStore.getState().setIsReturningFromBack(true);
@@ -80,7 +85,7 @@ function CustomDrawerContent(props: any) {
 
   const userName = user?.name || 'Utilisateur';
   const userAvatar = (user?.logoUrl || user?.avatarUrl)
-    ? `https://hipster-api.fr${user.logoUrl || user.avatarUrl}`
+    ? `https://hipster-api.fr${user?.logoUrl || user?.avatarUrl}`
     : `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=random`;
 
   return (
