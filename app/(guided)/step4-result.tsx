@@ -234,6 +234,14 @@ export default function Step4ResultScreen() {
         }
       } else {
         params.style = selectedStyle;
+        if (storeSubject && !storeImage) {
+          params.subject = storeSubject;
+          params.userQuery = params.userQuery ? `${params.userQuery} - Sujet: ${storeSubject}` : `Sujet: ${storeSubject}`;
+        }
+        if (storeColorLeft) {
+          params.colorPrincipale = storeColorLeft;
+          params.userQuery = `${params.userQuery} - Couleurs souhaitées: ${storeColorLeft}`;
+        }
       }
 
       if (effectiveCategory === 'Social') {
@@ -423,7 +431,7 @@ export default function Step4ResultScreen() {
       showModal('loading', 'Enregistrement...', 'Sauvegarde dans votre galerie.');
       const filename = `Hipster-${Date.now()}.png`;
       const fileUri = `${FileSystem.cacheDirectory}${filename}`;
-      const downloadRes = await FileSystem.downloadAsync(imageUrl, fileUri);
+      const downloadRes = await FileSystem.downloadAsync(imageUrl || '', fileUri);
 
       if (downloadRes.status !== 200) throw new Error('Download failed');
 
@@ -570,6 +578,8 @@ export default function Step4ResultScreen() {
                   onPress={() => setShowRegeneratePanel(true)}
                   icon={<Sparkles size={16} color="#ffffff" />}
                   small={false}
+                  loading={false}
+                  disabled={false}
                 />
               ) : (
                 <View style={styles.regeneratePanel}>
@@ -591,9 +601,9 @@ export default function Step4ResultScreen() {
                     <Text style={styles.modeLabel}>Régénérer :</Text>
                     <View style={styles.modeOptionsRow}>
                       {['text', 'image', 'both'].filter(id => {
-                        if (selectedCategory === 'Social') return true;
-                        if (selectedCategory === 'Image') return id === 'image';
-                        if (selectedCategory === 'Texte') return id === 'text';
+                        if (String(selectedCategory) === 'Social') return true;
+                        if (String(selectedCategory) === 'Image') return id === 'image';
+                        if (String(selectedCategory) === 'Texte') return id === 'text';
                         return true;
                       }).map(id => (
                         <TouchableOpacity
@@ -611,6 +621,8 @@ export default function Step4ResultScreen() {
                     label="Régénérer"
                     onPress={() => generateContent(localQuery, regenMode)}
                     small={false}
+                    loading={false}
+                    disabled={false}
                   />
                 </View>
               )}
@@ -673,6 +685,8 @@ export default function Step4ResultScreen() {
                   label="Modifier et régénérer"
                   onPress={() => setShowRegeneratePanel(true)}
                   small={false}
+                  loading={false}
+                  disabled={false}
                 />
               ) : (
                 <View style={styles.regeneratePanel}>
@@ -694,9 +708,9 @@ export default function Step4ResultScreen() {
                     <Text style={styles.modeLabel}>Régénérer :</Text>
                     <View style={styles.modeOptionsRow}>
                       {['text', 'image', 'both'].filter(id => {
-                        if (selectedCategory === 'Social') return true;
-                        if (selectedCategory === 'Image') return id === 'image';
-                        if (selectedCategory === 'Texte') return id === 'text';
+                        if (String(selectedCategory) === 'Social') return true;
+                        if (String(selectedCategory) === 'Image') return id === 'image';
+                        if (String(selectedCategory) === 'Texte') return id === 'text';
                         return true;
                       }).map(id => (
                         <TouchableOpacity
@@ -714,6 +728,8 @@ export default function Step4ResultScreen() {
                     label="Régénérer"
                     onPress={() => generateContent(localQuery, regenMode)}
                     small={false}
+                    loading={false}
+                    disabled={false}
                   />
                 </View>
               )}
