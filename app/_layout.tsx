@@ -9,6 +9,7 @@ import '../global.css';
 import { StripeProvider } from '@stripe/stripe-react-native';
 import WelcomeScreen from './welcome';
 import { StyledStatusBar } from '../components/ui/StyledStatusBar';
+import { TimeDynamicMessageModal } from '../components/TimeDynamicMessageModal';
 import * as MediaLibrary from 'expo-media-library';
 import * as Notifications from 'expo-notifications';
 import * as SplashScreen from 'expo-splash-screen';
@@ -286,6 +287,9 @@ export default function RootLayout() {
           ) : <View style={{ flex: 1, backgroundColor: '#000000' }} />}
 
           <StyledStatusBar theme="dark" translucent={true} />
+
+          {/* 🎯 Time-based dynamic pop-up messages */}
+          <TimeDynamicMessageModal />
 
           <>
             {!isAuthenticated &&
