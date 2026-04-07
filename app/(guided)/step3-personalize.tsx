@@ -231,9 +231,9 @@ const ARCHITECTURE_EXAMPLES: Record<string, { label: string; image: any; text: s
 };
 
 const VISUAL_STYLES = [
-  { label: 'Premium', description: 'Noir & blanc luxe', image: illus2 },
-  { label: 'Hero', description: 'Impact fort', image: illus3 },
-  { label: 'Minimal', description: 'Épuré & moderne', image: illus4 },
+  { label: 'Noir Dominance', description: 'Noir & blanc luxe', image: illus2 },
+  { label: 'Digital Drift', description: 'Impact fort', image: illus3 },
+  { label: 'Smoke', description: 'Épuré & moderne', image: illus4 },
 ];
 
 export default function Step3PersonalizeScreen() {
@@ -378,7 +378,11 @@ export default function Step3PersonalizeScreen() {
     if (textPromo) queryParts.push(textPromo);
     if (infoLine) queryParts.push(infoLine);
     setQuery(queryParts.join(' '));
-    router.push('/(guided)/step4-result');
+    if (selectedCategory === 'Social') {
+      router.push('/(guided)/step4-content-customize');
+    } else {
+      router.push('/(guided)/step4-result');
+    }
   };
 
   const exampleData = selectedArchitecture && selectedArchitecture in ARCHITECTURE_EXAMPLES
@@ -388,7 +392,7 @@ export default function Step3PersonalizeScreen() {
   return (
     <GuidedScreenWrapper
       currentStep={selectedCategory === 'Social' || selectedCategory === 'Image' ? 3 : 4}
-      totalSteps={selectedCategory === 'Social' || selectedCategory === 'Image' ? 3 : 4}
+      totalSteps={selectedCategory === 'Social' ? 4 : (selectedCategory === 'Image' ? 3 : 4)}
     >
       <View style={s.container}>
 
@@ -590,6 +594,8 @@ export default function Step3PersonalizeScreen() {
             label="GÉNÉRER MON VISUEL"
             icon={<Sparkles size={16} color="#ffffff" />}
             onPress={handleCreate}
+            loading={false}
+            disabled={false}
           />
         </View>
 
@@ -795,20 +801,20 @@ const s = StyleSheet.create({
   inputSub: {
     fontFamily: fonts.arimo.regular,
     fontSize: 12,
-    color: colors.whiteOverlayLight,
+    color: colors.whiteOverlay,
     marginBottom: 12,
     fontStyle: 'italic',
   },
   optional: {
     fontFamily: fonts.arimo.regular,
     fontSize: 10,
-    color: colors.whiteOverlayLight,
+    color: colors.whiteOverlay,
     letterSpacing: 0,
   },
   helperText: {
     fontFamily: fonts.arimo.regular,
     fontSize: 11,
-    color: colors.whiteOverlayLight,
+    color: colors.whiteOverlay,
     marginBottom: 10,
     fontStyle: 'italic',
   },

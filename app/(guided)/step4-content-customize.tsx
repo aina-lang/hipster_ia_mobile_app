@@ -363,7 +363,7 @@ export default function Step4ContentCustomizeScreen() {
   };
 
   return (
-    <GuidedScreenWrapper currentStep={4} totalSteps={4} scrollViewRef={scrollRef}>
+    <GuidedScreenWrapper currentStep={2} totalSteps={2} scrollViewRef={scrollRef}>
       <ScrollView ref={scrollRef} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
         <View style={s.container}>
 

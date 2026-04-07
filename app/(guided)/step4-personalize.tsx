@@ -40,9 +40,9 @@ const CARD_W_GRID = (SCREEN_WIDTH - 48 - 8) / 2;
 const STYLE_CARD_W = (SCREEN_WIDTH - 48 - 12) / 2;
 
 const VISUAL_STYLES = [
-  { label: 'Premium', description: 'Noir & blanc luxe', image: illus2 },
-  { label: 'Hero', description: 'Impact fort', image: illus3 },
-  { label: 'Minimal', description: 'Épuré & moderne', image: illus4 },
+  { label: 'Noir Dominance', description: 'Noir & blanc luxe', image: illus2 },
+  { label: 'Digital Drift', description: 'Impact fort', image: illus3 },
+  { label: 'Smoke', description: 'Épuré & moderne', image: illus4 },
 ];
 
 function StyleNeonBorderCard({
@@ -513,7 +513,11 @@ export default function Step4PersonalizeScreen() {
   const activeFlyerCategory = categories.find((c) => c.id === selectedFlyerCategory);
 
   return (
-    <GuidedScreenWrapper currentStep={3} totalSteps={4} scrollViewRef={scrollRef}>
+    <GuidedScreenWrapper
+      currentStep={1}
+      totalSteps={selectedCategory === 'Social' ? 2 : 1}
+      scrollViewRef={scrollRef}
+    >
       <View style={styles.container}>
 
         <View style={styles.header}>
@@ -537,29 +541,33 @@ export default function Step4PersonalizeScreen() {
           isVisual && (
             <View style={styles.visualBlock}>
 
-              <Text style={styles.sectionLabel}>PHOTO DE RÉFÉRENCE</Text>
+              {selectedCategory !== 'Social' && (
+                <>
+                  <Text style={styles.sectionLabel}>PHOTO DE RÉFÉRENCE</Text>
 
-              {uploadedImage ? (
-                <View style={styles.imagePill}>
-                  <Image source={{ uri: uploadedImage }} style={styles.imagePillThumb} />
-                  <TouchableOpacity onPress={pickImage} style={styles.imagePillText}>
-                    <Text style={styles.imagePillLabel} numberOfLines={1}>
-                      Changer l'image
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity onPress={() => setUploadedImage(null)} style={styles.imagePillRemove}>
-                    <View style={styles.iconGlow}>
-                      <X size={14} color="white" />
+                  {uploadedImage ? (
+                    <View style={styles.imagePill}>
+                      <Image source={{ uri: uploadedImage }} style={styles.imagePillThumb} />
+                      <TouchableOpacity onPress={pickImage} style={styles.imagePillText}>
+                        <Text style={styles.imagePillLabel} numberOfLines={1}>
+                          Changer l'image
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={() => setUploadedImage(null)} style={styles.imagePillRemove}>
+                        <View style={styles.iconGlow}>
+                          <X size={14} color="white" />
+                        </View>
+                      </TouchableOpacity>
                     </View>
-                  </TouchableOpacity>
-                </View>
-              ) : (
-                <TouchableOpacity style={styles.imagePill} onPress={pickImage}>
-                  <View style={styles.iconGlow}>
-                    <Upload size={16} color={'#fff'} />
-                  </View>
-                  <Text style={styles.uploadCompactText}>Ajouter une photo</Text>
-                </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity style={styles.imagePill} onPress={pickImage}>
+                      <View style={styles.iconGlow}>
+                        <Upload size={16} color={'#fff'} />
+                      </View>
+                      <Text style={styles.uploadCompactText}>Ajouter une photo</Text>
+                    </TouchableOpacity>
+                  )}
+                </>
               )}
 
               {selectedCategory === 'Document' ? (
@@ -622,6 +630,8 @@ export default function Step4PersonalizeScreen() {
               onPress={handleCreate}
               icon={<Sparkles size={16} color="#ffffff" />}
               small={false}
+              loading={false}
+              disabled={false}
             />
           </View>
         )}
