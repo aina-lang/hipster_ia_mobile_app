@@ -149,10 +149,12 @@ export default function Step3DirectionsScreen() {
   const scrollRef = useRef<ScrollView>(null);
   const { selectedArchitecture, setArchitecture, selectedJob, selectedFunction } = useCreationStore();
 
-  const handleContinue = () => {
-    if (selectedArchitecture) {
+  const handleArchitectureSelect = (architectureId: string) => {
+    setArchitecture(architectureId);
+    // Navigate automatically after selection
+    setTimeout(() => {
       router.push('/(guided)/step3-personalize');
-    }
+    }, 300);
   };
 
   return (
@@ -190,7 +192,7 @@ export default function Step3DirectionsScreen() {
               key={architecture.id}
               architecture={architecture}
               isSelected={selectedArchitecture === architecture.id}
-              onPress={() => setArchitecture(architecture.id)}
+              onPress={() => handleArchitectureSelect(architecture.id)}
             />
           ))}
         </View>
@@ -207,14 +209,6 @@ export default function Step3DirectionsScreen() {
             </View>
           );
         })}
-
-        <View style={s.buttonWrapper}>
-          <NeonActionButton
-            label="Continuer"
-            onPress={handleContinue}
-            disabled={!selectedArchitecture}
-          />
-        </View>
       </View>
     </GuidedScreenWrapper>
   );
