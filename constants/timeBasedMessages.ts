@@ -160,8 +160,7 @@ export function getCurrentTimeSlot(hour: number): TimeSlot {
   if (hour >= 15 && hour < 18) return 'afternoon';
   if (hour >= 18 && hour < 20) return 'evening';
   if (hour >= 20 && hour < 22) return 'night';
-  if (hour >= 22 || hour < 8) return 'lateNight';
-  return 'preNoon'; // Fallback
+  return 'lateNight'; // hour >= 22 || hour < 8
 }
 
 /**
