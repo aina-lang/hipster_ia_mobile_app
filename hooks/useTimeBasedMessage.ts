@@ -126,13 +126,13 @@ export const useTimeBasedMessage = () => {
   const initializeMessage = useCallback(async () => {
     setIsLoading(true);
     try {
-      // 🔧 TESTING: Disabled frequency check - shows popup at every login
-      // const canShow = await shouldShowMessage();
-      // if (!canShow) {
-      //   console.log('[useTimeBasedMessage] Frequency limit - not showing message');
-      //   setIsLoading(false);
-      //   return null;
-      // }
+      // Check frequency
+      const canShow = await shouldShowMessage();
+      if (!canShow) {
+        console.log('[useTimeBasedMessage] Frequency limit - not showing message');
+        setIsLoading(false);
+        return null;
+      }
 
       // Generate new message
       const result = await generateNewMessage();
@@ -153,7 +153,7 @@ export const useTimeBasedMessage = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [generateNewMessage]);
+  }, [shouldShowMessage, generateNewMessage]);
 
   return {
     message,
