@@ -40,7 +40,7 @@
     ],
     "orientation": "portrait",
     "icon": "./assets/logo.png",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "dark",
     "splash": {
       "image": "./assets/splashNew.jpeg",
       "resizeMode": "contain",
