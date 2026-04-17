@@ -7,6 +7,7 @@
  */
 
 export type TimeSlot = 
+  | 'earlyMorning' // 0h – 8h
   | 'morning' // 8h – 10h
   | 'preNoon' // 10h30 – 12h
   | 'postLunch' // 12h30 – 15h
@@ -23,6 +24,24 @@ export interface TimeSlotConfig {
 }
 
 export const TIME_SLOTS: Record<TimeSlot, TimeSlotConfig> = {
+  earlyMorning: {
+    name: '0h – 8h',
+    startHour: 0,
+    endHour: 8,
+    messages: [
+      "Salut toi ! T'es déjà debout ? Respect 🌅",
+      "L'aube, c'est le meilleur moment pour les idées… ou pour dormir. T'as choisi quoi ?",
+      "Waow, t'es du genre couche-tard qui refile direct vers l'app, ou tu te lèves déjà ?",
+      "Les meilleurs esprits créatifs bossent à cette heure-ci. Donc oui, tu entres dans la team.",
+      "Au lever, avant le chaos de la journée. J'aime bien cette énergie.",
+      "T'es venu mettre une idée en avant de tout le bruit ? On aime ça.",
+      "Franchement, à cette heure, ton cerveau est soit au top, soit complètement off. 😴",
+      "Le matin tôt, c'est comme avoir un monde que pour toi. A toi de jouer.",
+      "T'es pas dormi ou t'es du genre lève-tôt ? Soit manière, tu vas créer du stylé.",
+      "Les meilleures idées arrivent soit la nuit, soit à l'aube. T'as un truc en tête ?",
+    ],
+  },
+
   morning: {
     name: '8h – 10h',
     startHour: 8,
@@ -154,13 +173,14 @@ export const TIME_SLOTS: Record<TimeSlot, TimeSlotConfig> = {
  * Get the current time slot based on user's hour
  */
 export function getCurrentTimeSlot(hour: number): TimeSlot {
+  if (hour >= 0 && hour < 8) return 'earlyMorning';
   if (hour >= 8 && hour < 10) return 'morning';
   if (hour >= 10 && hour < 12) return 'preNoon';
   if (hour >= 12 && hour < 15) return 'postLunch';
   if (hour >= 15 && hour < 18) return 'afternoon';
   if (hour >= 18 && hour < 20) return 'evening';
   if (hour >= 20 && hour < 22) return 'night';
-  return 'lateNight'; // hour >= 22 || hour < 8
+  return 'lateNight'; // hour >= 22
 }
 
 /**
