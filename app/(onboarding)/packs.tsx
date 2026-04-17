@@ -298,6 +298,15 @@ export default function PacksScreen() {
       }
       const subId = data?.data?.subscriptionId || data?.subscriptionId;
       await api.post('/ai/payment/confirm-plan', { planId: selectedPlan, subscriptionId: subId });
+      
+      // ✅ Update user profile with subscription details
+      const { updateAiProfile } = useAuthStore.getState();
+      await updateAiProfile({
+        subscriptionStatus: (selectedPlan === 'curieux' ? 'trial' : 'active') as any,
+        stripeCustomerId: customerId,
+        stripeSubscriptionId: subId,
+      });
+      
       await aiRefreshUser();
       router.replace('/(onboarding)/job');
     } catch (err: any) {
