@@ -2,13 +2,17 @@ import React, { useState, useCallback } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity,
   Image, ActivityIndicator, StyleSheet, RefreshControl,
+  Modal, Share as RNShare, Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ChevronRight, Search, MessageSquare, ArrowLeft, Trash2 } from 'lucide-react-native';
+import { ChevronRight, Search, MessageSquare, ArrowLeft, Trash2, Download, Printer, Share2, X } from 'lucide-react-native';
 import Animated, { useSharedValue } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, useFocusEffect, useNavigation } from 'expo-router';
 import { DrawerActions } from '@react-navigation/native';
+import * as FileSystem from 'expo-file-system';
+import * as MediaLibrary from 'expo-media-library';
+import * as Sharing from 'expo-sharing';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/fr';
@@ -43,7 +47,81 @@ export default function HistoryScreen() {
   const [showClearModal, setShowClearModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
+
+  const [showImageModal, setShowImageModal] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<HistoryItem | null>(null);
+  const [downloading, setDownloading] = useState<string | null>(null);
+
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalType, setModalType] = useState<ModalType>('info');
+  const [modalTitle, setModalTitle] = useState('');
+  const [modalMessage, setModalMessage] = useState('');
+
   const scrollY = useSharedValue(0);
+
+  const showGenericModal = (type: ModalType, title: string, message: string) => {
+    setModalType(type);
+    setModalTitle(title);
+    setModalMessage(message);
+    setModalVisible(true);
+  };
+
+  const handleDownload = async (item: HistoryItem) => {
+    if (!item.imageUrl) return;
+    try {
+      setDownloading(item.id);
+      const filename = `hipster-${item.id}.jpg`;
+      const fileUri = `${FileSystem.cacheDirectory}${filename}`;
+      const downloadRes = await FileSystem.downloadAsync(item.imageUrl, fileUri);
+      if (downloadRes.status !== 200) throw new Error('Téléchargement échoué');
+      await MediaLibrary.createAssetAsync(downloadRes.uri);
+      showGenericModal('success', 'Succès', 'Image enregistrée dans votre galerie.');
+    } catch (error: any) {
+      showGenericModal('error', 'Erreur', `Impossible d'enregistrer l'image. Vérifiez vos permissions.`);
+    } finally {
+      setDownloading(null);
+    }
+  };
+
+  const handleShare = async (item: HistoryItem) => {
+    if (!item.imageUrl) return;
+    try {
+      const filename = `hipster-${item.id}.jpg`;
+      const fileUri = `${FileSystem.cacheDirectory}${filename}`;
+      const fileInfo = await FileSystem.getInfoAsync(fileUri);
+      if (!fileInfo.exists) {
+        const downloadRes = await FileSystem.downloadAsync(item.imageUrl, fileUri);
+        if (downloadRes.status !== 200) throw new Error('Téléchargement échoué');
+      }
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(fileUri, { mimeType: 'image/jpeg', dialogTitle: `Partager — ${item.title}` });
+      } else {
+        RNShare.share({ url: fileUri, title: item.title, message: `Découvrez cette création` });
+      }
+    } catch (error: any) {
+      showGenericModal('error', 'Erreur', `Partage échoué : ${error.message}`);
+    }
+  };
+
+  const handlePrint = async (item: HistoryItem) => {
+    if (!item.imageUrl) return;
+    try {
+      const filename = `hipster-${item.id}.jpg`;
+      const fileUri = `${FileSystem.cacheDirectory}${filename}`;
+      const fileInfo = await FileSystem.getInfoAsync(fileUri);
+      if (!fileInfo.exists) {
+        const downloadRes = await FileSystem.downloadAsync(item.imageUrl, fileUri);
+        if (downloadRes.status !== 200) throw new Error('Téléchargement échoué');
+      }
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(fileUri, { mimeType: 'image/jpeg', dialogTitle: `Imprimer — ${item.title}` });
+      } else {
+        showGenericModal('info', 'Impression', 'Utilisez le partage pour accéder aux options d\'impression.');
+      }
+    } catch (error: any) {
+      showGenericModal('error', 'Erreur', `Impression échouée : ${error.message}`);
+    }
+  };
 
   const fetchHistory = async () => {
     try {
@@ -149,7 +227,10 @@ export default function HistoryScreen() {
                 <TouchableOpacity
                   style={s.itemCard}
                   onPress={() => {
-                    if (item.type === 'chat') {
+                    if (item.imageUrl) {
+                      setSelectedItem(item);
+                      setShowImageModal(true);
+                    } else if (item.type === 'chat') {
                       router.push({ pathname: '/(drawer)/freetext', params: { conversationId: item.id } });
                     } else {
                       router.push({ pathname: '/(drawer)', params: { conversationId: item.id } });
@@ -191,6 +272,63 @@ export default function HistoryScreen() {
         )}
       </Animated.ScrollView>
 
+      <Modal visible={showImageModal} transparent animationType="slide">
+        <SafeAreaView style={s.modalContainer}>
+          <View style={s.modalHeader}>
+            <TouchableOpacity onPress={() => setShowImageModal(false)} style={s.closeBtn}>
+              <X size={24} color="white" />
+            </TouchableOpacity>
+            <Text style={s.modalTitleHeader} numberOfLines={1}>{selectedItem?.title || 'Aperçu'}</Text>
+            <View style={{ width: 24 }} />
+          </View>
+
+          {selectedItem && (
+            <View style={s.modalContent}>
+              <Image
+                source={{ uri: selectedItem.imageUrl?.startsWith('http') ? selectedItem.imageUrl : `https://hipster-api.fr/${selectedItem.imageUrl}` }}
+                style={s.fullImage}
+                resizeMode="contain"
+              />
+
+              <View style={s.modalActions}>
+                <TouchableOpacity
+                  style={[s.modalButton, s.downloadBtn]}
+                  onPress={() => handleDownload(selectedItem)}
+                  disabled={downloading === selectedItem.id}
+                >
+                  {downloading === selectedItem.id ? (
+                    <ActivityIndicator size="small" color="white" />
+                  ) : (
+                    <>
+                      <Download size={20} color="white" />
+                      <Text style={s.modalButtonText}>Télécharger</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+
+                <TouchableOpacity style={[s.modalButton, s.printBtn]} onPress={() => handlePrint(selectedItem)}>
+                  <Printer size={20} color="white" />
+                  <Text style={s.modalButtonText}>Imprimer</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity style={[s.modalButton, s.shareBtn]} onPress={() => handleShare(selectedItem)}>
+                  <Share2 size={20} color="white" />
+                  <Text style={s.modalButtonText}>Partager</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+        </SafeAreaView>
+      </Modal>
+
+      <GenericModal
+        visible={modalVisible}
+        type={modalType}
+        title={modalTitle}
+        message={modalMessage}
+        onClose={() => setModalVisible(false)}
+      />
+
       <GenericModal
         visible={showDeleteModal}
         type="warning"
@@ -214,6 +352,8 @@ export default function HistoryScreen() {
     </BackgroundGradientOnboarding>
   );
 }
+
+const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 
 const s = StyleSheet.create({
   scrollContent: {
@@ -357,5 +497,65 @@ const s = StyleSheet.create({
     fontFamily: 'Arimo-Bold',
     color: colors.neon.primary,
     fontSize: 13,
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: '#000',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  closeBtn: {
+    padding: 8,
+  },
+  modalTitleHeader: {
+    fontFamily: 'Arimo-Bold',
+    fontSize: 16,
+    color: 'white',
+    flex: 1,
+    textAlign: 'center',
+  },
+  modalContent: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  fullImage: {
+    width: '100%',
+    height: SCREEN_H * 0.65,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
+  },
+  downloadBtn: {
+    backgroundColor: 'rgba(0, 212, 255, 0.3)',
+  },
+  printBtn: {
+    backgroundColor: 'rgba(102, 229, 255, 0.3)',
+  },
+  shareBtn: {
+    backgroundColor: 'rgba(0, 153, 255, 0.3)',
+  },
+  modalButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontFamily: 'Arimo-Bold',
   },
 });
