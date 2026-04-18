@@ -93,9 +93,11 @@ export default function SubscriptionScreen() {
         isComingSoon: p.id === 'agence',
       }));
 
-      const visiblePlans = (authUser?.subscriptionStatus === 'canceled' && authUser?.planType)
-        ? mappedPlans.filter(p => p.id !== authUser.planType)
-        : mappedPlans;
+      let visiblePlans = mappedPlans;
+
+      if (authUser?.planType && authUser.planType !== 'curieux') {
+        visiblePlans = visiblePlans.filter(p => p.id !== 'curieux');
+      }
 
       setPlans(visiblePlans);
 
@@ -203,11 +205,31 @@ export default function SubscriptionScreen() {
     }
   };
 
-  const buttonLabel = selectedPlan
-    ? (plans.find(p => p.id === selectedPlan)?.isComingSoon
-      ? 'À venir'
-      : (selectedPlan === user?.planType ? 'Renouveler mon forfait' : 'Confirmer mon choix'))
-    : 'Sélectionnez un plan';
+  const isExpired = user?.subscriptionEndDate && new Date(user.subscriptionEndDate) < new Date();
+  const isCanceledOrExpired = user?.subscriptionStatus === 'canceled' || user?.subscriptionStatus === 'expired' || isExpired;
+
+  let buttonLabel = 'Sélectionnez un plan';
+  let isButtonDisabled = true;
+
+  if (selectedPlan) {
+    const planObj = plans.find(p => p.id === selectedPlan);
+    if (planObj?.isComingSoon) {
+      buttonLabel = 'À venir';
+    } else if (selectedPlan === user?.planType) {
+      if (isCanceledOrExpired) {
+        buttonLabel = 'Renouveler mon forfait';
+        isButtonDisabled = false;
+      } else {
+        buttonLabel = 'Votre forfait actuel';
+        isButtonDisabled = true;
+      }
+    } else {
+      buttonLabel = 'Confirmer mon choix';
+      isButtonDisabled = false;
+    }
+  }
+
+  isButtonDisabled = isButtonDisabled || loading;
 
   return (
     <BackgroundGradientOnboarding darkOverlay>
@@ -268,7 +290,7 @@ export default function SubscriptionScreen() {
         <NeonActionButton
           onPress={handleUpgrade}
           loading={loading}
-          disabled={loading || !selectedPlan || !!plans.find(p => p.id === selectedPlan)?.isComingSoon}
+          disabled={isButtonDisabled}
           label={buttonLabel}
           icon={<Bell size={16} color="#ffffff" />}
         />
