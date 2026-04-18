@@ -88,7 +88,7 @@ export default function SubscriptionScreen() {
 
       const mappedPlans: Plan[] = backendPlans.map((p: any) => ({
         ...p,
-        price: typeof p.price === 'number' ? `${p.price.toFixed(2)}€` : p.price,
+        price: typeof p.price === 'number' ? (Number.isInteger(p.price) ? `${p.price}€` : `${p.price.toFixed(2).replace('.', ',')}€`) : p.price,
         icon: planIcons[p.id] || Shield,
         isComingSoon: p.id === 'agence',
       }));

@@ -233,12 +233,13 @@ export default function HomeScreen() {
 
   const planType             = user?.planType || 'curieux';
   const subStatus            = user?.subscriptionStatus;
-  const isSubscriptionActive = subStatus === 'active' || subStatus === 'trialing' || subStatus === 'trial';
-  const isPackCurieux        = planType === 'curieux';
-
   const now     = new Date();
   const endDate = user?.subscriptionEndDate ? new Date(user.subscriptionEndDate) : null;
   const isExpired = endDate && now > endDate;
+
+  // Si le statut est actif ou si la date n'est pas encore expirée (cas d'une annulation en cours de mois)
+  const isSubscriptionActive = subStatus === 'active' || subStatus === 'trialing' || subStatus === 'trial' || (endDate && !isExpired);
+  const isPackCurieux        = planType === 'curieux';
 
   const fns = getUniversalFunctions(planType);
 

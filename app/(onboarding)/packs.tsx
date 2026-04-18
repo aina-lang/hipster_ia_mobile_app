@@ -56,7 +56,10 @@ function getFeatureIcon(feature: string) {
 }
 
 function formatPrice(price: string | number) {
-  return typeof price === 'number' ? `${price.toFixed(2)}€` : price;
+  if (typeof price === 'number') {
+    return Number.isInteger(price) ? `${price}€` : `${price.toFixed(2).replace('.', ',')}€`;
+  }
+  return price;
 }
 
 function PlanIcon({ planId, size = 56, color, isSelected }: { planId: string; size?: number; color?: string; isSelected?: boolean }) {
