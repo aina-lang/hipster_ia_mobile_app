@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import {
-  View, StyleSheet, Text, TextInput, KeyboardAvoidingView,
-  Platform, TouchableOpacity, ScrollView,
+  View, StyleSheet, Text, TextInput,
+  Platform, TouchableOpacity,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { router } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Eye, EyeOff } from 'lucide-react-native';
@@ -114,48 +115,50 @@ export default function LoginScreen() {
 
   return (
     <BackgroundGradientOnboarding darkOverlay>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={s.kav}>
+      <ScreenHeader titleSub="Se" titleScript="connecter" onBack={() => {
+        setIsReturningFromBack(true);
+        if (router.canGoBack()) {
+          router.back();
+        } else {
+          router.replace('/welcome');
+        }
+      }} />
 
-        <ScreenHeader titleSub="Se" titleScript="connecter" onBack={() => {
-          setIsReturningFromBack(true);
-          if (router.canGoBack()) {
-            router.back();
-          } else {
-            router.replace('/welcome');
-          }
-        }} />
+      <KeyboardAwareScrollView
+        bottomOffset={20}
+        contentContainerStyle={s.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        bounces={false}
+      >
+        <Animated.View entering={FadeInDown.duration(800)} style={s.content}>
+          <View style={s.form}>
+            <Text style={s.welcomeBack}>Bon retour !</Text>
 
-        <ScrollView contentContainerStyle={s.scrollContent} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} bounces={false}>
-          <Animated.View entering={FadeInDown.duration(800)} style={s.content}>
-            <View style={s.form}>
+            <EmailField value={email} onChange={setEmail} onClear={() => { if (error) clearError(); }} />
+            <PasswordField value={password} onChange={setPassword} onClear={() => { if (error) clearError(); }} />
 
-              <Text style={s.welcomeBack}>Bon retour !</Text>
+            <NeonLink
+              label="Mot de passe oublié ?"
+              onPress={() => router.push('/(auth)/forgot-password')}
+              style={s.forgotPassword}
+            />
 
-              <EmailField value={email} onChange={setEmail} onClear={() => { if (error) clearError(); }} />
-              <PasswordField value={password} onChange={setPassword} onClear={() => { if (error) clearError(); }} />
+            <NeonActionButton
+              label="Se connecter"
+              onPress={handleLogin}
+              loading={isLoading}
+              disabled={isLoading}
+            />
 
-              <NeonLink
-                label="Mot de passe oublié ?"
-                onPress={() => router.push('/(auth)/forgot-password')}
-                style={s.forgotPassword}
-              />
-
-              <NeonActionButton
-                label="Se connecter"
-                onPress={handleLogin}
-                loading={isLoading}
-                disabled={isLoading}
-              />
-
-              <View style={s.footer}>
-                <Text style={s.footerText}>Pas encore de compte ? </Text>
-                <NeonLink label="S'inscrire" onPress={() => router.push('/(auth)/register')} />
-              </View>
-
+            <View style={s.footer}>
+              <Text style={s.footerText}>Pas encore de compte ? </Text>
+              <NeonLink label="S'inscrire" onPress={() => router.push('/(auth)/register')} />
             </View>
-          </Animated.View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+
+          </View>
+        </Animated.View>
+      </KeyboardAwareScrollView>
 
       <GenericModal visible={modal.visible} type={modal.type} title={modal.title} message={modal.message} onClose={() => setModal(m => ({ ...m, visible: false }))} />
     </BackgroundGradientOnboarding>

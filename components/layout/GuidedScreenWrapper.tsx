@@ -5,8 +5,8 @@ import {
     ScrollView,
     KeyboardAvoidingView,
     Platform,
-    SafeAreaView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { StepIndicator } from '../ui/StepIndicator';
 import { BackgroundGradientOnboarding } from '../ui/BackgroundGradientOnboarding';

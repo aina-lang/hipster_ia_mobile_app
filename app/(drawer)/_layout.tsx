@@ -162,6 +162,8 @@ export default function DrawerLayout() {
     if ((isCritical || isBlockedHome) && !onSubPage && planType !== 'curieux') router.replace('/subscription');
   }, [user, pathname]);
 
+  if (!user) return null;
+
   return (
     <Drawer
       drawerContent={(props) => <CustomDrawerContent {...props} />}

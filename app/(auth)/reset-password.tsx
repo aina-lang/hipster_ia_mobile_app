@@ -1,265 +1,211 @@
 import React, { useState } from 'react';
 import {
-    View,
-    StyleSheet,
-    Text,
-    TextInput,
-    KeyboardAvoidingView,
-    Platform,
-    TouchableOpacity,
-    Keyboard,
-    TouchableWithoutFeedback
+  View,
+  StyleSheet,
+  Text,
+  TextInput,
+  Platform,
+  TouchableOpacity,
+  Keyboard,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { router, useLocalSearchParams } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { ArrowLeft, Eye, EyeOff } from 'lucide-react-native';
+import { Eye, EyeOff } from 'lucide-react-native';
 import { BackgroundGradientOnboarding } from '../../components/ui/BackgroundGradientOnboarding';
-import { NeonButton } from '../../components/ui/NeonButton';
+import { ScreenHeader } from '../../components/ui/ScreenHeader';
+import { NeonActionButton } from '../../components/ui/NeonActionButton';
 import { GenericModal } from '../../components/ui/GenericModal';
+import { NeonBorderInput } from '../../components/ui/NeonBorderInput';
 import { colors } from '../../theme/colors';
+import { fonts } from '../../theme/typography';
 import { useAuthStore } from '../../store/authStore';
 
 export default function ResetPasswordScreen() {
-    const { email, code } = useLocalSearchParams();
-    const [newPassword, setNewPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState('');
-    const [showPassword, setShowPassword] = useState(false);
-    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
+  const { email, code } = useLocalSearchParams();
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [focused, setFocused] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-    // Modal State
-    const [modalVisible, setModalVisible] = useState(false);
-    const [modalType, setModalType] = useState<any>('info');
-    const [modalTitle, setModalTitle] = useState('');
-    const [modalMessage, setModalMessage] = useState('');
+  const [modal, setModal] = useState({ visible: false, type: 'info' as any, title: '', message: '' });
 
-    const { resetPassword } = useAuthStore();
+  const { resetPassword } = useAuthStore();
 
-    const showModal = (type: any, title: string, message: string = '') => {
-        setModalType(type);
-        setModalTitle(title);
-        setModalMessage(message);
-        setModalVisible(true);
-    };
+  const showModal = (type: any, title: string, message: string = '') =>
+    setModal({ visible: true, type, title, message });
 
-    const handleResetPassword = async () => {
-        Keyboard.dismiss();
+  const handleResetPassword = async () => {
+    Keyboard.dismiss();
 
-        if (!newPassword || !confirmPassword) {
-            showModal('warning', 'Champs manquants', 'Veuillez remplir tous les champs pour réinitialiser le mot de passe.');
-            return;
-        }
+    if (!newPassword || !confirmPassword) {
+      showModal('warning', 'Champs manquants', 'Veuillez remplir tous les champs pour réinitialiser le mot de passe.');
+      return;
+    }
 
-        if (newPassword.length < 8) {
-            showModal('warning', 'Mot de passe trop court', 'Le nouveau mot de passe doit faire au moins 8 caractères.');
-            return;
-        }
+    if (newPassword.length < 8) {
+      showModal('warning', 'Mot de passe trop court', 'Le nouveau mot de passe doit faire au moins 8 caractères.');
+      return;
+    }
 
-        if (newPassword !== confirmPassword) {
-            showModal('warning', 'Mots de passe différents', 'Les deux mots de passe ne correspondent pas.');
-            return;
-        }
+    if (newPassword !== confirmPassword) {
+      showModal('warning', 'Mots de passe différents', 'Les deux mots de passe ne correspondent pas.');
+      return;
+    }
 
-        setIsLoading(true);
-        showModal('loading', 'Réinitialisation...', 'Veuillez patienter');
+    setIsLoading(true);
+    showModal('loading', 'Réinitialisation...', 'Veuillez patienter');
 
-        try {
-            await resetPassword(email as string, code as string, newPassword);
+    try {
+      await resetPassword(email as string, code as string, newPassword);
+      setIsLoading(false);
+      showModal('success', 'Succès', 'Votre mot de passe a été réinitialisé avec succès.');
+      setTimeout(() => {
+        setModal(m => ({ ...m, visible: false }));
+        router.replace('/(auth)/login');
+      }, 3000);
+    } catch (e: any) {
+      setIsLoading(false);
+      showModal('error', 'Échec de la réinitialisation', e.message || 'Une erreur est survenue.');
+    }
+  };
 
-            setIsLoading(false);
-            showModal(
-                'success',
-                'Succès',
-                'Votre mot de passe a été réinitialisé avec succès.'
-            );
+  return (
+    <BackgroundGradientOnboarding darkOverlay={true}>
+      <ScreenHeader titleSub="Nouveau" titleScript="Mot de passe" onBack={() => router.replace('/(auth)/login')} />
 
-            // Navigate back to login
-            setTimeout(() => {
-                setModalVisible(false);
-                router.replace('/(auth)/login');
-            }, 3000);
+      <KeyboardAwareScrollView
+        bottomOffset={20}
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <Animated.View entering={FadeInDown.duration(800)} style={styles.content}>
+          <Text style={styles.subtitle}>Entrez votre nouveau mot de passe pour sécuriser votre compte.</Text>
 
-        } catch (e: any) {
-            setIsLoading(false);
-            showModal('error', 'Échec de la réinitialisation', e.message || 'Une erreur est survenue.');
-        }
-    };
+          <View style={styles.form}>
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Nouveau mot de passe</Text>
+              <NeonBorderInput isActive={focused === 'new'}>
+                <View style={styles.passwordWrapper}>
+                  <TextInput
+                    style={[styles.input, styles.passwordInput, focused === 'new' && styles.inputActive]}
+                    placeholder="••••••••"
+                    placeholderTextColor="#6b7280"
+                    value={newPassword}
+                    onChangeText={setNewPassword}
+                    onFocus={() => setFocused('new')}
+                    onBlur={() => setFocused(null)}
+                    secureTextEntry={!showPassword}
+                  />
+                  <TouchableOpacity style={styles.eyeIcon} onPress={() => setShowPassword(!showPassword)}>
+                    {showPassword ? <EyeOff size={20} color="#6b7280" /> : <Eye size={20} color="#6b7280" />}
+                  </TouchableOpacity>
+                </View>
+              </NeonBorderInput>
+            </View>
 
-    return (
-        <BackgroundGradientOnboarding darkOverlay={true}>
-            <KeyboardAvoidingView
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                style={styles.container}>
-                <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-                    <View style={styles.innerContainer}>
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Confirmer le mot de passe</Text>
+              <NeonBorderInput isActive={focused === 'confirm'}>
+                <View style={styles.passwordWrapper}>
+                  <TextInput
+                    style={[styles.input, styles.passwordInput, focused === 'confirm' && styles.inputActive]}
+                    placeholder="••••••••"
+                    placeholderTextColor="#6b7280"
+                    value={confirmPassword}
+                    onChangeText={setConfirmPassword}
+                    onFocus={() => setFocused('confirm')}
+                    onBlur={() => setFocused(null)}
+                    secureTextEntry={!showConfirmPassword}
+                  />
+                  <TouchableOpacity style={styles.eyeIcon} onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
+                    {showConfirmPassword ? <EyeOff size={20} color="#6b7280" /> : <Eye size={20} color="#6b7280" />}
+                  </TouchableOpacity>
+                </View>
+              </NeonBorderInput>
+            </View>
 
-                        {/* Back Button */}
-                        <TouchableOpacity
-                            style={styles.backButton}
-                            onPress={() => router.replace('/(auth)/login')}
-                            hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
-                        >
-                            <ArrowLeft size={24} color={colors.text.primary} />
-                        </TouchableOpacity>
+            <NeonActionButton
+              label="Réinitialiser"
+              onPress={handleResetPassword}
+              loading={isLoading}
+              disabled={isLoading}
+            />
+          </View>
+        </Animated.View>
+      </KeyboardAwareScrollView>
 
-                        <Animated.View entering={FadeInDown.duration(800)} style={styles.content}>
-                            <Text style={styles.title}>Nouveau mot de passe</Text>
-                            <Text style={styles.subtitle}>Entrez le code reçu par email ainsi que votre nouveau mot de passe.</Text>
-
-                            <View style={styles.form}>
-
-
-
-                                <View style={styles.inputContainer}>
-                                    <Text style={styles.label}>Nouveau mot de passe</Text>
-                                    <View style={styles.passwordWrapper}>
-                                        <TextInput
-                                            style={[styles.input, styles.passwordInput]}
-                                            placeholder="••••••••"
-                                            placeholderTextColor={colors.text.muted}
-                                            value={newPassword}
-                                            onChangeText={setNewPassword}
-                                            secureTextEntry={!showPassword}
-                                        />
-                                        <TouchableOpacity
-                                            style={styles.eyeIcon}
-                                            onPress={() => setShowPassword(!showPassword)}>
-                                            {showPassword ? (
-                                                <EyeOff size={20} color={colors.text.muted} />
-                                            ) : (
-                                                <Eye size={20} color={colors.text.muted} />
-                                            )}
-                                        </TouchableOpacity>
-                                    </View>
-                                </View>
-
-                                <View style={styles.inputContainer}>
-                                    <Text style={styles.label}>Confirmer le mot de passe</Text>
-                                    <View style={styles.passwordWrapper}>
-                                        <TextInput
-                                            style={[styles.input, styles.passwordInput]}
-                                            placeholder="••••••••"
-                                            placeholderTextColor={colors.text.muted}
-                                            value={confirmPassword}
-                                            onChangeText={setConfirmPassword}
-                                            secureTextEntry={!showConfirmPassword}
-                                        />
-                                        <TouchableOpacity
-                                            style={styles.eyeIcon}
-                                            onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
-                                            {showConfirmPassword ? (
-                                                <EyeOff size={20} color={colors.text.muted} />
-                                            ) : (
-                                                <Eye size={20} color={colors.text.muted} />
-                                            )}
-                                        </TouchableOpacity>
-                                    </View>
-                                </View>
-
-                                <NeonButton
-                                    title="Réinitialiser"
-                                    onPress={handleResetPassword}
-                                    size="lg"
-                                    variant="premium"
-                                    loading={isLoading}
-                                    disabled={isLoading}
-                                    style={styles.submitButton}
-                                />
-                            </View>
-                        </Animated.View>
-                    </View>
-                </TouchableWithoutFeedback>
-
-                <GenericModal
-                    visible={modalVisible}
-                    type={modalType}
-                    title={modalTitle}
-                    message={modalMessage}
-                    onClose={() => {
-                        setModalVisible(false);
-                        if (modalType === 'success') {
-                            router.replace('/(auth)/login');
-                        }
-                    }}
-                />
-            </KeyboardAvoidingView>
-        </BackgroundGradientOnboarding>
-    );
+      <GenericModal
+        visible={modal.visible}
+        type={modal.type}
+        title={modal.title}
+        message={modal.message}
+        onClose={() => setModal(m => ({ ...m, visible: false }))}
+      />
+    </BackgroundGradientOnboarding>
+  );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-    },
-    innerContainer: {
-        flex: 1,
-        paddingHorizontal: 32,
-    },
-    backButton: {
-        marginTop: 60,
-        marginBottom: 20,
-        width: 40,
-        height: 40,
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderRadius: 20,
-        backgroundColor: 'rgba(255, 255, 255, 0.05)',
-        borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.1)',
-    },
-    content: {
-        flex: 1,
-        paddingTop: 10,
-    },
-    title: {
-        fontSize: 28,
-        fontWeight: '700',
-        color: colors.text.primary,
-        marginBottom: 8,
-    },
-    subtitle: {
-        fontSize: 15,
-        color: colors.text.secondary,
-        marginBottom: 30,
-        lineHeight: 22,
-    },
-    form: {
-        width: '100%',
-    },
-    inputContainer: {
-        marginBottom: 20,
-    },
-    label: {
-        fontSize: 14,
-        color: colors.text.secondary,
-        marginBottom: 8,
-        fontWeight: '500',
-    },
-    input: {
-        backgroundColor: 'rgba(15,23,42,0.9)',
-        borderRadius: 12,
-        padding: 16,
-        color: colors.text.primary,
-        borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.1)',
-        fontSize: 16,
-    },
-    passwordWrapper: {
-        position: 'relative',
-        justifyContent: 'center',
-    },
-    passwordInput: {
-        paddingRight: 50,
-    },
-    eyeIcon: {
-        position: 'absolute',
-        right: 16,
-        height: '100%',
-        justifyContent: 'center',
-        zIndex: 1,
-    },
-    submitButton: {
-        width: '100%',
-        marginTop: 12,
-    },
+  scrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: 32,
+    paddingBottom: 40,
+    justifyContent: 'center',
+  },
+  content: {
+    width: '100%',
+  },
+  subtitle: {
+    fontFamily: fonts.arimo.regular,
+    fontSize: 15,
+    color: colors.text.secondary,
+    marginBottom: 30,
+    lineHeight: 22,
+  },
+  form: {
+    width: '100%',
+  },
+  inputContainer: {
+    marginBottom: 20,
+  },
+  label: {
+    fontFamily: fonts.arimo.bold,
+    fontSize: 13,
+    color: colors.gray,
+    marginBottom: 8,
+    fontWeight: '600',
+    letterSpacing: 0.3,
+  },
+  input: {
+    backgroundColor: colors.darkSlateBlue,
+    borderRadius: 12,
+    padding: 16,
+    fontFamily: fonts.arimo.regular,
+    color: 'white',
+    borderWidth: 1,
+    borderColor: '#ffffff14',
+    zIndex: 3,
+  },
+  inputActive: {
+    borderColor: 'transparent',
+    backgroundColor: colors.midnightBlue,
+  },
+  passwordWrapper: {
+    position: 'relative',
+    justifyContent: 'center',
+  },
+  passwordInput: {
+    paddingRight: 50,
+  },
+  eyeIcon: {
+    position: 'absolute',
+    right: 16,
+    height: '100%',
+    justifyContent: 'center',
+    zIndex: 4,
+  },
 });

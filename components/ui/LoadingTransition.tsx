@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { Linking } from 'react-native';
-import { View, StyleSheet, Pressable, Dimensions, useWindowDimensions } from 'react-native';
-import { Text } from '../components/ui/Text';
+import { View, StyleSheet, Pressable, Dimensions, useWindowDimensions, DimensionValue } from 'react-native';
+import { Text } from './Text';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
@@ -18,7 +18,7 @@ import Animated, {
   SharedValue,
 } from 'react-native-reanimated';
 import { useVideoPlayer, VideoView } from 'expo-video';
-import { useAuthStore } from '../store/authStore';
+import { useAuthStore } from '../../store/authStore';
 import { useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -34,7 +34,7 @@ const ResponsiveSize = {
     const { width } = Dimensions.get('window');
     return width < 400 ? basePadding * 0.75 : basePadding;
   },
-  getResponsiveButtonWidth: (): string | number => {
+  getResponsiveButtonWidth: (): DimensionValue => {
     const { width } = Dimensions.get('window');
     return width < 400 ? '85%' : '70%';
   }

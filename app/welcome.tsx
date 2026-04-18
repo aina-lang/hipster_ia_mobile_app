@@ -52,7 +52,7 @@ const PARTICLES: ParticleConfig[] = [
   { x: 60, y: -78, size: 3, color: NEON_GLOW, delayMs: 760, durationMs: 1600 },
 ];
 
-interface ParticleProps extends ParticleConfig {}
+interface ParticleProps extends ParticleConfig { }
 
 const Particle = React.memo(({ x, y, size, color, delayMs, durationMs }: ParticleProps) => {
   const opacity = useSharedValue(0);
@@ -257,7 +257,6 @@ const BottomAuthSection = React.memo(({ isAuthenticated, textAnimProgress, setIs
         </LinearGradient>
       </Pressable>
 
-      {/* Ligne "Déjà un compte ? Se connecter" */}
       <View style={styles.row}>
         <Text small style={{ fontSize: responsive.fontSize.xs }}>
           Déjà un compte ?{'  '}
@@ -277,10 +276,8 @@ const BottomAuthSection = React.memo(({ isAuthenticated, textAnimProgress, setIs
         </Pressable>
       </View>
 
-      {/* ✅ Ligne trial : icône + texte tout-en-un + lien cliquable via Text imbriqué */}
       <View style={[styles.trialRow, { marginTop: responsive.spacing.lg }]}>
         <FontAwesome5 name="angellist" size={responsive.isSmallScreen ? 16 : 18} style={styles.glowIcon} />
-        {/* Tout le texte dans un seul bloc Text pour éviter tout débordement */}
         <Text
           style={[styles.trialText, { fontSize: responsive.fontSize.xs }]}
           numberOfLines={1}
@@ -290,7 +287,7 @@ const BottomAuthSection = React.memo(({ isAuthenticated, textAnimProgress, setIs
           {" d'essai gratuit  ·  "}
           <Text
             style={styles.contactText}
-            onPress={() => Linking.openURL('mailto:contact@hipster-ia.fr').catch(() => {})}
+            onPress={() => Linking.openURL('mailto:contact@hipster-ia.fr').catch(() => { })}
           >
             Besoin d'aide ?
           </Text>
@@ -302,7 +299,7 @@ const BottomAuthSection = React.memo(({ isAuthenticated, textAnimProgress, setIs
 
 function WelcomeScreenContent({ onVideoFinish }: WelcomeScreenProps) {
   const [videoReady, setVideoReady] = React.useState(false);
-  const { isReturningFromBack, videoCompleted, setVideoCompleted } = useWelcomeVideoStore();
+  const { isReturningFromBack, videoCompleted, setVideoCompleted, isNavigating } = useWelcomeVideoStore();
   const { user } = useAuthStore();
   const responsive = useResponsiveDimensions();
 
@@ -310,6 +307,8 @@ function WelcomeScreenContent({ onVideoFinish }: WelcomeScreenProps) {
   const playbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const videoCompletedRef = useRef(false);
   const playbackStartedRef = useRef(false);
+  // ✅ Verrou permanent — une fois l'image affichée, on ne repasse jamais à la vidéo
+  const hasShownImageRef = useRef(false);
 
   const textAnimProgress = useSharedValue(0);
   const videoMarginTop = useSharedValue(0);
@@ -323,7 +322,7 @@ function WelcomeScreenContent({ onVideoFinish }: WelcomeScreenProps) {
     useCallback(() => {
       const store = useWelcomeVideoStore.getState();
       console.log('[Welcome] Screen focused - openedAuthFromWelcome:', store.openedAuthFromWelcome);
-      
+
       if (store.openedAuthFromWelcome) {
         console.log('[Welcome] User returning from auth screen, showing static image');
         store.setIsReturningFromBack(true);
@@ -332,8 +331,10 @@ function WelcomeScreenContent({ onVideoFinish }: WelcomeScreenProps) {
     }, [])
   );
 
-  const showImage = isReturningFromBack;
-  const shouldSkipPlay = videoCompleted || isReturningFromBack;
+  // ✅ Une fois isReturningFromBack=true, le ref se verrouille définitivement
+  if (isReturningFromBack) hasShownImageRef.current = true;
+  const showImage = hasShownImageRef.current;
+  const showVideo = !hasShownImageRef.current;
 
   React.useEffect(() => {
     if (isReturningFromBack) {
@@ -348,7 +349,6 @@ function WelcomeScreenContent({ onVideoFinish }: WelcomeScreenProps) {
       isFinishedRef.current = true;
     } else {
       console.log('[Welcome] Fresh start, resetting for video playback - animations hidden');
-      // Keep animations hidden while video plays
       textAnimProgress.value = 0;
       videoMarginTop.value = 0;
       isFinishedRef.current = false;
@@ -359,11 +359,6 @@ function WelcomeScreenContent({ onVideoFinish }: WelcomeScreenProps) {
 
   useEffect(() => {
     if (!videoPlayer) return;
-
-    if (shouldSkipPlay) {
-      console.log('[Welcome] Skipping video playback (shouldSkipPlay=true)');
-      return;
-    }
 
     console.log('[Welcome] Setting up video playback');
 
@@ -377,7 +372,6 @@ function WelcomeScreenContent({ onVideoFinish }: WelcomeScreenProps) {
         playbackTimerRef.current = null;
       }
 
-      // Start animations immediately after video ends
       videoMarginTop.value = withTiming(100, {
         duration: 1500,
         easing: Easing.inOut(Easing.quad),
@@ -395,20 +389,31 @@ function WelcomeScreenContent({ onVideoFinish }: WelcomeScreenProps) {
       }, 2000);
     };
 
+    const fallbackTimer = setTimeout(() => {
+      if (!isFinishedRef.current) {
+        console.log('[Welcome] Video playback timeout fallback triggered');
+        onPlaybackFinish();
+      }
+    }, 15000);
+
     const startPlayback = () => {
-      // Éviter le double lancement
+      const currentStore = useWelcomeVideoStore.getState();
+      if (currentStore.videoCompleted || currentStore.isReturningFromBack || currentStore.isNavigating) {
+        console.log('[Welcome] Skipping startPlayback (already done or navigating)');
+        return;
+      }
       if (playbackStartedRef.current) {
         console.log('[Welcome] Playback already started, skipping');
         return;
       }
-      
+
       console.log('[Welcome] Starting video playback');
       playbackStartedRef.current = true;
-      
+
       if (videoPlayer.status === 'readyToPlay') {
         setVideoReady(true);
         videoPlayer.play();
-        SplashScreen.hideAsync().catch(() => {});
+        SplashScreen.hideAsync().catch(() => { });
       }
     };
 
@@ -434,27 +439,34 @@ function WelcomeScreenContent({ onVideoFinish }: WelcomeScreenProps) {
     return () => {
       videoPlayer.removeListener('statusChange', onStatusChange);
       videoPlayer.removeListener('playToEnd', onPlaybackFinish);
+      clearTimeout(fallbackTimer);
       if (playbackTimerRef.current) {
         clearTimeout(playbackTimerRef.current);
       }
     };
-  }, [videoPlayer, shouldSkipPlay, onVideoFinish, setVideoCompleted]);
+  }, [videoPlayer, onVideoFinish, setVideoCompleted]);
 
   const videoAnimatedStyle = useAnimatedStyle(() => ({
     marginTop: videoMarginTop.value,
-    opacity: videoReady ? 1 : 0.3,
+    opacity: 1,
   }));
 
   return (
-    <Animated.View exiting={FadeOut.duration(400)} style={[StyleSheet.absoluteFill, { backgroundColor: '#000' }]}>
+    <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: '#000' }]}>
       <StatusBar style="light" />
 
-      {showImage ? (
+      {showImage && (
         <View style={[StyleSheet.absoluteFill, { backgroundColor: '#000' }]} pointerEvents="none">
           <Image source={bgAfterBack} style={styles.staticWelcomeBg} resizeMode="contain" />
         </View>
-      ) : (
-        <Animated.View style={[StyleSheet.absoluteFill, videoAnimatedStyle]}>
+      )}
+
+      {showVideo && (
+        // ✅ pointerEvents="none" — aucun re-render au clic, pas de flash
+        <Animated.View
+          style={[StyleSheet.absoluteFill, videoAnimatedStyle]}
+          pointerEvents="none"
+        >
           <VideoView player={videoPlayer} style={StyleSheet.absoluteFill} contentFit="cover" nativeControls={false} />
         </Animated.View>
       )}
@@ -487,7 +499,7 @@ function WelcomeScreenContent({ onVideoFinish }: WelcomeScreenProps) {
         <BottomAuthSection
           isAuthenticated={false}
           textAnimProgress={textAnimProgress}
-          setFirstTimeUsed={() => {}}
+          setFirstTimeUsed={() => { }}
         />
       </View>
     </Animated.View>
@@ -608,14 +620,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  // ✅ Ligne trial : flexDirection row, pas de gap dynamique
   trialRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 20,
   },
-  // ✅ Texte inline unique — pas de Pressable imbriqué qui réduit la largeur
   trialText: {
     color: 'rgba(255,255,255,0.6)',
     textAlign: 'center',

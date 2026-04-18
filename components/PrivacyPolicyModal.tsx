@@ -6,8 +6,8 @@ import {
   TouchableOpacity,
   Text,
   StyleSheet,
-  SafeAreaView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { X } from 'lucide-react-native';
 import { colors } from '../theme/colors';
 import { PRIVACY_POLICY_CONTENT } from '../constants/privacyPolicy';

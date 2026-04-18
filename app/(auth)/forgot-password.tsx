@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import {
-  View, StyleSheet, Text, TextInput, KeyboardAvoidingView,
-  Platform, ScrollView,
+  View, StyleSheet, Text, TextInput,
+  Platform,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { router } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { BackgroundGradientOnboarding } from '../../components/ui/BackgroundGradientOnboarding';
@@ -38,9 +39,9 @@ const EmailField = React.memo(({ value, onChange }: { value: string; onChange: (
 });
 
 export default function ForgotPasswordScreen() {
-  const [email, setEmail]       = useState('');
+  const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [modal, setModal]       = useState({ visible: false, type: 'info' as any, title: '', message: '' });
+  const [modal, setModal] = useState({ visible: false, type: 'info' as any, title: '', message: '' });
 
   const { forgotPassword } = useAuthStore();
 
@@ -70,32 +71,33 @@ export default function ForgotPasswordScreen() {
 
   return (
     <BackgroundGradientOnboarding darkOverlay>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+      <ScreenHeader titleSub="Accès" titleScript="Oublié" onBack={() => router.back()} />
 
-        <ScreenHeader titleSub="Mot de" titleScript="passe oublié" onBack={() => router.back()} />
+      <KeyboardAwareScrollView
+        bottomOffset={20}
+        contentContainerStyle={s.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        bounces={false}
+      >
+        <Animated.View entering={FadeInDown.duration(800)} style={s.content}>
 
-        <ScrollView contentContainerStyle={s.scrollContent} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} bounces={false}>
-          <Animated.View entering={FadeInDown.duration(800)} style={s.content}>
+          <Text style={s.subtitle}>
+            Saisissez votre adresse email. Nous vous enverrons un code pour réinitialiser de façon sécurisée votre mot de passe.
+          </Text>
 
-            <Text style={s.subtitle}>
-              Saisissez votre adresse email. Nous vous enverrons un code pour réinitialiser de façon sécurisée votre mot de passe.
-            </Text>
+          <View style={s.form}>
+            <EmailField value={email} onChange={setEmail} />
+            <NeonActionButton
+              label="Envoyer le code"
+              onPress={handleResetPassword}
+              loading={isLoading}
+              disabled={isLoading}
+            />
+          </View>
 
-            <View style={s.form}>
-              <EmailField value={email} onChange={setEmail} />
-              <NeonActionButton
-                label="Envoyer le code"
-                onPress={handleResetPassword}
-                loading={isLoading}
-                disabled={isLoading}
-                align="left"
-                small
-              />
-            </View>
-
-          </Animated.View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+        </Animated.View>
+      </KeyboardAwareScrollView>
 
       <GenericModal
         visible={modal.visible}
@@ -104,7 +106,6 @@ export default function ForgotPasswordScreen() {
         message={modal.message}
         onClose={() => {
           setModal(m => ({ ...m, visible: false }));
-          if (modal.type === 'success') router.replace('/(auth)/login');
         }}
       />
     </BackgroundGradientOnboarding>
@@ -112,12 +113,12 @@ export default function ForgotPasswordScreen() {
 }
 
 const s = StyleSheet.create({
-  scrollContent:  { flexGrow: 1, paddingHorizontal: 32, paddingBottom: 40 },
-  content:        { flex: 1, paddingTop: 20 },
-  subtitle:       { fontFamily: fonts.arimo.regular, fontSize: 14, color: colors.text.secondary, marginBottom: 40, lineHeight: 24 },
-  form:           { width: '100%' },
+  scrollContent: { flexGrow: 1, paddingHorizontal: 32, paddingBottom: 40, justifyContent: 'center' },
+  content: { width: '100%' },
+  subtitle: { fontFamily: fonts.arimo.regular, fontSize: 14, color: colors.text.secondary, marginBottom: 40, lineHeight: 24 },
+  form: { width: '100%' },
   inputContainer: { marginBottom: 32 },
-  label:          { fontFamily: fonts.arimo.bold, fontSize: 13, color: colors.gray, marginBottom: 8, fontWeight: '600', letterSpacing: 0.3 },
-  input:          { backgroundColor: colors.darkSlateBlue, borderRadius: 12, padding: 16, fontFamily: fonts.arimo.regular, color: 'white', borderWidth: 1, borderColor: '#ffffff14', zIndex: 3 },
-  inputActive:    { borderColor: 'transparent', backgroundColor: colors.midnightBlue },
+  label: { fontFamily: fonts.arimo.bold, fontSize: 13, color: colors.gray, marginBottom: 8, fontWeight: '600', letterSpacing: 0.3 },
+  input: { backgroundColor: colors.darkSlateBlue, borderRadius: 12, padding: 16, fontFamily: fonts.arimo.regular, color: 'white', borderWidth: 1, borderColor: '#ffffff14', zIndex: 3 },
+  inputActive: { borderColor: 'transparent', backgroundColor: colors.midnightBlue },
 });

@@ -39,7 +39,7 @@ const ONBOARDING_LAST_SEGMENTS = new Set(['packs', 'job', 'branding', 'setup', '
 
 /** Flat paths only; kept for tooling / cache compatibility and as first check. */
 const AUTH_OR_ONBOARDING_PATH =
-  /^\/(login|register|verify-email|verify-otp|forgot-password|reset-password|privacy-policy|packs|job|branding|setup|payment)(\/|$)/i;
+  /^\/(welcome|login|register|verify-email|verify-otp|forgot-password|reset-password|privacy-policy|packs|job|branding|setup|payment)(\/|$)/i;
 
 function pathLooksLikePublicUnauthFlow(pathname: string | undefined): boolean {
   if (!pathname || pathname === '/') return false;
@@ -271,7 +271,7 @@ export default function RootLayout() {
           <StripeProvider
             publishableKey="pk_test_51R15MnK5fB5lGbp8C5QAYcALGWTBBmTmYxsnMnigeUNUg2DvsR9u4xbsF1GNzDIqiQxFqz9Dg10kEttfcpbr5DVX00yGKXocyS"
             merchantIdentifier="merchant.com.hipster">
-          {isInitialized ? (
+          {isInitialized && (isAuthenticated || inUnauthPublicFlow) ? (
             <Stack
               screenOptions={{
                 headerShown: false,
@@ -287,13 +287,7 @@ export default function RootLayout() {
 
           <StyledStatusBar theme="dark" translucent={true} />
 
-          <>
-            {!isAuthenticated &&
-              !inUnauthPublicFlow &&
-              (!isHydrated || !isInitialized || !videoCompleted) && (
-                <WelcomeScreen onVideoFinish={handleVideoFinish} />
-              )}
-          </>
+
         </StripeProvider>
         </KeyboardProvider>
       </GestureHandlerRootView>

@@ -27,7 +27,7 @@ import {
   X,
   ArrowLeft,
 } from 'lucide-react-native';
-import { Video, ResizeMode } from 'expo-av';
+import { useVideoPlayer, VideoView } from 'expo-video';
 
 import { colors } from '../../theme/colors';
 import { fonts } from '../../theme/typography';
@@ -490,16 +490,20 @@ export default function Step4ResultScreen() {
     router.back();
   };
 
+  const videoPlayer = useVideoPlayer(require('../../assets/video/loadingVideoFinal.mp4'), (player) => {
+    player.loop = true;
+    player.muted = true;
+    player.play();
+  });
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <Video
-          source={require('../../assets/video/loadingVideoFinal.mp4')}
+        <VideoView
+          player={videoPlayer}
           style={styles.loadingVideo}
-          resizeMode={ResizeMode.COVER}
-          isLooping
-          shouldPlay
-          isMuted
+          contentFit="cover"
+          nativeControls={false}
         />
       </View>
     );
