@@ -75,13 +75,7 @@ function ArchNeonBorderCard({
           <View style={[s.neonMask, { backgroundColor: '#030814' }]} />
         </View>
       )}
-      {isSelected && (
-        <>
-          <View style={[s.bloomFar, { shadowColor: color }]}  pointerEvents="none" />
-          <View style={[s.bloomMid, { shadowColor: color }]}  pointerEvents="none" />
-          <View style={[s.floorGlow, { shadowColor: color }]} pointerEvents="none" />
-        </>
-      )}
+
       {children}
     </View>
   );
@@ -282,9 +276,7 @@ const s = StyleSheet.create({
   neonClip:    { position: 'absolute', top: -1, left: -1, right: -1, bottom: -0.5, borderRadius: 21, overflow: 'hidden', zIndex: 2 },
   neonTrack:   { position: 'absolute', top: 0, bottom: 0, left: 0 },
   neonMask:    { position: 'absolute', top: 1, left: 1, right: 1, bottom: 0.5, borderRadius: 20, zIndex: 1 },
-  bloomMid:    { position: 'absolute', top: -4, left: -4, right: -4, bottom: -4, borderRadius: 24, backgroundColor: 'transparent', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.45, shadowRadius: 18, elevation: 8 },
-  bloomFar:    { position: 'absolute', top: -8, left: -8, right: -8, bottom: -8, borderRadius: 28, backgroundColor: 'transparent', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.25, shadowRadius: 28, elevation: 4 },
-  floorGlow:   { position: 'absolute', bottom: -16, alignSelf: 'center', width: '80%', height: 24, borderRadius: 50, backgroundColor: 'transparent', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.6, shadowRadius: 16, elevation: 12 },
+
 
   card: {
     width: CARD_W,
