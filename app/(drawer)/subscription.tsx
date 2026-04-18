@@ -236,7 +236,13 @@ export default function SubscriptionScreen() {
       <ScreenHeader
         titleSub="VOS"
         titleScript="Abonnements"
-        onBack={() => router.back()}
+        onBack={() => {
+          if (router.canGoBack()) {
+            router.back();
+          } else {
+            router.push('/(drawer)');
+          }
+        }}
         scrollY={scrollY}
       />
 

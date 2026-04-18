@@ -323,7 +323,7 @@ export default function HomeScreen() {
   }
 
   const effectivePlanId   = isPackCurieux && isExpired ? 'studio' : planType;
-  const fallbackPlan      = { id: 'curieux', name: 'Pack Curieux', price: 'Gratuit (7 jours)' };
+  const fallbackPlan      = { id: effectivePlanId, name: 'Chargement...', price: '...' };
   const currentPlanObject = plans.find(p => p.id === effectivePlanId) || plans.find(p => p.id === 'atelier') || fallbackPlan;
 
   const promptsLimit = user?.promptsLimit || 0; const promptsUsed = user?.promptsUsed || 0;
@@ -424,17 +424,6 @@ export default function HomeScreen() {
       showModal('error', 'Erreur', e?.message || 'Une erreur est survenue lors du paiement.');
     } finally { setIsPaymentLoading(false); }
   };
-
-  useEffect(() => {
-    const isPackCurieux = user?.planType === 'curieux';
-    const hasNoStripe   = !user?.stripeCustomerId;
-    if (isHydrated && isPackCurieux && hasNoStripe && !hasAutoOpenedStripe && !isPaymentLoading && !isLoadingConversation) {
-      console.log('[HomeScreen] Auto-triggering Stripe Payment Sheet for Pack Curieux...');
-      setHasAutoOpenedStripe(true);
-      const timer = setTimeout(() => handleStripePayment(), 1500);
-      return () => clearTimeout(timer);
-    }
-  }, [isHydrated, user?.planType, user?.stripeCustomerId, hasAutoOpenedStripe, isPaymentLoading, isLoadingConversation]);
 
   useEffect(() => {
     const checkConnection = async () => {

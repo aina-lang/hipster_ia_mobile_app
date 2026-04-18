@@ -156,9 +156,12 @@ export default function DrawerLayout() {
     if (!user) return;
     const planType = user.planType || 'curieux';
     const subStatus = user.subscriptionStatus;
-    const isActive = subStatus === 'active' || subStatus === 'trialing' || subStatus === 'trial';
     const endDate = user.subscriptionEndDate ? new Date(user.subscriptionEndDate) : null;
-    const isExpired = endDate && new Date() > endDate;
+    const isExpired = endDate ? new Date() > endDate : false;
+    
+    // We only consider the user inactive (and block them) if they are explicitly expired.
+    // This prevents trapping users whose status is 'past_due' or who have canceled but still have time remaining.
+    const isActive = !isExpired;
 
     const exhausted = (used: number, limit: number) => limit > 0 && limit !== 999999 && used >= limit;
     const isFullyExhausted =
