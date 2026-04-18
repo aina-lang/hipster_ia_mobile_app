@@ -14,10 +14,10 @@ export const TypingMessage = ({ text, onComplete }: TypingMessageProps) => {
         if (currentIndex < text.length) {
             const timeout = setTimeout(() => {
                 // Render chunks of 3 characters for better performance and speed
-                const nextIndex = Math.min(currentIndex + 3, text.length);
+                const nextIndex = Math.min(currentIndex + 15, text.length);
                 setDisplayedText(text.slice(0, nextIndex));
                 setCurrentIndex(nextIndex);
-            }, 10); // Slightly longer delay but more chars = smoother 300chars/s approx
+            }, 1); 
             return () => clearTimeout(timeout);
         } else if (onComplete) onComplete();
     }, [currentIndex, text]);

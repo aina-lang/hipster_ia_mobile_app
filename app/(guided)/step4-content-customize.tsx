@@ -363,14 +363,17 @@ export default function Step4ContentCustomizeScreen() {
   };
 
   return (
-    <GuidedScreenWrapper currentStep={2} totalSteps={2} scrollViewRef={scrollRef}>
-      <ScrollView ref={scrollRef} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
-        <View style={s.container}>
+    <GuidedScreenWrapper
+      currentStep={2}
+      totalSteps={2}
+      scrollViewRef={scrollRef}
+    >
+      <View style={s.container}>
 
-          <View style={s.header}>
-            <Text style={s.headerScript}>Personnaliser</Text>
-            <Text style={s.headerSub}>VOTRE VISUEL</Text>
-          </View>
+        <View style={s.header}>
+          <Text style={s.headerScript}>Personnaliser</Text>
+          <Text style={s.headerSub}>VOTRE VISUEL</Text>
+        </View>
 
           <View style={s.divider} />
 
@@ -568,7 +571,6 @@ export default function Step4ContentCustomizeScreen() {
             onClose={() => setModalVisible(false)}
           />
         </View>
-      </ScrollView>
     </GuidedScreenWrapper>
   );
 }

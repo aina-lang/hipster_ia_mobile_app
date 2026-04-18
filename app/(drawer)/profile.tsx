@@ -379,7 +379,7 @@ export default function ProfileScreen() {
         />
 
         <Animated.ScrollView 
-          contentContainerStyle={[s.scrollContent, { paddingTop: 120 }]} 
+          contentContainerStyle={[s.scrollContent, { paddingTop: 200 }]} 
           showsVerticalScrollIndicator={false} 
           bounces={false} 
           keyboardShouldPersistTaps="handled"

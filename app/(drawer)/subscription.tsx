@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Platform,
 } from 'react-native';
+import Animated, { useSharedValue } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../../theme/colors';
 import {
@@ -34,6 +35,7 @@ import { useAuthStore } from '../../store/authStore';
 import { useUserCredits } from '../../hooks/useUserCredits';
 import { GenericModal } from '../../components/ui/GenericModal';
 import { BackgroundGradientOnboarding } from '../../components/ui/BackgroundGradientOnboarding';
+import { ScreenHeader } from '../../components/ui/ScreenHeader';
 import { PlanCard, Plan } from '../../components/subscription/PlanCard';
 import { ManagementCard } from '../../components/subscription/ManagementCard';
 import { NeonActionButton } from '../../components/ui/NeonActionButton';
@@ -58,6 +60,7 @@ export default function SubscriptionScreen() {
   const isHydrated = useAuthStore(s => s.isHydrated);
   const { updateAiProfile, aiRefreshUser } = useAuthStore();
   const { credits, loading: creditsLoading } = useUserCredits();
+  const scrollY = useSharedValue(0);
 
   const [modalVisible, setModalVisible] = useState(false);
   const [modalType, setModalType] = useState<any>('info');
@@ -208,69 +211,69 @@ export default function SubscriptionScreen() {
 
   return (
     <BackgroundGradientOnboarding darkOverlay>
-      <SafeAreaView style={{ flex: 1 }}>
-        <ScrollView
-          contentContainerStyle={s.scrollContent}
-          showsVerticalScrollIndicator={false}
-          bounces={false}
-          keyboardShouldPersistTaps="handled"
-        >
-          {/* ── HEADER ── */}
-          <View style={s.header}>
-            <NeonBackButton onPress={() => router.back()} />
-            <View style={s.headerCenter}>
-              <View style={s.titleRow}>
-                <Text style={s.titleLabel}>Plans d'abonnement</Text>
-              </View>
-            </View>
+      <ScreenHeader
+        titleSub="VOS"
+        titleScript="Abonnements"
+        onBack={() => router.back()}
+        scrollY={scrollY}
+      />
+
+      <Animated.ScrollView
+        contentContainerStyle={[s.scrollContent, { paddingTop: 140 }]}
+        showsVerticalScrollIndicator={false}
+        bounces={false}
+        keyboardShouldPersistTaps="handled"
+        onScroll={(e) => {
+          scrollY.value = e.nativeEvent.contentOffset.y;
+        }}
+        scrollEventThrottle={16}
+      >
+
+        {loading && plans.length === 0 ? (
+          <View style={s.loader}>
+            <ActivityIndicator color={NEON_BLUE} size="large" />
+            <Text style={s.loaderText}>Chargement des plans…</Text>
           </View>
+        ) : (
+          <>
+            {user?.planType && user.planType !== 'curieux' && (
+              <ManagementCard
+                subscriptionStatus={user.subscriptionStatus}
+                subscriptionEndDate={user.subscriptionEndDate}
+                planName={plans.find(p => p.id === user.planType)?.name || 'Pack Premium'}
+              />
+            )}
 
-          {loading && plans.length === 0 ? (
-            <View style={s.loader}>
-              <ActivityIndicator color={NEON_BLUE} size="large" />
-              <Text style={s.loaderText}>Chargement des plans…</Text>
+            <View style={s.topSection}>
+              <Text style={s.subtitle}>Sélectionnez l'offre qui vous correspond</Text>
             </View>
-          ) : (
-            <>
-              {user?.planType && user.planType !== 'curieux' && (
-                <ManagementCard
-                  subscriptionStatus={user.subscriptionStatus}
-                  subscriptionEndDate={user.subscriptionEndDate}
-                  planName={plans.find(p => p.id === user.planType)?.name || 'Pack Premium'}
+
+            <View style={s.plansContainer}>
+              {plans.map(plan => (
+                <PlanCard
+                  key={plan.id}
+                  plan={plan}
+                  isSelected={selectedPlan === plan.id}
+                  onSelect={() => setSelectedPlan(plan.id)}
+                  loading={loading}
                 />
-              )}
+              ))}
+            </View>
+          </>
+        )}
+      </Animated.ScrollView>
 
-              <View style={s.topSection}>
-                <Text style={s.subtitle}>Sélectionnez l'offre qui vous correspond</Text>
-              </View>
-
-              <View style={s.plansContainer}>
-                {plans.map(plan => (
-                  <PlanCard
-                    key={plan.id}
-                    plan={plan}
-                    isSelected={selectedPlan === plan.id}
-                    onSelect={() => setSelectedPlan(plan.id)}
-                    loading={loading}
-                  />
-                ))}
-              </View>
-            </>
-          )}
-        </ScrollView>
-
-        {/* ── FOOTER ── */}
-        <View style={s.footer}>
-          <NeonActionButton
-            onPress={handleUpgrade}
-            loading={loading}
-            disabled={loading || !selectedPlan || !!plans.find(p => p.id === selectedPlan)?.isComingSoon}
-            label={buttonLabel}
-            icon={<Bell size={16} color="#ffffff" />}
-          />
-          <Text style={s.secureText}>Paiement sécurisé via Stripe</Text>
-        </View>
-      </SafeAreaView>
+      {/* ── FOOTER ── */}
+      <View style={s.footer}>
+        <NeonActionButton
+          onPress={handleUpgrade}
+          loading={loading}
+          disabled={loading || !selectedPlan || !!plans.find(p => p.id === selectedPlan)?.isComingSoon}
+          label={buttonLabel}
+          icon={<Bell size={16} color="#ffffff" />}
+        />
+        <Text style={s.secureText}>Paiement sécurisé via Stripe</Text>
+      </View>
 
       <GenericModal
         visible={modalVisible}
@@ -291,48 +294,6 @@ const s = StyleSheet.create({
   },
 
   /* Header */
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 28,
-    paddingTop: 8,
-  },
-  backButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
-  },
-  headerCenter: {
-    flex: 1,
-    alignItems: 'center',
-    marginRight: 58,
-  },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-  },
-  titleLabel: {
-    fontFamily: 'Arimo-Bold',
-    fontSize: 16,
-    textTransform: 'uppercase',
-    color: 'rgba(255,255,255,0.45)'
-  },
-  titleScript: {
-    fontFamily: 'Brittany-Signature',
-    fontSize: 28,
-    color: '#fff',
-
-
-  },
-
   loader: {
     flex: 1,
     justifyContent: 'center',

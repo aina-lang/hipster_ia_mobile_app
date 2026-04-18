@@ -18,6 +18,7 @@ import { useRouter, useNavigation, useGlobalSearchParams } from 'expo-router';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
 import * as Notifications from 'expo-notifications';
 import * as ImagePicker from 'expo-image-picker';
+import Animated, { useSharedValue } from 'react-native-reanimated';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -44,7 +45,9 @@ import { MediaDisplay } from '../../components/MediaDisplay';
 import { TypingMessage } from '../../components/TypingMessage';
 import { PaymentBlocker } from '../../components/PaymentBlocker';
 import { ChatInput } from '../../components/ChatInput';
-import { NeonBackButton } from 'components/ui/NeonBackButton';
+import { NeonBackButton } from '../../components/ui/NeonBackButton';
+import { ScreenHeader } from '../../components/ui/ScreenHeader';
+import { fonts } from '../../theme/typography';
 
 export default function FreetextScreen() {
   const { user } = useAuthStore();
@@ -54,12 +57,13 @@ export default function FreetextScreen() {
   const navigation = useNavigation<DrawerNavigationProp<any>>();
   const scrollViewRef = useRef<ScrollView>(null);
   const insets = useSafeAreaInsets();
+  const scrollY = useSharedValue(0);
 
   const [inputValue, setInputValue] = useState('');
   const { messages, setMessages, conversationId, setConversationId, resetChat: clearChatStore } = useChatStore();
   const [isGenerating, setIsGenerating] = useState(false);
   const [isLoadingConversation, setIsLoadingConversation] = useState(false);
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  // const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   const [plans, setPlans] = useState<any[]>([]);
   const [loadingPlans, setLoadingPlans] = useState(false);
@@ -77,7 +81,7 @@ export default function FreetextScreen() {
     const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
     const keyboardDidShowListener = Keyboard.addListener(showEvent, () => {
       if (messages.length > 0) {
-        setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 100);
+        scrollViewRef.current?.scrollToEnd({ animated: true });
       }
     });
     return () => keyboardDidShowListener.remove();
@@ -85,7 +89,7 @@ export default function FreetextScreen() {
 
   useEffect(() => {
     if (messages.length > 0) {
-      setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 100);
+      scrollViewRef.current?.scrollToEnd({ animated: true });
     }
   }, [messages]);
 
@@ -107,6 +111,7 @@ export default function FreetextScreen() {
 
   useEffect(() => { fetchPlans(); }, []);
 
+  /*
   const pickImage = async () => {
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -120,6 +125,7 @@ export default function FreetextScreen() {
       console.error('Error picking image:', error);
     }
   };
+  */
 
   const planType = user?.planType || 'curieux';
   const subStatus = user?.subscriptionStatus;
@@ -225,13 +231,13 @@ export default function FreetextScreen() {
   const isInputDisabled = isGenerating || isTextExhausted || isAnyMessageTyping;
 
   const handleSend = async () => {
-    if ((!inputValue.trim() && !selectedImage) || isGenerating) return;
-    const currentImage = selectedImage;
+    if (!inputValue.trim() || isGenerating) return;
+    // const currentImage = selectedImage;
     if (isTextExhausted) { showModal('error', 'Limite atteinte', `Limite atteinte.`); return; }
 
-    const userMsg: Message = { id: Date.now().toString(), text: inputValue.trim(), sender: 'user', timestamp: new Date(), type: currentImage ? 'image' : 'text', mediaUrl: currentImage || undefined };
+    const userMsg: Message = { id: Date.now().toString(), text: inputValue.trim(), sender: 'user', timestamp: new Date(), type: 'text' };
     setMessages((prev) => [...prev, userMsg]);
-    setInputValue(''); setSelectedImage(null); setIsGenerating(true);
+    setInputValue(''); /* setSelectedImage(null); */ setIsGenerating(true);
 
     try {
       const chatHistory: any[] = [];
@@ -243,40 +249,12 @@ export default function FreetextScreen() {
       const convIdToSend = conversationId || generateConversationId();
       if (!conversationId) setConversationId(convIdToSend);
 
-      let response;
-      if (currentImage) {
-        const formData = new FormData();
-        formData.append('messages', JSON.stringify(chatHistory));
-        formData.append('conversationId', convIdToSend);
-        const filename = currentImage.split('/').pop() || 'image.jpg';
-        const match = /\.(\w+)$/.exec(filename);
-        const ext = match ? match[1] : 'jpg';
-        formData.append('file', { uri: currentImage, name: filename, type: `image/${ext}` } as any);
-        const res = await api.post('/ai/chat', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
-        response = res.data.data;
-      } else {
-        response = await AiService.chat(chatHistory, convIdToSend);
-      }
+      let response = await AiService.chat(chatHistory, convIdToSend);
 
       if (!conversationId && response.conversationId) setConversationId(response.conversationId);
       const content = response.data?.content ?? response.content ?? response.message ?? response;
-      let mediaUrl: string | undefined;
-
-      if (response.type === 'image' && response.generationId) {
-        let isCompleted = false; let attempts = 0;
-        while (!isCompleted && attempts < 30) {
-          attempts++; await new Promise(resolve => setTimeout(resolve, 2000));
-          try {
-            const updatedGen = await AiService.getConversation(response.generationId.toString());
-            const imageUrl = updatedGen?.imageUrl || updatedGen?.url || updatedGen?.image;
-            if (imageUrl && typeof imageUrl === 'string' && imageUrl.startsWith('http')) { mediaUrl = imageUrl; isCompleted = true; }
-          } catch (pollError) { }
-        }
-      } else if (response.type === 'image' && response.imageBase64) {
-        mediaUrl = `data:image/png;base64,${response.imageBase64}`;
-      } else { mediaUrl = response.mediaUrl; }
-
-      const aiMsg: Message = { id: (Date.now() + 1).toString(), text: typeof content === 'string' ? content : JSON.stringify(content), sender: 'ai', timestamp: new Date(), isTyping: !!(typeof content === 'string' && content.length > 0), type: response.type || 'text', mediaUrl };
+      
+      const aiMsg: Message = { id: (Date.now() + 1).toString(), text: typeof content === 'string' ? content : JSON.stringify(content), sender: 'ai', timestamp: new Date(), isTyping: !!(typeof content === 'string' && content.length > 0), type: 'text' };
       setMessages((prev) => [...prev, aiMsg]);
     } catch (error: any) {
       console.error('[DEBUG] Free Mode Error:', error);
@@ -303,74 +281,98 @@ export default function FreetextScreen() {
 
   return (
     <BackgroundGradientOnboarding darkOverlay={true} blurIntensity={2}>
-      <SafeAreaView style={{ flex: 1 }} edges={['top']}>
-        {/* ✅ KeyboardAvoidingView de react-native-keyboard-controller qui enveloppe tout le contenu variable */}
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      <ScreenHeader
+        titleSub="TEXTE"
+        titleScript="Libre"
+        onBack={() => router.replace('/(drawer)')}
+        scrollY={scrollY}
+        renderRight={() => (
+          hasMessages ? (
+            <TouchableOpacity 
+              className="rounded-lg bg-white/5 p-2" 
+              onPress={() => setShowDeleteConfirm(true)}
+            >
+              <Trash2 size={20} color={colors.text.muted} />
+            </TouchableOpacity>
+          ) : null
+        )}
+      />
+
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+      >
+        <Animated.ScrollView
+          ref={scrollViewRef as any}
           style={{ flex: 1 }}
+          contentContainerStyle={{ 
+            flexGrow: 1, 
+            paddingHorizontal: 20, 
+            paddingTop: 120, // Synchronized with other screens
+            paddingBottom: 20 
+          }}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          onScroll={(e) => {
+            scrollY.value = e.nativeEvent.contentOffset.y;
+          }}
+          scrollEventThrottle={16}
         >
-          {/* Header */}
-          <View className="flex-row items-center justify-between px-5 pb-2">
-            <NeonBackButton onPress={() => router.replace('/(drawer)')} />
-            <View className="flex-row items-center gap-2">
-              {hasMessages && (
-                <TouchableOpacity className="rounded-lg bg-white/5 p-2" onPress={() => setShowDeleteConfirm(true)}>
-                  <Trash2 size={20} color={colors.text.muted} />
-                </TouchableOpacity>
-              )}
+          {!hasMessages ? (
+            <View className="mt-5 items-center">
+              <Text className="mb-2 text-lg text-slate-500" style={{ fontFamily: fonts.arimo.regular }}>
+                {getGreetingByTime()} {user?.name || 'Utilisateur'}
+              </Text>
+              <Text className="text-center text-2xl font-bold leading-9 text-slate-300" style={{ fontFamily: fonts.arimo.bold }}>
+                {"Que créons-nous aujourd'hui ?"}
+              </Text>
             </View>
-          </View>
-
-          {/* Messages ScrollView */}
-          <ScrollView
-            ref={scrollViewRef}
-            style={{ flex: 1 }}
-            contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 20, paddingTop: 12, paddingBottom: 20 }}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-          >
-            {!hasMessages ? (
-              <View className="mt-5 items-center">
-                <Text className="mb-2 text-lg text-slate-500">{getGreetingByTime()} {user?.name || 'Utilisateur'}</Text>
-                <Text className="text-center text-2xl font-bold leading-9 text-slate-300">{"Que créons-nous aujourd'hui ?"}</Text>
-              </View>
-            ) : (
-              <View className="space-y-3 pt-5">
-                {isLoadingConversation ? (
-                  <View className="items-center justify-center py-10">
-                    <ActivityIndicator size="large" color={colors.primary.main} />
-                    <Text className="mt-4 text-slate-400">Chargement...</Text>
-                  </View>
-                ) : (
-                  <>
-                    {messages.map((msg) => (
-                      <View key={msg.id} className="max-w-[85%] rounded-2xl border p-4 mt-4" style={msg.sender === 'user' ? { backgroundColor: 'rgba(44, 70, 155, 0.2)', borderColor: 'rgba(44, 70, 155, 0.4)', alignSelf: 'flex-end', borderBottomRightRadius: 4 } : { alignSelf: 'flex-start', borderBottomLeftRadius: 4, borderColor: 'rgba(255, 255, 255, 0.2)', backgroundColor: 'rgba(255, 255, 255, 0.15)' }}>
-                        {msg.type && msg.type !== 'text' && msg.mediaUrl && <MediaDisplay type={msg.type} url={msg.mediaUrl} showModal={showModal} />}
-                        {msg.sender === 'user' ? (msg.text ? <Text className="text-base leading-6 text-slate-300">{msg.text}</Text> : null) : msg.isTyping ? <TypingMessage text={msg.text} onComplete={() => completeTyping(msg.id)} /> : msg.text ? <Text className="text-base leading-6 text-slate-300">{msg.text}</Text> : null}
-                        {msg.sender === 'ai' && !msg.isTyping && (!msg.type || msg.type === 'text') && msg.text && <TouchableOpacity onPress={() => copyToClipboard(msg.text)} className="mt-2 self-end p-1"><Copy size={14} color={colors.text.muted} /></TouchableOpacity>}
-                      </View>
-                    ))}
-                  </>
-                )}
-                {isGenerating && <View className="h-11 items-center justify-center self-start rounded-2xl border border-white/10 bg-white/5 p-4"><ActivityIndicator size="small" color={colors.primary.main} /></View>}
-              </View>
-            )}
-          </ScrollView>
-
-          {/* Input Bar - Toujours au-dessus du clavier */}
-          <View className="px-5" style={{ paddingBottom: insets.bottom + 12 }}>
-            {isPaidPlanButInactive ? (
-              <PaymentBlocker plan={currentPlanObject} onPay={handleStripePayment} loading={isPaymentLoading} />
-            ) : (
-              <View style={{ flexDirection: 'row', alignItems: 'flex-end' }}>
-                <View style={{ flex: 1 }}>
-                  <ChatInput inputValue={inputValue} onChangeText={setInputValue} selectedImage={selectedImage} onImageSelect={pickImage} onImageRemove={() => setSelectedImage(null)} onSend={handleSend} isGenerating={isGenerating} isDisabled={isInputDisabled} placeholderText={placeholderText} maxLength={500} />
+          ) : (
+            <View className="space-y-3 pt-5">
+              {isLoadingConversation ? (
+                <View className="items-center justify-center py-10">
+                  <ActivityIndicator size="large" color={colors.primary.main} />
+                  <Text className="mt-4 text-slate-400">Chargement...</Text>
                 </View>
+              ) : (
+                <>
+                  {messages.map((msg) => (
+                    <View key={msg.id} className="max-w-[85%] rounded-2xl border p-4 mt-4" style={msg.sender === 'user' ? { backgroundColor: 'rgba(44, 70, 155, 0.2)', borderColor: 'rgba(44, 70, 155, 0.4)', alignSelf: 'flex-end', borderBottomRightRadius: 4 } : { alignSelf: 'flex-start', borderBottomLeftRadius: 4, borderColor: 'rgba(255, 255, 255, 0.2)', backgroundColor: 'rgba(255, 255, 255, 0.15)' }}>
+                      {/* {msg.type && msg.type !== 'text' && msg.mediaUrl && <MediaDisplay type={msg.type} url={msg.mediaUrl} showModal={showModal} />} */}
+                      {msg.sender === 'user' ? (msg.text ? <Text className="text-base leading-6 text-slate-300">{msg.text}</Text> : null) : msg.isTyping ? <TypingMessage text={msg.text} onComplete={() => completeTyping(msg.id)} /> : msg.text ? <Text className="text-base leading-6 text-slate-300">{msg.text}</Text> : null}
+                      {msg.sender === 'ai' && !msg.isTyping && (!msg.type || msg.type === 'text') && msg.text && <TouchableOpacity onPress={() => copyToClipboard(msg.text)} className="mt-2 self-end p-1"><Copy size={14} color={colors.text.muted} /></TouchableOpacity>}
+                    </View>
+                  ))}
+                </>
+              )}
+              {isGenerating && <View className="h-11 items-center justify-center self-start rounded-2xl border border-white/10 bg-white/5 p-4"><ActivityIndicator size="small" color={colors.primary.main} /></View>}
+            </View>
+          )}
+        </Animated.ScrollView>
+
+        <View className="px-5" style={{ paddingBottom: insets.bottom + 12 }}>
+          {isPaidPlanButInactive ? (
+            <PaymentBlocker plan={currentPlanObject} onPay={handleStripePayment} loading={isPaymentLoading} />
+          ) : (
+            <View style={{ flexDirection: 'row', alignItems: 'flex-end' }}>
+              <View style={{ flex: 1 }}>
+                <ChatInput 
+                  inputValue={inputValue} 
+                  onChangeText={setInputValue} 
+                  /* selectedImage={selectedImage} 
+                  onImageSelect={pickImage} 
+                  onImageRemove={() => setSelectedImage(null)} */
+                  onSend={handleSend} 
+                  isGenerating={isGenerating} 
+                  isDisabled={isInputDisabled} 
+                  placeholderText={placeholderText} 
+                  maxLength={500} 
+                />
               </View>
-            )}
-          </View>
-        </KeyboardAvoidingView>
-      </SafeAreaView>
+            </View>
+          )}
+        </View>
+      </KeyboardAvoidingView>
 
       <GenericModal visible={modalVisible} type={modalType} title={modalTitle} message={modalMessage} onClose={() => setModalVisible(false)} />
       <GenericModal visible={showDeleteConfirm} type="warning" title="Supprimer la conversation" message="Voulez-vous vraiment supprimer définitivement cette discussion ?" confirmText="Supprimer" cancelText="Annuler" onClose={() => setShowDeleteConfirm(false)} onConfirm={handleDeleteConfirm} />

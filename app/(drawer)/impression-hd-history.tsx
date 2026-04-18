@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
+import { useSharedValue } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -33,6 +34,7 @@ import { useImageHistoryStore, GeneratedImage } from '../../store/imageHistorySt
 import { colors } from '../../theme/colors';
 import { GenericModal, ModalType } from '../../components/ui/GenericModal';
 import { BackgroundGradientOnboarding } from '../../components/ui/BackgroundGradientOnboarding';
+import { ScreenHeader } from '../../components/ui/ScreenHeader';
 import { NeonBackButton } from '../../components/ui/NeonBackButton';
 import { AiService } from '../../api/ai.service';
 
@@ -58,6 +60,7 @@ export default function ImpressionHDHistoryScreen() {
   const [showClearModal, setShowClearModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
+  const scrollY = useSharedValue(0);
   const [permissionResponse, requestPermission] = MediaLibrary.usePermissions();
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -377,6 +380,13 @@ export default function ImpressionHDHistoryScreen() {
 
   return (
     <BackgroundGradientOnboarding darkOverlay>
+      <ScreenHeader
+        titleSub="VOS"
+        titleScript="Affiches HD"
+        onBack={selectionMode ? undefined : () => router.back()}
+        scrollY={scrollY}
+      />
+
       <SafeAreaView style={s.safe}>
         <FlatList
           data={images}
@@ -384,23 +394,20 @@ export default function ImpressionHDHistoryScreen() {
           numColumns={COLS}
           renderItem={renderGalleryTile}
           columnWrapperStyle={s.columnWrap}
-          contentContainerStyle={s.listContent}
+          contentContainerStyle={[s.listContent, { paddingTop: 200 }]}
           showsVerticalScrollIndicator={false}
           initialNumToRender={15}
           maxToRenderPerBatch={10}
           windowSize={5}
           removeClippedSubviews={true}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              tintColor={colors.neon.primary}
-            />
-          }
+          onScroll={(e) => {
+            scrollY.value = e.nativeEvent.contentOffset.y;
+          }}
+          scrollEventThrottle={16}
           ListHeaderComponent={
-            <>
+            <View style={{ paddingTop: 0 }}>
               {selectionMode ? (
-                <View style={[s.header, s.headerSelectionMode]}>
+                <View style={[s.header, s.headerSelectionMode, { marginTop: -80 }]}>
                   <TouchableOpacity onPress={exitSelectionMode} style={s.headerIconBtn}>
                     <X size={24} color="white" />
                   </TouchableOpacity>
@@ -425,15 +432,7 @@ export default function ImpressionHDHistoryScreen() {
                     </TouchableOpacity>
                   </View>
                 </View>
-              ) : (
-                <View style={s.header}>
-                  <NeonBackButton onPress={() => router.back()} />
-                  <View style={s.headerCenter}>
-                    <Text style={s.titleSub}>Impression HD</Text>
-                  </View>
-                  <View style={{ width: 42 }} />
-                </View>
-              )}
+              ) : null}
 
               <Text style={s.subtitle}>Galerie de vos affiches et visuels HD</Text>
 
@@ -443,7 +442,7 @@ export default function ImpressionHDHistoryScreen() {
                   <Text style={s.clearButtonText}>Tout effacer la galerie</Text>
                 </TouchableOpacity>
               )}
-            </>
+            </View>
           }
         />
 
@@ -777,6 +776,11 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     gap: 8,
+  },
+  modalButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontFamily: 'Arimo-Bold',
   },
   downloadBtnLarge: {
     backgroundColor: 'rgba(0, 212, 255, 0.3)',

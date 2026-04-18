@@ -26,9 +26,9 @@ const NEON_BLUE_DARK = colors.neonBlueDark;
 interface ChatInputProps {
     inputValue: string;
     onChangeText: (text: string) => void;
-    selectedImage: string | null;
-    onImageSelect: () => void;
-    onImageRemove: () => void;
+    selectedImage?: string | null;
+    onImageSelect?: () => void;
+    onImageRemove?: () => void;
     onSend: () => void;
     isGenerating: boolean;
     isDisabled?: boolean;
@@ -131,14 +131,16 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 
                 <View style={s.row}>
                     <View style={s.leftActions}>
-                        <TouchableOpacity style={s.iconBtn} onPress={onImageSelect}>
-                            <View style={selectedImage ? s.iconGlowActive : undefined}>
-                                <ImageIcon
-                                    size={20}
-                                    color={selectedImage ? NEON_BLUE : colors.text.secondary}
-                                />
-                            </View>
-                        </TouchableOpacity>
+                        {onImageSelect && (
+                            <TouchableOpacity style={s.iconBtn} onPress={onImageSelect}>
+                                <View style={selectedImage ? s.iconGlowActive : undefined}>
+                                    <ImageIcon
+                                        size={20}
+                                        color={selectedImage ? NEON_BLUE : colors.text.secondary}
+                                    />
+                                </View>
+                            </TouchableOpacity>
+                        )}
                     </View>
 
                     <View style={s.sendWrapper}>

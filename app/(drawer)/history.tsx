@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronRight, Search, MessageSquare, ArrowLeft, Trash2 } from 'lucide-react-native';
+import Animated, { useSharedValue } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, useFocusEffect } from 'expo-router';
 import dayjs from 'dayjs';
@@ -15,6 +16,7 @@ import { AiService } from '../../api/ai.service';
 import { colors } from '../../theme/colors';
 import { GenericModal } from '../../components/ui/GenericModal';
 import { BackgroundGradientOnboarding } from '../../components/ui/BackgroundGradientOnboarding';
+import { ScreenHeader } from '../../components/ui/ScreenHeader';
 import { NeonBackButton } from '../../components/ui/NeonBackButton';
 
 dayjs.extend(relativeTime);
@@ -27,17 +29,19 @@ interface HistoryItem {
   date: string;
   preview: string;
   imageUrl?: string;
+  type?: string;
 }
 
 export default function HistoryScreen() {
   const router = useRouter();
-  const [history, setHistory]                 = useState<HistoryItem[]>([]);
-  const [loading, setLoading]                 = useState(true);
-  const [refreshing, setRefreshing]           = useState(false);
-  const [error, setError]                     = useState<string | null>(null);
-  const [showClearModal, setShowClearModal]   = useState(false);
+  const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [showClearModal, setShowClearModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [itemToDelete, setItemToDelete]       = useState<string | null>(null);
+  const [itemToDelete, setItemToDelete] = useState<string | null>(null);
+  const scrollY = useSharedValue(0);
 
   const fetchHistory = async () => {
     try {
@@ -50,6 +54,7 @@ export default function HistoryScreen() {
           date: dayjs(item.date || item.items?.[0]?.date).fromNow(),
           preview: `${item.count || item.items?.length || 1} message${(item.count || item.items?.length || 1) > 1 ? 's' : ''}`,
           imageUrl: item.imageUrl || item.items?.[0]?.imageUrl,
+          type: item.type || item.items?.[0]?.type,
         })));
       }
     } catch (err: any) {
@@ -90,112 +95,120 @@ export default function HistoryScreen() {
 
   return (
     <BackgroundGradientOnboarding darkOverlay>
-      <SafeAreaView style={{ flex: 1 }}>
-        <ScrollView
-          contentContainerStyle={s.scrollContent}
-          showsVerticalScrollIndicator={false}
-          bounces={false}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.neon.primary} />}
-        >
-          <View style={s.header}>
-            <NeonBackButton onPress={() => router.back()} />
-            <View style={s.headerCenter}>
-              <Text style={s.titleSub}>Historique</Text>
-            </View>
-            <View style={{ width: 42 }} />
+      <ScreenHeader
+        titleSub="VOTRE"
+        titleScript="Historique"
+        onBack={() => router.back()}
+        scrollY={scrollY}
+      />
+
+      <Animated.ScrollView
+        contentContainerStyle={[s.scrollContent, { paddingTop: 140 }]}
+        showsVerticalScrollIndicator={false}
+        bounces={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.neon.primary} />}
+        onScroll={(e) => {
+          scrollY.value = e.nativeEvent.contentOffset.y;
+        }}
+        scrollEventThrottle={16}
+      >
+
+        <Text style={s.subtitle}>Retrouvez toutes vos créations</Text>
+
+        {history.length > 0 && (
+          <TouchableOpacity style={s.clearButton} onPress={() => setShowClearModal(true)}>
+            <Trash2 size={14} color={colors.status.error} />
+            <Text style={s.clearButtonText}>Tout effacer l'historique</Text>
+          </TouchableOpacity>
+        )}
+
+        {loading ? (
+          <View style={s.emptyContainer}>
+            <ActivityIndicator size="large" color={colors.neon.primary} />
           </View>
-
-          <Text style={s.subtitle}>Retrouvez toutes vos créations</Text>
-
-          {history.length > 0 && (
-            <TouchableOpacity style={s.clearButton} onPress={() => setShowClearModal(true)}>
-              <Trash2 size={14} color={colors.status.error} />
-              <Text style={s.clearButtonText}>Tout effacer l'historique</Text>
+        ) : error ? (
+          <View style={s.emptyContainer}>
+            <Text style={s.errorText}>{error}</Text>
+            <TouchableOpacity style={s.retryButton} onPress={fetchHistory}>
+              <Text style={s.retryText}>Réessayer</Text>
             </TouchableOpacity>
-          )}
+          </View>
+        ) : history.length === 0 ? (
+          <View style={s.emptyContainer}>
+            <View style={s.emptyIconBox}>
+              <Search size={28} color={colors.neon.primary} />
+            </View>
+            <Text style={s.emptyText}>Aucun résultat trouvé</Text>
+          </View>
+        ) : (
+          <View style={s.list}>
+            {history.map(item => (
+              <View key={item.id} style={s.itemWrapper}>
+                <TouchableOpacity
+                  style={s.itemCard}
+                  onPress={() => {
+                    if (item.type === 'chat') {
+                      router.push({ pathname: '/(drawer)/freetext', params: { conversationId: item.id } });
+                    } else {
+                      router.push({ pathname: '/(drawer)', params: { conversationId: item.id } });
+                    }
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <LinearGradient colors={[colors.primary.main + '0a', 'transparent']} style={StyleSheet.absoluteFill} />
+                  <View style={s.iconContainer}>
+                    {item.imageUrl ? (
+                      <Image
+                        source={{ uri: item.imageUrl.startsWith('http') ? item.imageUrl : `https://hipster-api.fr/${item.imageUrl}` }}
+                        style={s.thumbnail}
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <MessageSquare size={20} color={colors.neon.primary} />
+                    )}
+                  </View>
+                  <View style={s.itemContent}>
+                    <View style={s.itemHeader}>
+                      <Text style={s.itemTitle} numberOfLines={1}>{item.title}</Text>
+                      <Text style={s.itemDate}>{item.date}</Text>
+                    </View>
+                    <Text style={s.itemPreview} numberOfLines={2}>{item.preview || 'Conversation'}</Text>
+                  </View>
+                  <ChevronRight size={16} color={colors.text.muted} />
+                </TouchableOpacity>
 
-          {loading ? (
-            <View style={s.emptyContainer}>
-              <ActivityIndicator size="large" color={colors.neon.primary} />
-            </View>
-          ) : error ? (
-            <View style={s.emptyContainer}>
-              <Text style={s.errorText}>{error}</Text>
-              <TouchableOpacity style={s.retryButton} onPress={fetchHistory}>
-                <Text style={s.retryText}>Réessayer</Text>
-              </TouchableOpacity>
-            </View>
-          ) : history.length === 0 ? (
-            <View style={s.emptyContainer}>
-              <View style={s.emptyIconBox}>
-                <Search size={28} color={colors.neon.primary} />
+                <TouchableOpacity
+                  style={s.deleteButton}
+                  onPress={() => { setItemToDelete(item.id); setShowDeleteModal(true); }}
+                >
+                  <Trash2 size={16} color={colors.status.error} />
+                </TouchableOpacity>
               </View>
-              <Text style={s.emptyText}>Aucun résultat trouvé</Text>
-            </View>
-          ) : (
-            <View style={s.list}>
-              {history.map(item => (
-                <View key={item.id} style={s.itemWrapper}>
-                  <TouchableOpacity
-                    style={s.itemCard}
-                    onPress={() => router.push({ pathname: '/(drawer)', params: { conversationId: item.id } })}
-                    activeOpacity={0.7}
-                  >
-                    <LinearGradient colors={[colors.primary.main + '0a', 'transparent']} style={StyleSheet.absoluteFill} />
-                    <View style={s.iconContainer}>
-                      {item.imageUrl ? (
-                        <Image
-                          source={{ uri: item.imageUrl.startsWith('http') ? item.imageUrl : `https://hipster-api.fr/${item.imageUrl}` }}
-                          style={s.thumbnail}
-                          resizeMode="cover"
-                        />
-                      ) : (
-                        <MessageSquare size={20} color={colors.neon.primary} />
-                      )}
-                    </View>
-                    <View style={s.itemContent}>
-                      <View style={s.itemHeader}>
-                        <Text style={s.itemTitle} numberOfLines={1}>{item.title}</Text>
-                        <Text style={s.itemDate}>{item.date}</Text>
-                      </View>
-                      <Text style={s.itemPreview} numberOfLines={2}>{item.preview || 'Conversation'}</Text>
-                    </View>
-                    <ChevronRight size={16} color={colors.text.muted} />
-                  </TouchableOpacity>
+            ))}
+          </View>
+        )}
+      </Animated.ScrollView>
 
-                  <TouchableOpacity
-                    style={s.deleteButton}
-                    onPress={() => { setItemToDelete(item.id); setShowDeleteModal(true); }}
-                  >
-                    <Trash2 size={16} color={colors.status.error} />
-                  </TouchableOpacity>
-                </View>
-              ))}
-            </View>
-          )}
-        </ScrollView>
-
-        <GenericModal
-          visible={showDeleteModal}
-          type="warning"
-          title="Supprimer"
-          message="Voulez-vous vraiment supprimer cet élément ?"
-          confirmText="Supprimer"
-          cancelText="Annuler"
-          onClose={() => setShowDeleteModal(false)}
-          onConfirm={handleDeleteItem}
-        />
-        <GenericModal
-          visible={showClearModal}
-          type="warning"
-          title="Tout effacer"
-          message="Cette action est irréversible. Voulez-vous vraiment supprimer tout votre historique ?"
-          confirmText="Tout supprimer"
-          cancelText="Annuler"
-          onClose={() => setShowClearModal(false)}
-          onConfirm={handleClearHistory}
-        />
-      </SafeAreaView>
+      <GenericModal
+        visible={showDeleteModal}
+        type="warning"
+        title="Supprimer"
+        message="Voulez-vous vraiment supprimer cet élément ?"
+        confirmText="Supprimer"
+        cancelText="Annuler"
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={handleDeleteItem}
+      />
+      <GenericModal
+        visible={showClearModal}
+        type="warning"
+        title="Tout effacer"
+        message="Cette action est irréversible. Voulez-vous vraiment supprimer tout votre historique ?"
+        confirmText="Tout supprimer"
+        cancelText="Annuler"
+        onClose={() => setShowClearModal(false)}
+        onConfirm={handleClearHistory}
+      />
     </BackgroundGradientOnboarding>
   );
 }
@@ -205,32 +218,6 @@ const s = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 16,
     paddingBottom: 40,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 28,
-  },
-  backButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  headerCenter: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: 10,
-  },
-  titleSub: {
-    fontFamily: 'Arimo-Bold',
-    fontSize: 16,
-    textTransform: 'uppercase',
-    color: '#ffffff',
   },
   subtitle: {
     fontFamily: 'Arimo-Regular',

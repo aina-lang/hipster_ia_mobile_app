@@ -13,6 +13,7 @@ import {
   Easing,
   Dimensions,
 } from 'react-native';
+import Animated, { useSharedValue, useAnimatedStyle, interpolate, Extrapolate } from 'react-native-reanimated';
 import { Audio } from 'expo-av';
 import * as MediaLibrary from 'expo-media-library';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -511,7 +512,17 @@ export default function HomeScreen() {
     if (fns.length > 0) setFunction(fns[0].label, fns[0].category);
   };
 
-  const completeTyping = (msgId: string) => setMessages(prev => prev.map(msg => msg.id === msgId ? { ...msg, isTyping: false } : msg));
+  const scrollY = useSharedValue(0);
+
+  const headerAnimatedStyle = useAnimatedStyle(() => {
+    const opacity = interpolate(scrollY.value, [0, 50], [0, 0.95], Extrapolate.CLAMP);
+    const borderOpacity = interpolate(scrollY.value, [0, 50], [0, 0.08], Extrapolate.CLAMP);
+
+    return {
+      backgroundColor: `rgba(3, 8, 20, ${opacity})`,
+      borderBottomColor: `rgba(255, 255, 255, ${borderOpacity})`,
+    };
+  });
 
   return (
     <BackgroundGradientOnboarding darkOverlay={true} blurIntensity={2}>
@@ -521,7 +532,7 @@ export default function HomeScreen() {
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
         >
-          <View style={[s.topBar, { paddingTop: insets.top + 10 }]}>
+          <Animated.View style={[s.topBar, { paddingTop: insets.top + (Platform.OS === 'ios' ? 50 : 60) }, headerAnimatedStyle]}>
             {!isPaidPlanButInactive && (
               <TouchableOpacity style={s.menuBtn} onPress={() => navigation.openDrawer()}>
                 <View style={s.iconGlow}>
@@ -533,15 +544,9 @@ export default function HomeScreen() {
             <View style={s.topRight}>
               {/* Mode Guidé button removed as requested */}
             </View>
-          </View>
+          </Animated.View>
 
-          <ScrollView
-            ref={scrollViewRef}
-            style={s.scroll}
-            contentContainerStyle={s.scrollContent}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-          >
+          <View style={[s.scroll, s.scrollContent]}>
             <View style={s.titleBlock}>
               <Text style={s.greeting}>{getGreetingByTime()} {user?.name || ''}</Text>
               <Text style={s.titleArimo}>Que souhaitez-vous</Text>
@@ -599,8 +604,7 @@ export default function HomeScreen() {
                 );
               })}
             </View>
-            <View style={{ height: 128 }} />
-          </ScrollView>
+          </View>
 
           <View
             className="px-5 pb-3 "
@@ -678,14 +682,19 @@ export default function HomeScreen() {
 }
 
 const s = StyleSheet.create({
-  topBar:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingBottom: 8 },
-  menuBtn:       { borderRadius: 8, backgroundColor: colors.darkSlateBlue, padding: 8 },
+  topBar:        { 
+    position: 'absolute', top: -10, left: 0, right: 0, zIndex: 100,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', 
+    paddingHorizontal: 16, paddingBottom: 15,
+    borderBottomWidth: 1, borderBottomColor: 'transparent'
+  },
+  menuBtn:       { width: 42, height: 42, borderRadius: 21, backgroundColor: colors.darkSlateBlue, justifyContent: 'center', alignItems: 'center' },
   topRight:      { flexDirection: 'row', alignItems: 'center', gap: 8 },
   guidedBtn:     { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.primary.main + '1f', borderWidth: 1, borderColor: colors.primary.main + '4d', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
   guidedBtnText: { color: colors.primary.main, fontSize: 12, fontWeight: '700', fontFamily: fonts.arimo.bold },
   scroll:        { flex: 1, paddingHorizontal: H_PADDING },
-  scrollContent: { flexGrow: 1, paddingTop: 40, backgroundColor : 'transparent' },
-  titleBlock:    { alignItems: 'center', marginTop: 20, marginBottom: 24 },
+  scrollContent: { flexGrow: 1, paddingTop: 200, backgroundColor : 'transparent' },
+  titleBlock:    { alignItems: 'center', marginTop: 32, marginBottom: 24 },
   greeting:      { fontFamily: fonts.arimo.regular, fontSize: 15, color: 'rgba(255,255,255,0.35)', marginBottom: 8, textAlign: 'center' },
   titleArimo:    { fontFamily: fonts.arimo.bold, fontSize: 14, letterSpacing: 3, textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)', textAlign: 'center' },
   titleBrittany: { fontFamily: fonts.brittany, fontSize: 38, color: 'white', textAlign: 'center', textShadowColor: NEON_BLUE, textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 3, paddingLeft : 20 },
