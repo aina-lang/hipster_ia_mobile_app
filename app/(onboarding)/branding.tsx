@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { useRouter, useNavigation } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
-import Animated, { FadeInDown, runOnJS } from 'react-native-reanimated';
+import Animated, { FadeInDown, useSharedValue, runOnJS } from 'react-native-reanimated';
 import { Upload, Palette, User } from 'lucide-react-native';
 import ColorPicker, { HueSlider, Panel1, Preview, OpacitySlider } from 'reanimated-color-picker';
 import { BackgroundGradientOnboarding } from '../../components/ui/BackgroundGradientOnboarding';
@@ -129,7 +129,7 @@ export default function BrandingScreen() {
     runOnJS(setTempHex)(hex.toUpperCase());
   };
 
-  const scrollY = Animated.useSharedValue(0);
+  const scrollY = useSharedValue(0);
 
   return (
     <BackgroundGradientOnboarding darkOverlay>

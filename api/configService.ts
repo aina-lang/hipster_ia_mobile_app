@@ -17,7 +17,7 @@ export const configService = {
     try {
       const response = await api.get('/ai/auth/config');
       cachedConfig = response.data?.data || response.data;
-      return cachedConfig;
+      return cachedConfig || {};
     } catch (error) {
       console.error('[Config Service] Error fetching config:', error);
       return {};

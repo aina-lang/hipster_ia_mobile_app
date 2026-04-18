@@ -13,7 +13,7 @@ export default function HomeScreen() {
       <ScrollView contentContainerStyle={styles.container}>
         <View style={styles.header}>
           <Text style={styles.greeting}>Bonjour,</Text>
-          <Text style={styles.userName}>{user?.firstName || 'Utilisateur'}</Text>
+          <Text style={styles.userName}>{user?.name || 'Utilisateur'}</Text>
         </View>
 
         <View style={styles.card}>

@@ -20,7 +20,7 @@ export function NeonBackButton({ onPress, size = 42 }: NeonBackButtonProps) {
       style={[styles.wrapper, { width: size, height: size, borderRadius }]}
     >
       <View style={styles.iconGlow}>
-        <ArrowLeft size={size * 0.52} color="white" style={styles.icon} />
+        <ArrowLeft size={size * 0.52} color="white" />
       </View>
     </TouchableOpacity>
   );
@@ -38,10 +38,5 @@ const styles = StyleSheet.create({
     shadowOpacity: 1,
     shadowRadius: 8,
     elevation: 4,
-  },
-  icon: {
-    textShadowColor: NEON_BLUE,
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 8,
   },
 });

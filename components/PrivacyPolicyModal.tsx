@@ -29,7 +29,7 @@ export default function PrivacyPolicyModal({ visible, onClose }: PrivacyPolicyMo
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Conditions d'utilisation</Text>
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-            <X color={colors.text} size={24} />
+            <X color={colors.text.primary} size={24} />
           </TouchableOpacity>
         </View>
 
@@ -62,7 +62,7 @@ export default function PrivacyPolicyModal({ visible, onClose }: PrivacyPolicyMo
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.background.primary,
   },
   header: {
     flexDirection: 'row',
@@ -76,7 +76,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: colors.text,
+    color: colors.text.primary,
     flex: 1,
   },
   closeButton: {
@@ -96,12 +96,12 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.neon,
+    color: colors.neon.primary,
     marginBottom: 12,
   },
   sectionContent: {
     fontSize: 14,
-    color: colors.textSecondary,
+    color: colors.text.secondary,
     lineHeight: 22,
   },
   footer: {
@@ -111,13 +111,13 @@ const styles = StyleSheet.create({
     borderTopColor: colors.border,
   },
   acceptButton: {
-    backgroundColor: colors.neon,
+    backgroundColor: colors.neon.primary,
     paddingVertical: 14,
     borderRadius: 8,
     alignItems: 'center',
   },
   acceptButtonText: {
-    color: colors.background,
+    color: colors.background.primary,
     fontSize: 16,
     fontWeight: '600',
   },
