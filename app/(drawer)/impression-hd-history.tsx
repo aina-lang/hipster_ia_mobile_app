@@ -192,32 +192,17 @@ export default function ImpressionHDHistoryScreen() {
     try {
       setDownloading(image.id);
 
-      if (permissionResponse?.status !== 'granted') {
-        const resp = await requestPermission();
-        if (resp.status !== 'granted') {
-          showModal('error', 'Permission refusée', 'Accès à la galerie refusé.');
-          return;
-        }
-      }
-
       const filename = `hipster-${image.id}.jpg`;
       const fileUri = `${FileSystem.cacheDirectory}${filename}`;
 
       const downloadRes = await FileSystem.downloadAsync(image.url, fileUri);
       if (downloadRes.status !== 200) throw new Error('Téléchargement échoué');
 
-      const asset = await MediaLibrary.createAssetAsync(downloadRes.uri);
-      const album = await MediaLibrary.getAlbumAsync('Hipster IA');
-
-      if (!album) {
-        await MediaLibrary.createAlbumAsync('Hipster IA', asset, false);
-      } else {
-        await MediaLibrary.addAssetsToAlbumAsync([asset], album, false);
-      }
+      await MediaLibrary.createAssetAsync(downloadRes.uri);
 
       showModal('success', 'Succès', 'Flyer enregistré dans votre galerie.');
     } catch (error: any) {
-      showModal('error', 'Erreur', `Impossible de télécharger : ${error.message}`);
+      showModal('error', 'Erreur', `Impossible d'enregistrer l'image. Vérifiez vos permissions.`);
     } finally {
       setDownloading(null);
     }
@@ -385,7 +370,7 @@ export default function ImpressionHDHistoryScreen() {
       <ScreenHeader
         titleSub="VOS"
         titleScript="Affiches HD"
-        onBack={selectionMode ? undefined : () => navigation.dispatch(DrawerActions.openDrawer())}
+        onBack={selectionMode ? undefined : () => navigation.goBack()}
         scrollY={scrollY}
       />
 
