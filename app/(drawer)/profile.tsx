@@ -395,12 +395,14 @@ export default function ProfileScreen() {
                 <Text style={s.heroBadgeStar}>★</Text>
                 <Text style={s.heroBadgeText}>{isPremium ? 'Hipster•IA Premium' : 'Hipster Gratuit'}</Text>
               </View>
+              {/* 
               <View style={s.progressSection}>
                 <Text style={s.progressLabel}>Profil complété à {completion}%</Text>
                 <View style={s.progressBar}>
                   <LinearGradient colors={[colors.neon.primary, colors.primary.light]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={[s.progressFill, { width: `${completion}%` as any }]} />
                 </View>
               </View>
+              */}
             </View>
 
             {isEditing ? (
