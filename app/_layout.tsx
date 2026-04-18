@@ -205,9 +205,12 @@ export default function RootLayout() {
           targetRoute = '/(auth)/verify-email';
         }
       }
-      // For AI users, require payment (stripeSubscriptionId) not just default planType from getCredits
+      // For AI users, require payment unless they already have an active plan (even without Stripe)
       else if (user && user.type === 'ai' && !user.stripeSubscriptionId) {
-        if (!segments.includes('packs')) {
+        const hasActivePlan = 
+          (user.subscriptionStatus === 'active' || user.subscriptionStatus === 'trialing' || user.subscriptionStatus === 'trial') &&
+          user.planType && user.planType !== 'curieux';
+        if (!hasActivePlan && !segments.includes('packs')) {
           targetRoute = '/(onboarding)/packs';
         }
       }

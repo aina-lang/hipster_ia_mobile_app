@@ -307,8 +307,8 @@ function WelcomeScreenContent({ onVideoFinish }: WelcomeScreenProps) {
   const playbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const videoCompletedRef = useRef(false);
   const playbackStartedRef = useRef(false);
-  // ✅ Verrou permanent — une fois l'image affichée, on ne repasse jamais à la vidéo
-  const hasShownImageRef = useRef(false);
+  // ✅ Verrou permanent — initialisé depuis le store pour capturer logout/back avant le premier render
+  const hasShownImageRef = useRef(useWelcomeVideoStore.getState().isReturningFromBack);
 
   const textAnimProgress = useSharedValue(0);
   const videoMarginTop = useSharedValue(0);
