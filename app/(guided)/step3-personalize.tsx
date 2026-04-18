@@ -16,7 +16,7 @@ import { useRouter } from 'expo-router';
 import { Sparkles, X, Upload } from 'lucide-react-native';
 import ColorPicker, { HueSlider, Panel1, Preview } from 'reanimated-color-picker';
 import { LinearGradient } from 'expo-linear-gradient';
-import { runOnJS } from 'react-native-reanimated';
+import Reanimated, { runOnJS, SlideInDown, SlideOutDown } from 'react-native-reanimated';
 import { useCreationStore } from '../../store/creationStore';
 import { useAuthStore } from '../../store/authStore';
 import { colors } from '../../theme/colors';
@@ -389,10 +389,32 @@ export default function Step3PersonalizeScreen() {
     ? ARCHITECTURE_EXAMPLES[selectedArchitecture]
     : EXAMPLES_DEFAULT;
 
+  const isFormValid = React.useMemo(() => {
+    const isSubjectValid = subjectSourceType === 'image' ? !!uploadedImage : !!(subject && subject.trim());
+    const isTitleValid = !!(mainTitle && mainTitle.trim());
+    const isInfoLineValid = !!(infoLine && infoLine.trim());
+    const isPromoValid = selectedArchitecture === 'impact-commercial' ? !!(textPromo && textPromo.trim()) : true;
+    
+    return isSubjectValid && isTitleValid && isInfoLineValid && isPromoValid;
+  }, [subjectSourceType, uploadedImage, subject, mainTitle, infoLine, selectedArchitecture, textPromo]);
+
   return (
     <GuidedScreenWrapper
       currentStep={selectedCategory === 'Social' || selectedCategory === 'Image' ? 3 : 4}
       totalSteps={selectedCategory === 'Social' ? 4 : (selectedCategory === 'Image' ? 3 : 4)}
+      footer={
+        isFormValid ? (
+          <Reanimated.View entering={SlideInDown.duration(300)} exiting={SlideOutDown.duration(300)} style={s.footerButtonWrapper}>
+            <NeonActionButton
+              label="GÉNÉRER MON VISUEL"
+              icon={<Sparkles size={16} color="#ffffff" />}
+              onPress={handleCreate}
+              loading={false}
+              disabled={false}
+            />
+          </Reanimated.View>
+        ) : null
+      }
     >
       <View style={s.container}>
 
@@ -589,15 +611,6 @@ export default function Step3PersonalizeScreen() {
           </View>
         </View>
 
-        <View style={s.buttonWrapper}>
-          <NeonActionButton
-            label="GÉNÉRER MON VISUEL"
-            icon={<Sparkles size={16} color="#ffffff" />}
-            onPress={handleCreate}
-            loading={false}
-            disabled={false}
-          />
-        </View>
 
         <Modal visible={pickerVisible} animationType="fade" transparent>
           <View style={s.modalOverlay}>
@@ -1096,5 +1109,11 @@ const s = StyleSheet.create({
     fontSize: 14,
     letterSpacing: 0.6,
     color: '#fff',
+  },
+  footerButtonWrapper: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    paddingBottom: 32, // Extra space for safe area bottom if needed
+    backgroundColor: 'transparent',
   },
 });

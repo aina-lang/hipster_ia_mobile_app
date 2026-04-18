@@ -10,7 +10,7 @@ import {
   Animated as RNAnimated,
   Easing,
 } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring, SlideInDown, FadeInDown } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { ChevronRight } from 'lucide-react-native';
@@ -160,6 +160,17 @@ export default function Step3DirectionsScreen() {
       currentStep={3}
       totalSteps={4}
       scrollViewRef={scrollRef}
+      footer={
+        selectedArchitecture ? (
+          <Animated.View entering={SlideInDown.duration(300)} style={s.footerButtonWrapper}>
+            <NeonActionButton
+              label="Continuer"
+              onPress={handleContinue}
+              disabled={!selectedArchitecture}
+            />
+          </Animated.View>
+        ) : null
+      }
     >
       <View style={s.container}>
         <View style={s.header}>
@@ -208,13 +219,6 @@ export default function Step3DirectionsScreen() {
           );
         })}
 
-        <View style={s.buttonWrapper}>
-          <NeonActionButton
-            label="Continuer"
-            onPress={handleContinue}
-            disabled={!selectedArchitecture}
-          />
-        </View>
       </View>
     </GuidedScreenWrapper>
   );
@@ -337,6 +341,7 @@ const s = StyleSheet.create({
     backgroundColor: 'rgba(10,12,18,0.85)',
     borderTopWidth: 1,
     borderTopColor: 'rgba(255,255,255,0.08)',
+    height: 70,
   },
   cardTitle: {
     fontFamily: fonts.arimo.bold,
@@ -394,7 +399,10 @@ const s = StyleSheet.create({
     lineHeight: 18,
   },
 
-  buttonWrapper: {
-    paddingTop: 4,
+  footerButtonWrapper: {
+    paddingHorizontal: H_PADDING,
+    paddingVertical: 16,
+    paddingBottom: 32, // Extra padding for safe area bottom if needed
+    backgroundColor: 'transparent',
   },
 });
