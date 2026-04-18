@@ -24,7 +24,7 @@ import { shadows } from '../../theme/shadows';
 const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
 
 interface NeonButtonProps {
-  title: string;
+  title?: string;
   onPress: () => void;
   variant?: 'primary' | 'outline' | 'ghost' | 'premium';
   size?: 'sm' | 'md' | 'lg';
@@ -34,6 +34,7 @@ interface NeonButtonProps {
   textStyle?: TextStyle;
   pulse?: boolean;
   icon?: LucideIcon | React.ReactNode;
+  children?: React.ReactNode;
 }
 
 // Neon blue color constants — matching the screenshot exactly
@@ -52,6 +53,7 @@ export function NeonButton({
   textStyle,
   pulse = false,
   icon,
+  children,
 }: NeonButtonProps) {
   const scale = useSharedValue(1);
   const pulseOpacity = useSharedValue(1);
@@ -87,33 +89,37 @@ export function NeonButton({
 
   const renderContent = () => (
     <>
-      {loading ? (
-        <ActivityIndicator color="#ffffff" />
-      ) : (
+      {children || (
         <>
-          <Text
-            style={[
-              styles.text,
-              { fontSize: textSizes[size] },
-              variant === 'outline' && styles.outlineText,
-              variant === 'ghost' && styles.ghostText,
-              (variant === 'primary' || variant === 'premium') && styles.neonText,
-              textStyle,
-            ]}>
-            {title}
-          </Text>
-          {IconComponent && (
-            <IconComponent
-              size={textSizes[size] + 2}
-              color={
-                variant === 'outline' || variant === 'ghost'
-                  ? NEON_BLUE_BRIGHT
-                  : '#ffffff'
-              }
-              style={styles.icon}
-            />
+          {loading ? (
+            <ActivityIndicator color="#ffffff" />
+          ) : (
+            <>
+              <Text
+                style={[
+                  styles.text,
+                  { fontSize: textSizes[size] },
+                  variant === 'outline' && styles.outlineText,
+                  variant === 'ghost' && styles.ghostText,
+                  (variant === 'primary' || variant === 'premium') && styles.neonText,
+                  textStyle,
+                ]}>
+                {title}
+              </Text>
+              {IconComponent && (
+                <IconComponent
+                  size={textSizes[size] + 2}
+                  color={
+                    variant === 'outline' || variant === 'ghost'
+                      ? NEON_BLUE_BRIGHT
+                      : '#ffffff'
+                  }
+                  style={styles.icon}
+                />
+              )}
+              {iconElement}
+            </>
           )}
-          {iconElement}
         </>
       )}
     </>

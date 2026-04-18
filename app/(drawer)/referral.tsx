@@ -4,7 +4,8 @@ import {
   ActivityIndicator, RefreshControl, Animated as RNAnimated, Easing, Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter, useFocusEffect } from 'expo-router';
+import { useRouter, useFocusEffect, useNavigation } from 'expo-router';
+import { DrawerActions } from '@react-navigation/native';
 import Animated, { useSharedValue } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ArrowLeft, Users, Gift, Star, ChevronRight } from 'lucide-react-native';
@@ -53,6 +54,7 @@ function RuleItem({ number, text }: { number: string; text: string }) {
 
 export default function ReferralScreen() {
   const router = useRouter();
+  const navigation = useNavigation();
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -118,7 +120,7 @@ export default function ReferralScreen() {
       <ScreenHeader
         titleSub="VOTRE"
         titleScript="Parrainage"
-        onBack={() => router.back()}
+        onBack={() => navigation.dispatch(DrawerActions.openDrawer())}
         scrollY={scrollY}
       />
 

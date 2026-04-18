@@ -16,6 +16,7 @@ import * as Clipboard from 'expo-clipboard';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useNavigation, useGlobalSearchParams } from 'expo-router';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
+import { DrawerActions } from '@react-navigation/native';
 import * as Notifications from 'expo-notifications';
 import * as ImagePicker from 'expo-image-picker';
 import Animated, { useSharedValue } from 'react-native-reanimated';
@@ -284,7 +285,7 @@ export default function FreetextScreen() {
       <ScreenHeader
         titleSub="TEXTE"
         titleScript="Libre"
-        onBack={() => router.replace('/(drawer)')}
+        onBack={() => navigation.dispatch(DrawerActions.openDrawer())}
         scrollY={scrollY}
         renderRight={() => (
           hasMessages ? (

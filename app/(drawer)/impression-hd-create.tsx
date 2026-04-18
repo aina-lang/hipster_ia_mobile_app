@@ -10,7 +10,8 @@ import {
   Modal,
   ActivityIndicator,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useNavigation } from 'expo-router';
+import { DrawerActions } from '@react-navigation/native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
@@ -28,6 +29,7 @@ import { GenericModal, ModalType } from '../../components/ui/GenericModal';
 
 export default function ImpressionHDCreateScreen() {
   const router = useRouter();
+  const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const {
     setFunction,
@@ -88,7 +90,7 @@ export default function ImpressionHDCreateScreen() {
   return (
     <SafeAreaView style={[s.container, { paddingTop: insets.top }]}>
       <View style={s.header}>
-        <TouchableOpacity onPress={() => router.back()}>
+        <TouchableOpacity onPress={() => navigation.dispatch(DrawerActions.openDrawer())}>
           <ArrowLeft size={24} color={colors.text.primary} />
         </TouchableOpacity>
         <Text style={s.headerTitle}>Nouveau flyer</Text>
@@ -225,7 +227,7 @@ const s = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     color: colors.text.primary,
-    fontFamily: fonts.arimo,
+    fontFamily: fonts.arimo.bold,
   },
   content: {
     flex: 1,
@@ -251,7 +253,7 @@ const s = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     color: colors.text.primary,
-    fontFamily: fonts.arimo,
+    fontFamily: fonts.arimo.regular,
     lineHeight: 20,
   },
   section: {
@@ -262,7 +264,7 @@ const s = StyleSheet.create({
     fontWeight: '600',
     color: colors.text.primary,
     marginBottom: 12,
-    fontFamily: fonts.arimo,
+    fontFamily: fonts.arimo.bold,
   },
   dimensionsGrid: {
     gap: 12,
@@ -302,7 +304,7 @@ const s = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     color: colors.text.primary,
-    fontFamily: fonts.arimo,
+    fontFamily: fonts.arimo.regular,
   },
   textInput: {
     backgroundColor: 'rgba(255, 255, 255, 0.05)',
@@ -312,7 +314,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 12,
     color: colors.text.primary,
-    fontFamily: fonts.arimo,
+    fontFamily: fonts.arimo.regular,
     fontSize: 14,
     minHeight: 120,
     textAlignVertical: 'top',
@@ -343,7 +345,7 @@ const s = StyleSheet.create({
   featureText: {
     fontSize: 13,
     color: colors.text.primary,
-    fontFamily: fonts.arimo,
+    fontFamily: fonts.arimo.regular,
   },
   footer: {
     paddingHorizontal: 16,
@@ -361,6 +363,6 @@ const s = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: colors.text.primary,
-    fontFamily: fonts.arimo,
+    fontFamily: fonts.arimo.bold,
   },
 });

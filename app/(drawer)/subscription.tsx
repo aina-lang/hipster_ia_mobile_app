@@ -28,7 +28,8 @@ import {
   XCircle,
   Bell,
 } from 'lucide-react-native';
-import { useRouter } from 'expo-router';
+import { DrawerActions } from '@react-navigation/native';
+import { useRouter, useNavigation } from 'expo-router';
 import { useStripe } from '@stripe/stripe-react-native';
 import { api } from '../../api/client';
 import { useAuthStore } from '../../store/authStore';
@@ -52,6 +53,7 @@ const planIcons: Record<string, LucideIcon> = {
 
 export default function SubscriptionScreen() {
   const router = useRouter();
+  const navigation = useNavigation();
   const [loading, setLoading] = useState(false);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
@@ -237,11 +239,7 @@ export default function SubscriptionScreen() {
         titleSub="VOS"
         titleScript="Abonnements"
         onBack={() => {
-          if (router.canGoBack()) {
-            router.back();
-          } else {
-            router.push('/(drawer)');
-          }
+          navigation.dispatch(DrawerActions.openDrawer());
         }}
         scrollY={scrollY}
       />

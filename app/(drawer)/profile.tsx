@@ -4,7 +4,8 @@ import {
   Platform, TouchableOpacity, ScrollView, Pressable,
   ActivityIndicator, Animated as RNAnimated, Easing, Image, Modal,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useNavigation } from 'expo-router';
+import { DrawerActions } from '@react-navigation/native';
 import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -212,6 +213,7 @@ function JobSelector({
 
 export default function ProfileScreen() {
   const router = useRouter();
+  const navigation = useNavigation();
   const { user, updateAiProfile, changePassword, logout, isLoading } = useAuthStore();
 
   // Protect against null user during logout
@@ -374,7 +376,7 @@ export default function ProfileScreen() {
         <ScreenHeader
           titleSub="Mon" 
           titleScript="Profil" 
-          onBack={() => router.back()} 
+          onBack={() => navigation.dispatch(DrawerActions.openDrawer())} 
           scrollY={scrollY}
         />
 
@@ -417,18 +419,7 @@ export default function ProfileScreen() {
               */}
             </View>
 
-            {isEditing ? (
-                <View style={s.actionsRow}>
-                  <TouchableOpacity style={s.cancelBtn} onPress={handleCancel}>
-                    <Text style={s.cancelBtnText}>Annuler</Text>
-                  </TouchableOpacity>
-                  <NeonActionButton onPress={handleSave} loading={isLoading} disabled={isLoading} label="Enregistrer" />
-                </View>
-              ) : (
-                <View style={s.actionsCenter}>
-                  <NeonActionButton onPress={() => setIsEditing(true)} loading={false} disabled={false} label="Modifier le profil" />
-                </View>
-            )}
+
 
             <View style={s.card}>
               <SectionTitle title="Informations générales" />
@@ -480,7 +471,21 @@ export default function ProfileScreen() {
               <InputField label="Site Web" icon={<Link size={16} color={colors.text.muted} />} value={websiteUrl} onChangeText={setWebsiteUrl} placeholder="www.monsite.com" editable={isEditing} keyboardType="url" autoCapitalize="none" />
               */}
 
-              
+
+              <View style={{ marginTop: 20 }}>
+                {isEditing ? (
+                  <View style={s.actionsRow}>
+                    <TouchableOpacity style={s.cancelBtn} onPress={handleCancel}>
+                      <Text style={s.cancelBtnText}>Annuler</Text>
+                    </TouchableOpacity>
+                    <NeonActionButton onPress={handleSave} loading={isLoading} disabled={isLoading} label="Enregistrer" />
+                  </View>
+                ) : (
+                  <View style={s.actionsCenter}>
+                    <NeonActionButton onPress={() => setIsEditing(true)} loading={false} disabled={false} label="Modifier le profil" />
+                  </View>
+                )}
+              </View>
             </View>
 
             <View style={s.card}>
@@ -500,7 +505,7 @@ export default function ProfileScreen() {
                 loading={false} disabled={false}
                 label="Gérer l'abonnement"
                 icon={<Sparkles size={16} color="#ffffff" />}
-                small align="left"
+                small align="center"
               />
             </View>
 

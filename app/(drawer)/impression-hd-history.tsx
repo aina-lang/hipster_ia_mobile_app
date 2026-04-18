@@ -13,7 +13,8 @@ import {
   RefreshControl,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter, useFocusEffect } from 'expo-router';
+import { useRouter, useFocusEffect, useNavigation } from 'expo-router';
+import { DrawerActions } from '@react-navigation/native';
 import { useSharedValue } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Sharing from 'expo-sharing';
@@ -47,6 +48,7 @@ const TILE = (CONTENT_W - GALLERY_GAP * (COLS - 1)) / COLS;
 
 export default function ImpressionHDHistoryScreen() {
   const router = useRouter();
+  const navigation = useNavigation();
   const insets = useSafeAreaInsets();
 
   const [selectedImage, setSelectedImage] = useState<GeneratedImage | null>(null);
@@ -383,7 +385,7 @@ export default function ImpressionHDHistoryScreen() {
       <ScreenHeader
         titleSub="VOS"
         titleScript="Affiches HD"
-        onBack={selectionMode ? undefined : () => router.back()}
+        onBack={selectionMode ? undefined : () => navigation.dispatch(DrawerActions.openDrawer())}
         scrollY={scrollY}
       />
 

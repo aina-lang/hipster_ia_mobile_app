@@ -7,7 +7,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronRight, Search, MessageSquare, ArrowLeft, Trash2 } from 'lucide-react-native';
 import Animated, { useSharedValue } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter, useFocusEffect } from 'expo-router';
+import { useRouter, useFocusEffect, useNavigation } from 'expo-router';
+import { DrawerActions } from '@react-navigation/native';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/fr';
@@ -34,6 +35,7 @@ interface HistoryItem {
 
 export default function HistoryScreen() {
   const router = useRouter();
+  const navigation = useNavigation();
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -98,7 +100,7 @@ export default function HistoryScreen() {
       <ScreenHeader
         titleSub="VOTRE"
         titleScript="Historique"
-        onBack={() => router.back()}
+        onBack={() => navigation.dispatch(DrawerActions.openDrawer())}
         scrollY={scrollY}
       />
 
