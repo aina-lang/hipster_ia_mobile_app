@@ -174,6 +174,8 @@ export default function RootLayout() {
   const inAuthGroup = segments.some(s => s.includes('(auth)')) || segments.includes('login') || segments.includes('register') || segments.includes('verify-email');
   const inOnboardingGroup = segments.some(s => s.includes('(onboarding)')) || segments.includes('setup') || segments.includes('branding') || segments.includes('packs') || segments.includes('payment');
   const inGuidedGroup = segments.some(s => s.includes('(guided)'));
+  const inDrawerGroup = segments.some(s => s.includes('(drawer)'));
+  const inTabsGroup   = segments.some(s => s.includes('(tabs)'));
   const pathInPublicUnauthFlow = pathLooksLikePublicUnauthFlow(pathname);
   const inUnauthPublicFlow = inAuthGroup || inOnboardingGroup || pathInPublicUnauthFlow;
 
@@ -221,16 +223,16 @@ export default function RootLayout() {
         }
       }
       else {
-        // User is fully set up, should be in drawer by default,
-        // but allow explicit access to guided flows (/(guided)/...)
-        if (!segments.includes('(drawer)') && !inGuidedGroup) {
+        // User is fully set up. Ensure they are in a protected group,
+        // otherwise default to (drawer) home.
+        if (!inDrawerGroup && !inGuidedGroup && !inTabsGroup) {
           targetRoute = '/(drawer)';
         }
       }
     } else {
       // If not authenticated, allow access to (auth) and (onboarding)
       // Only redirect to /welcome if in protected area
-      const inProtectedRoute = segments.some(s => s.includes('(drawer)') || s.includes('(guided)') || s.includes('(tabs)'));
+      const inProtectedRoute = inDrawerGroup || inGuidedGroup || inTabsGroup;
       const isAtRoot = !segments.length || segments[0] === '' || segments[0] === 'index';
       
       if (!inUnauthPublicFlow && (inProtectedRoute || isAtRoot)) {
@@ -256,7 +258,7 @@ export default function RootLayout() {
         console.error('[RootLayout] ERROR during router.replace:', error);
       }
     }
-  }, [isAuthenticated, hasFinishedOnboarding, isHydrated, isInitialized, segments, pathname, inUnauthPublicFlow, user]);
+  }, [isAuthenticated, hasFinishedOnboarding, isHydrated, isInitialized, segments, pathname, inUnauthPublicFlow, user, inDrawerGroup, inGuidedGroup, inTabsGroup]);
 
   const handleVideoFinish = React.useCallback(() => {
     console.log('[RootLayout] handleVideoFinish called. Setting videoCompleted=true');
@@ -293,4 +295,3 @@ export default function RootLayout() {
     </SafeAreaProvider>
   );
 }
-

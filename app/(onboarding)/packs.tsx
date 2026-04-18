@@ -272,7 +272,7 @@ export default function PacksScreen() {
       const { paymentIntentClientSecret, setupIntentClientSecret, ephemeralKey, customerId } = data.data || data;
       const initResult = await initPaymentSheet({
         merchantDisplayName: 'Hipster IA',
-        locale: 'fr-FR',
+        // locale: 'fr-FR',
         customerId: customerId,
         customerEphemeralKeySecret: ephemeralKey,
         paymentIntentClientSecret,

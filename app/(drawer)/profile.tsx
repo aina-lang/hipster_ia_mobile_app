@@ -26,6 +26,7 @@ import { useWelcomeVideoStore } from '../../store/welcomeVideoStore';
 import { NeonBorderInput } from '../../components/ui/NeonBorderInput';
 import { NeonActionButton } from '../../components/ui/NeonActionButton';
 import { NeonBackButton } from '../../components/ui/NeonBackButton';
+import { ScreenHeader } from 'components/ui/ScreenHeader';
 
 const AVATAR_SIZE = 110;
 
@@ -370,7 +371,7 @@ export default function ProfileScreen() {
   return (
     <BackgroundGradientOnboarding darkOverlay>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-        <ScreenHeader 
+        <ScreenHeader
           titleSub="Mon" 
           titleScript="Profil" 
           onBack={() => router.back()} 
