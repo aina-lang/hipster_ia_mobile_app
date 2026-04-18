@@ -20,6 +20,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as MediaLibrary from 'expo-media-library';
+import * as Print from 'expo-print';
 import {
   Download,
   Trash2,
@@ -247,13 +248,10 @@ export default function ImpressionHDHistoryScreen() {
         if (downloadRes.status !== 200) throw new Error('Téléchargement échoué');
       }
 
-      if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(fileUri, {
-          mimeType: 'image/jpeg',
-          dialogTitle: `Imprimer — ${image.title}`,
-        });
+      if (fileUri) {
+        await Print.printAsync({ uri: fileUri });
       } else {
-        showModal('info', 'Impression', 'Utilisez le partage pour accéder aux options d\'impression.');
+        showModal('info', 'Impression', 'Impossible de préparer le fichier pour l\'impression.');
       }
     } catch (error: any) {
       showModal('error', 'Erreur', `Impression échouée : ${error.message}`);

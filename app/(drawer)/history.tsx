@@ -10,8 +10,9 @@ import Animated, { useSharedValue } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, useFocusEffect, useNavigation } from 'expo-router';
 import { DrawerActions } from '@react-navigation/native';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as MediaLibrary from 'expo-media-library';
+import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -19,7 +20,7 @@ import 'dayjs/locale/fr';
 
 import { AiService } from '../../api/ai.service';
 import { colors } from '../../theme/colors';
-import { GenericModal } from '../../components/ui/GenericModal';
+import { GenericModal, ModalType } from '../../components/ui/GenericModal';
 import { BackgroundGradientOnboarding } from '../../components/ui/BackgroundGradientOnboarding';
 import { ScreenHeader } from '../../components/ui/ScreenHeader';
 import { NeonBackButton } from '../../components/ui/NeonBackButton';
@@ -66,17 +67,24 @@ export default function HistoryScreen() {
     setModalVisible(true);
   };
 
+  const getFullUrl = (url?: string) => {
+    if (!url) return '';
+    return url.startsWith('http') ? url : `https://hipster-api.fr/${url.startsWith('/') ? url.slice(1) : url}`;
+  };
+
   const handleDownload = async (item: HistoryItem) => {
     if (!item.imageUrl) return;
     try {
       setDownloading(item.id);
+      const fullUrl = getFullUrl(item.imageUrl);
       const filename = `hipster-${item.id}.jpg`;
       const fileUri = `${FileSystem.cacheDirectory}${filename}`;
-      const downloadRes = await FileSystem.downloadAsync(item.imageUrl, fileUri);
+      const downloadRes = await FileSystem.downloadAsync(fullUrl, fileUri);
       if (downloadRes.status !== 200) throw new Error('Téléchargement échoué');
       await MediaLibrary.createAssetAsync(downloadRes.uri);
       showGenericModal('success', 'Succès', 'Image enregistrée dans votre galerie.');
     } catch (error: any) {
+      console.error('Download error:', error);
       showGenericModal('error', 'Erreur', `Impossible d'enregistrer l'image. Vérifiez vos permissions.`);
     } finally {
       setDownloading(null);
@@ -86,11 +94,12 @@ export default function HistoryScreen() {
   const handleShare = async (item: HistoryItem) => {
     if (!item.imageUrl) return;
     try {
+      const fullUrl = getFullUrl(item.imageUrl);
       const filename = `hipster-${item.id}.jpg`;
       const fileUri = `${FileSystem.cacheDirectory}${filename}`;
       const fileInfo = await FileSystem.getInfoAsync(fileUri);
       if (!fileInfo.exists) {
-        const downloadRes = await FileSystem.downloadAsync(item.imageUrl, fileUri);
+        const downloadRes = await FileSystem.downloadAsync(fullUrl, fileUri);
         if (downloadRes.status !== 200) throw new Error('Téléchargement échoué');
       }
       if (await Sharing.isAvailableAsync()) {
@@ -99,6 +108,7 @@ export default function HistoryScreen() {
         RNShare.share({ url: fileUri, title: item.title, message: `Découvrez cette création` });
       }
     } catch (error: any) {
+      console.error('Share error:', error);
       showGenericModal('error', 'Erreur', `Partage échoué : ${error.message}`);
     }
   };
@@ -106,19 +116,21 @@ export default function HistoryScreen() {
   const handlePrint = async (item: HistoryItem) => {
     if (!item.imageUrl) return;
     try {
+      const fullUrl = getFullUrl(item.imageUrl);
       const filename = `hipster-${item.id}.jpg`;
       const fileUri = `${FileSystem.cacheDirectory}${filename}`;
       const fileInfo = await FileSystem.getInfoAsync(fileUri);
       if (!fileInfo.exists) {
-        const downloadRes = await FileSystem.downloadAsync(item.imageUrl, fileUri);
+        const downloadRes = await FileSystem.downloadAsync(fullUrl, fileUri);
         if (downloadRes.status !== 200) throw new Error('Téléchargement échoué');
       }
-      if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(fileUri, { mimeType: 'image/jpeg', dialogTitle: `Imprimer — ${item.title}` });
+      if (fileUri) {
+        await Print.printAsync({ uri: fileUri });
       } else {
-        showGenericModal('info', 'Impression', 'Utilisez le partage pour accéder aux options d\'impression.');
+        showGenericModal('info', 'Impression', 'Impossible de préparer le fichier pour l\'impression.');
       }
     } catch (error: any) {
+      console.error('Print error:', error);
       showGenericModal('error', 'Erreur', `Impression échouée : ${error.message}`);
     }
   };
@@ -242,7 +254,7 @@ export default function HistoryScreen() {
                   <View style={s.iconContainer}>
                     {item.imageUrl ? (
                       <Image
-                        source={{ uri: item.imageUrl.startsWith('http') ? item.imageUrl : `https://hipster-api.fr/${item.imageUrl}` }}
+                        source={{ uri: getFullUrl(item.imageUrl) }}
                         style={s.thumbnail}
                         resizeMode="cover"
                       />
@@ -285,7 +297,7 @@ export default function HistoryScreen() {
           {selectedItem && (
             <View style={s.modalContent}>
               <Image
-                source={{ uri: selectedItem.imageUrl?.startsWith('http') ? selectedItem.imageUrl : `https://hipster-api.fr/${selectedItem.imageUrl}` }}
+                source={{ uri: getFullUrl(selectedItem.imageUrl) }}
                 style={s.fullImage}
                 resizeMode="contain"
               />
