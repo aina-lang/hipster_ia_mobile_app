@@ -10,7 +10,7 @@ import {
 import type { TextInput as RNTextInput } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { router, useLocalSearchParams } from 'expo-router';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated, { FadeInDown, useSharedValue } from 'react-native-reanimated';
 import { Eye, EyeOff } from 'lucide-react-native';
 import { BackgroundGradientOnboarding } from '../../components/ui/BackgroundGradientOnboarding';
 import { ScreenHeader } from '../../components/ui/ScreenHeader';
@@ -73,15 +73,26 @@ export default function ResetPasswordScreen() {
     }
   };
 
+  const scrollY = useSharedValue(0);
+
   return (
     <BackgroundGradientOnboarding darkOverlay={true}>
-      <ScreenHeader titleSub="Nouveau" titleScript="Mot de passe" onBack={() => router.replace('/(auth)/login')} />
+      <ScreenHeader 
+        titleSub="Nouveau" 
+        titleScript="Mot de passe" 
+        onBack={() => router.replace('/(auth)/login')} 
+        scrollY={scrollY}
+      />
 
       <KeyboardAwareScrollView
         bottomOffset={20}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingTop: 120 }]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
+        onScroll={(e) => {
+          scrollY.value = e.nativeEvent.contentOffset.y;
+        }}
+        scrollEventThrottle={16}
       >
         <Animated.View entering={FadeInDown.duration(800)} style={styles.content}>
           <Text style={styles.subtitle}>Entrez votre nouveau mot de passe pour sécuriser votre compte.</Text>

@@ -129,6 +129,8 @@ export default function BrandingScreen() {
     runOnJS(setTempHex)(hex.toUpperCase());
   };
 
+  const scrollY = Animated.useSharedValue(0);
+
   return (
     <BackgroundGradientOnboarding darkOverlay>
 
@@ -136,12 +138,17 @@ export default function BrandingScreen() {
         titleSub="Votre"
         titleScript="identité"
         onBack={() => router.back()}
+        scrollY={scrollY}
       />
 
-      <ScrollView
-        contentContainerStyle={s.scrollContent}
+      <Animated.ScrollView
+        contentContainerStyle={[s.scrollContent, { paddingTop: 120 }]}
         showsVerticalScrollIndicator={false}
         bounces={false}
+        onScroll={(e) => {
+          scrollY.value = e.nativeEvent.contentOffset.y;
+        }}
+        scrollEventThrottle={16}
       >
         <Animated.View entering={FadeInDown.duration(800)} style={s.content}>
 
@@ -207,7 +214,7 @@ export default function BrandingScreen() {
           </View>
 
         </Animated.View>
-      </ScrollView>
+      </Animated.ScrollView>
 
       <View style={s.footer}>
         <NeonActionButton

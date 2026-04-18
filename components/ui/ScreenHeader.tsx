@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Animated, { useAnimatedStyle, interpolate, Extrapolate, SharedValue } from 'react-native-reanimated';
 import { NeonBackButton } from './NeonBackButton';
 import { colors } from '../../theme/colors';
 import { fonts } from '../../theme/typography';
@@ -9,16 +10,33 @@ interface ScreenHeaderProps {
   titleSub: string;
   titleScript: string;
   onBack: () => void;
+  scrollY?: SharedValue<number>;
 }
 
-export function ScreenHeader({ titleSub, titleScript, onBack }: ScreenHeaderProps) {
+export function ScreenHeader({ titleSub, titleScript, onBack, scrollY }: ScreenHeaderProps) {
   const insets = useSafeAreaInsets();
 
+  const animatedStyle = useAnimatedStyle(() => {
+    const opacity = scrollY 
+      ? interpolate(scrollY.value, [0, 50], [0, 0.95], Extrapolate.CLAMP)
+      : 0.95;
+    
+    const borderOpacity = scrollY
+      ? interpolate(scrollY.value, [0, 50], [0, 0.12], Extrapolate.CLAMP)
+      : 0.12;
+
+    return {
+      backgroundColor: `rgba(10, 15, 30, ${opacity})`,
+      borderBottomColor: `rgba(255, 255, 255, ${borderOpacity})`,
+    };
+  });
+
   return (
-    <View
+    <Animated.View
       style={[
         s.header,
         { paddingTop: Math.max(insets.top, Platform.OS === 'ios' ? 50 : 40) },
+        animatedStyle,
       ]}
     >
       <NeonBackButton onPress={onBack} />
@@ -29,19 +47,20 @@ export function ScreenHeader({ titleSub, titleScript, onBack }: ScreenHeaderProp
         </View>
       </View>
       <View style={s.spacer} />
-    </View>
+    </Animated.View>
   );
 }
 
 const s = StyleSheet.create({
   header: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 24,
     paddingBottom: 12,
-    backgroundColor: colors.midnightBlue,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.darkSlateBlue,
     zIndex: 100,
   },
   center: {

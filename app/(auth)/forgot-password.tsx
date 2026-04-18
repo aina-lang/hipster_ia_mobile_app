@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { router } from 'expo-router';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated, { FadeInDown, useSharedValue } from 'react-native-reanimated';
 import { BackgroundGradientOnboarding } from '../../components/ui/BackgroundGradientOnboarding';
 import { GenericModal } from '../../components/ui/GenericModal';
 import { ScreenHeader } from '../../components/ui/ScreenHeader';
@@ -71,16 +71,22 @@ export default function ForgotPasswordScreen() {
     }
   };
 
+  const scrollY = useSharedValue(0);
+
   return (
     <BackgroundGradientOnboarding darkOverlay>
-      <ScreenHeader titleSub="Accès" titleScript="Oublié" onBack={() => router.back()} />
+      <ScreenHeader titleSub="Accès" titleScript="Oublié" onBack={() => router.back()} scrollY={scrollY} />
 
       <KeyboardAwareScrollView
         bottomOffset={20}
-        contentContainerStyle={s.scrollContent}
+        contentContainerStyle={[s.scrollContent, { paddingTop: 100 }]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
         bounces={false}
+        onScroll={(e) => {
+          scrollY.value = e.nativeEvent.contentOffset.y;
+        }}
+        scrollEventThrottle={16}
       >
         <Animated.View entering={FadeInDown.duration(800)} style={s.content}>
 

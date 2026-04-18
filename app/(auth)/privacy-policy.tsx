@@ -7,14 +7,29 @@ import { colors } from '../../theme/colors';
 import { fonts } from '../../theme/typography';
 import { PRIVACY_POLICY_CONTENT } from '../../constants/privacyPolicy';
 
+import Animated, { useSharedValue } from 'react-native-reanimated';
+
 export default function PrivacyPolicyScreen() {
   const router = useRouter();
+  const scrollY = useSharedValue(0);
 
   return (
     <BackgroundGradientOnboarding darkOverlay={true}>
-      <ScreenHeader titleSub="Conditions" titleScript="d'utilisation" onBack={() => router.back()} />
+      <ScreenHeader 
+        titleSub="Conditions" 
+        titleScript="d'utilisation" 
+        onBack={() => router.back()} 
+        scrollY={scrollY}
+      />
 
-      <ScrollView contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false}>
+      <Animated.ScrollView 
+        contentContainerStyle={[s.scrollContent, { paddingTop: 100 }]} 
+        showsVerticalScrollIndicator={false}
+        onScroll={(e) => {
+          scrollY.value = e.nativeEvent.contentOffset.y;
+        }}
+        scrollEventThrottle={16}
+      >
         {PRIVACY_POLICY_CONTENT.sections.map((section) => (
           <View key={section.id} style={s.section}>
             <Text style={s.sectionTitle}>{section.title}</Text>
@@ -22,7 +37,7 @@ export default function PrivacyPolicyScreen() {
           </View>
         ))}
         <View style={{ height: 20 }} />
-      </ScrollView>
+      </Animated.ScrollView>
     </BackgroundGradientOnboarding>
   );
 }

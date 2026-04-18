@@ -6,7 +6,7 @@ import {
 } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { router, useLocalSearchParams } from 'expo-router';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated, { FadeInDown, useSharedValue } from 'react-native-reanimated';
 import { BackgroundGradientOnboarding } from '../../components/ui/BackgroundGradientOnboarding';
 import { GenericModal } from '../../components/ui/GenericModal';
 import { ScreenHeader } from '../../components/ui/ScreenHeader';
@@ -80,15 +80,26 @@ export default function VerifyOtpScreen() {
     }
   };
 
+  const scrollY = useSharedValue(0);
+
   return (
     <BackgroundGradientOnboarding darkOverlay>
-      <ScreenHeader titleSub="Vérification" titleScript="OTP" onBack={() => router.back()} />
+      <ScreenHeader 
+        titleSub="Vérification" 
+        titleScript="OTP" 
+        onBack={() => router.back()} 
+        scrollY={scrollY}
+      />
 
       <KeyboardAwareScrollView
         bottomOffset={20}
-        contentContainerStyle={s.content}
+        contentContainerStyle={[s.content, { paddingTop: 120 }]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
+        onScroll={(e) => {
+          scrollY.value = e.nativeEvent.contentOffset.y;
+        }}
+        scrollEventThrottle={16}
       >
         <Animated.View entering={FadeInDown.duration(800)}>
           <Text style={s.subtitle}>

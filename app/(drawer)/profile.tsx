@@ -5,6 +5,7 @@ import {
   ActivityIndicator, Animated as RNAnimated, Easing, Image, Modal,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -364,18 +365,28 @@ export default function ProfileScreen() {
     }
   };
 
+  const scrollY = useSharedValue(0);
+
   return (
     <BackgroundGradientOnboarding darkOverlay>
-      <SafeAreaView style={{ flex: 1 }}>
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-          <ScrollView contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false} bounces={false} keyboardShouldPersistTaps="handled">
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+        <ScreenHeader 
+          titleSub="Mon" 
+          titleScript="Profil" 
+          onBack={() => router.back()} 
+          scrollY={scrollY}
+        />
 
-            <View style={s.header}>
-              <NeonBackButton onPress={() => router.back()} />
-              <View style={s.headerCenter}>
-                <Text style={s.titleSub}>Mon Profil</Text>
-              </View>
-            </View>
+        <Animated.ScrollView 
+          contentContainerStyle={[s.scrollContent, { paddingTop: 120 }]} 
+          showsVerticalScrollIndicator={false} 
+          bounces={false} 
+          keyboardShouldPersistTaps="handled"
+          onScroll={(e) => {
+            scrollY.value = e.nativeEvent.contentOffset.y;
+          }}
+          scrollEventThrottle={16}
+        >
 
             <View style={s.heroCard}>
               <LinearGradient colors={['rgba(0,212,255,0.06)', 'transparent']} style={StyleSheet.absoluteFill} />
@@ -520,9 +531,8 @@ export default function ProfileScreen() {
               </TouchableOpacity>
             </View>
 
-          </ScrollView>
-        </KeyboardAvoidingView>
-      </SafeAreaView>
+          </Animated.ScrollView>
+      </KeyboardAvoidingView>
 
       <Modal visible={showJobPicker} transparent animationType="slide">
         <View style={[s.modalOverlay, { backgroundColor: 'rgba(0,0,0,0.7)' }]}> 
@@ -597,7 +607,13 @@ export default function ProfileScreen() {
 }
 
 const s = StyleSheet.create({
-  scrollContent:   { paddingHorizontal: 28, paddingTop: 16, paddingBottom: 40 },
+  fixedHeader:     { 
+    position: 'absolute', top: 0, left: 0, right: 0, zIndex: 100,
+    flexDirection: 'row', alignItems: 'center', 
+    paddingHorizontal: 28, paddingTop: 48, paddingBottom: 16,
+    borderBottomWidth: 1,
+  },
+  scrollContent:   { paddingHorizontal: 28, paddingTop: 100, paddingBottom: 40 },
   header:          { flexDirection: 'row', alignItems: 'center', marginBottom: 28, paddingTop: 8 },
   backButton:      { width: 42, height: 42, borderRadius: 21, backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center', marginRight: 16 },
   headerCenter:    { flex: 1, alignItems: 'center', marginRight: 58 },

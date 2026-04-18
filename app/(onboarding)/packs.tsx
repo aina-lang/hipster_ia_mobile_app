@@ -308,6 +308,8 @@ export default function PacksScreen() {
     }
   };
 
+  const scrollY = useSharedValue(0);
+
   return (
     <BackgroundGradientOnboarding darkOverlay>
 
@@ -318,9 +320,18 @@ export default function PacksScreen() {
           setIsReturningFromBack(true);
           router.replace('/');
         }}
+        scrollY={scrollY}
       />
 
-      <ScrollView contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false} style={s.screen}>
+      <Animated.ScrollView 
+        contentContainerStyle={[s.scrollContent, { paddingTop: 130 }]} 
+        showsVerticalScrollIndicator={false} 
+        style={s.screen}
+        onScroll={(e) => {
+          scrollY.value = e.nativeEvent.contentOffset.y;
+        }}
+        scrollEventThrottle={16}
+      >
         {loading ? (
           <View style={s.loader}>
             <ActivityIndicator color={colors.primary.main} size="large" />
@@ -339,7 +350,7 @@ export default function PacksScreen() {
             ))}
           </View>
         )}
-      </ScrollView>
+      </Animated.ScrollView>
 
       <View style={s.footer}>
         <NeonActionButton

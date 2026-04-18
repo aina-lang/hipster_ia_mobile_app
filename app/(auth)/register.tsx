@@ -6,7 +6,7 @@ import {
 import type { TextInput as RNTextInput } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { router, useLocalSearchParams } from 'expo-router';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated, { FadeInDown, useSharedValue } from 'react-native-reanimated';
 import { Eye, EyeOff, Gift } from 'lucide-react-native';
 import { BackgroundGradientOnboarding } from '../../components/ui/BackgroundGradientOnboarding';
 import { GenericModal } from '../../components/ui/GenericModal';
@@ -90,23 +90,34 @@ export default function RegisterScreen() {
     }
   };
 
+  const scrollY = useSharedValue(0);
+
   return (
     <BackgroundGradientOnboarding darkOverlay>
-      <ScreenHeader titleSub="Créer un" titleScript="compte" onBack={() => {
-        setIsReturningFromBack(true);
-        if (router.canGoBack()) {
-          router.back();
-        } else {
-          router.replace('/welcome');
-        }
-      }} />
+      <ScreenHeader 
+        titleSub="Créer un" 
+        titleScript="compte" 
+        onBack={() => {
+          setIsReturningFromBack(true);
+          if (router.canGoBack()) {
+            router.back();
+          } else {
+            router.replace('/welcome');
+          }
+        }} 
+        scrollY={scrollY}
+      />
 
       <KeyboardAwareScrollView
         bottomOffset={20}
-        contentContainerStyle={s.scrollContent}
+        contentContainerStyle={[s.scrollContent, { paddingTop: 120 }]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
         bounces={false}
+        onScroll={(e) => {
+          scrollY.value = e.nativeEvent.contentOffset.y;
+        }}
+        scrollEventThrottle={16}
       >
         <Animated.View entering={FadeInDown.duration(800)} style={s.content}>
           <View style={s.form}>
