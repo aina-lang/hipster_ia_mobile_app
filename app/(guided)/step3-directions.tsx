@@ -157,8 +157,8 @@ export default function Step3DirectionsScreen() {
 
   return (
     <GuidedScreenWrapper
-      currentStep={3}
-      totalSteps={4}
+      currentStep={1}
+      totalSteps={2}
       scrollViewRef={scrollRef}
       footer={
         selectedArchitecture ? (

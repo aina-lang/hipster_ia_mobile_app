@@ -400,8 +400,8 @@ export default function Step3PersonalizeScreen() {
 
   return (
     <GuidedScreenWrapper
-      currentStep={selectedCategory === 'Social' || selectedCategory === 'Image' ? 3 : 4}
-      totalSteps={selectedCategory === 'Social' ? 4 : (selectedCategory === 'Image' ? 3 : 4)}
+      currentStep={2}
+      totalSteps={2}
       footer={
         isFormValid ? (
           <Reanimated.View entering={SlideInDown.duration(300)} exiting={SlideOutDown.duration(300)} style={s.footerButtonWrapper}>
