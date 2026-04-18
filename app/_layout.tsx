@@ -198,7 +198,15 @@ export default function RootLayout() {
     let targetRoute: string | null = null;
 
     if (isAuthenticated) {
-      if (user && !user.isEmailVerified) {
+      // 1. Check for plan expiration
+      const now = new Date();
+      const isExpired = user?.subscriptionEndDate && new Date(user.subscriptionEndDate) < now;
+
+      if (isExpired && !segments.includes('packs')) {
+        console.log('[RootLayout] Plan expired, forcing redirect to packs');
+        targetRoute = '/(onboarding)/packs';
+      }
+      else if (user && !user.isEmailVerified) {
         if (!segments.includes('verify-email')) {
           targetRoute = '/(auth)/verify-email';
         }

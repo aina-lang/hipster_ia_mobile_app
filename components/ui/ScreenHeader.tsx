@@ -9,7 +9,7 @@ import { fonts } from '../../theme/typography';
 interface ScreenHeaderProps {
   titleSub: string;
   titleScript: string;
-  onBack: () => void;
+  onBack?: () => void;
   scrollY?: SharedValue<number>;
 }
 
@@ -39,7 +39,11 @@ export function ScreenHeader({ titleSub, titleScript, onBack, scrollY }: ScreenH
         animatedStyle,
       ]}
     >
-      <NeonBackButton onPress={onBack} />
+      {onBack ? (
+        <NeonBackButton onPress={onBack} />
+      ) : (
+        <View style={s.spacer} />
+      )}
       <View style={s.center}>
         <View style={s.titleRow}>
           <Text style={s.titleSub}>{titleSub}</Text>
