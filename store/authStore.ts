@@ -603,6 +603,7 @@ export const useAuthStore = create<AuthState>()(
           useOnboardingStore.getState().reset();
           // Show static background on welcome screen after logout
           useWelcomeVideoStore.getState().setIsReturningFromBack(true);
+          useWelcomeVideoStore.getState().setVideoCompleted(true);
           set({
             user: null,
             isAuthenticated: false,

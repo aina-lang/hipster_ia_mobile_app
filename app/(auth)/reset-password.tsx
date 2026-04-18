@@ -1,13 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   StyleSheet,
   Text,
   TextInput,
-  Platform,
   TouchableOpacity,
   Keyboard,
 } from 'react-native';
+import type { TextInput as RNTextInput } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { router, useLocalSearchParams } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -29,6 +29,7 @@ export default function ResetPasswordScreen() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [focused, setFocused] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const confirmPasswordRef = useRef<RNTextInput>(null);
 
   const [modal, setModal] = useState({ visible: false, type: 'info' as any, title: '', message: '' });
 
@@ -99,6 +100,9 @@ export default function ResetPasswordScreen() {
                     onFocus={() => setFocused('new')}
                     onBlur={() => setFocused(null)}
                     secureTextEntry={!showPassword}
+                    returnKeyType="next"
+                    onSubmitEditing={() => confirmPasswordRef.current?.focus()}
+                    blurOnSubmit={false}
                   />
                   <TouchableOpacity style={styles.eyeIcon} onPress={() => setShowPassword(!showPassword)}>
                     {showPassword ? <EyeOff size={20} color="#6b7280" /> : <Eye size={20} color="#6b7280" />}
@@ -112,6 +116,7 @@ export default function ResetPasswordScreen() {
               <NeonBorderInput isActive={focused === 'confirm'}>
                 <View style={styles.passwordWrapper}>
                   <TextInput
+                    ref={confirmPasswordRef}
                     style={[styles.input, styles.passwordInput, focused === 'confirm' && styles.inputActive]}
                     placeholder="••••••••"
                     placeholderTextColor="#6b7280"
@@ -120,6 +125,8 @@ export default function ResetPasswordScreen() {
                     onFocus={() => setFocused('confirm')}
                     onBlur={() => setFocused(null)}
                     secureTextEntry={!showConfirmPassword}
+                    returnKeyType="done"
+                    onSubmitEditing={handleResetPassword}
                   />
                   <TouchableOpacity style={styles.eyeIcon} onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
                     {showConfirmPassword ? <EyeOff size={20} color="#6b7280" /> : <Eye size={20} color="#6b7280" />}

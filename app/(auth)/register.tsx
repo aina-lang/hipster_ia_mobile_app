@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View, StyleSheet, Text, TextInput,
-  Platform, TouchableOpacity,
+  TouchableOpacity,
 } from 'react-native';
+import type { TextInput as RNTextInput } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { router, useLocalSearchParams } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -36,6 +37,11 @@ export default function RegisterScreen() {
   const [focused, setFocused] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [modal, setModal] = useState({ visible: false, type: 'info' as any, title: '', message: '' });
+
+  const emailRef = useRef<RNTextInput>(null);
+  const passwordRef = useRef<RNTextInput>(null);
+  const confirmRef = useRef<RNTextInput>(null);
+  const referralRef = useRef<RNTextInput>(null);
 
   const showModal = (type: any, title: string, message = '') =>
     setModal({ visible: true, type, title, message });
@@ -108,21 +114,21 @@ export default function RegisterScreen() {
             <View style={s.inputContainer}>
               <Text style={s.label}>Nom / Nom d'entreprise</Text>
               <NeonBorderInput isActive={focused === 'name'}>
-                <TextInput style={[s.input, focused === 'name' && s.inputActive]} placeholder="Jean Dupont ou Ma Société SARL" placeholderTextColor="#6b7280" value={fullName} onChangeText={t => { setFullName(t); if (error) clearError(); }} {...f('name')} />
+                <TextInput style={[s.input, focused === 'name' && s.inputActive]} placeholder="Jean Dupont ou Ma Société SARL" placeholderTextColor="#6b7280" value={fullName} onChangeText={t => { setFullName(t); if (error) clearError(); }} {...f('name')} returnKeyType="next" onSubmitEditing={() => emailRef.current?.focus()} blurOnSubmit={false} />
               </NeonBorderInput>
             </View>
 
             <View style={s.inputContainer}>
               <Text style={s.label}>Email</Text>
               <NeonBorderInput isActive={focused === 'email'}>
-                <TextInput style={[s.input, focused === 'email' && s.inputActive]} placeholder="votre@email.com" placeholderTextColor="#6b7280" value={email} onChangeText={t => { setEmail(t); if (error) clearError(); }} autoCapitalize="none" keyboardType="email-address" {...f('email')} />
+                <TextInput ref={emailRef} style={[s.input, focused === 'email' && s.inputActive]} placeholder="votre@email.com" placeholderTextColor="#6b7280" value={email} onChangeText={t => { setEmail(t); if (error) clearError(); }} autoCapitalize="none" keyboardType="email-address" {...f('email')} returnKeyType="next" onSubmitEditing={() => passwordRef.current?.focus()} blurOnSubmit={false} />
               </NeonBorderInput>
             </View>
 
             <View style={s.inputContainer}>
               <Text style={s.label}>Mot de passe</Text>
               <NeonBorderInput isActive={focused === 'password'}>
-                <TextInput style={[s.input, focused === 'password' && s.inputActive]} placeholder="••••••••" placeholderTextColor="#6b7280" value={password} onChangeText={t => { setPassword(t); if (error) clearError(); }} secureTextEntry={true} {...f('password')} />
+                <TextInput ref={passwordRef} style={[s.input, focused === 'password' && s.inputActive]} placeholder="••••••••" placeholderTextColor="#6b7280" value={password} onChangeText={t => { setPassword(t); if (error) clearError(); }} secureTextEntry={true} {...f('password')} returnKeyType="next" onSubmitEditing={() => confirmRef.current?.focus()} blurOnSubmit={false} />
               </NeonBorderInput>
             </View>
 
@@ -130,7 +136,7 @@ export default function RegisterScreen() {
               <Text style={s.label}>Confirmer le mot de passe</Text>
               <NeonBorderInput isActive={focused === 'confirm'}>
                 <View style={s.passwordWrapper}>
-                  <TextInput style={[s.input, s.passwordInput, focused === 'confirm' && s.inputActive]} placeholder="••••••••" placeholderTextColor="#6b7280" value={confirmPassword} onChangeText={t => { setConfirmPassword(t); if (error) clearError(); }} secureTextEntry={!showConfirm} {...f('confirm')} />
+                  <TextInput ref={confirmRef} style={[s.input, s.passwordInput, focused === 'confirm' && s.inputActive]} placeholder="••••••••" placeholderTextColor="#6b7280" value={confirmPassword} onChangeText={t => { setConfirmPassword(t); if (error) clearError(); }} secureTextEntry={!showConfirm} {...f('confirm')} returnKeyType="next" onSubmitEditing={() => referralRef.current?.focus()} blurOnSubmit={false} />
                   <TouchableOpacity style={s.eyeIcon} onPress={() => setShowConfirm(v => !v)}>
                     {showConfirm ? <EyeOff size={20} color="#6b7280" /> : <Eye size={20} color="#6b7280" />}
                   </TouchableOpacity>
@@ -142,7 +148,7 @@ export default function RegisterScreen() {
               <Text style={s.label}>Code de parrainage <Text style={s.optional}>(optionnel)</Text></Text>
               <NeonBorderInput isActive={focused === 'referral'}>
                 <View style={s.passwordWrapper}>
-                  <TextInput style={[s.input, s.passwordInput, focused === 'referral' && s.inputActive]} placeholder="Ex : REF-USR-ABCD" placeholderTextColor="#6b7280" value={referralCode} onChangeText={t => setReferralCode(t.toUpperCase())} autoCapitalize="characters" autoCorrect={false} {...f('referral')} />
+                  <TextInput ref={referralRef} style={[s.input, s.passwordInput, focused === 'referral' && s.inputActive]} placeholder="Ex : REF-USR-ABCD" placeholderTextColor="#6b7280" value={referralCode} onChangeText={t => setReferralCode(t.toUpperCase())} autoCapitalize="characters" autoCorrect={false} {...f('referral')} returnKeyType="done" onSubmitEditing={handleRegister} />
                   <View style={s.eyeIcon} pointerEvents="none">
                     <Gift size={18} color="#6b7280" />
                   </View>

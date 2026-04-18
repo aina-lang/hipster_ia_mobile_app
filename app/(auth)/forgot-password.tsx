@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View, StyleSheet, Text, TextInput,
   Platform,
@@ -15,7 +15,7 @@ import { colors } from '../../theme/colors';
 import { fonts } from '../../theme/typography';
 import { useAuthStore } from '../../store/authStore';
 
-const EmailField = React.memo(({ value, onChange }: { value: string; onChange: (t: string) => void }) => {
+const EmailField = React.memo(({ value, onChange, onSubmit }: { value: string; onChange: (t: string) => void; onSubmit: () => void }) => {
   const [focused, setFocused] = useState(false);
   return (
     <View style={s.inputContainer}>
@@ -32,6 +32,8 @@ const EmailField = React.memo(({ value, onChange }: { value: string; onChange: (
           autoCapitalize="none"
           keyboardType="email-address"
           autoComplete="email"
+          returnKeyType="done"
+          onSubmitEditing={onSubmit}
         />
       </NeonBorderInput>
     </View>
@@ -87,7 +89,7 @@ export default function ForgotPasswordScreen() {
           </Text>
 
           <View style={s.form}>
-            <EmailField value={email} onChange={setEmail} />
+            <EmailField value={email} onChange={setEmail} onSubmit={handleResetPassword} />
             <NeonActionButton
               label="Envoyer le code"
               onPress={handleResetPassword}

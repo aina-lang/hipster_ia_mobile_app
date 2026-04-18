@@ -350,6 +350,20 @@ export default function ProfileScreen() {
     ? `https://hipster-api.fr${user?.avatarUrl || user?.logoUrl}`
     : `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'U')}&background=random`;
 
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    try {
+      setIsLoggingOut(true);
+      useWelcomeVideoStore.getState().setIsReturningFromBack(true);
+      await logout(); 
+      router.replace('/welcome');
+    } catch {
+      setIsLoggingOut(false);
+      showModal('error', 'Erreur', 'Impossible de se déconnecter.');
+    }
+  };
+
   return (
     <BackgroundGradientOnboarding darkOverlay>
       <SafeAreaView style={{ flex: 1 }}>
@@ -416,6 +430,7 @@ export default function ProfileScreen() {
               <InputField label="Email de connexion" icon={<Lock size={16} color={colors.text.muted} />} value={user?.email || ''} editable={false} dimmed />
               <InputField label="Email professionnel" icon={<Mail size={16} color={colors.text.muted} />} value={professionalEmail} onChangeText={setProfessionalEmail} placeholder="email@contact.com" editable={isEditing} keyboardType="email-address" />
 
+{/* 
               <SectionTitle title="Adresse" />
               <InputField label="Adresse" icon={<MapPin size={16} color={colors.text.muted} />} value={professionalAddress} onChangeText={setProfessionalAddress} placeholder="Votre adresse" editable={isEditing} multiline />
               <View style={s.inputRow}>
@@ -449,6 +464,7 @@ export default function ProfileScreen() {
 
               <SectionTitle title="Web" />
               <InputField label="Site Web" icon={<Link size={16} color={colors.text.muted} />} value={websiteUrl} onChangeText={setWebsiteUrl} placeholder="www.monsite.com" editable={isEditing} keyboardType="url" autoCapitalize="none" />
+              */}
 
               
             </View>
@@ -486,13 +502,19 @@ export default function ProfileScreen() {
                 <Text style={s.menuItemText}>Modifier le mot de passe</Text>
                 <ChevronRight size={20} color={colors.text.muted} />
               </TouchableOpacity>
-              <TouchableOpacity style={s.logoutBtn} onPress={() => { 
-                useWelcomeVideoStore.getState().setIsReturningFromBack(true);
-                logout(); 
-                router.replace('/welcome'); 
-              }}>
-                <LogOut size={20} color={colors.status.error} />
-                <Text style={s.logoutText}>Se déconnecter</Text>
+              <TouchableOpacity 
+                style={[s.logoutBtn, isLoggingOut && { opacity: 0.7 }]} 
+                onPress={handleLogout}
+                disabled={isLoggingOut}
+              >
+                {isLoggingOut ? (
+                  <ActivityIndicator size="small" color={colors.status.error} />
+                ) : (
+                  <LogOut size={20} color={colors.status.error} />
+                )}
+                <Text style={s.logoutText}>
+                  {isLoggingOut ? 'Déconnexion...' : 'Se déconnecter'}
+                </Text>
               </TouchableOpacity>
             </View>
 

@@ -74,13 +74,9 @@ export default function RootLayout() {
 
 
   // On app startup, verify that stored session is still valid.
-  // Do not use a module-level "ran once" ref: React 18 Strict Mode (dev) remounts and
-  // the first async completion can run after unmount (setState ignored), while a second
-  // effect would skip — leaving isInitialized false forever.
   useEffect(() => {
     // Set root background to black to prevent white flash
     SystemUI.setBackgroundColorAsync('#000000').catch(() => { });
-    useWelcomeVideoStore.getState().reset();
 
     if (!isHydrated) {
       return;

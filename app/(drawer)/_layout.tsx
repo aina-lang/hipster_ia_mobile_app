@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View, Text, Image, TouchableOpacity,
   StyleSheet, Animated as RNAnimated, Easing,
@@ -69,18 +69,24 @@ function AvatarNeonBorder({ children, size }: { children: React.ReactNode; size:
 function CustomDrawerContent(props: any) {
   const { user, logout } = useAuthStore();
   const router = useRouter();
-  const [showLogoutModal, setShowLogoutModal] = React.useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   // Protect against null user during logout
-  if (!user) {
+  if (!user && !isLoggingOut) {
     return null;
   }
 
   const handleLogout = async () => {
-    setShowLogoutModal(false);
-    useWelcomeVideoStore.getState().setIsReturningFromBack(true);
-    await logout();
-    router.replace('/welcome');
+    try {
+      setShowLogoutModal(false);
+      setIsLoggingOut(true);
+      useWelcomeVideoStore.getState().setIsReturningFromBack(true);
+      await logout();
+      router.replace('/welcome');
+    } catch {
+      setIsLoggingOut(false);
+    }
   };
 
   const userName = user?.name || 'Utilisateur';
@@ -129,6 +135,13 @@ function CustomDrawerContent(props: any) {
         cancelText="Annuler"
         onClose={() => setShowLogoutModal(false)}
         onConfirm={handleLogout}
+      />
+
+      <GenericModal
+        visible={isLoggingOut}
+        type="loading"
+        title="Déconnexion..."
+        message="Veuillez patienter pendant que nous vous déconnectons."
       />
     </View>
   );
