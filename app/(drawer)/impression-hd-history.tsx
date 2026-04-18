@@ -396,7 +396,7 @@ export default function ImpressionHDHistoryScreen() {
           numColumns={COLS}
           renderItem={renderGalleryTile}
           columnWrapperStyle={s.columnWrap}
-          contentContainerStyle={[s.listContent, { paddingTop: 200 }]}
+          contentContainerStyle={[s.listContent, { paddingTop: 140 }]}
           showsVerticalScrollIndicator={false}
           initialNumToRender={15}
           maxToRenderPerBatch={10}

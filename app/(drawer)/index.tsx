@@ -560,7 +560,7 @@ export default function HomeScreen() {
                       setTimeout(() => {
                         if (fn.label === 'Textes libres') {
                           router.push('/(drawer)/freetext');
-                        } else if (fn.label === 'Historique flyers') {
+                        } else if (fn.label === 'Impression HD') {
                           router.push('/(drawer)/impression-hd-history');
                         } else if (fn.category === 'Document') {
                           setArchitecture(null);
