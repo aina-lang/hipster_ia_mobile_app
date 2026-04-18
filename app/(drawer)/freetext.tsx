@@ -130,16 +130,19 @@ export default function FreetextScreen() {
 
   const planType = user?.planType || 'curieux';
   const subStatus = user?.subscriptionStatus;
-  const isSubscriptionActive = subStatus === 'active' || subStatus === 'trialing' || subStatus === 'trial';
-  const isPackCurieux = planType === 'curieux';
   const now = new Date();
-  const endDate = user?.subscriptionEndDate ? new Date(user?.subscriptionEndDate) : null;
-  const isExpired = endDate && now > endDate;
+  const endDateVal = user?.subscriptionEndDate ? new Date(user?.subscriptionEndDate) : null;
+  const isExpired = endDateVal && now > endDateVal;
+
+  // Si le statut est actif ou si la date n'est pas encore expirée (cas d'une annulation en cours de mois)
+  const isSubscriptionActive = subStatus === 'active' || subStatus === 'trialing' || subStatus === 'trial' || (!!endDateVal && !isExpired);
+  const isPackCurieux = planType === 'curieux';
+  
   const effectivePlanId = (isPackCurieux && isExpired) ? 'studio' : planType;
   const currentPlanObject = plans.find(p => p.id === effectivePlanId) || plans.find(p => p.id === 'atelier');
 
   const isTrialButNoCard = isPackCurieux && !user?.stripeCustomerId;
-  const isPaidPlanButInactive = !isSubscriptionActive || isTrialButNoCard || (isPackCurieux && isExpired);
+  const isPaidPlanButInactive = !loadingPlans && currentPlanObject && (!isSubscriptionActive || isTrialButNoCard || (isPackCurieux && isExpired));
 
   const showModal = (type: ModalType, title: string, message: string) => {
     setModalType(type); setModalTitle(title); setModalMessage(message); setModalVisible(true);
@@ -285,7 +288,7 @@ export default function FreetextScreen() {
       <ScreenHeader
         titleSub="TEXTE"
         titleScript="Libre"
-        onBack={() => navigation.dispatch(DrawerActions.openDrawer())}
+        onBack={() => router.back()}
         scrollY={scrollY}
         renderRight={() => (
           hasMessages ? (

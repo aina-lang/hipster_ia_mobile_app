@@ -237,7 +237,6 @@ export default function HomeScreen() {
   const endDate = user?.subscriptionEndDate ? new Date(user.subscriptionEndDate) : null;
   const isExpired = endDate && now > endDate;
 
-  // Si le statut est actif ou si la date n'est pas encore expirée (cas d'une annulation en cours de mois)
   const isSubscriptionActive = subStatus === 'active' || subStatus === 'trialing' || subStatus === 'trial' || (endDate && !isExpired);
   const isPackCurieux        = planType === 'curieux';
 
@@ -345,7 +344,7 @@ export default function HomeScreen() {
 
   const isTrialButNoCard      = isPackCurieux && !user?.stripeCustomerId;
   const isAnyMessageTyping    = messages.some(m => m.isTyping);
-  const isPaidPlanButInactive = isHydrated && (!isSubscriptionActive || isTrialButNoCard || (isPackCurieux && isExpired) || isFullyExhausted);
+  const isPaidPlanButInactive = isHydrated && !loadingPlans && currentPlanObject && (!isSubscriptionActive || isTrialButNoCard || (isPackCurieux && isExpired) || isFullyExhausted);
 
   const showModal = (type: ModalType, title: string, message: string) => {
     setModalType(type); setModalTitle(title); setModalMessage(message); setModalVisible(true);
