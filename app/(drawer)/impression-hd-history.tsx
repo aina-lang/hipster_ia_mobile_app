@@ -326,15 +326,7 @@ export default function ImpressionHDHistoryScreen() {
               </View>
             )}
           </TouchableOpacity>
-          {!selectionMode && (
-            <TouchableOpacity
-              style={s.tileDelete}
-              onPress={onDelete}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            >
-              <Trash2 size={14} color={colors.status.error} />
-            </TouchableOpacity>
-          )}
+          
         </View>
       );
     }, (prevProps, nextProps) => {
@@ -467,7 +459,7 @@ export default function ImpressionHDHistoryScreen() {
                     if (images[index]) setSelectedImage(images[index]);
                   }}
                   renderItem={({ item }) => (
-                    <View style={{ width: SCREEN_W, flex: 1 }}>
+                    <View style={{ width: SCREEN_W, flex: 1, justifyContent: 'center' }}>
                       <Image
                         source={{ uri: item.url }}
                         style={s.fullImage}
@@ -613,7 +605,7 @@ const s = StyleSheet.create({
   },
   tileTouchable: {
     width: TILE,
-    height: TILE,
+    height: TILE * 1.5,
     borderRadius: 14,
     overflow: 'hidden',
     borderWidth: 1,
@@ -745,7 +737,8 @@ const s = StyleSheet.create({
   },
   fullImage: {
     width: '100%',
-    flex: 1,
+    height: Dimensions.get('window').height * 0.65,
+    
   },
   modalActions: {
     flexDirection: 'row',
