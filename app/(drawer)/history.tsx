@@ -52,6 +52,7 @@ export default function HistoryScreen() {
   const [showImageModal, setShowImageModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState<HistoryItem | null>(null);
   const [downloading, setDownloading] = useState<string | null>(null);
+  const [printing, setPrinting] = useState<string | null>(null);
 
   const [modalVisible, setModalVisible] = useState(false);
   const [modalType, setModalType] = useState<ModalType>('info');
@@ -114,8 +115,9 @@ export default function HistoryScreen() {
   };
 
   const handlePrint = async (item: HistoryItem) => {
-    if (!item.imageUrl) return;
+    if (!item.imageUrl || printing) return;
     try {
+      setPrinting(item.id);
       const fullUrl = getFullUrl(item.imageUrl);
       const filename = `hipster-${item.id}.jpg`;
       const fileUri = `${FileSystem.cacheDirectory}${filename}`;
@@ -125,13 +127,22 @@ export default function HistoryScreen() {
         if (downloadRes.status !== 200) throw new Error('Téléchargement échoué');
       }
       if (fileUri) {
-        await Print.printAsync({ uri: fileUri });
+        const html = `
+          <html>
+            <body style="margin:0;padding:0;display:flex;justify-content:center;align-items:center;height:100vh;background-color:black;">
+              <img src="${fullUrl}" style="max-width:100%;max-height:100%;object-fit:contain;" />
+            </body>
+          </html>
+        `;
+        await Print.printAsync({ html });
       } else {
         showGenericModal('info', 'Impression', 'Impossible de préparer le fichier pour l\'impression.');
       }
     } catch (error: any) {
       console.error('Print error:', error);
       showGenericModal('error', 'Erreur', `Impression échouée : ${error.message}`);
+    } finally {
+      setPrinting(null);
     }
   };
 
@@ -318,9 +329,19 @@ export default function HistoryScreen() {
                   )}
                 </TouchableOpacity>
 
-                <TouchableOpacity style={[s.modalButton, s.printBtn]} onPress={() => handlePrint(selectedItem)}>
-                  <Printer size={20} color="white" />
-                  <Text style={s.modalButtonText}>Imprimer</Text>
+                <TouchableOpacity
+                  style={[s.modalButton, s.printBtn]}
+                  onPress={() => handlePrint(selectedItem)}
+                  disabled={!!printing}
+                >
+                  {printing === selectedItem.id ? (
+                    <ActivityIndicator size="small" color="white" />
+                  ) : (
+                    <>
+                      <Printer size={20} color="white" />
+                      <Text style={s.modalButtonText}>Imprimer</Text>
+                    </>
+                  )}
                 </TouchableOpacity>
 
                 <TouchableOpacity style={[s.modalButton, s.shareBtn]} onPress={() => handleShare(selectedItem)}>

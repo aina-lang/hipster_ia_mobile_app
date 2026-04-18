@@ -53,12 +53,13 @@ export default function ImpressionHDHistoryScreen() {
   const insets = useSafeAreaInsets();
 
   const [selectedImage, setSelectedImage] = useState<GeneratedImage | null>(null);
+  const [downloading, setDownloading] = useState<string | null>(null);
+  const [printing, setPrinting] = useState<string | null>(null);
   const [showImageModal, setShowImageModal] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [modalType, setModalType] = useState<ModalType>('info');
   const [modalTitle, setModalTitle] = useState('');
   const [modalMessage, setModalMessage] = useState('');
-  const [downloading, setDownloading] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [showClearModal, setShowClearModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -238,7 +239,9 @@ export default function ImpressionHDHistoryScreen() {
   };
 
   const handlePrintImage = async (image: GeneratedImage) => {
+    if (printing) return;
     try {
+      setPrinting(image.id);
       const filename = `hipster-${image.id}.jpg`;
       const fileUri = `${FileSystem.cacheDirectory}${filename}`;
 
@@ -249,12 +252,21 @@ export default function ImpressionHDHistoryScreen() {
       }
 
       if (fileUri) {
-        await Print.printAsync({ uri: fileUri });
+        const html = `
+          <html>
+            <body style="margin:0;padding:0;display:flex;justify-content:center;align-items:center;height:100vh;background-color:black;">
+              <img src="${image.url}" style="max-width:100%;max-height:100%;object-fit:contain;" />
+            </body>
+          </html>
+        `;
+        await Print.printAsync({ html });
       } else {
         showModal('info', 'Impression', 'Impossible de préparer le fichier pour l\'impression.');
       }
     } catch (error: any) {
       showModal('error', 'Erreur', `Impression échouée : ${error.message}`);
+    } finally {
+      setPrinting(null);
     }
   };
 
@@ -486,9 +498,16 @@ export default function ImpressionHDHistoryScreen() {
                   <TouchableOpacity
                     style={[s.modalButton, s.printBtnLarge]}
                     onPress={() => handlePrintImage(selectedImage)}
+                    disabled={!!printing}
                   >
-                    <Printer size={20} color="white" />
-                    <Text style={s.modalButtonText}>Imprimer</Text>
+                    {printing === selectedImage.id ? (
+                      <ActivityIndicator size="small" color="white" />
+                    ) : (
+                      <>
+                        <Printer size={20} color="white" />
+                        <Text style={s.modalButtonText}>Imprimer</Text>
+                      </>
+                    )}
                   </TouchableOpacity>
 
                   <TouchableOpacity
