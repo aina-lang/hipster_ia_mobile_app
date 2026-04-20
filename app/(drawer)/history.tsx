@@ -374,10 +374,10 @@ export default function HistoryScreen() {
                 style={[
                   s.fullImage,
                   useAnimatedStyle(() => {
-                    const targetHeight = Dimensions.get('window').height * 0.65;
-                    const targetWidth = Dimensions.get('window').width;
+                    const targetHeight = SCREEN_H * 0.65;
+                    const targetWidth = SCREEN_W;
                     const targetX = 0;
-                    const targetY = (Dimensions.get('window').height - targetHeight) / 2;
+                    const targetY = (SCREEN_H - targetHeight) / 2;
 
                     return {
                       position: 'absolute',
