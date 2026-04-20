@@ -41,14 +41,12 @@ jobs:
             rm -rf .expo
 
             echo "==== Kill old Expo / Ngrok ===="
+            pm2 delete "$APP_NAME" >/dev/null 2>&1 || true
+            killall ngrok >/dev/null 2>&1 || true
             if lsof -ti :"$EXPO_PORT" >/dev/null 2>&1; then
               lsof -ti :"$EXPO_PORT" | xargs -r kill -9 || true
             fi
-            pkill -f ngrok || true
             sleep 2
-
-            echo "==== Delete old PM2 app if exists ===="
-            pm2 delete "$APP_NAME" >/dev/null 2>&1 || true
 
             echo "==== Start Expo with PM2 ===="
             EXPO_TUNNEL_SUBDOMAIN=hipsteria pm2 start "npx expo start -c --tunnel --port $EXPO_PORT" \
