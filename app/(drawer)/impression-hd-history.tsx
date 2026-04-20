@@ -80,6 +80,20 @@ export default function ImpressionHDHistoryScreen() {
   const transitionProgress = useSharedValue(0);
   const [originLayout, setOriginLayout] = useState({ x: 0, y: 0, width: 0, height: 0 });
 
+  const modalOverlayStyle = useAnimatedStyle(() => ({
+    opacity: transitionProgress.value,
+  }));
+
+  const modalHeaderStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: interpolate(transitionProgress.value, [0, 1], [-50, 0]) }],
+    opacity: transitionProgress.value,
+  }));
+
+  const modalActionsStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: interpolate(transitionProgress.value, [0, 1], [100, 0]) }],
+    opacity: transitionProgress.value,
+  }));
+
   const allImages = useImageHistoryStore((state) => state.images);
   const removeImage = useImageHistoryStore((state) => state.removeImage);
   const clearHistory = useImageHistoryStore((state) => state.clearHistory);
@@ -486,9 +500,7 @@ export default function ImpressionHDHistoryScreen() {
           style={[
             StyleSheet.absoluteFill, 
             { zIndex: 9999, backgroundColor: 'rgba(0,0,0,0.95)' },
-            useAnimatedStyle(() => ({
-              opacity: transitionProgress.value,
-            }))
+            modalOverlayStyle
           ]}
         >
           <View style={s.modalContainer}>
@@ -496,10 +508,7 @@ export default function ImpressionHDHistoryScreen() {
               style={[
                 s.modalHeader, 
                 { paddingTop: insets.top + 40 },
-                useAnimatedStyle(() => ({
-                  transform: [{ translateY: interpolate(transitionProgress.value, [0, 1], [-50, 0]) }],
-                  opacity: transitionProgress.value,
-                }))
+                modalHeaderStyle
               ]}
             >
               <TouchableOpacity 
@@ -546,10 +555,7 @@ export default function ImpressionHDHistoryScreen() {
                 <Animated.View 
                   style={[
                     s.modalActions,
-                    useAnimatedStyle(() => ({
-                      transform: [{ translateY: interpolate(transitionProgress.value, [0, 1], [100, 0]) }],
-                      opacity: transitionProgress.value,
-                    }))
+                    modalActionsStyle
                   ]}
                 >
                   <TouchableOpacity

@@ -74,6 +74,20 @@ export default function HistoryScreen() {
   const [originLayout, setOriginLayout] = useState({ x: 0, y: 0, width: 0, height: 0 });
   const [activeImageUri, setActiveImageUri] = useState<string | null>(null);
 
+  const modalOverlayStyle = useAnimatedStyle(() => ({
+    opacity: transitionProgress.value,
+  }));
+
+  const modalHeaderStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: interpolate(transitionProgress.value, [0, 1], [-50, 0]) }],
+    opacity: transitionProgress.value,
+  }));
+
+  const modalActionsStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: interpolate(transitionProgress.value, [0, 1], [100, 0]) }],
+    opacity: transitionProgress.value,
+  }));
+
   const showGenericModal = (type: ModalType, title: string, message: string) => {
     setModalType(type);
     setModalTitle(title);
@@ -330,19 +344,14 @@ export default function HistoryScreen() {
           style={[
             StyleSheet.absoluteFill, 
             { zIndex: 9999, backgroundColor: 'rgba(0,0,0,0.95)' },
-            useAnimatedStyle(() => ({
-              opacity: transitionProgress.value,
-            }))
+            modalOverlayStyle
           ]}
         >
           <SafeAreaView style={s.modalContainer}>
             <Animated.View 
               style={[
                 s.modalHeader,
-                useAnimatedStyle(() => ({
-                  transform: [{ translateY: interpolate(transitionProgress.value, [0, 1], [-50, 0]) }],
-                  opacity: transitionProgress.value,
-                }))
+                modalHeaderStyle
               ]}
             >
               <TouchableOpacity 
@@ -386,10 +395,7 @@ export default function HistoryScreen() {
               <Animated.View 
                 style={[
                   s.modalActions,
-                  useAnimatedStyle(() => ({
-                    transform: [{ translateY: interpolate(transitionProgress.value, [0, 1], [100, 0]) }],
-                    opacity: transitionProgress.value,
-                  }))
+                  modalActionsStyle
                 ]}
               >
                 <TouchableOpacity
