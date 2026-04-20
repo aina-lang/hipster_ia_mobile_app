@@ -6,11 +6,11 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronRight, Search, MessageSquare, ArrowLeft, Trash2, Download, Printer, Share2, X } from 'lucide-react-native';
-import Animated, { 
-  useSharedValue, 
-  useAnimatedStyle, 
-  withSpring, 
-  withTiming, 
+import Animated, {  
+  useSharedValue,  
+  useAnimatedStyle,  
+  withSpring,  
+  withTiming,  
   interpolate,
   Extrapolate,
   runOnJS,
@@ -340,26 +340,26 @@ export default function HistoryScreen() {
 
       {/* 🖼️ Custom Shared Element Modal */}
       {showImageModal && (
-        <Animated.View 
+        <Animated.View  
           style={[
-            StyleSheet.absoluteFill, 
+            StyleSheet.absoluteFill,  
             { zIndex: 9999, backgroundColor: 'rgba(0,0,0,0.95)' },
             modalOverlayStyle
           ]}
         >
           <SafeAreaView style={s.modalContainer}>
-            <Animated.View 
+            <Animated.View  
               style={[
                 s.modalHeader,
                 modalHeaderStyle
               ]}
             >
-              <TouchableOpacity 
+              <TouchableOpacity  
                 onPress={() => {
                   transitionProgress.value = withTiming(0, { duration: 250 }, (finished) => {
                     if (finished) runOnJS(setShowImageModal)(false);
                   });
-                }} 
+                }}  
                 style={s.closeBtn}
               >
                 <X size={24} color="white" />
@@ -374,10 +374,10 @@ export default function HistoryScreen() {
                 style={[
                   s.fullImage,
                   useAnimatedStyle(() => {
-                    const targetHeight = SCREEN_H * 0.65;
-                    const targetWidth = SCREEN_W;
+                    const targetHeight = Dimensions.get('window').height * 0.65;
+                    const targetWidth = Dimensions.get('window').width;
                     const targetX = 0;
-                    const targetY = (SCREEN_H - targetHeight) / 2;
+                    const targetY = (Dimensions.get('window').height - targetHeight) / 2;
 
                     return {
                       position: 'absolute',
@@ -392,7 +392,7 @@ export default function HistoryScreen() {
                 resizeMode="contain"
               />
 
-              <Animated.View 
+              <Animated.View  
                 style={[
                   s.modalActions,
                   modalActionsStyle

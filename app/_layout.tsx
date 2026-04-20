@@ -1,4 +1,9 @@
 import React, { useEffect } from 'react';
+// Shim for HMR bug in native environment
+if (typeof document === 'undefined') {
+  // @ts-ignore
+  global.document = { currentScript: null };
+}
 import { Stack, useRouter, useSegments, usePathname } from 'expo-router';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';

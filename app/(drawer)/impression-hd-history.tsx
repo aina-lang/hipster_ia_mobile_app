@@ -47,7 +47,7 @@ import { ScreenHeader } from '../../components/ui/ScreenHeader';
 import { NeonBackButton } from '../../components/ui/NeonBackButton';
 import { AiService } from '../../api/ai.service';
 
-const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
+const { width: SCREEN_W } = Dimensions.get('window');
 const SCROLL_PAD = 24;
 const GALLERY_GAP = 8;
 const COLS = 3;
@@ -327,12 +327,12 @@ export default function ImpressionHDHistoryScreen() {
 
   const FullScreenImageItem = ({ item, isSelected }: { item: GeneratedImage, isSelected: boolean }) => {
     const animatedStyle = useAnimatedStyle(() => {
-      if (!isSelected) return { width: '100%', height: SCREEN_H * 0.65 };
+      if (!isSelected) return { width: '100%', height: Dimensions.get('window').height * 0.65 };
       
-      const targetHeight = SCREEN_H * 0.65;
-      const targetWidth = SCREEN_W;
+      const targetHeight = Dimensions.get('window').height * 0.65;
+      const targetWidth = Dimensions.get('window').width;
       const targetX = 0;
-      const targetY = (SCREEN_H - targetHeight) / 2;
+      const targetY = (Dimensions.get('window').height - targetHeight) / 2;
 
       return {
         position: 'absolute',
