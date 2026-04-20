@@ -40,11 +40,13 @@ jobs:
             echo "==== Clean Expo cache ===="
             rm -rf .expo
 
-            echo "==== Kill old Expo / port $EXPO_PORT ===="
+            echo "==== Kill old Expo / Ngrok ===="
             if lsof -ti :"$EXPO_PORT" >/dev/null 2>&1; then
               lsof -ti :"$EXPO_PORT" | xargs -r kill -9
-              sleep 2
             fi
+            pkill -f ngrok || true
+            pkill -f "expo start" || true
+            sleep 2
 
             echo "==== Delete old PM2 app if exists ===="
             pm2 delete "$APP_NAME" >/dev/null 2>&1 || true
