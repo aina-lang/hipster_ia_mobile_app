@@ -35,6 +35,7 @@ jobs:
 
             echo "==== Install deps ===="
             npm ci
+            npm install @expo/ngrok@latest
 
             echo "==== Clean Expo cache ===="
             rm -rf .expo
