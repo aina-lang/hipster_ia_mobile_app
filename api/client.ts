@@ -3,7 +3,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LogBox } from 'react-native';
 
 // Ignore specific warnings
-LogBox.ignoreLogs(['SafeAreaView has been deprecated']);
+LogBox.ignoreLogs([
+  'SafeAreaView has been deprecated',
+  '[expo-av]: Expo AV has been deprecated',
+]);
 
 export const BASE_URL = `https://hipster-api.fr/api`; // Pointing to local backend on port 4000
 // const BASE_URL = 'https://hipster-api.fr/api'; // Pointing to local backend to fix 401/connectivity issues

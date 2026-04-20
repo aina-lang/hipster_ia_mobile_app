@@ -56,7 +56,10 @@ function getFeatureIcon(feature: string) {
 }
 
 function formatPrice(price: string | number) {
-  return typeof price === 'number' ? `${price.toFixed(2)}€` : price;
+  if (typeof price === 'number') {
+    return Number.isInteger(price) ? `${price}€` : `${price.toFixed(2).replace('.', ',')}€`;
+  }
+  return price;
 }
 
 function PlanIcon({ planId, size = 56, color, isSelected }: { planId: string; size?: number; color?: string; isSelected?: boolean }) {
@@ -211,6 +214,15 @@ export default function PacksScreen() {
   const [loading, setLoading]     = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
+  const now = new Date();
+  const isExpired = user?.subscriptionEndDate && new Date(user.subscriptionEndDate) < now;
+  const hasActivePlan = 
+    (user?.subscriptionStatus === 'active' || user?.subscriptionStatus === 'trialing' || user?.subscriptionStatus === 'trial') &&
+    user?.planType && user?.planType !== 'curieux';
+  
+  // Hide back button if user is forced to be here (expired or AI user without plan)
+  const isForcedPayment = isExpired || (user?.type === 'ai' && !user?.stripeSubscriptionId && !hasActivePlan);
+
   useFocusEffect(React.useCallback(() => { setSubmitting(false); }, []));
   useEffect(() => { fetchPlans(); }, []);
 
@@ -219,13 +231,23 @@ export default function PacksScreen() {
       setLoading(true);
       const resp = await api.get('/ai/payment/plans');
       const raw: any[] = resp.data?.data ?? resp.data ?? [];
-      const mapped: Plan[] = raw.map(p => ({
+      let filtered = raw.map(p => ({
         ...p,
         price: formatPrice(p.price),
         isComingSoon: COMING_SOON_IDS.has(p.id),
       }));
-      setPlans(mapped);
-      if (mapped.length > 0 && !selectedPlan) setPlan(mapped[1]?.id ?? mapped[0].id);
+
+      // Si l'utilisateur a déjà eu un plan (curieux ou autre), on cache le plan 'curieux'
+      if (user?.planType) {
+        filtered = filtered.filter(p => p.id !== 'curieux');
+      }
+
+      setPlans(filtered);
+      if (filtered.length > 0 && !selectedPlan) {
+        // Sélectionner Studio (index 1 en général) ou le premier disponible
+        const defaultPlan = filtered.find(p => p.id === 'studio') || filtered[0];
+        setPlan(defaultPlan.id);
+      }
     } catch (e) {
       console.error('PacksScreen – fetchPlans:', e);
     } finally {
@@ -272,7 +294,7 @@ export default function PacksScreen() {
       const { paymentIntentClientSecret, setupIntentClientSecret, ephemeralKey, customerId } = data.data || data;
       const initResult = await initPaymentSheet({
         merchantDisplayName: 'Hipster IA',
-        locale: 'fr-FR',
+        // locale: 'fr-FR',
         customerId: customerId,
         customerEphemeralKeySecret: ephemeralKey,
         paymentIntentClientSecret,
@@ -317,19 +339,30 @@ export default function PacksScreen() {
     }
   };
 
+  const scrollY = useSharedValue(0);
+
   return (
     <BackgroundGradientOnboarding darkOverlay>
 
       <ScreenHeader
         titleSub="Choisissez"
         titleScript="votre pack"
-        onBack={() => {
+        onBack={isForcedPayment ? undefined : () => {
           setIsReturningFromBack(true);
           router.replace('/');
         }}
+        scrollY={scrollY}
       />
 
-      <ScrollView contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false} style={s.screen}>
+      <Animated.ScrollView 
+        contentContainerStyle={[s.scrollContent, { paddingTop: 130 }]} 
+        showsVerticalScrollIndicator={false} 
+        style={s.screen}
+        onScroll={(e) => {
+          scrollY.value = e.nativeEvent.contentOffset.y;
+        }}
+        scrollEventThrottle={16}
+      >
         {loading ? (
           <View style={s.loader}>
             <ActivityIndicator color={colors.primary.main} size="large" />
@@ -348,7 +381,7 @@ export default function PacksScreen() {
             ))}
           </View>
         )}
-      </ScrollView>
+      </Animated.ScrollView>
 
       <View style={s.footer}>
         <NeonActionButton

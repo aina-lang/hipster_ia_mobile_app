@@ -13,6 +13,7 @@ import {
   Easing,
   Dimensions,
 } from 'react-native';
+import Animated, { useSharedValue, useAnimatedStyle, interpolate, Extrapolate } from 'react-native-reanimated';
 import { Audio } from 'expo-av';
 import * as MediaLibrary from 'expo-media-library';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -232,12 +233,12 @@ export default function HomeScreen() {
 
   const planType             = user?.planType || 'curieux';
   const subStatus            = user?.subscriptionStatus;
-  const isSubscriptionActive = subStatus === 'active' || subStatus === 'trialing' || subStatus === 'trial';
-  const isPackCurieux        = planType === 'curieux';
-
   const now     = new Date();
   const endDate = user?.subscriptionEndDate ? new Date(user.subscriptionEndDate) : null;
   const isExpired = endDate && now > endDate;
+
+  const isSubscriptionActive = subStatus === 'active' || subStatus === 'trialing' || subStatus === 'trial' || (endDate && !isExpired);
+  const isPackCurieux        = planType === 'curieux';
 
   const fns = getUniversalFunctions(planType);
 
@@ -322,7 +323,7 @@ export default function HomeScreen() {
   }
 
   const effectivePlanId   = isPackCurieux && isExpired ? 'studio' : planType;
-  const fallbackPlan      = { id: 'curieux', name: 'Pack Curieux', price: 'Gratuit (7 jours)' };
+  const fallbackPlan      = { id: effectivePlanId, name: 'Chargement...', price: '...' };
   const currentPlanObject = plans.find(p => p.id === effectivePlanId) || plans.find(p => p.id === 'atelier') || fallbackPlan;
 
   const promptsLimit = user?.promptsLimit || 0; const promptsUsed = user?.promptsUsed || 0;
@@ -343,7 +344,7 @@ export default function HomeScreen() {
 
   const isTrialButNoCard      = isPackCurieux && !user?.stripeCustomerId;
   const isAnyMessageTyping    = messages.some(m => m.isTyping);
-  const isPaidPlanButInactive = isHydrated && (!isSubscriptionActive || isTrialButNoCard || (isPackCurieux && isExpired) || isFullyExhausted);
+  const isPaidPlanButInactive = isHydrated && !loadingPlans && currentPlanObject && (!isSubscriptionActive || isTrialButNoCard || (isPackCurieux && isExpired) || isFullyExhausted);
 
   const showModal = (type: ModalType, title: string, message: string) => {
     setModalType(type); setModalTitle(title); setModalMessage(message); setModalVisible(true);
@@ -425,17 +426,6 @@ export default function HomeScreen() {
   };
 
   useEffect(() => {
-    const isPackCurieux = user?.planType === 'curieux';
-    const hasNoStripe   = !user?.stripeCustomerId;
-    if (isHydrated && isPackCurieux && hasNoStripe && !hasAutoOpenedStripe && !isPaymentLoading && !isLoadingConversation) {
-      console.log('[HomeScreen] Auto-triggering Stripe Payment Sheet for Pack Curieux...');
-      setHasAutoOpenedStripe(true);
-      const timer = setTimeout(() => handleStripePayment(), 1500);
-      return () => clearTimeout(timer);
-    }
-  }, [isHydrated, user?.planType, user?.stripeCustomerId, hasAutoOpenedStripe, isPaymentLoading, isLoadingConversation]);
-
-  useEffect(() => {
     const checkConnection = async () => {
       try {
         const response = await api.get('/ai/ping').catch(() => null);
@@ -470,297 +460,6 @@ export default function HomeScreen() {
     if (reset === 'true') { resetChat(); router.setParams({ reset: undefined }); }
   }, [reset]);
 
-  useEffect(() => {
-    const formatStructuredData = (data: any): string => {
-      if (typeof data !== 'object' || data === null) return JSON.stringify(data);
-
-      const lines: string[] = [];
-      const indent = (text: string, level: number = 0) => '  '.repeat(level) + text;
-      const processedKeys = new Set<string>();
-
-      const primaryTitle = data.title || data.name || data.heading || null;
-      if (primaryTitle) {
-        processedKeys.add('title');
-        processedKeys.add('name');
-        processedKeys.add('heading');
-        lines.push('');
-        lines.push(indent('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 0));
-        lines.push(indent(`📌 ${primaryTitle.toUpperCase()}`, 0));
-        lines.push(indent('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 0));
-        lines.push('');
-      }
-
-      if (data.description) {
-        processedKeys.add('description');
-        lines.push(indent(data.description, 0));
-        lines.push('');
-      }
-      if (data.content && !data.description) {
-        processedKeys.add('content');
-        lines.push(indent(data.content, 0));
-        lines.push('');
-      }
-      if (data.text && !data.description && !data.content) {
-        processedKeys.add('text');
-        lines.push(indent(data.text, 0));
-        lines.push('');
-      }
-
-      if (data.subtitle) {
-        processedKeys.add('subtitle');
-        lines.push(indent(`📍 ${data.subtitle}`, 0));
-        lines.push('');
-      }
-
-      if (data.sections && Array.isArray(data.sections) && data.sections.length > 0) {
-        processedKeys.add('sections');
-        lines.push(indent('📋 SECTIONS', 0));
-        lines.push(indent('─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─', 0));
-        data.sections.forEach((section: any, idx: number) => {
-          if (typeof section === 'string') {
-            lines.push(indent(`${String(idx + 1).padStart(2, '0')}. ${section}`, 1));
-          } else if (section.title) {
-            lines.push(indent(`\n▸ ${section.title}`, 1));
-            if (section.content) lines.push(indent(section.content, 2));
-            if (section.description && !section.content) lines.push(indent(section.description, 2));
-          }
-        });
-        lines.push('');
-      }
-
-      if (data.colorScheme || data.colors) {
-        processedKeys.add('colorScheme');
-        processedKeys.add('colors');
-        const clrs = data.colorScheme || data.colors;
-        lines.push(indent('🎨 PALETTE COULEURS', 0));
-        lines.push(indent('─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─', 0));
-        if (typeof clrs === 'object') {
-          Object.entries(clrs).forEach(([key, value]: any) => {
-            lines.push(indent(`  ${key}: ${value}`, 1));
-          });
-        } else {
-          lines.push(indent(clrs, 1));
-        }
-        lines.push('');
-      }
-
-      if (data.keywords && Array.isArray(data.keywords)) {
-        processedKeys.add('keywords');
-        lines.push(indent('🏷️  MOT-CLÉS', 0));
-        lines.push(indent(data.keywords.map((k: string) => `#${k}`).join('  '), 1));
-        lines.push('');
-      }
-
-      if (data.hashtags && Array.isArray(data.hashtags)) {
-        processedKeys.add('hashtags');
-        lines.push(indent('#️⃣ HASHTAGS', 0));
-        const tags = data.hashtags.map((h: string) => h.startsWith('#') ? h : `#${h}`).join('  ');
-        lines.push(indent(tags, 1));
-        lines.push('');
-      }
-
-      if (data.features && Array.isArray(data.features) && data.features.length > 0) {
-        processedKeys.add('features');
-        lines.push(indent('✨ CARACTÉRISTIQUES', 0));
-        lines.push(indent('─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─', 0));
-        data.features.forEach((feature: any) => {
-          const featureText = typeof feature === 'string' ? feature : feature.text || feature.name || feature.description || '';
-          if (featureText) lines.push(indent(`✓ ${featureText}`, 1));
-        });
-        lines.push('');
-      }
-
-      if (data.benefits && Array.isArray(data.benefits)) {
-        processedKeys.add('benefits');
-        lines.push(indent('💡 AVANTAGES', 0));
-        lines.push(indent('─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─', 0));
-        data.benefits.forEach((benefit: any) => {
-          const text = typeof benefit === 'string' ? benefit : benefit.text || benefit.description || '';
-          if (text) lines.push(indent(`→ ${text}`, 1));
-        });
-        lines.push('');
-      }
-
-      if (data.meta) {
-        processedKeys.add('meta');
-        lines.push(indent('ℹ️  INFORMATIONS', 0));
-        lines.push(indent('─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─', 0));
-        Object.entries(data.meta).forEach(([key, value]: any) => {
-          lines.push(indent(`${key}: ${value}`, 1));
-        });
-        lines.push('');
-      }
-
-      if (data.cta || data.callToAction) {
-        processedKeys.add('cta');
-        processedKeys.add('callToAction');
-        const cta = data.cta || data.callToAction;
-        const ctaText = typeof cta === 'string' ? cta : cta.text || cta.label || '';
-        if (ctaText) {
-          lines.push(indent('─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─', 0));
-          lines.push(indent(`🎯 ${ctaText}`, 0));
-        }
-      }
-
-      const remainingKeys = Object.keys(data).filter(k => !processedKeys.has(k) && data[k] !== null && data[k] !== undefined);
-      if (remainingKeys.length > 0) {
-        lines.push('');
-        lines.push(indent('📝 AUTRES INFORMATIONS', 0));
-        lines.push(indent('─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─', 0));
-        remainingKeys.forEach(key => {
-          const value = data[key];
-          let displayValue = '';
-          if (typeof value === 'string') displayValue = value;
-          else if (Array.isArray(value)) displayValue = value.join(', ');
-          else if (typeof value === 'object') displayValue = JSON.stringify(value, null, 2);
-          else displayValue = String(value);
-          lines.push(indent(`${key}: ${displayValue}`, 1));
-        });
-      }
-
-      const filtered = lines.filter(line => line.trim() !== '');
-      return filtered.length > 0 ? filtered.join('\n') : JSON.stringify(data, null, 2);
-    };
-
-    const loadConversation = async () => {
-      if (idToLoad) {
-        setIsLoadingConversation(true);
-        try {
-          console.log('[DEBUG] Loading conversation:', idToLoad);
-          const conversation = await AiService.getConversation(idToLoad);
-
-          if (conversation) {
-            console.log(conversation);
-            setConversationId(idToLoad);
-            const isNonChatGeneration = conversation.type && conversation.type !== 'CHAT';
-            const uiMessages: Message[] = [];
-
-            if (isNonChatGeneration) {
-              if (conversation.prompt) {
-                uiMessages.push({
-                  id: `${idToLoad}-user`,
-                  text: formatUserMessage(conversation.prompt),
-                  sender: 'user',
-                  timestamp: new Date(conversation.createdAt),
-                  isTyping: false,
-                });
-              }
-
-              if (conversation.result || conversation.imageUrl) {
-                let resultText = conversation.result || 'Génération complétée';
-                console.log('[DEBUG] Raw result:', resultText);
-
-                if (resultText && resultText !== 'Génération complétée') {
-                  try {
-                    let textToParse = resultText;
-                    if (typeof textToParse === 'string') {
-                      textToParse = textToParse
-                        .trim()
-                        .replace(/^```json\n?/, '')
-                        .replace(/^```\n?/, '')
-                        .replace(/\n?```$/, '')
-                        .trim();
-                      console.log('[DEBUG] Text to parse:', textToParse.substring(0, 100));
-                      const parsed = JSON.parse(textToParse);
-                      const formatted = formatStructuredData(parsed);
-                      console.log('[DEBUG] Formatted result length:', formatted.length);
-                      if (formatted && formatted.length > 0) resultText = formatted;
-                    }
-                  } catch (e) {
-                    console.warn('[DEBUG] Parse error:', e, 'Original:', resultText.substring(0, 100));
-                  }
-                }
-
-                console.log('[DEBUG] Final resultText:', resultText.substring(0, 100));
-                let mediaType: 'image' | 'text' = 'image';
-                if (conversation.type === 'SOCIAL' || conversation.type === 'TEXT') mediaType = 'text';
-
-                uiMessages.push({
-                  id: `${idToLoad}-result`,
-                  text: resultText,
-                  sender: 'ai',
-                  timestamp: new Date(conversation.createdAt),
-                  isTyping: false,
-                  type: conversation.imageUrl ? mediaType : 'text',
-                  mediaUrl: conversation.imageUrl || undefined,
-                });
-              }
-            } else {
-              let storedMessages: any[] = [];
-              let isOldFormat = false;
-
-              try {
-                const parsed = JSON.parse(conversation.prompt);
-                if (Array.isArray(parsed)) storedMessages = parsed;
-                else isOldFormat = true;
-              } catch (e) {
-                isOldFormat = true;
-                console.log('[DEBUG] Old conversation format detected');
-              }
-
-              if (isOldFormat) {
-                if (conversation.prompt) {
-                  uiMessages.push({
-                    id: `${idToLoad}-user`,
-                    text: formatUserMessage(conversation.prompt),
-                    sender: 'user',
-                    timestamp: new Date(conversation.createdAt),
-                    isTyping: false,
-                  });
-                }
-                if (conversation.result) {
-                  uiMessages.push({
-                    id: `${idToLoad}-ai`,
-                    text: conversation.result,
-                    sender: 'ai',
-                    timestamp: new Date(conversation.createdAt),
-                    isTyping: false,
-                  });
-                }
-              } else {
-                storedMessages.forEach((msg, index) => {
-                  if (msg.role === 'user' || msg.role === 'assistant') {
-                    const uiMsg: Message = {
-                      id: `${idToLoad}-${index}`,
-                      text: msg.role === 'user' ? formatUserMessage(msg.content) : msg.content,
-                      sender: (msg.role === 'user' ? 'user' : 'ai') as 'user' | 'ai',
-                      timestamp: new Date(),
-                      isTyping: false,
-                      type: msg.type || 'text',
-                      mediaUrl: msg.url || msg.mediaUrl,
-                    };
-                    uiMessages.push(uiMsg);
-                  }
-                });
-
-                if (conversation.result) {
-                  const lastMsg = uiMessages[uiMessages.length - 1];
-                  const resultMatches = lastMsg && lastMsg.sender === 'ai' && lastMsg.text === conversation.result;
-                  if (!resultMatches) {
-                    uiMessages.push({
-                      id: `${idToLoad}-result`,
-                      text: conversation.result,
-                      sender: 'ai',
-                      timestamp: new Date(),
-                      isTyping: false,
-                    });
-                  }
-                }
-              }
-            }
-
-            setMessages(uiMessages);
-          }
-        } catch (error) {
-          console.error('[DEBUG] Failed to load conversation:', error);
-        } finally {
-          setIsLoadingConversation(false);
-        }
-      }
-    };
-    loadConversation();
-  }, [idToLoad]);
-
   const placeholderText = "Décrivez votre idée, ajoutez une image ou un audio...";
   const hasMessages     = messages.length > 0;
   const isInputDisabled = isGenerating || isFullyExhausted || isAnyMessageTyping;
@@ -777,103 +476,21 @@ export default function HomeScreen() {
   };
 
   const handleSend = async () => {
-    if ((!inputValue.trim() && !selectedImage) || isGenerating) return;
-    if (isTextExhausted) { showModal('error', 'Limite atteinte', "Vous avez atteint votre limite d'utilisation. Vous pouvez encore générer des images ou passer à un pack supérieur !"); return; }
-    const currentImage = selectedImage;
-
-    const formattedText = formatUserMessage(inputValue.trim());
-
-    const userMsg: Message = {
-      id: Date.now().toString(),
-      text: formattedText,
-      sender: 'user',
-      timestamp: new Date(),
-      type: currentImage ? 'image' : 'text',
-      mediaUrl: currentImage || undefined,
-    };
-
-    setMessages((prev) => [...prev, userMsg]);
-    setInputValue('');
-    setSelectedImage(null);
-    setIsGenerating(true);
-
-    try {
-      const chatHistory: any[] = [];
-      const systemContext = `\n      Identité: Hipster IA\n      Rôle: Assistant créatif et intelligent\n      Cible: ${user?.email?.split('@')[0] || "l'utilisateur"}\n      Contexte: ${user?.type !== 'ai' && user?.job ? `Métier: ${user?.job}` : ''}\n    `;
-      chatHistory.push({ role: 'system', content: `Tu es Hipster IA. ${systemContext}. IMPORTANT: Ne jamais utiliser d'emojis dans tes réponses. Garde un ton professionnel et direct.` });
-      messages.forEach(m => chatHistory.push({ role: m.sender === 'user' ? 'user' : 'assistant', content: m.text }));
-      chatHistory.push({ role: 'user', content: userMsg.text });
-      const convIdToSend = conversationId || generateConversationId();
-      if (!conversationId) setConversationId(convIdToSend);
-      console.log('[DEBUG] Free Mode Chat History:', JSON.stringify(chatHistory, null, 2));
-      console.log('[DEBUG] Conversation ID:', convIdToSend);
-      let response;
-      if (currentImage) {
-        const formData = new FormData();
-        formData.append('messages', JSON.stringify(chatHistory));
-        formData.append('conversationId', convIdToSend);
-        const filename = currentImage.split('/').pop() || 'image.jpg';
-        const match = /\.(\w+)$/.exec(filename);
-        const ext = match ? match[1] : 'jpg';
-        formData.append('file', { uri: currentImage, name: filename, type: `image/${ext}` } as any);
-        const res = await api.post('/ai/chat', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
-        response = res.data.data;
-      } else {
-        response = await AiService.chat(chatHistory, convIdToSend);
-      }
-      console.log('[DEBUG] Response:', JSON.stringify(response, null, 2));
-      if (!conversationId && response.conversationId) setConversationId(response.conversationId);
-      const content = response.data?.content ?? response.content ?? response.message ?? response;
-      let mediaUrl: string | undefined;
-      const isImageAsync = response.type === 'image' && !response.imageBase64 && !response.mediaUrl && response.generationId;
-      console.log('[DEBUG] Free Mode - isImageAsync:', isImageAsync, 'generationId:', response.generationId);
-      if (isImageAsync) {
-        console.log('[DEBUG] ⏳ Starting Free Mode polling with generationId:', response.generationId);
-        let isCompleted = false, attempts = 0;
-        while (!isCompleted && attempts < 30) {
-          attempts++;
-          console.log(`[DEBUG] 🔄 Free Mode Poll attempt ${attempts}/30`);
-          await new Promise(resolve => setTimeout(resolve, 2000));
-          try {
-            const updatedGen = await AiService.getConversation(response.generationId.toString());
-            console.log('[DEBUG] Free Mode Poll response:', JSON.stringify(updatedGen, null, 2));
-            const imageUrl = updatedGen?.imageUrl || updatedGen?.url || updatedGen?.image;
-            if (imageUrl && typeof imageUrl === 'string' && imageUrl.startsWith('http')) { mediaUrl = imageUrl; isCompleted = true; }
-            else if (updatedGen?.result?.startsWith('ERROR')) throw new Error(updatedGen.result);
-          } catch (pollError) { console.warn('[DEBUG] ⚠️ Free Mode poll error on attempt', attempts, ':', pollError); }
-        }
-        if (!isCompleted) { console.error('[DEBUG] ❌ Free Mode polling timed out'); throw new Error('Image generation timed out'); }
-      } else if (response.type === 'image' && response.imageBase64) {
-        mediaUrl = `data:image/png;base64,${response.imageBase64}`;
-      } else { mediaUrl = response.mediaUrl; }
-      const aiMsg: Message = { id: (Date.now() + 1).toString(), text: typeof content === 'string' ? content : JSON.stringify(content), sender: 'ai', timestamp: new Date(), isTyping: !!(typeof content === 'string' && content.length > 0), type: response.type || 'text', mediaUrl };
-      setMessages(prev => [...prev, aiMsg]);
-    } catch (error: any) {
-      console.error('[DEBUG] Free Mode Error:', error);
-      showModal('error', 'Erreur de génération', error?.response?.data?.message || error.message || 'Erreur inconnue');
-      setMessages(prev => [...prev, { id: (Date.now() + 1).toString(), text: 'Désolé, une erreur est survenue lors de la génération.', sender: 'ai', timestamp: new Date(), isTyping: true }]);
-    } finally {
-      setIsGenerating(false);
-      useAuthStore.getState().aiRefreshUser().catch(console.error);
-    }
+    // Hidden on home screen but kept for logic
   };
 
   const copyToClipboard = (text: string) => {};
 
   const handleDeleteConfirm = async () => {
-    console.log('[HomeScreen] handleDeleteConfirm triggered. conversationId:', conversationId);
     setShowDeleteConfirm(false);
-    if (!conversationId) { console.warn('[HomeScreen] No conversationId to delete, just resetting local state.'); resetChat(); return; }
+    if (!conversationId) { resetChat(); return; }
     try {
       setIsGenerating(true);
-      const result = await AiService.deleteGeneration(conversationId);
-      console.log('[HomeScreen] Deletion result from API:', result);
+      await AiService.deleteGeneration(conversationId);
       resetChat();
       router.setParams({ chatId: undefined, conversationId: undefined });
-      showModal('success', 'Succès', 'Conversation supprimée avec succès.');
     } catch (error) {
       console.error('[HomeScreen] Delete conversation error:', error);
-      showModal('error', 'Erreur', 'Impossible de supprimer la conversation.');
     } finally { setIsGenerating(false); }
   };
 
@@ -882,20 +499,29 @@ export default function HomeScreen() {
     const currentUser = useAuthStore.getState().user;
     if (currentUser?.job) setJob(currentUser.job);
     if (fns.length > 0) setFunction(fns[0].label, fns[0].category);
-    console.log('[DEBUG] Starting new conversation');
   };
 
-  const completeTyping = (msgId: string) => setMessages(prev => prev.map(msg => msg.id === msgId ? { ...msg, isTyping: false } : msg));
+  const scrollY = useSharedValue(0);
+
+  const headerAnimatedStyle = useAnimatedStyle(() => {
+    const opacity = interpolate(scrollY.value, [0, 50], [0, 0.95], Extrapolate.CLAMP);
+    const borderOpacity = interpolate(scrollY.value, [0, 50], [0, 0.08], Extrapolate.CLAMP);
+
+    return {
+      backgroundColor: `rgba(3, 8, 20, ${opacity})`,
+      borderBottomColor: `rgba(255, 255, 255, ${borderOpacity})`,
+    };
+  });
 
   return (
     <BackgroundGradientOnboarding darkOverlay={true} blurIntensity={2}>
-      <View style={{ flex: 1, backgroundColor : 'transaprent' }}>
+      <View style={{ flex: 1, backgroundColor : 'transparent' }}>
         <KeyboardAvoidingView
           style={{ flex: 1 }}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
         >
-          <View style={[s.topBar, { paddingTop: insets.top + 10 }]}>
+          <Animated.View style={[s.topBar, { paddingTop: insets.top + (Platform.OS === 'ios' ? 50 : 60) }, headerAnimatedStyle]}>
             {!isPaidPlanButInactive && (
               <TouchableOpacity style={s.menuBtn} onPress={() => navigation.openDrawer()}>
                 <View style={s.iconGlow}>
@@ -903,163 +529,71 @@ export default function HomeScreen() {
                 </View>
               </TouchableOpacity>
             )}
-            {hasMessages ? (
-              <TouchableOpacity
-                onPress={() => { resetCreationStore(); if (user?.job) useCreationStore.getState().setJob(user.job); router.push('/(guided)/step2-type'); }}
-                style={s.guidedBtn} activeOpacity={0.7}
-              >
-                <ArrowUpRight size={14} color={colors.primary.main} />
-                <Text style={s.guidedBtnText}>Mode Guidé</Text>
-              </TouchableOpacity>
-            ) : <View /> }
+            <View />
             <View style={s.topRight}>
-              {hasMessages && (
-                <TouchableOpacity style={s.menuBtn} onPress={() => setShowDeleteConfirm(true)}>
-                  <Trash2 size={20} color={colors.text.muted} />
-                </TouchableOpacity>
+              {/* Mode Guidé button removed as requested */}
+            </View>
+          </Animated.View>
+
+          <View style={[s.scroll, s.scrollContent]}>
+            <View style={s.titleBlock}>
+              <Text style={s.greeting}>{getGreetingByTime()} {user?.name || ''}</Text>
+              <Text style={s.titleArimo}>Que souhaitez-vous</Text>
+              <Text style={s.titleBrittany}>produire ?</Text>
+              {user?.job && (
+                <View style={s.jobRow}>
+                  <Text style={s.jobLabel}>{user?.job}</Text>
+                </View>
               )}
             </View>
-          </View>
 
-          <ScrollView
-            ref={scrollViewRef}
-            style={s.scroll}
-            contentContainerStyle={s.scrollContent}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-          >
-            {!hasMessages ? (
-              <>
-                <View style={s.titleBlock}>
-                  <Text style={s.greeting}>{getGreetingByTime()}</Text>
-                  <Text style={s.titleArimo}>Que souhaitez-vous</Text>
-                  <Text style={s.titleBrittany}>produire ?</Text>
-                  {user?.job && (
-                    <View style={s.jobRow}>
-                      <Text style={s.jobLabel}>{user?.job}</Text>
-                    </View>
-                  )}
-                </View>
-
-                <View style={s.grid}>
-                  {fns.map((fn, index) => {
-                    const isSelected = selectedFunction === fn.label;
-                    return (
-                      <TouchableOpacity
-                        key={index}
-                        activeOpacity={0.9}
-                        style={s.gridItem}
-                        onPress={() => {
-                          console.log('[HOME] Card pressed:', fn.label, 'Category:', fn.category);
-                          setFunction(fn.label, fn.category);
-                          
-                          setTimeout(() => {
-                            console.log('[HOME] Navigation: label=', fn.label, ', category=', fn.category);
-                            
-                            if (fn.label === 'Textes libres') {
-                              console.log('[HOME] → Navigating to freetext');
-                              router.push('/(drawer)/freetext');
-                            } else if (fn.label === 'Historique flyers') {
-                              console.log('[HOME] → Navigating to impression-hd-history');
-                              router.push('/(drawer)/impression-hd-history');
-                            } else if (fn.category === 'Document') {
-                              console.log('[HOME] → Navigating to step3-directions (Flyer/Affiche)');
-                              setArchitecture(null); // Reset architecture for fresh selection
-                              router.push('/(guided)/step3-directions');
-                            } else {
-                              console.log('[HOME] → Navigating to step4-personalize');
-                              router.push('/(guided)/step4-personalize');
-                            }
-                          }, 300);
-                        }}
-                      >
-                        <NeonBorderCard isSelected={isSelected}>
-                          <View style={[s.card, isSelected && s.cardSelected]}>
-                            <View style={[s.iconBox, isSelected && s.iconBoxActive]}>
-                              {fn.image ? (
-                                <Image
-                                  source={fn.image}
-                                  style={{ width: 44, height: 44, tintColor: isSelected ? NEON_BLUE : colors.text.muted }}
-                                  resizeMode="contain"
-                                />
-                              ) : (
-                                <PackIcon planType={planType} size={44} isSelected={isSelected} />
-                              )}
-                            </View>
-                            <Text style={[s.cardLabel, isSelected && s.cardLabelSelected]} numberOfLines={2}>
-                              {fn.label}
-                            </Text>
-                          </View>
-                        </NeonBorderCard>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-
-              </>
-            ) : (
-              <View style={s.messagesBlock}>
-                {isLoadingConversation ? (
-                  <View style={s.loadingBlock}>
-                    <ActivityIndicator size="large" color={colors.primary.main} />
-                    <Text style={s.loadingText}>Chargement de la conversation...</Text>
-                  </View>
-                ) : (
-                  <>
-                    {messages.map(msg => (
-                      <View
-                        key={msg.id}
-                        style={[
-                          s.bubble,
-                          msg.sender === 'user' ? s.bubbleUser : s.bubbleAi,
-                        ]}
-                      >
-                        {msg.type && msg.type !== 'text' && msg.mediaUrl && (
-                          <MediaDisplay type={msg.type} url={msg.mediaUrl} showModal={showModal} />
-                        )}
-
-                        {msg.sender === 'user' ? (
-                          msg.text ? (
-                            <View>
-                              {msg.text.split('\n').map((line, idx) => (
-                                <Text key={idx} className="text-base text-slate-300">
-                                  {line}
-                                </Text>
-                              ))}
-                            </View>
-                          ) : null
-                        ) : msg.isTyping ? (
-                          <TypingMessage text={msg.text} onComplete={() => completeTyping(msg.id)} />
-                        ) : (
-                          msg.text ? (
-                            <View>
-                              {msg.text.split('\n').map((line, idx) => (
-                                <Text key={idx} className="text-base leading-6 text-slate-300">
-                                  {line}
-                                </Text>
-                              ))}
-                            </View>
-                          ) : null
-                        )}
-
-                        {msg.sender === 'ai' && !msg.isTyping && (!msg.type || msg.type === 'text') && msg.text && (
-                          <TouchableOpacity onPress={() => copyToClipboard(msg.text)} style={s.copyBtn}>
-                            <Copy size={14} color={colors.text.muted} />
-                          </TouchableOpacity>
-                        )}
+            <View style={s.grid}>
+              {fns.map((fn, index) => {
+                const isSelected = selectedFunction === fn.label;
+                return (
+                  <TouchableOpacity
+                    key={index}
+                    activeOpacity={0.9}
+                    style={s.gridItem}
+                    onPress={() => {
+                      setFunction(fn.label, fn.category);
+                      setTimeout(() => {
+                        if (fn.label === 'Textes libres') {
+                          router.push('/(drawer)/freetext');
+                        } else if (fn.label === 'Impression HD') {
+                          router.push('/(drawer)/impression-hd-history');
+                        } else if (fn.category === 'Document') {
+                          setArchitecture(null);
+                          router.push('/(guided)/step3-directions');
+                        } else {
+                          router.push('/(guided)/step4-personalize');
+                        }
+                      }, 300);
+                    }}
+                  >
+                    <NeonBorderCard isSelected={isSelected}>
+                      <View style={[s.card, isSelected && s.cardSelected]}>
+                        <View style={[s.iconBox, isSelected && s.iconBoxActive]}>
+                          {fn.image ? (
+                            <Image
+                              source={fn.image}
+                              style={{ width: 44, height: 44, tintColor: isSelected ? NEON_BLUE : colors.text.muted }}
+                              resizeMode="contain"
+                            />
+                          ) : (
+                            <PackIcon planType={planType} size={44} isSelected={isSelected} />
+                          )}
+                        </View>
+                        <Text style={[s.cardLabel, isSelected && s.cardLabelSelected]} numberOfLines={2}>
+                          {fn.label}
+                        </Text>
                       </View>
-                    ))}
-                  </>
-                )}
-                {isGenerating && (
-                  <View style={s.generatingDot}>
-                    <ActivityIndicator size="small" color={colors.primary.main} />
-                  </View>
-                )}
-              </View>
-            )}
-            <View style={{ height: 128 }} />
-          </ScrollView>
+                    </NeonBorderCard>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
 
           <View
             className="px-5 pb-3 "
@@ -1137,14 +671,19 @@ export default function HomeScreen() {
 }
 
 const s = StyleSheet.create({
-  topBar:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingBottom: 8 },
-  menuBtn:       { borderRadius: 8, backgroundColor: colors.darkSlateBlue, padding: 8 },
+  topBar:        { 
+    position: 'absolute', top: -10, left: 0, right: 0, zIndex: 100,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', 
+    paddingHorizontal: 16, paddingBottom: 15,
+    borderBottomWidth: 1, borderBottomColor: 'transparent'
+  },
+  menuBtn:       { width: 42, height: 42, borderRadius: 21, backgroundColor: colors.darkSlateBlue, justifyContent: 'center', alignItems: 'center' },
   topRight:      { flexDirection: 'row', alignItems: 'center', gap: 8 },
   guidedBtn:     { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.primary.main + '1f', borderWidth: 1, borderColor: colors.primary.main + '4d', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
   guidedBtnText: { color: colors.primary.main, fontSize: 12, fontWeight: '700', fontFamily: fonts.arimo.bold },
   scroll:        { flex: 1, paddingHorizontal: H_PADDING },
-  scrollContent: { flexGrow: 1, paddingTop: 40, backgroundColor : 'transparent' },
-  titleBlock:    { alignItems: 'center', marginTop: 20, marginBottom: 24 },
+  scrollContent: { flexGrow: 1, paddingTop: 200, backgroundColor : 'transparent' },
+  titleBlock:    { alignItems: 'center', marginTop: 32, marginBottom: 24 },
   greeting:      { fontFamily: fonts.arimo.regular, fontSize: 15, color: 'rgba(255,255,255,0.35)', marginBottom: 8, textAlign: 'center' },
   titleArimo:    { fontFamily: fonts.arimo.bold, fontSize: 14, letterSpacing: 3, textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)', textAlign: 'center' },
   titleBrittany: { fontFamily: fonts.brittany, fontSize: 38, color: 'white', textAlign: 'center', textShadowColor: NEON_BLUE, textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 3, paddingLeft : 20 },

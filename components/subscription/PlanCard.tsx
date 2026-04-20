@@ -142,15 +142,15 @@ export function PlanCard({ plan, isSelected, onSelect, loading }: PlanCardProps)
                   {plan.name}
                 </Text>
                 {plan.id === 'studio' ? (
-                                  <View style={{ gap: 4 }}>
-                                    <Text style={[s.oldPrice, isSelected && s.oldPriceSelected]}>29,90€</Text>
-                                    <Text style={[s.planPrice, isSelected && s.planPriceSelected]}>{plan.price}</Text>
-                                  </View>
-                                ) : (
-                                  <Text style={[s.planPrice, isSelected && s.planPriceSelected, plan.isComingSoon && { color: colors.text.muted }]}>
-                                    {plan.price}
-                                  </Text>
-                                )}
+                  <View style={{ gap: 4 }}>
+                    <Text style={[s.oldPrice, isSelected && s.oldPriceSelected]}>29,90€</Text>
+                    <Text style={[s.planPrice, isSelected && s.planPriceSelected]}>{plan.price}</Text>
+                  </View>
+                ) : (
+                  <Text style={[s.planPrice, isSelected && s.planPriceSelected, plan.isComingSoon && { color: colors.text.muted }]}>
+                    {plan.price}
+                  </Text>
+                )}
                 {plan.description && (
                   <Text style={s.planDesc}>{plan.description}</Text>
                 )}

@@ -40,7 +40,7 @@ const ONBOARDING_LAST_SEGMENTS = new Set(['packs', 'job', 'branding', 'setup', '
 
 /** Flat paths only; kept for tooling / cache compatibility and as first check. */
 const AUTH_OR_ONBOARDING_PATH =
-  /^\/(login|register|verify-email|verify-otp|forgot-password|reset-password|privacy-policy|packs|job|branding|setup|payment)(\/|$)/i;
+  /^\/(welcome|login|register|verify-email|verify-otp|forgot-password|reset-password|privacy-policy|packs|job|branding|setup|payment)(\/|$)/i;
 
 function pathLooksLikePublicUnauthFlow(pathname: string | undefined): boolean {
   if (!pathname || pathname === '/') return false;
@@ -75,13 +75,9 @@ export default function RootLayout() {
 
 
   // On app startup, verify that stored session is still valid.
-  // Do not use a module-level "ran once" ref: React 18 Strict Mode (dev) remounts and
-  // the first async completion can run after unmount (setState ignored), while a second
-  // effect would skip — leaving isInitialized false forever.
   useEffect(() => {
     // Set root background to black to prevent white flash
     SystemUI.setBackgroundColorAsync('#000000').catch(() => { });
-    useWelcomeVideoStore.getState().reset();
 
     if (!isHydrated) {
       return;
@@ -179,6 +175,8 @@ export default function RootLayout() {
   const inAuthGroup = segments.some(s => s.includes('(auth)')) || segments.includes('login') || segments.includes('register') || segments.includes('verify-email');
   const inOnboardingGroup = segments.some(s => s.includes('(onboarding)')) || segments.includes('setup') || segments.includes('branding') || segments.includes('packs') || segments.includes('payment');
   const inGuidedGroup = segments.some(s => s.includes('(guided)'));
+  const inDrawerGroup = segments.some(s => s.includes('(drawer)'));
+  const inTabsGroup   = segments.some(s => s.includes('(tabs)'));
   const pathInPublicUnauthFlow = pathLooksLikePublicUnauthFlow(pathname);
   const inUnauthPublicFlow = inAuthGroup || inOnboardingGroup || pathInPublicUnauthFlow;
 
@@ -201,14 +199,25 @@ export default function RootLayout() {
     let targetRoute: string | null = null;
 
     if (isAuthenticated) {
-      if (user && !user.isEmailVerified) {
+      // 1. Check for plan expiration
+      const now = new Date();
+      const isExpired = user?.subscriptionEndDate && new Date(user.subscriptionEndDate) < now;
+
+      if (isExpired && !segments.includes('packs')) {
+        console.log('[RootLayout] Plan expired, forcing redirect to packs');
+        targetRoute = '/(onboarding)/packs';
+      }
+      else if (user && !user.isEmailVerified) {
         if (!segments.includes('verify-email')) {
           targetRoute = '/(auth)/verify-email';
         }
       }
-      // For AI users, require payment (stripeSubscriptionId) not just default planType from getCredits
+      // For AI users, require payment unless they already have an active plan (even without Stripe)
       else if (user && user.type === 'ai' && !user.stripeSubscriptionId) {
-        if (!segments.includes('packs')) {
+        const hasActivePlan = 
+          (user.subscriptionStatus === 'active' || user.subscriptionStatus === 'trialing' || user.subscriptionStatus === 'trial') &&
+          user.planType && user.planType !== 'curieux';
+        if (!hasActivePlan && !segments.includes('packs')) {
           targetRoute = '/(onboarding)/packs';
         }
       }
@@ -223,16 +232,16 @@ export default function RootLayout() {
         }
       }
       else {
-        // User is fully set up, should be in drawer by default,
-        // but allow explicit access to guided flows (/(guided)/...)
-        if (!segments.includes('(drawer)') && !inGuidedGroup) {
+        // User is fully set up. Ensure they are in a protected group,
+        // otherwise default to (drawer) home.
+        if (!inDrawerGroup && !inGuidedGroup && !inTabsGroup) {
           targetRoute = '/(drawer)';
         }
       }
     } else {
       // If not authenticated, allow access to (auth) and (onboarding)
       // Only redirect to /welcome if in protected area
-      const inProtectedRoute = segments.some(s => s.includes('(drawer)') || s.includes('(guided)') || s.includes('(tabs)'));
+      const inProtectedRoute = inDrawerGroup || inGuidedGroup || inTabsGroup;
       const isAtRoot = !segments.length || segments[0] === '' || segments[0] === 'index';
       
       if (!inUnauthPublicFlow && (inProtectedRoute || isAtRoot)) {
@@ -258,7 +267,7 @@ export default function RootLayout() {
         console.error('[RootLayout] ERROR during router.replace:', error);
       }
     }
-  }, [isAuthenticated, hasFinishedOnboarding, isHydrated, isInitialized, segments, pathname, inUnauthPublicFlow, user]);
+  }, [isAuthenticated, hasFinishedOnboarding, isHydrated, isInitialized, segments, pathname, inUnauthPublicFlow, user, inDrawerGroup, inGuidedGroup, inTabsGroup]);
 
   const handleVideoFinish = React.useCallback(() => {
     console.log('[RootLayout] handleVideoFinish called. Setting videoCompleted=true');
@@ -272,7 +281,7 @@ export default function RootLayout() {
           <StripeProvider
             publishableKey="pk_test_51R15MnK5fB5lGbp8C5QAYcALGWTBBmTmYxsnMnigeUNUg2DvsR9u4xbsF1GNzDIqiQxFqz9Dg10kEttfcpbr5DVX00yGKXocyS"
             merchantIdentifier="merchant.com.hipster">
-          {isInitialized ? (
+          {isInitialized && (isAuthenticated || inUnauthPublicFlow) ? (
             <Stack
               screenOptions={{
                 headerShown: false,
@@ -304,4 +313,3 @@ export default function RootLayout() {
     </SafeAreaProvider>
   );
 }
-

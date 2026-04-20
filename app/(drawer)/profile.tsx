@@ -4,7 +4,9 @@ import {
   Platform, TouchableOpacity, ScrollView, Pressable,
   ActivityIndicator, Animated as RNAnimated, Easing, Image, Modal,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useNavigation } from 'expo-router';
+import { DrawerActions } from '@react-navigation/native';
+import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -25,6 +27,7 @@ import { useWelcomeVideoStore } from '../../store/welcomeVideoStore';
 import { NeonBorderInput } from '../../components/ui/NeonBorderInput';
 import { NeonActionButton } from '../../components/ui/NeonActionButton';
 import { NeonBackButton } from '../../components/ui/NeonBackButton';
+import { ScreenHeader } from 'components/ui/ScreenHeader';
 
 const AVATAR_SIZE = 110;
 
@@ -210,6 +213,7 @@ function JobSelector({
 
 export default function ProfileScreen() {
   const router = useRouter();
+  const navigation = useNavigation();
   const { user, updateAiProfile, changePassword, logout, isLoading } = useAuthStore();
 
   // Protect against null user during logout
@@ -350,18 +354,42 @@ export default function ProfileScreen() {
     ? `https://hipster-api.fr${user?.avatarUrl || user?.logoUrl}`
     : `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'U')}&background=random`;
 
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    try {
+      setIsLoggingOut(true);
+      useWelcomeVideoStore.getState().setIsReturningFromBack(true);
+      await logout(); 
+      router.replace('/welcome');
+    } catch {
+      setIsLoggingOut(false);
+      showModal('error', 'Erreur', 'Impossible de se déconnecter.');
+    }
+  };
+
+  const scrollY = useSharedValue(0);
+
   return (
     <BackgroundGradientOnboarding darkOverlay>
-      <SafeAreaView style={{ flex: 1 }}>
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-          <ScrollView contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false} bounces={false} keyboardShouldPersistTaps="handled">
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+        <ScreenHeader
+          titleSub="Mon" 
+          titleScript="Profil" 
+          onBack={() => navigation.dispatch(DrawerActions.openDrawer())} 
+          scrollY={scrollY}
+        />
 
-            <View style={s.header}>
-              <NeonBackButton onPress={() => router.back()} />
-              <View style={s.headerCenter}>
-                <Text style={s.titleSub}>Mon Profil</Text>
-              </View>
-            </View>
+        <Animated.ScrollView 
+          contentContainerStyle={[s.scrollContent, { paddingTop: 200 }]} 
+          showsVerticalScrollIndicator={false} 
+          bounces={false} 
+          keyboardShouldPersistTaps="handled"
+          onScroll={(e) => {
+            scrollY.value = e.nativeEvent.contentOffset.y;
+          }}
+          scrollEventThrottle={16}
+        >
 
             <View style={s.heroCard}>
               <LinearGradient colors={['rgba(0,212,255,0.06)', 'transparent']} style={StyleSheet.absoluteFill} />
@@ -381,26 +409,17 @@ export default function ProfileScreen() {
                 <Text style={s.heroBadgeStar}>★</Text>
                 <Text style={s.heroBadgeText}>{isPremium ? 'Hipster•IA Premium' : 'Hipster Gratuit'}</Text>
               </View>
+              {/* 
               <View style={s.progressSection}>
                 <Text style={s.progressLabel}>Profil complété à {completion}%</Text>
                 <View style={s.progressBar}>
                   <LinearGradient colors={[colors.neon.primary, colors.primary.light]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={[s.progressFill, { width: `${completion}%` as any }]} />
                 </View>
               </View>
+              */}
             </View>
 
-            {isEditing ? (
-                <View style={s.actionsRow}>
-                  <TouchableOpacity style={s.cancelBtn} onPress={handleCancel}>
-                    <Text style={s.cancelBtnText}>Annuler</Text>
-                  </TouchableOpacity>
-                  <NeonActionButton onPress={handleSave} loading={isLoading} disabled={isLoading} label="Enregistrer" />
-                </View>
-              ) : (
-                <View style={s.actionsCenter}>
-                  <NeonActionButton onPress={() => setIsEditing(true)} loading={false} disabled={false} label="Modifier le profil" />
-                </View>
-            )}
+
 
             <View style={s.card}>
               <SectionTitle title="Informations générales" />
@@ -416,6 +435,7 @@ export default function ProfileScreen() {
               <InputField label="Email de connexion" icon={<Lock size={16} color={colors.text.muted} />} value={user?.email || ''} editable={false} dimmed />
               <InputField label="Email professionnel" icon={<Mail size={16} color={colors.text.muted} />} value={professionalEmail} onChangeText={setProfessionalEmail} placeholder="email@contact.com" editable={isEditing} keyboardType="email-address" />
 
+{/* 
               <SectionTitle title="Adresse" />
               <InputField label="Adresse" icon={<MapPin size={16} color={colors.text.muted} />} value={professionalAddress} onChangeText={setProfessionalAddress} placeholder="Votre adresse" editable={isEditing} multiline />
               <View style={s.inputRow}>
@@ -449,8 +469,23 @@ export default function ProfileScreen() {
 
               <SectionTitle title="Web" />
               <InputField label="Site Web" icon={<Link size={16} color={colors.text.muted} />} value={websiteUrl} onChangeText={setWebsiteUrl} placeholder="www.monsite.com" editable={isEditing} keyboardType="url" autoCapitalize="none" />
+              */}
 
-              
+
+              <View style={{ marginTop: 20 }}>
+                {isEditing ? (
+                  <View style={s.actionsRow}>
+                    <TouchableOpacity style={s.cancelBtn} onPress={handleCancel}>
+                      <Text style={s.cancelBtnText}>Annuler</Text>
+                    </TouchableOpacity>
+                    <NeonActionButton onPress={handleSave} loading={isLoading} disabled={isLoading} label="Enregistrer" />
+                  </View>
+                ) : (
+                  <View style={s.actionsCenter}>
+                    <NeonActionButton onPress={() => setIsEditing(true)} loading={false} disabled={false} label="Modifier le profil" />
+                  </View>
+                )}
+              </View>
             </View>
 
             <View style={s.card}>
@@ -470,7 +505,7 @@ export default function ProfileScreen() {
                 loading={false} disabled={false}
                 label="Gérer l'abonnement"
                 icon={<Sparkles size={16} color="#ffffff" />}
-                small align="left"
+                small align="center"
               />
             </View>
 
@@ -486,19 +521,24 @@ export default function ProfileScreen() {
                 <Text style={s.menuItemText}>Modifier le mot de passe</Text>
                 <ChevronRight size={20} color={colors.text.muted} />
               </TouchableOpacity>
-              <TouchableOpacity style={s.logoutBtn} onPress={() => { 
-                useWelcomeVideoStore.getState().setIsReturningFromBack(true);
-                logout(); 
-                router.replace('/welcome'); 
-              }}>
-                <LogOut size={20} color={colors.status.error} />
-                <Text style={s.logoutText}>Se déconnecter</Text>
+              <TouchableOpacity 
+                style={[s.logoutBtn, isLoggingOut && { opacity: 0.7 }]} 
+                onPress={handleLogout}
+                disabled={isLoggingOut}
+              >
+                {isLoggingOut ? (
+                  <ActivityIndicator size="small" color={colors.status.error} />
+                ) : (
+                  <LogOut size={20} color={colors.status.error} />
+                )}
+                <Text style={s.logoutText}>
+                  {isLoggingOut ? 'Déconnexion...' : 'Se déconnecter'}
+                </Text>
               </TouchableOpacity>
             </View>
 
-          </ScrollView>
-        </KeyboardAvoidingView>
-      </SafeAreaView>
+          </Animated.ScrollView>
+      </KeyboardAvoidingView>
 
       <Modal visible={showJobPicker} transparent animationType="slide">
         <View style={[s.modalOverlay, { backgroundColor: 'rgba(0,0,0,0.7)' }]}> 
@@ -573,7 +613,13 @@ export default function ProfileScreen() {
 }
 
 const s = StyleSheet.create({
-  scrollContent:   { paddingHorizontal: 28, paddingTop: 16, paddingBottom: 40 },
+  fixedHeader:     { 
+    position: 'absolute', top: 0, left: 0, right: 0, zIndex: 100,
+    flexDirection: 'row', alignItems: 'center', 
+    paddingHorizontal: 28, paddingTop: 48, paddingBottom: 16,
+    borderBottomWidth: 1,
+  },
+  scrollContent:   { paddingHorizontal: 28, paddingTop: 100, paddingBottom: 40 },
   header:          { flexDirection: 'row', alignItems: 'center', marginBottom: 28, paddingTop: 8 },
   backButton:      { width: 42, height: 42, borderRadius: 21, backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center', marginRight: 16 },
   headerCenter:    { flex: 1, alignItems: 'center', marginRight: 58 },

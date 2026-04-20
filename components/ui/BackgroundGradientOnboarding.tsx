@@ -13,6 +13,7 @@ interface BackgroundGradientProps {
   blurIntensity?: number;
   darkOverlay?: boolean;
   imageSource?: 'default' | 'splash';
+  customImage?: any;
 }
 
 export function BackgroundGradientOnboarding({
@@ -20,6 +21,7 @@ export function BackgroundGradientOnboarding({
   blurIntensity = 0,
   darkOverlay = false,
   imageSource = 'default',
+  customImage,
 }: BackgroundGradientProps) {
   const isLightBackground = imageSource === 'default';
 
@@ -27,7 +29,7 @@ export function BackgroundGradientOnboarding({
   return (
     <View style={styles.container}>
       <Image
-        source={require('../../assets/images/background.jpg')}
+        source={customImage || require('../../assets/images/background.jpg')}
         style={[styles.image, { width, height }]}
         resizeMode="cover"
       />

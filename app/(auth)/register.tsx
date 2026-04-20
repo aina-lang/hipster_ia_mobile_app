@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
-  View, StyleSheet, Text, TextInput, KeyboardAvoidingView,
-  Platform, TouchableOpacity, ScrollView,
+  View, StyleSheet, Text, TextInput,
+  TouchableOpacity,
 } from 'react-native';
+import type { TextInput as RNTextInput } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { router, useLocalSearchParams } from 'expo-router';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated, { FadeInDown, useSharedValue } from 'react-native-reanimated';
 import { Eye, EyeOff, Gift } from 'lucide-react-native';
 import { BackgroundGradientOnboarding } from '../../components/ui/BackgroundGradientOnboarding';
 import { GenericModal } from '../../components/ui/GenericModal';
@@ -35,6 +37,11 @@ export default function RegisterScreen() {
   const [focused, setFocused] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [modal, setModal] = useState({ visible: false, type: 'info' as any, title: '', message: '' });
+
+  const emailRef = useRef<RNTextInput>(null);
+  const passwordRef = useRef<RNTextInput>(null);
+  const confirmRef = useRef<RNTextInput>(null);
+  const referralRef = useRef<RNTextInput>(null);
 
   const showModal = (type: any, title: string, message = '') =>
     setModal({ visible: true, type, title, message });
@@ -69,7 +76,7 @@ export default function RegisterScreen() {
       });
       const res = response?.data ?? response;
       const userId = res?.userId || res?.data?.userId;
-      
+
       showModal('success', 'Compte créé !', 'Vérifiez votre email pour activer votre compte.');
       setTimeout(() => {
         setModal(m => ({ ...m, visible: false }));
@@ -83,98 +90,112 @@ export default function RegisterScreen() {
     }
   };
 
+  const scrollY = useSharedValue(0);
+
   return (
     <BackgroundGradientOnboarding darkOverlay>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={s.kav}>
-
-        <ScreenHeader titleSub="Créer un" titleScript="compte" onBack={() => {
+      <ScreenHeader 
+        titleSub="Créer un" 
+        titleScript="compte" 
+        onBack={() => {
           setIsReturningFromBack(true);
           if (router.canGoBack()) {
             router.back();
           } else {
             router.replace('/welcome');
           }
-        }} />
+        }} 
+        scrollY={scrollY}
+      />
 
-        <ScrollView contentContainerStyle={s.scrollContent} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} bounces={false}>
-          <Animated.View entering={FadeInDown.duration(800)} style={s.content}>
-            <View style={s.form}>
+      <KeyboardAwareScrollView
+        bottomOffset={20}
+        contentContainerStyle={[s.scrollContent, { paddingTop: 120 }]}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        bounces={false}
+        onScroll={(e) => {
+          scrollY.value = e.nativeEvent.contentOffset.y;
+        }}
+        scrollEventThrottle={16}
+      >
+        <Animated.View entering={FadeInDown.duration(800)} style={s.content}>
+          <View style={s.form}>
 
-              <View style={s.inputContainer}>
-                <Text style={s.label}>Nom / Nom d'entreprise</Text>
-                <NeonBorderInput isActive={focused === 'name'}>
-                  <TextInput style={[s.input, focused === 'name' && s.inputActive]} placeholder="Jean Dupont ou Ma Société SARL" placeholderTextColor="#6b7280" value={fullName} onChangeText={t => { setFullName(t); if (error) clearError(); }} {...f('name')} />
-                </NeonBorderInput>
-              </View>
-
-              <View style={s.inputContainer}>
-                <Text style={s.label}>Email</Text>
-                <NeonBorderInput isActive={focused === 'email'}>
-                  <TextInput style={[s.input, focused === 'email' && s.inputActive]} placeholder="votre@email.com" placeholderTextColor="#6b7280" value={email} onChangeText={t => { setEmail(t); if (error) clearError(); }} autoCapitalize="none" keyboardType="email-address" {...f('email')} />
-                </NeonBorderInput>
-              </View>
-
-              <View style={s.inputContainer}>
-                <Text style={s.label}>Mot de passe</Text>
-                <NeonBorderInput isActive={focused === 'password'}>
-                  <TextInput style={[s.input, focused === 'password' && s.inputActive]} placeholder="••••••••" placeholderTextColor="#6b7280" value={password} onChangeText={t => { setPassword(t); if (error) clearError(); }} secureTextEntry={true} {...f('password')} />
-                </NeonBorderInput>
-              </View>
-
-              <View style={s.inputContainer}>
-                <Text style={s.label}>Confirmer le mot de passe</Text>
-                <NeonBorderInput isActive={focused === 'confirm'}>
-                  <View style={s.passwordWrapper}>
-                    <TextInput style={[s.input, s.passwordInput, focused === 'confirm' && s.inputActive]} placeholder="••••••••" placeholderTextColor="#6b7280" value={confirmPassword} onChangeText={t => { setConfirmPassword(t); if (error) clearError(); }} secureTextEntry={!showConfirm} {...f('confirm')} />
-                    <TouchableOpacity style={s.eyeIcon} onPress={() => setShowConfirm(v => !v)}>
-                      {showConfirm ? <EyeOff size={20} color="#6b7280" /> : <Eye size={20} color="#6b7280" />}
-                    </TouchableOpacity>
-                  </View>
-                </NeonBorderInput>
-              </View>
-
-              <View style={s.inputContainer}>
-                <Text style={s.label}>Code de parrainage <Text style={s.optional}>(optionnel)</Text></Text>
-                <NeonBorderInput isActive={focused === 'referral'}>
-                  <View style={s.passwordWrapper}>
-                    <TextInput style={[s.input, s.passwordInput, focused === 'referral' && s.inputActive]} placeholder="Ex : REF-USR-ABCD" placeholderTextColor="#6b7280" value={referralCode} onChangeText={t => setReferralCode(t.toUpperCase())} autoCapitalize="characters" autoCorrect={false} {...f('referral')} />
-                    <View style={s.eyeIcon} pointerEvents="none">
-                      <Gift size={18} color="#6b7280" />
-                    </View>
-                  </View>
-                </NeonBorderInput>
-              </View>
-
-              <View style={s.termsContainer}>
-                <TouchableOpacity style={s.checkboxWrapper} onPress={() => setAcceptedTerms(v => !v)} activeOpacity={0.8}>
-                  <View style={[s.checkbox, acceptedTerms && s.checkboxChecked]}>
-                    {acceptedTerms && <Text style={s.checkMark}>✓</Text>}
-                  </View>
-                  <Text style={s.termsText} numberOfLines={1}>
-                    J'accepte les{' '}
-                    <Text style={s.termsLink} onPress={() => router.push('/(auth)/privacy-policy')}>
-                      conditions générales de vente des CGV
-                    </Text>
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
-              <NeonActionButton
-                label="S'inscrire"
-                onPress={handleRegister}
-                loading={loading}
-                disabled={loading}
-              />
-
-              <View style={s.footer}>
-                <Text style={s.footerText}>Déjà un compte ? </Text>
-                <NeonLink label="Se connecter" onPress={() => router.push('/(auth)/login')} />
-              </View>
-
+            <View style={s.inputContainer}>
+              <Text style={s.label}>Nom / Nom d'entreprise</Text>
+              <NeonBorderInput isActive={focused === 'name'}>
+                <TextInput style={[s.input, focused === 'name' && s.inputActive]} placeholder="Jean Dupont ou Ma Société SARL" placeholderTextColor="#6b7280" value={fullName} onChangeText={t => { setFullName(t); if (error) clearError(); }} {...f('name')} returnKeyType="next" onSubmitEditing={() => emailRef.current?.focus()} blurOnSubmit={false} />
+              </NeonBorderInput>
             </View>
-          </Animated.View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+
+            <View style={s.inputContainer}>
+              <Text style={s.label}>Email</Text>
+              <NeonBorderInput isActive={focused === 'email'}>
+                <TextInput ref={emailRef} style={[s.input, focused === 'email' && s.inputActive]} placeholder="votre@email.com" placeholderTextColor="#6b7280" value={email} onChangeText={t => { setEmail(t); if (error) clearError(); }} autoCapitalize="none" keyboardType="email-address" {...f('email')} returnKeyType="next" onSubmitEditing={() => passwordRef.current?.focus()} blurOnSubmit={false} />
+              </NeonBorderInput>
+            </View>
+
+            <View style={s.inputContainer}>
+              <Text style={s.label}>Mot de passe</Text>
+              <NeonBorderInput isActive={focused === 'password'}>
+                <TextInput ref={passwordRef} style={[s.input, focused === 'password' && s.inputActive]} placeholder="••••••••" placeholderTextColor="#6b7280" value={password} onChangeText={t => { setPassword(t); if (error) clearError(); }} secureTextEntry={true} {...f('password')} returnKeyType="next" onSubmitEditing={() => confirmRef.current?.focus()} blurOnSubmit={false} />
+              </NeonBorderInput>
+            </View>
+
+            <View style={s.inputContainer}>
+              <Text style={s.label}>Confirmer le mot de passe</Text>
+              <NeonBorderInput isActive={focused === 'confirm'}>
+                <View style={s.passwordWrapper}>
+                  <TextInput ref={confirmRef} style={[s.input, s.passwordInput, focused === 'confirm' && s.inputActive]} placeholder="••••••••" placeholderTextColor="#6b7280" value={confirmPassword} onChangeText={t => { setConfirmPassword(t); if (error) clearError(); }} secureTextEntry={!showConfirm} {...f('confirm')} returnKeyType="next" onSubmitEditing={() => referralRef.current?.focus()} blurOnSubmit={false} />
+                  <TouchableOpacity style={s.eyeIcon} onPress={() => setShowConfirm(v => !v)}>
+                    {showConfirm ? <EyeOff size={20} color="#6b7280" /> : <Eye size={20} color="#6b7280" />}
+                  </TouchableOpacity>
+                </View>
+              </NeonBorderInput>
+            </View>
+
+            <View style={s.inputContainer}>
+              <Text style={s.label}>Code de parrainage <Text style={s.optional}>(optionnel)</Text></Text>
+              <NeonBorderInput isActive={focused === 'referral'}>
+                <View style={s.passwordWrapper}>
+                  <TextInput ref={referralRef} style={[s.input, s.passwordInput, focused === 'referral' && s.inputActive]} placeholder="Ex : REF-USR-ABCD" placeholderTextColor="#6b7280" value={referralCode} onChangeText={t => setReferralCode(t.toUpperCase())} autoCapitalize="characters" autoCorrect={false} {...f('referral')} returnKeyType="done" onSubmitEditing={handleRegister} />
+                  <View style={s.eyeIcon} pointerEvents="none">
+                    <Gift size={18} color="#6b7280" />
+                  </View>
+                </View>
+              </NeonBorderInput>
+            </View>
+
+            <View style={s.termsContainer}>
+              <TouchableOpacity style={s.checkboxWrapper} onPress={() => setAcceptedTerms(v => !v)} activeOpacity={0.8}>
+                <View style={[s.checkbox, acceptedTerms && s.checkboxChecked]}>
+                  {acceptedTerms && <Text style={s.checkMark}>✓</Text>}
+                </View>
+                <Text style={s.termsText} numberOfLines={1}>
+                  J'accepte les{' '}
+                  <Text style={s.termsLink} onPress={() => router.push('/(auth)/privacy-policy')}>
+                    conditions générales de vente des CGV
+                  </Text>
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            <NeonActionButton
+              label="S'inscrire"
+              onPress={handleRegister}
+              loading={loading}
+              disabled={loading}
+            />
+
+            <View style={s.footer}>
+              <Text style={s.footerText}>Déjà un compte ? </Text>
+              <NeonLink label="Se connecter" onPress={() => router.push('/(auth)/login')} />
+            </View>
+
+          </View>
+        </Animated.View>
+      </KeyboardAwareScrollView>
 
       <GenericModal visible={modal.visible} type={modal.type} title={modal.title} message={modal.message} onClose={() => setModal(m => ({ ...m, visible: false }))} />
     </BackgroundGradientOnboarding>
@@ -183,7 +204,7 @@ export default function RegisterScreen() {
 
 const s = StyleSheet.create({
   kav: { flex: 1 },
-  scrollContent: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 16, paddingBottom: 40 },
+  scrollContent: { flexGrow: 1, paddingHorizontal: 24, paddingBottom: 40, justifyContent: 'center' },
   content: { flex: 1, justifyContent: 'center', paddingBottom: 20 },
   form: { width: '100%' },
   inputContainer: { marginBottom: 20 },

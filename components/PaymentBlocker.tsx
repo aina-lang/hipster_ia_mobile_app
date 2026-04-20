@@ -64,8 +64,8 @@ export const PaymentBlocker = ({ plan, onPay, loading }: PaymentBlockerProps) =>
                 <View style={s.planRow}>
                     <Text style={s.planLabel}>Plan sélectionné</Text>
                     <View style={s.planNamePriceRow}>
-                        <Text style={s.planName}>{plan.name}</Text>
-                        <Text style={s.planPrice}>{isTrial ? "0€ l'essai" : plan.price}</Text>
+                        <Text style={s.planName}>{plan?.name || '...'}</Text>
+                        <Text style={s.planPrice}>{isTrial ? "0€ l'essai" : (plan?.price || '...')}</Text>
                     </View>
                 </View>
 

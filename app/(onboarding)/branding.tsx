@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { useRouter, useNavigation } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
-import Animated, { FadeInDown, runOnJS } from 'react-native-reanimated';
+import Animated, { FadeInDown, useSharedValue, runOnJS } from 'react-native-reanimated';
 import { Upload, Palette, User } from 'lucide-react-native';
 import ColorPicker, { HueSlider, Panel1, Preview, OpacitySlider } from 'reanimated-color-picker';
 import { BackgroundGradientOnboarding } from '../../components/ui/BackgroundGradientOnboarding';
@@ -129,6 +129,8 @@ export default function BrandingScreen() {
     runOnJS(setTempHex)(hex.toUpperCase());
   };
 
+  const scrollY = useSharedValue(0);
+
   return (
     <BackgroundGradientOnboarding darkOverlay>
 
@@ -136,12 +138,17 @@ export default function BrandingScreen() {
         titleSub="Votre"
         titleScript="identité"
         onBack={() => router.back()}
+        scrollY={scrollY}
       />
 
-      <ScrollView
-        contentContainerStyle={s.scrollContent}
+      <Animated.ScrollView
+        contentContainerStyle={[s.scrollContent, { paddingTop: 120 }]}
         showsVerticalScrollIndicator={false}
         bounces={false}
+        onScroll={(e) => {
+          scrollY.value = e.nativeEvent.contentOffset.y;
+        }}
+        scrollEventThrottle={16}
       >
         <Animated.View entering={FadeInDown.duration(800)} style={s.content}>
 
@@ -207,7 +214,7 @@ export default function BrandingScreen() {
           </View>
 
         </Animated.View>
-      </ScrollView>
+      </Animated.ScrollView>
 
       <View style={s.footer}>
         <NeonActionButton

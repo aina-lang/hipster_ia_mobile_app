@@ -1,16 +1,19 @@
 import React from 'react';
-import {
-    View,
-    StyleSheet,
-    ScrollView,
-    KeyboardAvoidingView,
-    Platform,
-    SafeAreaView,
-} from 'react-native';
+import { View, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, Text } from 'react-native';
+import Animated, {
+    useAnimatedScrollHandler,
+    useAnimatedStyle,
+    useSharedValue,
+    interpolate,
+    Extrapolate,
+} from 'react-native-reanimated';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { StepIndicator } from '../ui/StepIndicator';
 import { BackgroundGradientOnboarding } from '../ui/BackgroundGradientOnboarding';
 import { NeonBackButton } from '../../components/ui/NeonBackButton';
+import { colors } from '../../theme/colors';
+import { fonts } from '../../theme/typography';
 
 interface GuidedScreenWrapperProps {
     children: React.ReactNode;
@@ -32,6 +35,35 @@ export const GuidedScreenWrapper: React.FC<GuidedScreenWrapperProps> = ({
     totalSteps = 4,
 }) => {
     const router = useRouter();
+    const insets = useSafeAreaInsets();
+    const scrollY = useSharedValue(0);
+
+    const scrollHandler = useAnimatedScrollHandler({
+        onScroll: (event) => {
+            scrollY.value = event.contentOffset.y;
+        },
+    });
+
+    const headerAnimatedStyle = useAnimatedStyle(() => {
+        const backgroundColor = interpolate(
+            scrollY.value,
+            [0, 50],
+            [0, 0.95],
+            Extrapolate.CLAMP
+        );
+
+        const borderBottomAlpha = interpolate(
+            scrollY.value,
+            [0, 50],
+            [0, 0.08],
+            Extrapolate.CLAMP
+        );
+
+        return {
+            backgroundColor: `rgba(3, 8, 20, ${backgroundColor})`,
+            borderBottomColor: `rgba(255, 255, 255, ${borderBottomAlpha})`,
+        };
+    });
 
     const handleBack = () => {
         if (onBack) {
@@ -49,40 +81,42 @@ export const GuidedScreenWrapper: React.FC<GuidedScreenWrapperProps> = ({
 
     return (
         <BackgroundGradientOnboarding darkOverlay>
+            <Animated.View style={[styles.header, { paddingTop: insets.top + (Platform.OS === 'ios' ? 50 : 60) }, headerAnimatedStyle]}>
+                {showBack && (
+                    <View style={[styles.backButtonContainer, { top: insets.top + (Platform.OS === 'ios' ? 50 : 60) }]}>
+                        <NeonBackButton onPress={handleBack} />
+                    </View>
+                )}
+
+                <View style={styles.headerContent}>
+                    {currentStep !== undefined && (
+                        <View style={styles.stepIndicatorContainer}>
+                            <StepIndicator
+                                currentStep={currentStep}
+                                totalSteps={totalSteps}
+                            />
+                        </View>
+                    )}
+                </View>
+            </Animated.View>
+
             <SafeAreaView style={styles.safeArea}>
                 <KeyboardAvoidingView
                     behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                     style={styles.container}
                 >
-                    <ScrollView
-                        ref={scrollViewRef}
+                    <Animated.ScrollView
+                        ref={scrollViewRef as any}
                         style={styles.scrollView}
                         contentContainerStyle={styles.scrollContent}
                         showsVerticalScrollIndicator={false}
                         keyboardShouldPersistTaps="handled"
+                        onScroll={scrollHandler}
+                        scrollEventThrottle={16}
                     >
-                        <View style={styles.header}>
-                            {showBack && (
-                                <View style={styles.backButtonContainer}>
-                                    <NeonBackButton onPress={handleBack} />
-                                </View>
-                            )}
-
-                            <View style={styles.headerContent}>
-                                {currentStep !== undefined && (
-                                    <View style={styles.stepIndicatorContainer}>
-                                        <StepIndicator
-                                            currentStep={currentStep}
-                                            totalSteps={totalSteps}
-                                        />
-                                    </View>
-                                )}
-                            </View>
-                        </View>
-
                         {children}
-                    </ScrollView>
-                    
+                    </Animated.ScrollView>
+
                     {footer && <View style={styles.footerContainer}>{footer}</View>}
                 </KeyboardAvoidingView>
             </SafeAreaView>
@@ -102,14 +136,21 @@ const styles = StyleSheet.create({
     },
     scrollContent: {
         flexGrow: 1,
+        paddingTop: 120, // Increased to account for fixed header
     },
     header: {
         alignItems: 'center',
         justifyContent: 'center',
         paddingHorizontal: 16,
-        paddingTop: Platform.OS === 'ios' ? 40 : 50,
-        position: 'relative',
-        marginBottom : 30
+        paddingTop: Platform.OS === 'ios' ? 50 : 60,
+        position: 'absolute',
+        top: -10,
+        left: 0,
+        right: 0,
+        zIndex: 100,
+        backgroundColor: 'transparent',
+        borderBottomWidth: 1,
+        borderBottomColor: 'transparent',
     },
     backButtonContainer: {
         position: 'absolute',

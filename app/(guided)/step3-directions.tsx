@@ -10,7 +10,7 @@ import {
   Animated as RNAnimated,
   Easing,
 } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring, SlideInDown, FadeInDown } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { ChevronRight } from 'lucide-react-native';
@@ -75,13 +75,7 @@ function ArchNeonBorderCard({
           <View style={[s.neonMask, { backgroundColor: '#030814' }]} />
         </View>
       )}
-      {isSelected && (
-        <>
-          <View style={[s.bloomFar, { shadowColor: color }]}  pointerEvents="none" />
-          <View style={[s.bloomMid, { shadowColor: color }]}  pointerEvents="none" />
-          <View style={[s.floorGlow, { shadowColor: color }]} pointerEvents="none" />
-        </>
-      )}
+
       {children}
     </View>
   );
@@ -157,11 +151,26 @@ export default function Step3DirectionsScreen() {
     }, 300);
   };
 
+  const handleContinue = () => {
+    router.push('/(guided)/step3-personalize');
+  };
+
   return (
     <GuidedScreenWrapper
-      currentStep={3}
-      totalSteps={4}
+      currentStep={1}
+      totalSteps={2}
       scrollViewRef={scrollRef}
+      footer={
+        selectedArchitecture ? (
+          <Animated.View entering={SlideInDown.duration(300)} style={s.footerButtonWrapper}>
+            <NeonActionButton
+              label="Continuer"
+              onPress={handleContinue}
+              disabled={!selectedArchitecture}
+            />
+          </Animated.View>
+        ) : null
+      }
     >
       <View style={s.container}>
         <View style={s.header}>
@@ -272,9 +281,7 @@ const s = StyleSheet.create({
   neonClip:    { position: 'absolute', top: -1, left: -1, right: -1, bottom: -0.5, borderRadius: 21, overflow: 'hidden', zIndex: 2 },
   neonTrack:   { position: 'absolute', top: 0, bottom: 0, left: 0 },
   neonMask:    { position: 'absolute', top: 1, left: 1, right: 1, bottom: 0.5, borderRadius: 20, zIndex: 1 },
-  bloomMid:    { position: 'absolute', top: -4, left: -4, right: -4, bottom: -4, borderRadius: 24, backgroundColor: 'transparent', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.45, shadowRadius: 18, elevation: 8 },
-  bloomFar:    { position: 'absolute', top: -8, left: -8, right: -8, bottom: -8, borderRadius: 28, backgroundColor: 'transparent', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.25, shadowRadius: 28, elevation: 4 },
-  floorGlow:   { position: 'absolute', bottom: -16, alignSelf: 'center', width: '80%', height: 24, borderRadius: 50, backgroundColor: 'transparent', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.6, shadowRadius: 16, elevation: 12 },
+
 
   card: {
     width: CARD_W,
@@ -331,6 +338,7 @@ const s = StyleSheet.create({
     backgroundColor: 'rgba(10,12,18,0.85)',
     borderTopWidth: 1,
     borderTopColor: 'rgba(255,255,255,0.08)',
+    height: 70,
   },
   cardTitle: {
     fontFamily: fonts.arimo.bold,
@@ -388,7 +396,10 @@ const s = StyleSheet.create({
     lineHeight: 18,
   },
 
-  buttonWrapper: {
-    paddingTop: 4,
+  footerButtonWrapper: {
+    paddingHorizontal: H_PADDING,
+    paddingVertical: 16,
+    paddingBottom: 32, // Extra padding for safe area bottom if needed
+    backgroundColor: 'transparent',
   },
 });

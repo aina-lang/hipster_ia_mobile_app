@@ -2,19 +2,27 @@ import React, { useState, useCallback } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity,
   Image, ActivityIndicator, StyleSheet, RefreshControl,
+  Modal, Share as RNShare, Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ChevronRight, Search, MessageSquare, ArrowLeft, Trash2 } from 'lucide-react-native';
+import { ChevronRight, Search, MessageSquare, ArrowLeft, Trash2, Download, Printer, Share2, X } from 'lucide-react-native';
+import Animated, { useSharedValue } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter, useFocusEffect } from 'expo-router';
+import { useRouter, useFocusEffect, useNavigation } from 'expo-router';
+import { DrawerActions } from '@react-navigation/native';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as MediaLibrary from 'expo-media-library';
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/fr';
 
 import { AiService } from '../../api/ai.service';
 import { colors } from '../../theme/colors';
-import { GenericModal } from '../../components/ui/GenericModal';
+import { GenericModal, ModalType } from '../../components/ui/GenericModal';
 import { BackgroundGradientOnboarding } from '../../components/ui/BackgroundGradientOnboarding';
+import { ScreenHeader } from '../../components/ui/ScreenHeader';
 import { NeonBackButton } from '../../components/ui/NeonBackButton';
 
 dayjs.extend(relativeTime);
@@ -27,17 +35,116 @@ interface HistoryItem {
   date: string;
   preview: string;
   imageUrl?: string;
+  type?: string;
 }
 
 export default function HistoryScreen() {
   const router = useRouter();
-  const [history, setHistory]                 = useState<HistoryItem[]>([]);
-  const [loading, setLoading]                 = useState(true);
-  const [refreshing, setRefreshing]           = useState(false);
-  const [error, setError]                     = useState<string | null>(null);
-  const [showClearModal, setShowClearModal]   = useState(false);
+  const navigation = useNavigation();
+  const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [showClearModal, setShowClearModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [itemToDelete, setItemToDelete]       = useState<string | null>(null);
+  const [itemToDelete, setItemToDelete] = useState<string | null>(null);
+
+  const [showImageModal, setShowImageModal] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<HistoryItem | null>(null);
+  const [downloading, setDownloading] = useState<string | null>(null);
+  const [printing, setPrinting] = useState<string | null>(null);
+
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalType, setModalType] = useState<ModalType>('info');
+  const [modalTitle, setModalTitle] = useState('');
+  const [modalMessage, setModalMessage] = useState('');
+
+  const scrollY = useSharedValue(0);
+
+  const showGenericModal = (type: ModalType, title: string, message: string) => {
+    setModalType(type);
+    setModalTitle(title);
+    setModalMessage(message);
+    setModalVisible(true);
+  };
+
+  const getFullUrl = (url?: string) => {
+    if (!url) return '';
+    return url.startsWith('http') ? url : `https://hipster-api.fr/${url.startsWith('/') ? url.slice(1) : url}`;
+  };
+
+  const handleDownload = async (item: HistoryItem) => {
+    if (!item.imageUrl) return;
+    try {
+      setDownloading(item.id);
+      const fullUrl = getFullUrl(item.imageUrl);
+      const filename = `hipster-${item.id}.jpg`;
+      const fileUri = `${FileSystem.cacheDirectory}${filename}`;
+      const downloadRes = await FileSystem.downloadAsync(fullUrl, fileUri);
+      if (downloadRes.status !== 200) throw new Error('Téléchargement échoué');
+      await MediaLibrary.createAssetAsync(downloadRes.uri);
+      showGenericModal('success', 'Succès', 'Image enregistrée dans votre galerie.');
+    } catch (error: any) {
+      console.error('Download error:', error);
+      showGenericModal('error', 'Erreur', `Impossible d'enregistrer l'image. Vérifiez vos permissions.`);
+    } finally {
+      setDownloading(null);
+    }
+  };
+
+  const handleShare = async (item: HistoryItem) => {
+    if (!item.imageUrl) return;
+    try {
+      const fullUrl = getFullUrl(item.imageUrl);
+      const filename = `hipster-${item.id}.jpg`;
+      const fileUri = `${FileSystem.cacheDirectory}${filename}`;
+      const fileInfo = await FileSystem.getInfoAsync(fileUri);
+      if (!fileInfo.exists) {
+        const downloadRes = await FileSystem.downloadAsync(fullUrl, fileUri);
+        if (downloadRes.status !== 200) throw new Error('Téléchargement échoué');
+      }
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(fileUri, { mimeType: 'image/jpeg', dialogTitle: `Partager — ${item.title}` });
+      } else {
+        RNShare.share({ url: fileUri, title: item.title, message: `Découvrez cette création` });
+      }
+    } catch (error: any) {
+      console.error('Share error:', error);
+      showGenericModal('error', 'Erreur', `Partage échoué : ${error.message}`);
+    }
+  };
+
+  const handlePrint = async (item: HistoryItem) => {
+    if (!item.imageUrl || printing) return;
+    try {
+      setPrinting(item.id);
+      const fullUrl = getFullUrl(item.imageUrl);
+      const filename = `hipster-${item.id}.jpg`;
+      const fileUri = `${FileSystem.cacheDirectory}${filename}`;
+      const fileInfo = await FileSystem.getInfoAsync(fileUri);
+      if (!fileInfo.exists) {
+        const downloadRes = await FileSystem.downloadAsync(fullUrl, fileUri);
+        if (downloadRes.status !== 200) throw new Error('Téléchargement échoué');
+      }
+      if (fileUri) {
+        const html = `
+          <html>
+            <body style="margin:0;padding:0;display:flex;justify-content:center;align-items:center;height:100vh;background-color:black;">
+              <img src="${fullUrl}" style="max-width:100%;max-height:100%;object-fit:contain;" />
+            </body>
+          </html>
+        `;
+        await Print.printAsync({ html });
+      } else {
+        showGenericModal('info', 'Impression', 'Impossible de préparer le fichier pour l\'impression.');
+      }
+    } catch (error: any) {
+      console.error('Print error:', error);
+      showGenericModal('error', 'Erreur', `Impression échouée : ${error.message}`);
+    } finally {
+      setPrinting(null);
+    }
+  };
 
   const fetchHistory = async () => {
     try {
@@ -50,6 +157,7 @@ export default function HistoryScreen() {
           date: dayjs(item.date || item.items?.[0]?.date).fromNow(),
           preview: `${item.count || item.items?.length || 1} message${(item.count || item.items?.length || 1) > 1 ? 's' : ''}`,
           imageUrl: item.imageUrl || item.items?.[0]?.imageUrl,
+          type: item.type || item.items?.[0]?.type,
         })));
       }
     } catch (err: any) {
@@ -90,147 +198,201 @@ export default function HistoryScreen() {
 
   return (
     <BackgroundGradientOnboarding darkOverlay>
-      <SafeAreaView style={{ flex: 1 }}>
-        <ScrollView
-          contentContainerStyle={s.scrollContent}
-          showsVerticalScrollIndicator={false}
-          bounces={false}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.neon.primary} />}
-        >
-          <View style={s.header}>
-            <NeonBackButton onPress={() => router.back()} />
-            <View style={s.headerCenter}>
-              <Text style={s.titleSub}>Historique</Text>
+      <ScreenHeader
+        titleSub="VOTRE"
+        titleScript="Historique"
+        onBack={() => navigation.dispatch(DrawerActions.openDrawer())}
+        scrollY={scrollY}
+      />
+
+      <Animated.ScrollView
+        contentContainerStyle={[s.scrollContent, { paddingTop: 140 }]}
+        showsVerticalScrollIndicator={false}
+        bounces={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.neon.primary} />}
+        onScroll={(e) => {
+          scrollY.value = e.nativeEvent.contentOffset.y;
+        }}
+        scrollEventThrottle={16}
+      >
+
+        <Text style={s.subtitle}>Retrouvez toutes vos créations</Text>
+
+        {history.length > 0 && (
+          <TouchableOpacity style={s.clearButton} onPress={() => setShowClearModal(true)}>
+            <Trash2 size={14} color={colors.status.error} />
+            <Text style={s.clearButtonText}>Tout effacer l'historique</Text>
+          </TouchableOpacity>
+        )}
+
+        {loading ? (
+          <View style={s.emptyContainer}>
+            <ActivityIndicator size="large" color={colors.neon.primary} />
+          </View>
+        ) : error ? (
+          <View style={s.emptyContainer}>
+            <Text style={s.errorText}>{error}</Text>
+            <TouchableOpacity style={s.retryButton} onPress={fetchHistory}>
+              <Text style={s.retryText}>Réessayer</Text>
+            </TouchableOpacity>
+          </View>
+        ) : history.length === 0 ? (
+          <View style={s.emptyContainer}>
+            <View style={s.emptyIconBox}>
+              <Search size={28} color={colors.neon.primary} />
             </View>
-            <View style={{ width: 42 }} />
+            <Text style={s.emptyText}>Aucun résultat trouvé</Text>
+          </View>
+        ) : (
+          <View style={s.list}>
+            {history.map(item => (
+              <View key={item.id} style={s.itemWrapper}>
+                <TouchableOpacity
+                  style={s.itemCard}
+                  onPress={() => {
+                    if (item.imageUrl) {
+                      setSelectedItem(item);
+                      setShowImageModal(true);
+                    } else if (item.type === 'chat') {
+                      router.push({ pathname: '/(drawer)/freetext', params: { conversationId: item.id } });
+                    } else {
+                      router.push({ pathname: '/(drawer)', params: { conversationId: item.id } });
+                    }
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <LinearGradient colors={[colors.primary.main + '0a', 'transparent']} style={StyleSheet.absoluteFill} />
+                  <View style={s.iconContainer}>
+                    {item.imageUrl ? (
+                      <Image
+                        source={{ uri: getFullUrl(item.imageUrl) }}
+                        style={s.thumbnail}
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <MessageSquare size={20} color={colors.neon.primary} />
+                    )}
+                  </View>
+                  <View style={s.itemContent}>
+                    <View style={s.itemHeader}>
+                      <Text style={s.itemTitle} numberOfLines={1}>{item.title}</Text>
+                      <Text style={s.itemDate}>{item.date}</Text>
+                    </View>
+                    <Text style={s.itemPreview} numberOfLines={2}>{item.preview || 'Conversation'}</Text>
+                  </View>
+                  <ChevronRight size={16} color={colors.text.muted} />
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={s.deleteButton}
+                  onPress={() => { setItemToDelete(item.id); setShowDeleteModal(true); }}
+                >
+                  <Trash2 size={16} color={colors.status.error} />
+                </TouchableOpacity>
+              </View>
+            ))}
+          </View>
+        )}
+      </Animated.ScrollView>
+
+      <Modal visible={showImageModal} transparent animationType="slide">
+        <SafeAreaView style={s.modalContainer}>
+          <View style={s.modalHeader}>
+            <TouchableOpacity onPress={() => setShowImageModal(false)} style={s.closeBtn}>
+              <X size={24} color="white" />
+            </TouchableOpacity>
+            <Text style={s.modalTitleHeader} numberOfLines={1}>{selectedItem?.title || 'Aperçu'}</Text>
+            <View style={{ width: 24 }} />
           </View>
 
-          <Text style={s.subtitle}>Retrouvez toutes vos créations</Text>
+          {selectedItem && (
+            <View style={s.modalContent}>
+              <Image
+                source={{ uri: getFullUrl(selectedItem.imageUrl) }}
+                style={s.fullImage}
+                resizeMode="contain"
+              />
 
-          {history.length > 0 && (
-            <TouchableOpacity style={s.clearButton} onPress={() => setShowClearModal(true)}>
-              <Trash2 size={14} color={colors.status.error} />
-              <Text style={s.clearButtonText}>Tout effacer l'historique</Text>
-            </TouchableOpacity>
-          )}
+              <View style={s.modalActions}>
+                <TouchableOpacity
+                  style={[s.modalButton, s.downloadBtn]}
+                  onPress={() => handleDownload(selectedItem)}
+                  disabled={downloading === selectedItem.id}
+                >
+                  {downloading === selectedItem.id ? (
+                    <ActivityIndicator size="small" color="white" />
+                  ) : (
+                    <>
+                      <Download size={20} color="white" />
+                      <Text style={s.modalButtonText}>Télécharger</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
 
-          {loading ? (
-            <View style={s.emptyContainer}>
-              <ActivityIndicator size="large" color={colors.neon.primary} />
-            </View>
-          ) : error ? (
-            <View style={s.emptyContainer}>
-              <Text style={s.errorText}>{error}</Text>
-              <TouchableOpacity style={s.retryButton} onPress={fetchHistory}>
-                <Text style={s.retryText}>Réessayer</Text>
-              </TouchableOpacity>
-            </View>
-          ) : history.length === 0 ? (
-            <View style={s.emptyContainer}>
-              <View style={s.emptyIconBox}>
-                <Search size={28} color={colors.neon.primary} />
+                <TouchableOpacity
+                  style={[s.modalButton, s.printBtn]}
+                  onPress={() => handlePrint(selectedItem)}
+                  disabled={!!printing}
+                >
+                  {printing === selectedItem.id ? (
+                    <ActivityIndicator size="small" color="white" />
+                  ) : (
+                    <>
+                      <Printer size={20} color="white" />
+                      <Text style={s.modalButtonText}>Imprimer</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+
+                <TouchableOpacity style={[s.modalButton, s.shareBtn]} onPress={() => handleShare(selectedItem)}>
+                  <Share2 size={20} color="white" />
+                  <Text style={s.modalButtonText}>Partager</Text>
+                </TouchableOpacity>
               </View>
-              <Text style={s.emptyText}>Aucun résultat trouvé</Text>
-            </View>
-          ) : (
-            <View style={s.list}>
-              {history.map(item => (
-                <View key={item.id} style={s.itemWrapper}>
-                  <TouchableOpacity
-                    style={s.itemCard}
-                    onPress={() => router.push({ pathname: '/(drawer)', params: { conversationId: item.id } })}
-                    activeOpacity={0.7}
-                  >
-                    <LinearGradient colors={[colors.primary.main + '0a', 'transparent']} style={StyleSheet.absoluteFill} />
-                    <View style={s.iconContainer}>
-                      {item.imageUrl ? (
-                        <Image
-                          source={{ uri: item.imageUrl.startsWith('http') ? item.imageUrl : `https://hipster-api.fr/${item.imageUrl}` }}
-                          style={s.thumbnail}
-                          resizeMode="cover"
-                        />
-                      ) : (
-                        <MessageSquare size={20} color={colors.neon.primary} />
-                      )}
-                    </View>
-                    <View style={s.itemContent}>
-                      <View style={s.itemHeader}>
-                        <Text style={s.itemTitle} numberOfLines={1}>{item.title}</Text>
-                        <Text style={s.itemDate}>{item.date}</Text>
-                      </View>
-                      <Text style={s.itemPreview} numberOfLines={2}>{item.preview || 'Conversation'}</Text>
-                    </View>
-                    <ChevronRight size={16} color={colors.text.muted} />
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={s.deleteButton}
-                    onPress={() => { setItemToDelete(item.id); setShowDeleteModal(true); }}
-                  >
-                    <Trash2 size={16} color={colors.status.error} />
-                  </TouchableOpacity>
-                </View>
-              ))}
             </View>
           )}
-        </ScrollView>
+        </SafeAreaView>
+      </Modal>
 
-        <GenericModal
-          visible={showDeleteModal}
-          type="warning"
-          title="Supprimer"
-          message="Voulez-vous vraiment supprimer cet élément ?"
-          confirmText="Supprimer"
-          cancelText="Annuler"
-          onClose={() => setShowDeleteModal(false)}
-          onConfirm={handleDeleteItem}
-        />
-        <GenericModal
-          visible={showClearModal}
-          type="warning"
-          title="Tout effacer"
-          message="Cette action est irréversible. Voulez-vous vraiment supprimer tout votre historique ?"
-          confirmText="Tout supprimer"
-          cancelText="Annuler"
-          onClose={() => setShowClearModal(false)}
-          onConfirm={handleClearHistory}
-        />
-      </SafeAreaView>
+      <GenericModal
+        visible={modalVisible}
+        type={modalType}
+        title={modalTitle}
+        message={modalMessage}
+        onClose={() => setModalVisible(false)}
+      />
+
+      <GenericModal
+        visible={showDeleteModal}
+        type="warning"
+        title="Supprimer"
+        message="Voulez-vous vraiment supprimer cet élément ?"
+        confirmText="Supprimer"
+        cancelText="Annuler"
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={handleDeleteItem}
+      />
+      <GenericModal
+        visible={showClearModal}
+        type="warning"
+        title="Tout effacer"
+        message="Cette action est irréversible. Voulez-vous vraiment supprimer tout votre historique ?"
+        confirmText="Tout supprimer"
+        cancelText="Annuler"
+        onClose={() => setShowClearModal(false)}
+        onConfirm={handleClearHistory}
+      />
     </BackgroundGradientOnboarding>
   );
 }
+
+const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 
 const s = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 24,
     paddingTop: 16,
     paddingBottom: 40,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 28,
-  },
-  backButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  headerCenter: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: 10,
-  },
-  titleSub: {
-    fontFamily: 'Arimo-Bold',
-    fontSize: 16,
-    textTransform: 'uppercase',
-    color: '#ffffff',
   },
   subtitle: {
     fontFamily: 'Arimo-Regular',
@@ -368,5 +530,65 @@ const s = StyleSheet.create({
     fontFamily: 'Arimo-Bold',
     color: colors.neon.primary,
     fontSize: 13,
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: '#000',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  closeBtn: {
+    padding: 8,
+  },
+  modalTitleHeader: {
+    fontFamily: 'Arimo-Bold',
+    fontSize: 16,
+    color: 'white',
+    flex: 1,
+    textAlign: 'center',
+  },
+  modalContent: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  fullImage: {
+    width: '100%',
+    height: SCREEN_H * 0.65,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
+  },
+  downloadBtn: {
+    backgroundColor: 'rgba(0, 212, 255, 0.3)',
+  },
+  printBtn: {
+    backgroundColor: 'rgba(102, 229, 255, 0.3)',
+  },
+  shareBtn: {
+    backgroundColor: 'rgba(0, 153, 255, 0.3)',
+  },
+  modalButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontFamily: 'Arimo-Bold',
   },
 });

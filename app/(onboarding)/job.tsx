@@ -90,17 +90,28 @@ export default function OnboardingJobScreen() {
     }
   };
 
+  const scrollY = useSharedValue(0);
+
   return (
     <BackgroundGradientOnboarding darkOverlay>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={s.kav}>
 
-        <ScreenHeader titleSub="Votre" titleScript="métier" onBack={() => router.back()} />
+        <ScreenHeader 
+          titleSub="Votre" 
+          titleScript="métier" 
+          onBack={() => router.back()} 
+          scrollY={scrollY}
+        />
 
-        <ScrollView
-          contentContainerStyle={s.scrollContent}
+        <Animated.ScrollView
+          contentContainerStyle={[s.scrollContent, { paddingTop: 120 }]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
           bounces={false}
+          onScroll={(e) => {
+            scrollY.value = e.nativeEvent.contentOffset.y;
+          }}
+          scrollEventThrottle={16}
         >
           <Animated.View entering={FadeInDown.duration(800)} style={s.content}>
 
@@ -141,7 +152,7 @@ export default function OnboardingJobScreen() {
             )}
 
           </Animated.View>
-        </ScrollView>
+        </Animated.ScrollView>
 
         <View style={s.footer}>
           <NeonActionButton

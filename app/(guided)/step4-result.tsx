@@ -27,7 +27,7 @@ import {
   X,
   ArrowLeft,
 } from 'lucide-react-native';
-import { Video, ResizeMode } from 'expo-av';
+import { useVideoPlayer, VideoView } from 'expo-video';
 
 import { colors } from '../../theme/colors';
 import { fonts } from '../../theme/typography';
@@ -87,7 +87,7 @@ export default function Step4ResultScreen() {
   const [localQuery, setLocalQuery] = useState('');
   const [regenMode, setRegenMode] = useState<'text' | 'image' | 'both'>('text');
 
-  const [showRegeneratePanel, setShowRegeneratePanel] = useState(false);
+
 
   const [modalVisible, setModalVisible] = useState(false);
   const [modalType, setModalType] = useState<ModalType>('success');
@@ -209,8 +209,7 @@ export default function Step4ResultScreen() {
     try {
       if (mode === 'text' || mode === 'both') setResult('');
       if (mode === 'image' || mode === 'both') setImageUrl('');
-      setShowRegeneratePanel(false);
-
+   
       const isFlyerExact = effectiveFunction && (effectiveFunction.includes('Flyer') || effectiveFunction.includes('Affiche'));
       const params: any = {
         job: selectedJob || 'Autre',
@@ -420,14 +419,6 @@ export default function Step4ResultScreen() {
 
   const handleSaveToGallery = async () => {
     try {
-      if (permissionResponse?.status !== 'granted') {
-        const permission = await requestPermission();
-        if (!permission.granted) {
-          showModal('error', 'Permission refusée', "Nous avons besoin de votre permission pour enregistrer l'image.");
-          return;
-        }
-      }
-
       showModal('loading', 'Enregistrement...', 'Sauvegarde dans votre galerie.');
       const filename = `Hipster-${Date.now()}.png`;
       const fileUri = `${FileSystem.cacheDirectory}${filename}`;
@@ -435,20 +426,14 @@ export default function Step4ResultScreen() {
 
       if (downloadRes.status !== 200) throw new Error('Download failed');
 
-      const asset = await MediaLibrary.createAssetAsync(downloadRes.uri);
-      const album = await MediaLibrary.getAlbumAsync('Hipster');
-      if (album == null) {
-        await MediaLibrary.createAlbumAsync('Hipster', asset, false);
-      } else {
-        await MediaLibrary.addAssetsToAlbumAsync([asset], album, false);
-      }
+      await MediaLibrary.createAssetAsync(downloadRes.uri);
 
       setModalVisible(false);
       showModal('success', 'Enregistré !', "L'image a été ajoutée à votre galerie");
     } catch (error: any) {
       console.error('Save to gallery error:', error);
       setModalVisible(false);
-      showModal('error', 'Erreur', "Impossible d'enregistrer l'image.");
+      showModal('error', 'Erreur', "Impossible d'enregistrer l'image. Vérifiez vos permissions.");
     }
   };
 
@@ -490,16 +475,20 @@ export default function Step4ResultScreen() {
     router.back();
   };
 
+  const videoPlayer = useVideoPlayer(require('../../assets/video/loadingVideoFinal.mp4'), (player) => {
+    player.loop = true;
+    player.muted = true;
+    player.play();
+  });
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <Video
-          source={require('../../assets/video/loadingVideoFinal.mp4')}
+        <VideoView
+          player={videoPlayer}
           style={styles.loadingVideo}
-          resizeMode={ResizeMode.COVER}
-          isLooping
-          shouldPlay
-          isMuted
+          contentFit="cover"
+          nativeControls={false}
         />
       </View>
     );
@@ -572,60 +561,20 @@ export default function Step4ResultScreen() {
             )}
 
             <View style={styles.regenerateButtonWrapper}>
-              {!showRegeneratePanel ? (
                 <NeonActionButton
                   label="Modifier et régénérer"
-                  onPress={() => setShowRegeneratePanel(true)}
+                  onPress={() => {
+                    if (selectedArchitecture) {
+                      router.push('/(guided)/step3-personalize');
+                    } else {
+                      router.push('/(guided)/step4-personalize');
+                    }
+                  }}
                   icon={<Sparkles size={16} color="#ffffff" />}
                   small={false}
                   loading={false}
                   disabled={false}
                 />
-              ) : (
-                <View style={styles.regeneratePanel}>
-                  <View style={styles.regeneratePanelHeader}>
-                    <Text style={styles.regeneratePanelTitle}>Modifier ma demande</Text>
-                    <TouchableOpacity onPress={() => setShowRegeneratePanel(false)}>
-                      <X size={24} color={colors.text.secondary} />
-                    </TouchableOpacity>
-                  </View>
-                  <TextInput
-                    style={styles.regenerateInput}
-                    multiline
-                    value={localQuery}
-                    onChangeText={setLocalQuery}
-                    placeholder="Ex: Changez les couleurs, ajoutez plus de texte..."
-                    placeholderTextColor="rgba(255,255,255,0.3)"
-                  />
-                  <View style={styles.modeSelector}>
-                    <Text style={styles.modeLabel}>Régénérer :</Text>
-                    <View style={styles.modeOptionsRow}>
-                      {['text', 'image', 'both'].filter(id => {
-                        if (String(selectedCategory) === 'Social') return true;
-                        if (String(selectedCategory) === 'Image') return id === 'image';
-                        if (String(selectedCategory) === 'Texte') return id === 'text';
-                        return true;
-                      }).map(id => (
-                        <TouchableOpacity
-                          key={id}
-                          style={[styles.modeItem, regenMode === id && styles.modeItemSelected]}
-                          onPress={() => setRegenMode(id as any)}>
-                          <Text style={[styles.modeItemText, regenMode === id && styles.modeItemTextSelected]}>
-                            {id === 'both' ? 'Les deux' : id === 'text' ? 'Texte' : 'Image'}
-                          </Text>
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-                  </View>
-                  <NeonActionButton
-                    label="Régénérer"
-                    onPress={() => generateContent(localQuery, regenMode)}
-                    small={false}
-                    loading={false}
-                    disabled={false}
-                  />
-                </View>
-              )}
             </View>
           </View>
         </ScrollView>
@@ -680,59 +629,19 @@ export default function Step4ResultScreen() {
             </View>
 
             <View style={styles.regenerateSection}>
-              {!showRegeneratePanel ? (
                 <NeonActionButton
                   label="Modifier et régénérer"
-                  onPress={() => setShowRegeneratePanel(true)}
+                  onPress={() => {
+                    if (selectedArchitecture) {
+                      router.push('/(guided)/step3-personalize');
+                    } else {
+                      router.push('/(guided)/step4-personalize');
+                    }
+                  }}
                   small={false}
                   loading={false}
                   disabled={false}
                 />
-              ) : (
-                <View style={styles.regeneratePanel}>
-                  <View style={styles.regeneratePanelHeader}>
-                    <Text style={styles.regeneratePanelTitle}>Modifier ma demande</Text>
-                    <TouchableOpacity onPress={() => setShowRegeneratePanel(false)}>
-                      <X size={24} color={colors.text.secondary} />
-                    </TouchableOpacity>
-                  </View>
-                  <TextInput
-                    style={styles.regenerateInput}
-                    multiline
-                    value={localQuery}
-                    onChangeText={setLocalQuery}
-                    placeholder="Ex: Changez les couleurs, ajoutez plus de texte..."
-                    placeholderTextColor="rgba(255,255,255,0.3)"
-                  />
-                  <View style={styles.modeSelector}>
-                    <Text style={styles.modeLabel}>Régénérer :</Text>
-                    <View style={styles.modeOptionsRow}>
-                      {['text', 'image', 'both'].filter(id => {
-                        if (String(selectedCategory) === 'Social') return true;
-                        if (String(selectedCategory) === 'Image') return id === 'image';
-                        if (String(selectedCategory) === 'Texte') return id === 'text';
-                        return true;
-                      }).map(id => (
-                        <TouchableOpacity
-                          key={id}
-                          style={[styles.modeItem, regenMode === id && styles.modeItemSelected]}
-                          onPress={() => setRegenMode(id as any)}>
-                          <Text style={[styles.modeItemText, regenMode === id && styles.modeItemTextSelected]}>
-                            {id === 'both' ? 'Les deux' : id === 'text' ? 'Texte' : 'Image'}
-                          </Text>
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-                  </View>
-                  <NeonActionButton
-                    label="Régénérer"
-                    onPress={() => generateContent(localQuery, regenMode)}
-                    small={false}
-                    loading={false}
-                    disabled={false}
-                  />
-                </View>
-              )}
             </View>
             <View style={styles.footerSpacer} />
           </View>

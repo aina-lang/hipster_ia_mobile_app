@@ -10,8 +10,6 @@ export default function GuidedLayout() {
           headerShown: false,
           contentStyle: { backgroundColor: colors.background.dark },
         }}>
-        <Stack.Screen name="step1-job" />
-        <Stack.Screen name="step2-type" />
         <Stack.Screen name="step3-directions" />
         <Stack.Screen name="step3-personalize" />
         <Stack.Screen name="step4-personalize" />

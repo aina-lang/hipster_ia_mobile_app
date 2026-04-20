@@ -1,11 +1,12 @@
 import React, { useState, useRef } from 'react';
 import {
-  View, StyleSheet, Text, TextInput, KeyboardAvoidingView,
-  Platform, Keyboard, TouchableWithoutFeedback,
+  View, StyleSheet, Text, TextInput,
+  Platform, Keyboard,
   NativeSyntheticEvent, TextInputKeyPressEventData,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { router, useLocalSearchParams } from 'expo-router';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated, { FadeInDown, useSharedValue } from 'react-native-reanimated';
 import { BackgroundGradientOnboarding } from '../../components/ui/BackgroundGradientOnboarding';
 import { GenericModal } from '../../components/ui/GenericModal';
 import { ScreenHeader } from '../../components/ui/ScreenHeader';
@@ -79,56 +80,66 @@ export default function VerifyOtpScreen() {
     }
   };
 
+  const scrollY = useSharedValue(0);
+
   return (
     <BackgroundGradientOnboarding darkOverlay>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={s.container}>
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <View style={s.innerContainer}>
+      <ScreenHeader 
+        titleSub="Vérification" 
+        titleScript="OTP" 
+        onBack={() => router.back()} 
+        scrollY={scrollY}
+      />
 
-            <ScreenHeader titleSub="Vérification" titleScript="OTP" onBack={() => router.back()} />
+      <KeyboardAwareScrollView
+        bottomOffset={20}
+        contentContainerStyle={[s.content, { paddingTop: 120 }]}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        onScroll={(e) => {
+          scrollY.value = e.nativeEvent.contentOffset.y;
+        }}
+        scrollEventThrottle={16}
+      >
+        <Animated.View entering={FadeInDown.duration(800)}>
+          <Text style={s.subtitle}>
+            Un code a été envoyé à <Text style={s.emailText}>{email}</Text>.{'\n'}
+            Veuillez l'entrer ci-dessous pour continuer.
+          </Text>
 
-            <Animated.View entering={FadeInDown.duration(800)} style={s.content}>
-              <Text style={s.subtitle}>
-                Un code a été envoyé à <Text style={s.emailText}>{email}</Text>.{'\n'}
-                Veuillez l'entrer ci-dessous pour continuer.
-              </Text>
+          <View style={s.form}>
+            <View style={s.otpContainer}>
+              {otp.map((digit, index) => (
+                <NeonBorderInput key={index} isActive={focusedIndex === index}>
+                  <TextInput
+                    ref={ref => { inputRefs.current[index] = ref; }}
+                    style={[s.otpInput, (digit || focusedIndex === index) ? s.otpInputActive : null]}
+                    value={digit}
+                    onChangeText={text => handleChange(text, index)}
+                    onKeyPress={e => handleKeyPress(e, index)}
+                    onFocus={() => setFocusedIndex(index)}
+                    onBlur={() => setFocusedIndex(null)}
+                    keyboardType="number-pad"
+                    maxLength={1}
+                    selectTextOnFocus
+                    caretHidden
+                    textAlign="center"
+                    placeholderTextColor={colors.text.muted}
+                    placeholder="•"
+                  />
+                </NeonBorderInput>
+              ))}
+            </View>
 
-              <View style={s.form}>
-                <View style={s.otpContainer}>
-                  {otp.map((digit, index) => (
-                    <NeonBorderInput key={index} isActive={focusedIndex === index}>
-                      <TextInput
-                        ref={ref => { inputRefs.current[index] = ref; }}
-                        style={[s.otpInput, (digit || focusedIndex === index) ? s.otpInputActive : null]}
-                        value={digit}
-                        onChangeText={text => handleChange(text, index)}
-                        onKeyPress={e => handleKeyPress(e, index)}
-                        onFocus={() => setFocusedIndex(index)}
-                        onBlur={() => setFocusedIndex(null)}
-                        keyboardType="number-pad"
-                        maxLength={1}
-                        selectTextOnFocus
-                        caretHidden
-                        textAlign="center"
-                        placeholderTextColor={colors.text.muted}
-                        placeholder="•"
-                      />
-                    </NeonBorderInput>
-                  ))}
-                </View>
-
-                <NeonActionButton
-                  label="Vérifier le code"
-                  onPress={handleVerifyCode}
-                  loading={isLoading}
-                  disabled={isLoading}
-                />
-              </View>
-            </Animated.View>
-
+            <NeonActionButton
+              label="Vérifier le code"
+              onPress={handleVerifyCode}
+              loading={isLoading}
+              disabled={isLoading}
+            />
           </View>
-        </TouchableWithoutFeedback>
-      </KeyboardAvoidingView>
+        </Animated.View>
+      </KeyboardAwareScrollView>
 
       <GenericModal
         visible={modal.visible}
@@ -142,12 +153,11 @@ export default function VerifyOtpScreen() {
 }
 
 const s = StyleSheet.create({
-  container:      { flex: 1 },
-  innerContainer: { flex: 1 },
   content: {
-    flex: 1,
-    paddingTop: 10,
+    flexGrow: 1,
     paddingHorizontal: 32,
+    paddingBottom: 40,
+    justifyContent: 'center',
   },
   subtitle: {
     fontFamily: fonts.arimo.regular,

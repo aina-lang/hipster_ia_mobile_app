@@ -44,7 +44,7 @@ export const textStyles = {
     color : '#ffffff99'
   },
   signature: {
-    fontFamily: fonts.brittany.signature,
+    fontFamily: fonts.brittany,
     fontSize: 24,
     lineHeight: 32,
     color : '#ffffff'

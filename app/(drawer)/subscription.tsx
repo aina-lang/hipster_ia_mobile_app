@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Platform,
 } from 'react-native';
+import Animated, { useSharedValue } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../../theme/colors';
 import {
@@ -27,13 +28,15 @@ import {
   XCircle,
   Bell,
 } from 'lucide-react-native';
-import { useRouter } from 'expo-router';
+import { DrawerActions } from '@react-navigation/native';
+import { useRouter, useNavigation } from 'expo-router';
 import { useStripe } from '@stripe/stripe-react-native';
 import { api } from '../../api/client';
 import { useAuthStore } from '../../store/authStore';
 import { useUserCredits } from '../../hooks/useUserCredits';
 import { GenericModal } from '../../components/ui/GenericModal';
 import { BackgroundGradientOnboarding } from '../../components/ui/BackgroundGradientOnboarding';
+import { ScreenHeader } from '../../components/ui/ScreenHeader';
 import { PlanCard, Plan } from '../../components/subscription/PlanCard';
 import { ManagementCard } from '../../components/subscription/ManagementCard';
 import { NeonActionButton } from '../../components/ui/NeonActionButton';
@@ -50,6 +53,7 @@ const planIcons: Record<string, LucideIcon> = {
 
 export default function SubscriptionScreen() {
   const router = useRouter();
+  const navigation = useNavigation();
   const [loading, setLoading] = useState(false);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
@@ -58,6 +62,7 @@ export default function SubscriptionScreen() {
   const isHydrated = useAuthStore(s => s.isHydrated);
   const { updateAiProfile, aiRefreshUser } = useAuthStore();
   const { credits, loading: creditsLoading } = useUserCredits();
+  const scrollY = useSharedValue(0);
 
   const [modalVisible, setModalVisible] = useState(false);
   const [modalType, setModalType] = useState<any>('info');
@@ -85,14 +90,16 @@ export default function SubscriptionScreen() {
 
       const mappedPlans: Plan[] = backendPlans.map((p: any) => ({
         ...p,
-        price: typeof p.price === 'number' ? `${p.price.toFixed(2)}€` : p.price,
+        price: typeof p.price === 'number' ? (Number.isInteger(p.price) ? `${p.price}€` : `${p.price.toFixed(2).replace('.', ',')}€`) : p.price,
         icon: planIcons[p.id] || Shield,
         isComingSoon: p.id === 'agence',
       }));
 
-      const visiblePlans = (authUser?.subscriptionStatus === 'canceled' && authUser?.planType)
-        ? mappedPlans.filter(p => p.id !== authUser.planType)
-        : mappedPlans;
+      let visiblePlans = mappedPlans;
+
+      if (authUser?.planType && authUser.planType !== 'curieux') {
+        visiblePlans = visiblePlans.filter(p => p.id !== 'curieux');
+      }
 
       setPlans(visiblePlans);
 
@@ -200,77 +207,99 @@ export default function SubscriptionScreen() {
     }
   };
 
-  const buttonLabel = selectedPlan
-    ? (plans.find(p => p.id === selectedPlan)?.isComingSoon
-      ? 'À venir'
-      : (selectedPlan === user?.planType ? 'Renouveler mon forfait' : 'Confirmer mon choix'))
-    : 'Sélectionnez un plan';
+  const isExpired = user?.subscriptionEndDate && new Date(user.subscriptionEndDate) < new Date();
+  const isCanceledOrExpired = user?.subscriptionStatus === 'canceled' || user?.subscriptionStatus === 'expired' || isExpired;
+
+  let buttonLabel = 'Sélectionnez un plan';
+  let isButtonDisabled = true;
+
+  if (selectedPlan) {
+    const planObj = plans.find(p => p.id === selectedPlan);
+    if (planObj?.isComingSoon) {
+      buttonLabel = 'À venir';
+    } else if (selectedPlan === user?.planType) {
+      if (isCanceledOrExpired) {
+        buttonLabel = 'Renouveler mon forfait';
+        isButtonDisabled = false;
+      } else {
+        buttonLabel = 'Votre forfait actuel';
+        isButtonDisabled = true;
+      }
+    } else {
+      buttonLabel = 'Confirmer mon choix';
+      isButtonDisabled = false;
+    }
+  }
+
+  isButtonDisabled = isButtonDisabled || loading;
 
   return (
     <BackgroundGradientOnboarding darkOverlay>
-      <SafeAreaView style={{ flex: 1 }}>
-        <ScrollView
-          contentContainerStyle={s.scrollContent}
-          showsVerticalScrollIndicator={false}
-          bounces={false}
-          keyboardShouldPersistTaps="handled"
-        >
-          {/* ── HEADER ── */}
-          <View style={s.header}>
-            <NeonBackButton onPress={() => router.back()} />
-            <View style={s.headerCenter}>
-              <View style={s.titleRow}>
-                <Text style={s.titleLabel}>Plans d'abonnement</Text>
-              </View>
-            </View>
+      <ScreenHeader
+        titleSub="VOS"
+        titleScript="Abonnements"
+        onBack={() => {
+          navigation.dispatch(DrawerActions.openDrawer());
+        }}
+        scrollY={scrollY}
+      />
+
+      <Animated.ScrollView
+        contentContainerStyle={[s.scrollContent, { paddingTop: 140 }]}
+        showsVerticalScrollIndicator={false}
+        bounces={false}
+        keyboardShouldPersistTaps="handled"
+        onScroll={(e) => {
+          scrollY.value = e.nativeEvent.contentOffset.y;
+        }}
+        scrollEventThrottle={16}
+      >
+
+        {loading && plans.length === 0 ? (
+          <View style={s.loader}>
+            <ActivityIndicator color={NEON_BLUE} size="large" />
+            <Text style={s.loaderText}>Chargement des plans…</Text>
           </View>
+        ) : (
+          <>
+            {user?.planType && user.planType !== 'curieux' && (
+              <ManagementCard
+                subscriptionStatus={user.subscriptionStatus}
+                subscriptionEndDate={user.subscriptionEndDate}
+                planName={plans.find(p => p.id === user.planType)?.name || 'Pack Premium'}
+              />
+            )}
 
-          {loading && plans.length === 0 ? (
-            <View style={s.loader}>
-              <ActivityIndicator color={NEON_BLUE} size="large" />
-              <Text style={s.loaderText}>Chargement des plans…</Text>
+            <View style={s.topSection}>
+              <Text style={s.subtitle}>Sélectionnez l'offre qui vous correspond</Text>
             </View>
-          ) : (
-            <>
-              {user?.planType && user.planType !== 'curieux' && (
-                <ManagementCard
-                  subscriptionStatus={user.subscriptionStatus}
-                  subscriptionEndDate={user.subscriptionEndDate}
-                  planName={plans.find(p => p.id === user.planType)?.name || 'Pack Premium'}
+
+            <View style={s.plansContainer}>
+              {plans.map(plan => (
+                <PlanCard
+                  key={plan.id}
+                  plan={plan}
+                  isSelected={selectedPlan === plan.id}
+                  onSelect={() => setSelectedPlan(plan.id)}
+                  loading={loading}
                 />
-              )}
+              ))}
+            </View>
+          </>
+        )}
+      </Animated.ScrollView>
 
-              <View style={s.topSection}>
-                <Text style={s.subtitle}>Sélectionnez l'offre qui vous correspond</Text>
-              </View>
-
-              <View style={s.plansContainer}>
-                {plans.map(plan => (
-                  <PlanCard
-                    key={plan.id}
-                    plan={plan}
-                    isSelected={selectedPlan === plan.id}
-                    onSelect={() => setSelectedPlan(plan.id)}
-                    loading={loading}
-                  />
-                ))}
-              </View>
-            </>
-          )}
-        </ScrollView>
-
-        {/* ── FOOTER ── */}
-        <View style={s.footer}>
-          <NeonActionButton
-            onPress={handleUpgrade}
-            loading={loading}
-            disabled={loading || !selectedPlan || !!plans.find(p => p.id === selectedPlan)?.isComingSoon}
-            label={buttonLabel}
-            icon={<Bell size={16} color="#ffffff" />}
-          />
-          <Text style={s.secureText}>Paiement sécurisé via Stripe</Text>
-        </View>
-      </SafeAreaView>
+      {/* ── FOOTER ── */}
+      <View style={s.footer}>
+        <NeonActionButton
+          onPress={handleUpgrade}
+          loading={loading}
+          disabled={isButtonDisabled}
+          label={buttonLabel}
+          icon={<Bell size={16} color="#ffffff" />}
+        />
+        <Text style={s.secureText}>Paiement sécurisé via Stripe</Text>
+      </View>
 
       <GenericModal
         visible={modalVisible}
@@ -291,48 +320,6 @@ const s = StyleSheet.create({
   },
 
   /* Header */
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 28,
-    paddingTop: 8,
-  },
-  backButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
-  },
-  headerCenter: {
-    flex: 1,
-    alignItems: 'center',
-    marginRight: 58,
-  },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-  },
-  titleLabel: {
-    fontFamily: 'Arimo-Bold',
-    fontSize: 16,
-    textTransform: 'uppercase',
-    color: 'rgba(255,255,255,0.45)'
-  },
-  titleScript: {
-    fontFamily: 'Brittany-Signature',
-    fontSize: 28,
-    color: '#fff',
-
-
-  },
-
   loader: {
     flex: 1,
     justifyContent: 'center',

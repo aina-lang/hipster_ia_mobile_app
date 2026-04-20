@@ -13,11 +13,14 @@ import {
   RefreshControl,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter, useFocusEffect } from 'expo-router';
+import { useRouter, useFocusEffect, useNavigation } from 'expo-router';
+import { DrawerActions } from '@react-navigation/native';
+import { useSharedValue } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as MediaLibrary from 'expo-media-library';
+import * as Print from 'expo-print';
 import {
   Download,
   Trash2,
@@ -33,6 +36,7 @@ import { useImageHistoryStore, GeneratedImage } from '../../store/imageHistorySt
 import { colors } from '../../theme/colors';
 import { GenericModal, ModalType } from '../../components/ui/GenericModal';
 import { BackgroundGradientOnboarding } from '../../components/ui/BackgroundGradientOnboarding';
+import { ScreenHeader } from '../../components/ui/ScreenHeader';
 import { NeonBackButton } from '../../components/ui/NeonBackButton';
 import { AiService } from '../../api/ai.service';
 
@@ -45,19 +49,22 @@ const TILE = (CONTENT_W - GALLERY_GAP * (COLS - 1)) / COLS;
 
 export default function ImpressionHDHistoryScreen() {
   const router = useRouter();
+  const navigation = useNavigation();
   const insets = useSafeAreaInsets();
 
   const [selectedImage, setSelectedImage] = useState<GeneratedImage | null>(null);
+  const [downloading, setDownloading] = useState<string | null>(null);
+  const [printing, setPrinting] = useState<string | null>(null);
   const [showImageModal, setShowImageModal] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [modalType, setModalType] = useState<ModalType>('info');
   const [modalTitle, setModalTitle] = useState('');
   const [modalMessage, setModalMessage] = useState('');
-  const [downloading, setDownloading] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [showClearModal, setShowClearModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
+  const scrollY = useSharedValue(0);
   const [permissionResponse, requestPermission] = MediaLibrary.usePermissions();
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -187,32 +194,17 @@ export default function ImpressionHDHistoryScreen() {
     try {
       setDownloading(image.id);
 
-      if (permissionResponse?.status !== 'granted') {
-        const resp = await requestPermission();
-        if (resp.status !== 'granted') {
-          showModal('error', 'Permission refusée', 'Accès à la galerie refusé.');
-          return;
-        }
-      }
-
       const filename = `hipster-${image.id}.jpg`;
       const fileUri = `${FileSystem.cacheDirectory}${filename}`;
 
       const downloadRes = await FileSystem.downloadAsync(image.url, fileUri);
       if (downloadRes.status !== 200) throw new Error('Téléchargement échoué');
 
-      const asset = await MediaLibrary.createAssetAsync(downloadRes.uri);
-      const album = await MediaLibrary.getAlbumAsync('Hipster IA');
-
-      if (!album) {
-        await MediaLibrary.createAlbumAsync('Hipster IA', asset, false);
-      } else {
-        await MediaLibrary.addAssetsToAlbumAsync([asset], album, false);
-      }
+      await MediaLibrary.createAssetAsync(downloadRes.uri);
 
       showModal('success', 'Succès', 'Flyer enregistré dans votre galerie.');
     } catch (error: any) {
-      showModal('error', 'Erreur', `Impossible de télécharger : ${error.message}`);
+      showModal('error', 'Erreur', `Impossible d'enregistrer l'image. Vérifiez vos permissions.`);
     } finally {
       setDownloading(null);
     }
@@ -247,7 +239,9 @@ export default function ImpressionHDHistoryScreen() {
   };
 
   const handlePrintImage = async (image: GeneratedImage) => {
+    if (printing) return;
     try {
+      setPrinting(image.id);
       const filename = `hipster-${image.id}.jpg`;
       const fileUri = `${FileSystem.cacheDirectory}${filename}`;
 
@@ -257,16 +251,22 @@ export default function ImpressionHDHistoryScreen() {
         if (downloadRes.status !== 200) throw new Error('Téléchargement échoué');
       }
 
-      if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(fileUri, {
-          mimeType: 'image/jpeg',
-          dialogTitle: `Imprimer — ${image.title}`,
-        });
+      if (fileUri) {
+        const html = `
+          <html>
+            <body style="margin:0;padding:0;display:flex;justify-content:center;align-items:center;height:100vh;background-color:black;">
+              <img src="${image.url}" style="max-width:100%;max-height:100%;object-fit:contain;" />
+            </body>
+          </html>
+        `;
+        await Print.printAsync({ html });
       } else {
-        showModal('info', 'Impression', 'Utilisez le partage pour accéder aux options d\'impression.');
+        showModal('info', 'Impression', 'Impossible de préparer le fichier pour l\'impression.');
       }
     } catch (error: any) {
       showModal('error', 'Erreur', `Impression échouée : ${error.message}`);
+    } finally {
+      setPrinting(null);
     }
   };
 
@@ -336,15 +336,7 @@ export default function ImpressionHDHistoryScreen() {
               </View>
             )}
           </TouchableOpacity>
-          {!selectionMode && (
-            <TouchableOpacity
-              style={s.tileDelete}
-              onPress={onDelete}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            >
-              <Trash2 size={14} color={colors.status.error} />
-            </TouchableOpacity>
-          )}
+          
         </View>
       );
     }, (prevProps, nextProps) => {
@@ -377,6 +369,13 @@ export default function ImpressionHDHistoryScreen() {
 
   return (
     <BackgroundGradientOnboarding darkOverlay>
+      <ScreenHeader
+        titleSub="VOS"
+        titleScript="Affiches HD"
+        onBack={selectionMode ? undefined : () => navigation.goBack()}
+        scrollY={scrollY}
+      />
+
       <SafeAreaView style={s.safe}>
         <FlatList
           data={images}
@@ -384,23 +383,20 @@ export default function ImpressionHDHistoryScreen() {
           numColumns={COLS}
           renderItem={renderGalleryTile}
           columnWrapperStyle={s.columnWrap}
-          contentContainerStyle={s.listContent}
+          contentContainerStyle={[s.listContent, { paddingTop: 140 }]}
           showsVerticalScrollIndicator={false}
           initialNumToRender={15}
           maxToRenderPerBatch={10}
           windowSize={5}
           removeClippedSubviews={true}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              tintColor={colors.neon.primary}
-            />
-          }
+          onScroll={(e) => {
+            scrollY.value = e.nativeEvent.contentOffset.y;
+          }}
+          scrollEventThrottle={16}
           ListHeaderComponent={
-            <>
+            <View style={{ paddingTop: 0 }}>
               {selectionMode ? (
-                <View style={[s.header, s.headerSelectionMode]}>
+                <View style={[s.header, s.headerSelectionMode, { marginTop: -80 }]}>
                   <TouchableOpacity onPress={exitSelectionMode} style={s.headerIconBtn}>
                     <X size={24} color="white" />
                   </TouchableOpacity>
@@ -425,15 +421,7 @@ export default function ImpressionHDHistoryScreen() {
                     </TouchableOpacity>
                   </View>
                 </View>
-              ) : (
-                <View style={s.header}>
-                  <NeonBackButton onPress={() => router.back()} />
-                  <View style={s.headerCenter}>
-                    <Text style={s.titleSub}>Impression HD</Text>
-                  </View>
-                  <View style={{ width: 42 }} />
-                </View>
-              )}
+              ) : null}
 
               <Text style={s.subtitle}>Galerie de vos affiches et visuels HD</Text>
 
@@ -443,7 +431,7 @@ export default function ImpressionHDHistoryScreen() {
                   <Text style={s.clearButtonText}>Tout effacer la galerie</Text>
                 </TouchableOpacity>
               )}
-            </>
+            </View>
           }
         />
 
@@ -481,7 +469,7 @@ export default function ImpressionHDHistoryScreen() {
                     if (images[index]) setSelectedImage(images[index]);
                   }}
                   renderItem={({ item }) => (
-                    <View style={{ width: SCREEN_W, flex: 1 }}>
+                    <View style={{ width: SCREEN_W, flex: 1, justifyContent: 'center' }}>
                       <Image
                         source={{ uri: item.url }}
                         style={s.fullImage}
@@ -510,9 +498,16 @@ export default function ImpressionHDHistoryScreen() {
                   <TouchableOpacity
                     style={[s.modalButton, s.printBtnLarge]}
                     onPress={() => handlePrintImage(selectedImage)}
+                    disabled={!!printing}
                   >
-                    <Printer size={20} color="white" />
-                    <Text style={s.modalButtonText}>Imprimer</Text>
+                    {printing === selectedImage.id ? (
+                      <ActivityIndicator size="small" color="white" />
+                    ) : (
+                      <>
+                        <Printer size={20} color="white" />
+                        <Text style={s.modalButtonText}>Imprimer</Text>
+                      </>
+                    )}
                   </TouchableOpacity>
 
                   <TouchableOpacity
@@ -627,7 +622,7 @@ const s = StyleSheet.create({
   },
   tileTouchable: {
     width: TILE,
-    height: TILE,
+    height: TILE * 1.5,
     borderRadius: 14,
     overflow: 'hidden',
     borderWidth: 1,
@@ -759,7 +754,8 @@ const s = StyleSheet.create({
   },
   fullImage: {
     width: '100%',
-    flex: 1,
+    height: Dimensions.get('window').height * 0.65,
+    
   },
   modalActions: {
     flexDirection: 'row',
@@ -777,6 +773,11 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     gap: 8,
+  },
+  modalButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontFamily: 'Arimo-Bold',
   },
   downloadBtnLarge: {
     backgroundColor: 'rgba(0, 212, 255, 0.3)',

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View, Text, Image, TouchableOpacity,
   StyleSheet, Animated as RNAnimated, Easing,
@@ -9,7 +9,7 @@ import { useRouter, usePathname } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
   Home, History as HistoryIcon, User, LogOut, Users,
-  Bell,
+  Bell, FileText,
 } from 'lucide-react-native';
 
 import { colors } from '../../theme/colors';
@@ -69,18 +69,24 @@ function AvatarNeonBorder({ children, size }: { children: React.ReactNode; size:
 function CustomDrawerContent(props: any) {
   const { user, logout } = useAuthStore();
   const router = useRouter();
-  const [showLogoutModal, setShowLogoutModal] = React.useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   // Protect against null user during logout
-  if (!user) {
+  if (!user && !isLoggingOut) {
     return null;
   }
 
   const handleLogout = async () => {
-    setShowLogoutModal(false);
-    useWelcomeVideoStore.getState().setIsReturningFromBack(true);
-    await logout();
-    router.replace('/welcome');
+    try {
+      setShowLogoutModal(false);
+      setIsLoggingOut(true);
+      useWelcomeVideoStore.getState().setIsReturningFromBack(true);
+      await logout();
+      router.replace('/welcome');
+    } catch {
+      setIsLoggingOut(false);
+    }
   };
 
   const userName = user?.name || 'Utilisateur';
@@ -130,6 +136,13 @@ function CustomDrawerContent(props: any) {
         onClose={() => setShowLogoutModal(false)}
         onConfirm={handleLogout}
       />
+
+      <GenericModal
+        visible={isLoggingOut}
+        type="loading"
+        title="Déconnexion..."
+        message="Veuillez patienter pendant que nous vous déconnectons."
+      />
     </View>
   );
 }
@@ -143,9 +156,12 @@ export default function DrawerLayout() {
     if (!user) return;
     const planType = user.planType || 'curieux';
     const subStatus = user.subscriptionStatus;
-    const isActive = subStatus === 'active' || subStatus === 'trialing' || subStatus === 'trial';
     const endDate = user.subscriptionEndDate ? new Date(user.subscriptionEndDate) : null;
-    const isExpired = endDate && new Date() > endDate;
+    const isExpired = endDate ? new Date() > endDate : false;
+    
+    // We only consider the user inactive (and block them) if they are explicitly expired.
+    // This prevents trapping users whose status is 'past_due' or who have canceled but still have time remaining.
+    const isActive = !isExpired;
 
     const exhausted = (used: number, limit: number) => limit > 0 && limit !== 999999 && used >= limit;
     const isFullyExhausted =
@@ -161,6 +177,8 @@ export default function DrawerLayout() {
 
     if ((isCritical || isBlockedHome) && !onSubPage && planType !== 'curieux') router.replace('/subscription');
   }, [user, pathname]);
+
+  if (!user) return null;
 
   return (
     <Drawer
@@ -263,7 +281,14 @@ export default function DrawerLayout() {
       <Drawer.Screen
         name="impression-hd-history"
         options={{
-          drawerItemStyle: { display: 'none' },
+          drawerIcon: ({ color, focused }) => (
+            <FileText size={20} color={focused ? '#ffffff' : color} style={focused ? { shadowColor: '#00eaff', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 8, elevation: 4 } : undefined} />
+          ),
+          drawerLabel: ({ focused, color }) => (
+            <Text style={{ fontFamily: 'Arimo-Bold', fontSize: 15, letterSpacing: 0.3, color: focused ? '#ffffff' : color, textShadowColor: focused ? '#00eaff' : 'transparent', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: focused ? 3 : 0 }}>
+              Impression HD
+            </Text>
+          ),
         }}
       />
       <Drawer.Screen
