@@ -15,14 +15,7 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect, useNavigation } from 'expo-router';
 import { DrawerActions } from '@react-navigation/native';
-import Animated, { 
-  useSharedValue, 
-  useAnimatedStyle, 
-  withSpring, 
-  withTiming, 
-  interpolate,
-  runOnJS
-} from 'react-native-reanimated';
+import { useSharedValue } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -77,22 +70,6 @@ export default function ImpressionHDHistoryScreen() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [backendFlyers, setBackendFlyers] = useState<GeneratedImage[]>([]);
   const [loadingFlyers, setLoadingFlyers] = useState(false);
-  const transitionProgress = useSharedValue(0);
-  const [originLayout, setOriginLayout] = useState({ x: 0, y: 0, width: 0, height: 0 });
-
-  const modalOverlayStyle = useAnimatedStyle(() => ({
-    opacity: transitionProgress.value,
-  }));
-
-  const modalHeaderStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: interpolate(transitionProgress.value, [0, 1], [-50, 0]) }],
-    opacity: transitionProgress.value,
-  }));
-
-  const modalActionsStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: interpolate(transitionProgress.value, [0, 1], [100, 0]) }],
-    opacity: transitionProgress.value,
-  }));
 
   const allImages = useImageHistoryStore((state) => state.images);
   const removeImage = useImageHistoryStore((state) => state.removeImage);
@@ -195,16 +172,11 @@ export default function ImpressionHDHistoryScreen() {
     }
   };
 
-  const handlePress = (item: GeneratedImage, ref: React.RefObject<any>) => {
+  const handlePress = (item: GeneratedImage) => {
     if (selectionMode) {
       toggleSelection(item.id);
     } else {
-      // @ts-ignore
-      ref.current?.measureInWindow((x, y, width, height) => {
-        setOriginLayout({ x, y, width, height });
-        openPreview(item);
-        transitionProgress.value = withSpring(1, { damping: 15, stiffness: 100 });
-      });
+      openPreview(item);
     }
   };
 
@@ -325,36 +297,6 @@ export default function ImpressionHDHistoryScreen() {
     }
   };
 
-  const FullScreenImageItem = ({ item, isSelected }: { item: GeneratedImage, isSelected: boolean }) => {
-    const animatedStyle = useAnimatedStyle(() => {
-      if (!isSelected) return { width: '100%', height: Dimensions.get('window').height * 0.65 };
-      
-      const targetHeight = Dimensions.get('window').height * 0.65;
-      const targetWidth = Dimensions.get('window').width;
-      const targetX = 0;
-      const targetY = (Dimensions.get('window').height - targetHeight) / 2;
-
-      return {
-        position: 'absolute',
-        top: interpolate(transitionProgress.value, [0, 1], [originLayout.y, targetY]),
-        left: interpolate(transitionProgress.value, [0, 1], [originLayout.x, targetX]),
-        width: interpolate(transitionProgress.value, [0, 1], [originLayout.width, targetWidth]),
-        height: interpolate(transitionProgress.value, [0, 1], [originLayout.height, targetHeight]),
-        borderRadius: interpolate(transitionProgress.value, [0, 1], [14, 0]),
-      };
-    });
-
-    return (
-      <View style={{ width: SCREEN_W, flex: 1, justifyContent: 'center' }}>
-        <Animated.Image
-          source={{ uri: item.url }}
-          style={[s.fullImage, animatedStyle]}
-          resizeMode="contain"
-        />
-      </View>
-    );
-  };
-
   const confirmClearAll = () => {
     clearHistory();
     setBackendFlyers([]);
@@ -366,16 +308,14 @@ export default function ImpressionHDHistoryScreen() {
 
   const MemoizedGalleryTile = useCallback(
     React.memo(({ item, isSelected, selectionMode, onPress, onLongPress, onDelete }: any) => {
-      const tileRef = React.useRef<View>(null);
       return (
         <View style={s.tileWrap}>
           <TouchableOpacity
-            ref={tileRef}
             style={[
               s.tileTouchable,
               selectionMode && isSelected && s.tileSelected
             ]}
-            onPress={() => onPress(tileRef)}
+            onPress={onPress}
             onLongPress={onLongPress}
             delayLongPress={150}
             activeOpacity={0.85}
@@ -396,6 +336,7 @@ export default function ImpressionHDHistoryScreen() {
               </View>
             )}
           </TouchableOpacity>
+          
         </View>
       );
     }, (prevProps, nextProps) => {
@@ -414,7 +355,7 @@ export default function ImpressionHDHistoryScreen() {
           item={item}
           isSelected={isSelected}
           selectionMode={selectionMode}
-          onPress={(ref: any) => handlePress(item, ref)}
+          onPress={() => handlePress(item)}
           onLongPress={() => handleLongPress(item.id)}
           onDelete={() => {
             setItemToDelete(item.id);
@@ -494,37 +435,17 @@ export default function ImpressionHDHistoryScreen() {
           }
         />
 
-      {/* 🖼️ Custom Shared Element Modal */}
-      {showImageModal && (
-        <Animated.View 
-          style={[
-            StyleSheet.absoluteFill, 
-            { zIndex: 9999, backgroundColor: 'rgba(0,0,0,0.95)' },
-            modalOverlayStyle
-          ]}
-        >
+        <Modal visible={showImageModal} transparent animationType="fade">
           <View style={s.modalContainer}>
-            <Animated.View 
-              style={[
-                s.modalHeader, 
-                { paddingTop: insets.top + 40 },
-                modalHeaderStyle
-              ]}
-            >
-              <TouchableOpacity 
-                onPress={() => {
-                  transitionProgress.value = withTiming(0, { duration: 250 }, (finished) => {
-                    if (finished) runOnJS(setShowImageModal)(false);
-                  });
-                }}
-              >
+            <View style={[s.modalHeader, { paddingTop: insets.top + 40 }]}>
+              <TouchableOpacity onPress={() => setShowImageModal(false)}>
                 <ArrowLeft size={24} color="white" />
               </TouchableOpacity>
               <Text style={s.modalTitle} numberOfLines={1}>
                 {selectedImage?.title || 'Aperçu'}
               </Text>
               <View style={{ width: 24 }} />
-            </Animated.View>
+            </View>
 
             {selectedImage && (
               <>
@@ -548,16 +469,17 @@ export default function ImpressionHDHistoryScreen() {
                     if (images[index]) setSelectedImage(images[index]);
                   }}
                   renderItem={({ item }) => (
-                    <FullScreenImageItem item={item} isSelected={item.id === selectedImage?.id} />
+                    <View style={{ width: SCREEN_W, flex: 1, justifyContent: 'center' }}>
+                      <Image
+                        source={{ uri: item.url }}
+                        style={s.fullImage}
+                        resizeMode="contain"
+                      />
+                    </View>
                   )}
                 />
 
-                <Animated.View 
-                  style={[
-                    s.modalActions,
-                    modalActionsStyle
-                  ]}
-                >
+                <View style={s.modalActions}>
                   <TouchableOpacity
                     style={[s.modalButton, s.downloadBtnLarge]}
                     onPress={() => handleDownloadImage(selectedImage)}
@@ -594,12 +516,11 @@ export default function ImpressionHDHistoryScreen() {
                   >
                     <Text style={s.modalButtonText}>Partager</Text>
                   </TouchableOpacity>
-                </Animated.View>
+                </View>
               </>
             )}
           </View>
-        </Animated.View>
-      )}
+        </Modal>
 
         <GenericModal
           visible={modalVisible}

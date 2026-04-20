@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity,
   Image, ActivityIndicator, StyleSheet, RefreshControl,
@@ -6,17 +6,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronRight, Search, MessageSquare, ArrowLeft, Trash2, Download, Printer, Share2, X } from 'lucide-react-native';
-import Animated, {  
-  useSharedValue,  
-  useAnimatedStyle,  
-  withSpring,  
-  withTiming,  
-  interpolate,
-  Extrapolate,
-  runOnJS,
-  useAnimatedRef,
-  measure
-} from 'react-native-reanimated';
+import Animated, { useSharedValue } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, useFocusEffect, useNavigation } from 'expo-router';
 import { DrawerActions } from '@react-navigation/native';
@@ -70,23 +60,6 @@ export default function HistoryScreen() {
   const [modalMessage, setModalMessage] = useState('');
 
   const scrollY = useSharedValue(0);
-  const transitionProgress = useSharedValue(0);
-  const [originLayout, setOriginLayout] = useState({ x: 0, y: 0, width: 0, height: 0 });
-  const [activeImageUri, setActiveImageUri] = useState<string | null>(null);
-
-  const modalOverlayStyle = useAnimatedStyle(() => ({
-    opacity: transitionProgress.value,
-  }));
-
-  const modalHeaderStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: interpolate(transitionProgress.value, [0, 1], [-50, 0]) }],
-    opacity: transitionProgress.value,
-  }));
-
-  const modalActionsStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: interpolate(transitionProgress.value, [0, 1], [100, 0]) }],
-    opacity: transitionProgress.value,
-  }));
 
   const showGenericModal = (type: ModalType, title: string, message: string) => {
     setModalType(type);
@@ -223,67 +196,6 @@ export default function HistoryScreen() {
     }
   };
 
-  const renderHistoryItem = (item: HistoryItem) => {
-    return <HistoryItemCard key={item.id} item={item} />;
-  };
-
-  const HistoryItemCard = ({ item }: { item: HistoryItem }) => {
-    const itemRef = useRef<View>(null);
-    return (
-      <View style={s.itemWrapper}>
-        <TouchableOpacity
-          ref={itemRef}
-          style={s.itemCard}
-          onPress={() => {
-            if (item.imageUrl) {
-              const fullUrl = getFullUrl(item.imageUrl);
-              itemRef.current?.measureInWindow((x, y, width, height) => {
-                setOriginLayout({ x, y, width, height });
-                setSelectedItem(item);
-                setActiveImageUri(fullUrl);
-                transitionProgress.value = withSpring(1, { damping: 15, stiffness: 100 });
-                setShowImageModal(true);
-              });
-            } else if (item.type === 'chat') {
-              router.push({ pathname: '/(drawer)/freetext', params: { conversationId: item.id } });
-            } else {
-              router.push({ pathname: '/(drawer)', params: { conversationId: item.id } });
-            }
-          }}
-          activeOpacity={0.7}
-        >
-          <LinearGradient colors={[colors.primary.main + '0a', 'transparent']} style={StyleSheet.absoluteFill} />
-          <View style={s.iconContainer}>
-            {item.imageUrl ? (
-              <Image
-                source={{ uri: getFullUrl(item.imageUrl) }}
-                style={s.thumbnail}
-                resizeMode="cover"
-              />
-            ) : (
-              <MessageSquare size={20} color={colors.neon.primary} />
-            )}
-          </View>
-          <View style={s.itemContent}>
-            <View style={s.itemHeader}>
-              <Text style={s.itemTitle} numberOfLines={1}>{item.title}</Text>
-              <Text style={s.itemDate}>{item.date}</Text>
-            </View>
-            <Text style={s.itemPreview} numberOfLines={2}>{item.preview || 'Conversation'}</Text>
-          </View>
-          <ChevronRight size={16} color={colors.text.muted} />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={s.deleteButton}
-          onPress={() => { setItemToDelete(item.id); setShowDeleteModal(true); }}
-        >
-          <Trash2 size={16} color={colors.status.error} />
-        </TouchableOpacity>
-      </View>
-    );
-  };
-
   return (
     <BackgroundGradientOnboarding darkOverlay>
       <ScreenHeader
@@ -333,77 +245,81 @@ export default function HistoryScreen() {
           </View>
         ) : (
           <View style={s.list}>
-            {history.map(renderHistoryItem)}
+            {history.map(item => (
+              <View key={item.id} style={s.itemWrapper}>
+                <TouchableOpacity
+                  style={s.itemCard}
+                  onPress={() => {
+                    if (item.imageUrl) {
+                      setSelectedItem(item);
+                      setShowImageModal(true);
+                    } else if (item.type === 'chat') {
+                      router.push({ pathname: '/(drawer)/freetext', params: { conversationId: item.id } });
+                    } else {
+                      router.push({ pathname: '/(drawer)', params: { conversationId: item.id } });
+                    }
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <LinearGradient colors={[colors.primary.main + '0a', 'transparent']} style={StyleSheet.absoluteFill} />
+                  <View style={s.iconContainer}>
+                    {item.imageUrl ? (
+                      <Image
+                        source={{ uri: getFullUrl(item.imageUrl) }}
+                        style={s.thumbnail}
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <MessageSquare size={20} color={colors.neon.primary} />
+                    )}
+                  </View>
+                  <View style={s.itemContent}>
+                    <View style={s.itemHeader}>
+                      <Text style={s.itemTitle} numberOfLines={1}>{item.title}</Text>
+                      <Text style={s.itemDate}>{item.date}</Text>
+                    </View>
+                    <Text style={s.itemPreview} numberOfLines={2}>{item.preview || 'Conversation'}</Text>
+                  </View>
+                  <ChevronRight size={16} color={colors.text.muted} />
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={s.deleteButton}
+                  onPress={() => { setItemToDelete(item.id); setShowDeleteModal(true); }}
+                >
+                  <Trash2 size={16} color={colors.status.error} />
+                </TouchableOpacity>
+              </View>
+            ))}
           </View>
         )}
       </Animated.ScrollView>
 
-      {/* 🖼️ Custom Shared Element Modal */}
-      {showImageModal && (
-        <Animated.View  
-          style={[
-            StyleSheet.absoluteFill,  
-            { zIndex: 9999, backgroundColor: 'rgba(0,0,0,0.95)' },
-            modalOverlayStyle
-          ]}
-        >
-          <SafeAreaView style={s.modalContainer}>
-            <Animated.View  
-              style={[
-                s.modalHeader,
-                modalHeaderStyle
-              ]}
-            >
-              <TouchableOpacity  
-                onPress={() => {
-                  transitionProgress.value = withTiming(0, { duration: 250 }, (finished) => {
-                    if (finished) runOnJS(setShowImageModal)(false);
-                  });
-                }}  
-                style={s.closeBtn}
-              >
-                <X size={24} color="white" />
-              </TouchableOpacity>
-              <Text style={s.modalTitleHeader} numberOfLines={1}>{selectedItem?.title || 'Aperçu'}</Text>
-              <View style={{ width: 24 }} />
-            </Animated.View>
+      <Modal visible={showImageModal} transparent animationType="slide">
+        <SafeAreaView style={s.modalContainer}>
+          <View style={s.modalHeader}>
+            <TouchableOpacity onPress={() => setShowImageModal(false)} style={s.closeBtn}>
+              <X size={24} color="white" />
+            </TouchableOpacity>
+            <Text style={s.modalTitleHeader} numberOfLines={1}>{selectedItem?.title || 'Aperçu'}</Text>
+            <View style={{ width: 24 }} />
+          </View>
 
+          {selectedItem && (
             <View style={s.modalContent}>
-              <Animated.Image
-                source={{ uri: activeImageUri || '' }}
-                style={[
-                  s.fullImage,
-                  useAnimatedStyle(() => {
-                    const targetHeight = Dimensions.get('window').height * 0.65;
-                    const targetWidth = Dimensions.get('window').width;
-                    const targetX = 0;
-                    const targetY = (Dimensions.get('window').height - targetHeight) / 2;
-
-                    return {
-                      position: 'absolute',
-                      top: interpolate(transitionProgress.value, [0, 1], [originLayout.y, targetY]),
-                      left: interpolate(transitionProgress.value, [0, 1], [originLayout.x, targetX]),
-                      width: interpolate(transitionProgress.value, [0, 1], [originLayout.width, targetWidth]),
-                      height: interpolate(transitionProgress.value, [0, 1], [originLayout.height, targetHeight]),
-                      borderRadius: interpolate(transitionProgress.value, [0, 1], [16, 0]),
-                    };
-                  })
-                ]}
+              <Image
+                source={{ uri: getFullUrl(selectedItem.imageUrl) }}
+                style={s.fullImage}
                 resizeMode="contain"
               />
 
-              <Animated.View  
-                style={[
-                  s.modalActions,
-                  modalActionsStyle
-                ]}
-              >
+              <View style={s.modalActions}>
                 <TouchableOpacity
                   style={[s.modalButton, s.downloadBtn]}
-                  onPress={() => selectedItem && handleDownload(selectedItem)}
-                  disabled={downloading === selectedItem?.id}
+                  onPress={() => handleDownload(selectedItem)}
+                  disabled={downloading === selectedItem.id}
                 >
-                  {downloading === selectedItem?.id ? (
+                  {downloading === selectedItem.id ? (
                     <ActivityIndicator size="small" color="white" />
                   ) : (
                     <>
@@ -415,10 +331,10 @@ export default function HistoryScreen() {
 
                 <TouchableOpacity
                   style={[s.modalButton, s.printBtn]}
-                  onPress={() => selectedItem && handlePrint(selectedItem)}
+                  onPress={() => handlePrint(selectedItem)}
                   disabled={!!printing}
                 >
-                  {printing === selectedItem?.id ? (
+                  {printing === selectedItem.id ? (
                     <ActivityIndicator size="small" color="white" />
                   ) : (
                     <>
@@ -428,15 +344,15 @@ export default function HistoryScreen() {
                   )}
                 </TouchableOpacity>
 
-                <TouchableOpacity style={[s.modalButton, s.shareBtn]} onPress={() => selectedItem && handleShare(selectedItem)}>
+                <TouchableOpacity style={[s.modalButton, s.shareBtn]} onPress={() => handleShare(selectedItem)}>
                   <Share2 size={20} color="white" />
                   <Text style={s.modalButtonText}>Partager</Text>
                 </TouchableOpacity>
-              </Animated.View>
+              </View>
             </View>
-          </SafeAreaView>
-        </Animated.View>
-      )}
+          )}
+        </SafeAreaView>
+      </Modal>
 
       <GenericModal
         visible={modalVisible}
