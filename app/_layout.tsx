@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
-import { Stack, useRouter, useSegments, usePathname, SplashScreen } from 'expo-router';
+import { Stack, useRouter, useSegments, usePathname } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
@@ -16,7 +17,8 @@ import * as Sharing from 'expo-sharing';
 import { useAppInitialization } from '../hooks/useAppInitialization';
 import { useNetworkStore } from '../store/networkStore';
 
-SplashScreen.preventAutoHideAsync();
+// Must be called at module level — before React renders anything
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 /** Last path segment — works for `/login`, `/(auth)/login`, localized stacks, etc. */
 const AUTH_LAST_SEGMENTS = new Set([

@@ -65,6 +65,10 @@ export default function RegisterScreen() {
       showModal('error', 'Erreur de mot de passe', 'Les mots de passe ne correspondent pas.');
       return;
     }
+    if (password.length < 6) {
+      showModal('warning', 'Mot de passe trop court', 'Le mot de passe doit contenir au moins 6 caractères.');
+      return;
+    }
     // Check connectivity before attempting registration
     const isConnected = await useNetworkStore.getState().checkConnectivity();
     if (!isConnected) {

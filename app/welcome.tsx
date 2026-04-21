@@ -23,7 +23,6 @@ import { useVideoPlayer, VideoView } from 'expo-video';
 import { useAuthStore } from '../store/authStore';
 import { useWelcomeVideoStore } from '../store/welcomeVideoStore';
 import { useRouter, useFocusEffect } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { useResponsiveDimensions } from '../hooks/useResponsiveDimensions';
@@ -413,7 +412,6 @@ function WelcomeScreenContent({ onVideoFinish }: WelcomeScreenProps) {
       if (videoPlayer.status === 'readyToPlay') {
         setVideoReady(true);
         videoPlayer.play();
-        SplashScreen.hideAsync().catch(() => { });
       }
     };
 
