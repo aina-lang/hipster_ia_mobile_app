@@ -44,10 +44,6 @@ export const SelectionCard: React.FC<SelectionCardProps> = ({
     <View style={[styles.wrapper, fullWidth && styles.fullWidth]}>
       {selected && (
         <>
-          <View style={styles.bloomFar} pointerEvents="none" />
-          <View style={styles.bloomMid} pointerEvents="none" />
-          <View style={styles.borderGlow} pointerEvents="none" />
-          <View style={styles.floorGlow} pointerEvents="none" />
         </>
       )}
 
@@ -184,61 +180,5 @@ const styles = StyleSheet.create({
   },
   disabled: {
     opacity: 0.45,
-  },
-  borderGlow: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    borderRadius: 16,
-    backgroundColor: 'transparent',
-    shadowColor: '#1a8fff',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 1,
-    shadowRadius: 20,
-    elevation: 10,
-  },
-  bloomMid: {
-    position: 'absolute',
-    top: -4,
-    left: -4,
-    right: -4,
-    bottom: -4,
-    borderRadius: 20,
-    backgroundColor: 'transparent',
-    shadowColor: '#0f60e0',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 15,
-    elevation: 6,
-  },
-  bloomFar: {
-    position: 'absolute',
-    top: -8,
-    left: -8,
-    right: -8,
-    bottom: -8,
-    borderRadius: 24,
-    backgroundColor: 'transparent',
-    shadowColor: '#0840bb',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.3,
-    shadowRadius: 25,
-    elevation: 4,
-  },
-  floorGlow: {
-    position: 'absolute',
-    bottom: -25,
-    alignSelf: 'center',
-    width: '80%',
-    height: 30,
-    borderRadius: 40,
-    backgroundColor: 'transparent',
-    shadowColor: '#1a6fff',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.7,
-    shadowRadius: 20,
-    elevation: 15,
   },
 });

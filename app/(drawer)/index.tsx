@@ -147,9 +147,6 @@ function NeonBorderCard({
       )}
       {isSelected && (
         <>
-          <View style={s.bloomFar}  pointerEvents="none" />
-          <View style={s.bloomMid}  pointerEvents="none" />
-          <View style={s.floorGlow} pointerEvents="none" />
         </>
       )}
       {children}
@@ -714,9 +711,6 @@ const s = StyleSheet.create({
   neonClip:    { position: 'absolute', top: -1, left: -1, right: -1, bottom: -0.5, borderRadius: 21, overflow: 'hidden', zIndex: 2 },
   neonTrack:   { position: 'absolute', top: 0, bottom: 0, left: 0 },
   neonMask:    { position: 'absolute', top: 1, left: 1, right: 1, bottom: 0.5, borderRadius: 20, zIndex: 1 },
-  bloomMid:    { position: 'absolute', top: -4, left: -4, right: -4, bottom: -4, borderRadius: 24, backgroundColor: 'transparent', shadowColor: NEON_BLUE, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.45, shadowRadius: 18, elevation: 8 },
-  bloomFar:    { position: 'absolute', top: -8, left: -8, right: -8, bottom: -8, borderRadius: 28, backgroundColor: 'transparent', shadowColor: NEON_BLUE_DARK, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.25, shadowRadius: 28, elevation: 4 },
-  floorGlow:   { position: 'absolute', bottom: -16, alignSelf: 'center', width: '80%', height: 24, borderRadius: 50, backgroundColor: 'transparent', shadowColor: NEON_BLUE, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.6, shadowRadius: 16, elevation: 12 },
   divider:     { flexDirection: 'row', alignItems: 'center', gap: 16, marginVertical: 20, opacity: 0.4 },
   dividerLine: { flex: 1, height: 1, backgroundColor: 'rgba(255,255,255,0.1)' },
   dividerText: { fontFamily: fonts.arimo.bold, fontSize: 11, letterSpacing: 2, color: '#64748b' },

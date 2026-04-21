@@ -57,10 +57,6 @@ function AvatarNeonBorder({ children, size }: { children: React.ReactNode; size:
         </RNAnimated.View>
         <View style={{ position: 'absolute', top: BORDER, left: BORDER, right: BORDER, bottom: BORDER, borderRadius: (outer - BORDER * 2) / 2, backgroundColor: colors.background.premium }} />
       </View>
-      <View
-        style={{ position: 'absolute', top: -4, left: -4, right: -4, bottom: -4, borderRadius: (outer + 8) / 2, backgroundColor: 'transparent', shadowColor: NEON_BLUE, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.45, shadowRadius: 14, elevation: 8 }}
-        pointerEvents="none"
-      />
       {children}
     </View>
   );
@@ -211,10 +207,10 @@ export default function DrawerLayout() {
         name="index"
         options={{
           drawerIcon: ({ color, focused }) => (
-            <Home size={20} color={focused ? '#ffffff' : color} style={focused ? { shadowColor: '#00eaff', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 8, elevation: 4 } : undefined} />
+            <Home size={20} color={focused ? '#ffffff' : color} />
           ),
           drawerLabel: ({ focused, color }) => (
-            <Text style={{ fontFamily: 'Arimo-Bold', fontSize: 15, letterSpacing: 0.3, color: focused ? '#ffffff' : color, textShadowColor: focused ? '#00eaff' : 'transparent', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: focused ? 3 : 0 }}>
+            <Text style={{ fontFamily: 'Arimo-Bold', fontSize: 15, letterSpacing: 0.3, color: focused ? '#ffffff' : color }}>
               Accueil
             </Text>
           ),
@@ -224,10 +220,10 @@ export default function DrawerLayout() {
         name="profile"
         options={{
           drawerIcon: ({ color, focused }) => (
-            <User size={20} color={focused ? '#ffffff' : color} style={focused ? { shadowColor: '#00eaff', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 8, elevation: 4 } : undefined} />
+            <User size={20} color={focused ? '#ffffff' : color} />
           ),
           drawerLabel: ({ focused, color }) => (
-            <Text style={{ fontFamily: 'Arimo-Bold', fontSize: 15, letterSpacing: 0.3, color: focused ? '#ffffff' : color, textShadowColor: focused ? '#00eaff' : 'transparent', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: focused ? 3 : 0 }}>
+            <Text style={{ fontFamily: 'Arimo-Bold', fontSize: 15, letterSpacing: 0.3, color: focused ? '#ffffff' : color }}>
               Mon Profil
             </Text>
           ),
@@ -237,10 +233,10 @@ export default function DrawerLayout() {
         name="history"
         options={{
           drawerIcon: ({ color, focused }) => (
-            <HistoryIcon size={20} color={focused ? '#ffffff' : color} style={focused ? { shadowColor: '#00eaff', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 8, elevation: 4 } : undefined} />
+            <HistoryIcon size={20} color={focused ? '#ffffff' : color} />
           ),
           drawerLabel: ({ focused, color }) => (
-            <Text style={{ fontFamily: 'Arimo-Bold', fontSize: 15, letterSpacing: 0.3, color: focused ? '#ffffff' : color, textShadowColor: focused ? '#00eaff' : 'transparent', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: focused ? 3 : 0 }}>
+            <Text style={{ fontFamily: 'Arimo-Bold', fontSize: 15, letterSpacing: 0.3, color: focused ? '#ffffff' : color }}>
               Historique
             </Text>
           ),
@@ -250,10 +246,10 @@ export default function DrawerLayout() {
         name="subscription"
         options={{
           drawerIcon: ({ color, focused }) => (
-            <Bell size={20} color={focused ? '#ffffff' : color} style={focused ? { shadowColor: '#00eaff', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 8, elevation: 4 } : undefined} />
+            <Bell size={20} color={focused ? '#ffffff' : color} />
           ),
           drawerLabel: ({ focused, color }) => (
-            <Text style={{ fontFamily: 'Arimo-Bold', fontSize: 15, letterSpacing: 0.3, color: focused ? '#ffffff' : color, textShadowColor: focused ? '#00eaff' : 'transparent', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: focused ? 3 : 0 }}>
+            <Text style={{ fontFamily: 'Arimo-Bold', fontSize: 15, letterSpacing: 0.3, color: focused ? '#ffffff' : color }}>
               Abonnement
             </Text>
           ),
@@ -263,10 +259,10 @@ export default function DrawerLayout() {
         name="referral"
         options={{
           drawerIcon: ({ color, focused }) => (
-            <Users size={20} color={focused ? '#ffffff' : color} style={focused ? { shadowColor: '#00eaff', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 8, elevation: 4 } : undefined} />
+            <Users size={20} color={focused ? '#ffffff' : color} />
           ),
           drawerLabel: ({ focused, color }) => (
-            <Text style={{ fontFamily: 'Arimo-Bold', fontSize: 15, letterSpacing: 0.3, color: focused ? '#ffffff' : color, textShadowColor: focused ? '#00eaff' : 'transparent', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: focused ? 3 : 0 }}>
+            <Text style={{ fontFamily: 'Arimo-Bold', fontSize: 15, letterSpacing: 0.3, color: focused ? '#ffffff' : color }}>
               Parrainage
             </Text>
           ),
@@ -282,10 +278,10 @@ export default function DrawerLayout() {
         name="impression-hd-history"
         options={{
           drawerIcon: ({ color, focused }) => (
-            <FileText size={20} color={focused ? '#ffffff' : color} style={focused ? { shadowColor: '#00eaff', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 8, elevation: 4 } : undefined} />
+            <FileText size={20} color={focused ? '#ffffff' : color} />
           ),
           drawerLabel: ({ focused, color }) => (
-            <Text style={{ fontFamily: 'Arimo-Bold', fontSize: 15, letterSpacing: 0.3, color: focused ? '#ffffff' : color, textShadowColor: focused ? '#00eaff' : 'transparent', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: focused ? 3 : 0 }}>
+            <Text style={{ fontFamily: 'Arimo-Bold', fontSize: 15, letterSpacing: 0.3, color: focused ? '#ffffff' : color }}>
               Impression HD
             </Text>
           ),

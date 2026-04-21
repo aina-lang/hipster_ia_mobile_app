@@ -24,7 +24,7 @@ import { fonts } from '../../theme/typography';
 import { GuidedScreenWrapper } from '../../components/layout/GuidedScreenWrapper';
 import { NeonActionButton } from '../../components/ui/NeonActionButton';
 import { NeonBorderInput } from '../../components/ui/NeonBorderInput';
-import { GenericModal, ModalType } from '../../components/ui/GenericModal';
+import { GenericModal, ModalType, ThemedNeonBorder } from '../../components/ui/GenericModal';
 import illus2 from '../../assets/Rouge_a_levre.jpeg';
 import illus3 from '../../assets/casquette.jpeg';
 import illus4 from '../../assets/TroisiemeCard.jpeg';
@@ -104,8 +104,6 @@ function NeonBorderToggle({
       )}
       {isSelected && (
         <>
-          <View style={[t.bloomMid, { shadowColor: NEON_BLUE }]} pointerEvents="none" />
-          <View style={[t.bloomFar, { shadowColor: NEON_BLUE }]} pointerEvents="none" />
         </>
       )}
       {children}
@@ -118,8 +116,6 @@ const t = StyleSheet.create({
   neonClip:    { position: 'absolute', top: -1, left: -1, right: -1, bottom: -1, borderRadius: 12, overflow: 'hidden', zIndex: 2 },
   neonTrack:   { position: 'absolute', top: 0, bottom: 0, left: 0 },
   neonMask:    { position: 'absolute', top: 1, left: 1, right: 1, bottom: 1, borderRadius: 11, zIndex: 1 },
-  bloomMid:    { position: 'absolute', top: -4, left: -4, right: -4, bottom: -4, borderRadius: 15, backgroundColor: 'transparent', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.4, shadowRadius: 12, elevation: 6 },
-  bloomFar:    { position: 'absolute', top: -8, left: -8, right: -8, bottom: -8, borderRadius: 19, backgroundColor: 'transparent', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.2, shadowRadius: 20, elevation: 3 },
 });
 
 function NeonInputField({
@@ -661,7 +657,8 @@ export default function Step3PersonalizeScreen() {
 
         <Modal visible={pickerVisible} animationType="fade" transparent>
           <View style={s.modalOverlay}>
-            <View style={s.pickerContainer}>
+            <ThemedNeonBorder color={colors.neon.primary} style={{ width: '100%' }}>
+              <View style={s.pickerContainer}>
               <View style={s.pickerHeader}>
                 <Text style={s.pickerTitle}>
                   Couleur {activeColorSide === 'left' ? 'principale' : 'secondaire'}
@@ -710,7 +707,8 @@ export default function Step3PersonalizeScreen() {
                   <Text style={s.confirmButtonText}>VALIDER</Text>
                 </LinearGradient>
               </TouchableOpacity>
-            </View>
+              </View>
+            </ThemedNeonBorder>
           </View>
         </Modal>
 
@@ -1046,8 +1044,7 @@ const s = StyleSheet.create({
     backgroundColor: '#0f172a',
     borderRadius: 24,
     padding: 24,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    zIndex: 3,
   },
   pickerHeader: {
     flexDirection: 'row',

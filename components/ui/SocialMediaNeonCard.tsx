@@ -128,10 +128,6 @@ export const SocialMediaNeonCard: React.FC<SocialMediaNeonCardProps> = ({
             <View style={[s.neonMask, { backgroundColor: cardBg }]} />
           </View>
 
-          {/* Multi-layer Bloom Glow */}
-          <View style={s.bloomFar} pointerEvents="none" />
-          <View style={s.bloomMid} pointerEvents="none" />
-          <View style={s.floorGlow} pointerEvents="none" />
         </>
       )}
 
@@ -175,51 +171,5 @@ const s = StyleSheet.create({
     borderRadius: 15,
     zIndex: 1,
     backgroundColor: '#030814',
-  },
-
-  // ═══════════════════════════════════════════════════
-  // BLOOM GLOW LAYERS (Multi-layer shadow effect)
-  // ═══════════════════════════════════════════════════
-  bloomMid: {
-    position: 'absolute',
-    top: -4,
-    left: -4,
-    right: -4,
-    bottom: -4,
-    borderRadius: 20,
-    backgroundColor: 'transparent',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.45,
-    shadowRadius: 12,
-    shadowColor: NEON_BLUE,
-    elevation: 6,
-  },
-  bloomFar: {
-    position: 'absolute',
-    top: -8,
-    left: -8,
-    right: -8,
-    bottom: -8,
-    borderRadius: 24,
-    backgroundColor: 'transparent',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.22,
-    shadowRadius: 24,
-    shadowColor: NEON_BLUE,
-    elevation: 4,
-  },
-  floorGlow: {
-    position: 'absolute',
-    bottom: -12,
-    left: -8,
-    right: -8,
-    height: 16,
-    borderRadius: 50,
-    backgroundColor: 'transparent',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    shadowColor: NEON_BLUE,
-    elevation: 3,
   },
 });

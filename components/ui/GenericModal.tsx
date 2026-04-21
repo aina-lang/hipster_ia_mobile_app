@@ -97,13 +97,14 @@ const LoadingSpinner = ({ color }: { color: string }) => {
 
 // ─── themed neon border — same mechanic as NeonBorderCard in PlanCard ─────────
 
-interface ThemedNeonBorderProps {
+export interface ThemedNeonBorderProps {
   children: React.ReactNode;
   color: string;
   cardBg?: string;
+  style?: any;
 }
 
-const ThemedNeonBorder = ({ children, color, cardBg = colors.midnightBlue }: ThemedNeonBorderProps) => {
+export const ThemedNeonBorder = ({ children, color, cardBg = colors.midnightBlue, style }: ThemedNeonBorderProps) => {
   const translateX = useRef(new RNAnimated.Value(0)).current;
   const loopRef    = useRef<RNAnimated.CompositeAnimation | null>(null);
 
@@ -124,7 +125,7 @@ const ThemedNeonBorder = ({ children, color, cardBg = colors.midnightBlue }: The
   }, [color]);
 
   return (
-    <View style={s.neonWrapper}>
+    <View style={[s.neonWrapper, style]}>
       {/* Animated border track */}
       <View style={s.neonClip} pointerEvents="none">
         <RNAnimated.View style={[s.neonTrack, { transform: [{ translateX }] }]}>
@@ -143,10 +144,6 @@ const ThemedNeonBorder = ({ children, color, cardBg = colors.midnightBlue }: The
         <View style={[s.neonMask, { backgroundColor: cardBg }]} />
       </View>
 
-      {/* Bloom glows */}
-      <View style={[s.bloomMid,  { shadowColor: color }]} pointerEvents="none" />
-      <View style={[s.bloomFar,  { shadowColor: color }]} pointerEvents="none" />
-      <View style={[s.floorGlow, { shadowColor: color }]} pointerEvents="none" />
 
       {children}
     </View>
@@ -284,39 +281,6 @@ const s = StyleSheet.create({
     top: 1, left: 1, right: 1, bottom: 0.5,
     borderRadius: 24,
     zIndex: 1,
-  },
-  bloomMid: {
-    position: 'absolute',
-    top: -4, left: -4, right: -4, bottom: -4,
-    borderRadius: 28,
-    backgroundColor: 'transparent',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.35,
-    shadowRadius: 18,
-    elevation: 8,
-  },
-  bloomFar: {
-    position: 'absolute',
-    top: -8, left: -8, right: -8, bottom: -8,
-    borderRadius: 32,
-    backgroundColor: 'transparent',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.2,
-    shadowRadius: 28,
-    elevation: 4,
-  },
-  floorGlow: {
-    position: 'absolute',
-    bottom: -16,
-    alignSelf: 'center',
-    width: '80%',
-    height: 24,
-    borderRadius: 50,
-    backgroundColor: 'transparent',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 16,
-    elevation: 12,
   },
 
   // ── Card ─────────────────────────────────────────────────────────────────

@@ -52,14 +52,6 @@ export const JobTypeCard: React.FC<JobTypeCardProps> = ({
             {/* ── Couches de glow EXTÉRIEURES — avant le container clippé ── */}
             {selected && (
                 <>
-                    {/* Glow lointain très diffus */}
-                    <View style={styles.bloomFar} pointerEvents="none" />
-                    {/* Glow moyen */}
-                    <View style={styles.bloomMid} pointerEvents="none" />
-                    {/* Halo serré sur la bordure */}
-                    <View style={styles.borderGlow} pointerEvents="none" />
-                    {/* Halo au sol */}
-                    <View style={styles.floorGlow} pointerEvents="none" />
                 </>
             )}
 
@@ -178,71 +170,5 @@ const styles = StyleSheet.create({
 
     labelSelected: {
         color: '#ffffff',
-    },
-
-    // ── Couches glow — positionnées par rapport au wrapper ──
-
-    // Halo serré exactement sur la bordure
-    borderGlow: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        borderRadius: 20,
-        backgroundColor: 'transparent',
-        shadowColor: '#1a8fff',
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 1,
-        shadowRadius: 28,
-        elevation: 14,
-    },
-
-    // Bloom moyen
-    bloomMid: {
-        position: 'absolute',
-        top: -4,
-        left: -4,
-        right: -4,
-        bottom: -4,
-        borderRadius: 24,
-        backgroundColor: 'transparent',
-        shadowColor: '#0f60e0',
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.5,
-        shadowRadius: 20,
-        elevation: 8,
-    },
-
-    // Bloom lointain très diffus
-    bloomFar: {
-        position: 'absolute',
-        top: -8,
-        left: -8,
-        right: -8,
-        bottom: -8,
-        borderRadius: 28,
-        backgroundColor: 'transparent',
-        shadowColor: '#0840bb',
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.3,
-        shadowRadius: 30,
-        elevation: 4,
-    },
-
-    // Halo elliptique au sol
-    floorGlow: {
-        position: 'absolute',
-        bottom: -30,
-        alignSelf: 'center',
-        width: 160,
-        height: 40,
-        borderRadius: 80,
-        backgroundColor: 'transparent',
-        shadowColor: '#1a6fff',
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.8,
-        shadowRadius: 25,
-        elevation: 20,
     },
 });

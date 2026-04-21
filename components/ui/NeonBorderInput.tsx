@@ -52,8 +52,6 @@ export function NeonBorderInput({ children, isActive }: NeonBorderInputProps) {
             </Animated.View>
             <View style={nb.mask} />
           </View>
-          <View style={nb.bloomMid} pointerEvents="none" />
-          <View style={nb.bloomFar} pointerEvents="none" />
         </>
       )}
       {children}
@@ -83,31 +81,5 @@ const nb = StyleSheet.create({
     borderRadius: 12, 
     zIndex: 1, 
     backgroundColor: 'transparent' 
-  },
-  bloomMid: { 
-    position: 'absolute', 
-    top: -4, 
-    left: -4, 
-    right: -4, 
-    bottom: -4, 
-    borderRadius: 15, 
-    backgroundColor: 'transparent', 
-    shadowOffset: { width: 0, height: 0 }, 
-    shadowOpacity: 0.45, 
-    shadowRadius: 12, 
-    elevation: 6
-  },
-  bloomFar: { 
-    position: 'absolute', 
-    top: -8, 
-    left: -8, 
-    right: -8, 
-    bottom: -8, 
-    borderRadius: 20, 
-    backgroundColor: 'transparent', 
-    shadowOffset: { width: 0, height: 0 }, 
-    shadowOpacity: 0.22, 
-    shadowRadius: 24, 
-    elevation: 4 
   },
 });

@@ -15,7 +15,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring, SlideInDown } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors } from '../../theme/colors';
 import { fonts } from '../../theme/typography';
@@ -30,7 +30,7 @@ import illus3 from '../../assets/illus3.jpeg';
 import illus4 from '../../assets/illus4.jpeg';
 import { FLYER_CATEGORIES as LOCAL_FLYER_CATEGORIES, getFlyerCategoryAssets, FlyerCategory } from '../../constants/flyerAssets';
 import { useRef, useState, useCallback, useEffect } from 'react';
-import { GenericModal, ModalType } from 'components/ui/GenericModal';
+import { GenericModal, ModalType, ThemedNeonBorder } from '../../components/ui/GenericModal';
 import { AiService } from '../../api/ai.service';
 
 const NEON_BLUE = colors.neonBlue;
@@ -40,20 +40,23 @@ const CARD_W_GRID = (SCREEN_WIDTH - 48 - 8) / 2;
 const STYLE_CARD_W = (SCREEN_WIDTH - 48 - 12) / 2;
 
 const VISUAL_STYLES = [
-  { label: 'Noir Dominance', description: 'Noir & blanc luxe', image: illus2 },
-  { label: 'Digital Drift', description: 'Impact fort', image: illus3 },
-  { label: 'Smoke', description: 'Épuré & moderne', image: illus4 },
+  { label: 'Noir Dominance', description: 'Noir & blanc luxe', image: illus2, color: '#ffffff' },
+  { label: 'Digital Drift', description: 'Impact fort', image: illus3, color: '#FF1744' },
+  { label: 'Smoke', description: 'Épuré & moderne', image: illus4, color: '#1A73E8' },
 ];
 
 function StyleNeonBorderCard({
   children,
   isSelected,
+  color,
 }: {
   children: React.ReactNode;
   isSelected: boolean;
+  color?: string;
 }) {
   const translateX = useRef(new RNAnimated.Value(0)).current;
   const loopRef = useRef<RNAnimated.CompositeAnimation | null>(null);
+  const safeColor = color || colors.neon.primary;
 
   useEffect(() => {
     loopRef.current?.stop();
@@ -73,7 +76,7 @@ function StyleNeonBorderCard({
       translateX.setValue(0);
     }
     return () => { loopRef.current?.stop(); };
-  }, [isSelected]);
+  }, [isSelected, safeColor]);
 
   return (
     <View style={neonStyles.wrapper}>
@@ -81,7 +84,7 @@ function StyleNeonBorderCard({
         <View style={neonStyles.clip} pointerEvents="none">
           <RNAnimated.View style={[neonStyles.track, { transform: [{ translateX }] }]}>
             <LinearGradient
-              colors={['transparent', NEON_BLUE, NEON_BLUE, 'transparent', 'transparent', NEON_BLUE, NEON_BLUE, 'transparent']}
+              colors={['transparent', safeColor, safeColor, 'transparent', 'transparent', safeColor, safeColor, 'transparent']}
               locations={[0.05, 0.2, 0.3, 0.45, 0.55, 0.7, 0.8, 0.95]}
               start={{ x: 0, y: 0.5 }}
               end={{ x: 1, y: 0.5 }}
@@ -90,13 +93,6 @@ function StyleNeonBorderCard({
           </RNAnimated.View>
           <View style={[neonStyles.mask, { backgroundColor: '#030814' }]} />
         </View>
-      )}
-      {isSelected && (
-        <>
-          <View style={neonStyles.bloomFar} pointerEvents="none" />
-          <View style={neonStyles.bloomMid} pointerEvents="none" />
-          <View style={neonStyles.floorGlow} pointerEvents="none" />
-        </>
       )}
       {children}
     </View>
@@ -107,23 +103,17 @@ function StyleCard({
   item,
   isSelected,
   onPress,
-  onNavigate,
 }: {
-  item: { label: string; description: string; image: any };
+  item: { label: string; description: string; image: any; color?: string };
   isSelected: boolean;
   onPress: () => void;
-  onNavigate?: () => void;
 }) {
   const scale = useSharedValue(1);
   const animatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+  const themeColor = item.color || colors.neon.primary;
 
   const handlePress = () => {
     onPress();
-    setTimeout(() => {
-      if (onNavigate) {
-        onNavigate();
-      }
-    }, 100);
   };
 
   return (
@@ -135,23 +125,29 @@ function StyleCard({
         activeOpacity={0.9}
         style={{ width: STYLE_CARD_W }}
       >
-        <StyleNeonBorderCard isSelected={isSelected}>
+        <StyleNeonBorderCard isSelected={isSelected} color={themeColor}>
           <View style={[styles.styleCard, isSelected && styles.styleCardSelected]}>
-            <View style={styles.styleCardImageContainer}>
+            <View style={styles.imageContainer}>
               <Image
                 source={typeof item.image === 'string' ? { uri: item.image } : item.image}
-                style={styles.styleCardImage}
+                style={styles.cardImage}
                 resizeMode="cover"
               />
               {isSelected && (
-                <View style={styles.styleCardCheckBadge}>
-                  <Check size={10} color="white" strokeWidth={3} />
+                <View style={[styles.selectedBadge, { backgroundColor: themeColor === '#ffffff' ? '#000000' : themeColor }]}>
+                  <View style={styles.selectedDot} />
                 </View>
               )}
             </View>
-            <View style={[styles.styleCardFooter, isSelected && styles.styleCardFooterSelected]}>
-              <Text style={[styles.styleCardLabel, isSelected && styles.styleCardLabelSelected]}>{item.label}</Text>
-              <Text style={styles.styleCardDesc}>{item.description}</Text>
+            <View style={[
+              styles.textZone,
+              isSelected && {
+                backgroundColor: `${themeColor}18`,
+                borderTopColor: `${themeColor}66`,
+              },
+            ]}>
+              <Text style={[styles.cardTitle, isSelected && styles.cardTitleSelected]} numberOfLines={1}>{item.label}</Text>
+              <Text style={styles.cardDescription} numberOfLines={2}>{item.description}</Text>
             </View>
           </View>
         </StyleNeonBorderCard>
@@ -165,9 +161,6 @@ const neonStyles = StyleSheet.create({
   clip: { position: 'absolute', top: -1, left: -1, right: -1, bottom: -0.5, borderRadius: 21, overflow: 'hidden', zIndex: 2 },
   track: { position: 'absolute', top: 0, bottom: 0, left: 0 },
   mask: { position: 'absolute', top: 1, left: 1, right: 1, bottom: 0.5, borderRadius: 20, zIndex: 1 },
-  bloomMid: { position: 'absolute', top: -4, left: -4, right: -4, bottom: -4, borderRadius: 24, backgroundColor: 'transparent', shadowColor: NEON_BLUE, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.45, shadowRadius: 18, elevation: 8 },
-  bloomFar: { position: 'absolute', top: -8, left: -8, right: -8, bottom: -8, borderRadius: 28, backgroundColor: 'transparent', shadowColor: NEON_BLUE, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.25, shadowRadius: 28, elevation: 4 },
-  floorGlow: { position: 'absolute', bottom: -16, alignSelf: 'center', width: '80%', height: 24, borderRadius: 50, backgroundColor: 'transparent', shadowColor: NEON_BLUE, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.6, shadowRadius: 16, elevation: 12 },
 });
 
 function CategoryTabs({
@@ -313,90 +306,92 @@ function AllModelsModal({
     <Modal visible={visible} animationType="slide" onRequestClose={handleClose}>
       <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.95)' }]}>
         <BlurView intensity={95} tint="dark" style={StyleSheet.absoluteFill}>
-          <View style={modalStyles.container}>
-            <View style={modalStyles.header}>
-              <View>
-                <Text style={modalStyles.title}>Tous les modèles</Text>
-                <Text style={modalStyles.subtitle}>
-                  {isSearching ? `${searchResults.length} résultat${searchResults.length !== 1 ? 's' : ''}` : activeCat?.label}
-                </Text>
-              </View>
-              <TouchableOpacity onPress={handleClose} style={modalStyles.closeBtn}>
-                <X size={24} color="white" />
-              </TouchableOpacity>
-            </View>
-
-            <View style={modalStyles.searchBar}>
-              <Search size={18} color="rgba(255,255,255,0.4)" />
-              <TextInput
-                style={modalStyles.searchInput}
-                placeholder="Rechercher un modèle..."
-                placeholderTextColor="rgba(255,255,255,0.3)"
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-                autoCorrect={false}
-              />
-              {searchQuery.length > 0 && (
-                <TouchableOpacity onPress={() => setSearchQuery('')}>
-                  <X size={16} color="rgba(255,255,255,0.4)" />
-                </TouchableOpacity>
-              )}
-            </View>
-
-            {!isSearching && (
-              <CategoryTabs categories={categories} selectedId={activeCategoryId} onSelect={onCategoryChange} />
-            )}
-
-            <ScrollView key={isSearching ? 'search' : activeCategoryId} contentContainerStyle={modalStyles.scrollContent} showsVerticalScrollIndicator={false}>
-              {isSearching ? (
-                searchResults.length === 0 ? (
-                  <View style={modalStyles.empty}>
-                    <Text style={modalStyles.emptyText}>Aucun modèle ne correspond</Text>
-                  </View>
-                ) : (
-                  categories.map((cat) => {
-                    const hits = searchResults.filter((r) => r.cat.id === cat.id);
-                    if (hits.length === 0) return null;
-                    return (
-                      <View key={cat.id} style={modalStyles.group}>
-                        <View style={modalStyles.groupHeader}>
-                          {cat.icon && typeof cat.icon !== 'string' ? (
-                            <cat.icon size={16} color={colors.primary.main} />
-                          ) : (
-                            <Moon size={16} color={colors.primary.main} />
-                          )}
-                          <Text style={modalStyles.groupLabel}>{cat.label}</Text>
-                        </View>
-                        <View style={styles.modelsGrid}>
-                          {hits.map(({ cat: c, model: m }) => (
-                            <ModelGridItem
-                              key={m.label}
-                              modelLabel={m.label}
-                              modelImage={m.image ?? c.image}
-                              isSelected={selectedStyle === m.label}
-                              onPress={() => { onSelect(c.id, m.label); handleClose(); }}
-                            />
-                          ))}
-                        </View>
-                      </View>
-                    );
-                  })
-                )
-              ) : (
-                <View style={styles.modelsGrid}>
-                  {activeCat?.models?.map((m) => (
-                    <ModelGridItem
-                      key={m.label}
-                      modelLabel={m.label}
-                      modelImage={m.image ?? activeCat?.image}
-                      isSelected={selectedStyle === m.label}
-                      onPress={() => { onSelect(activeCat?.id || '', m.label); handleClose(); }}
-                    />
-                  ))}
+          <ThemedNeonBorder color={colors.neon.primary} style={{ flex: 1, width: '100%' }}>
+            <View style={modalStyles.container}>
+              <View style={modalStyles.header}>
+                <View>
+                  <Text style={modalStyles.title}>Tous les modèles</Text>
+                  <Text style={modalStyles.subtitle}>
+                    {isSearching ? `${searchResults.length} résultat${searchResults.length !== 1 ? 's' : ''}` : activeCat?.label}
+                  </Text>
                 </View>
+                <TouchableOpacity onPress={handleClose} style={modalStyles.closeBtn}>
+                  <X size={24} color="white" />
+                </TouchableOpacity>
+              </View>
+
+              <View style={modalStyles.searchBar}>
+                <Search size={18} color="rgba(255,255,255,0.4)" />
+                <TextInput
+                  style={modalStyles.searchInput}
+                  placeholder="Rechercher un modèle..."
+                  placeholderTextColor="rgba(255,255,255,0.3)"
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  autoCorrect={false}
+                />
+                {searchQuery.length > 0 && (
+                  <TouchableOpacity onPress={() => setSearchQuery('')}>
+                    <X size={16} color="rgba(255,255,255,0.4)" />
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              {!isSearching && (
+                <CategoryTabs categories={categories} selectedId={activeCategoryId} onSelect={onCategoryChange} />
               )}
-            </ScrollView>
-          </View>
+
+              <ScrollView key={isSearching ? 'search' : activeCategoryId} contentContainerStyle={modalStyles.scrollContent} showsVerticalScrollIndicator={false}>
+                {isSearching ? (
+                  searchResults.length === 0 ? (
+                    <View style={modalStyles.empty}>
+                      <Text style={modalStyles.emptyText}>Aucun modèle ne correspond</Text>
+                    </View>
+                  ) : (
+                    categories.map((cat) => {
+                      const hits = searchResults.filter((r) => r.cat.id === cat.id);
+                      if (hits.length === 0) return null;
+                      return (
+                        <View key={cat.id} style={modalStyles.group}>
+                          <View style={modalStyles.groupHeader}>
+                            {cat.icon && typeof cat.icon !== 'string' ? (
+                              <cat.icon size={16} color={colors.primary.main} />
+                            ) : (
+                              <Moon size={16} color={colors.primary.main} />
+                            )}
+                            <Text style={modalStyles.groupLabel}>{cat.label}</Text>
+                          </View>
+                          <View style={styles.modelsGrid}>
+                            {hits.map(({ cat: c, model: m }) => (
+                              <ModelGridItem
+                                key={m.label}
+                                modelLabel={m.label}
+                                modelImage={m.image ?? c.image}
+                                isSelected={selectedStyle === m.label}
+                                onPress={() => { onSelect(c.id, m.label); handleClose(); }}
+                              />
+                            ))}
+                          </View>
+                        </View>
+                      );
+                    })
+                  )
+                ) : (
+                  <View style={styles.modelsGrid}>
+                    {activeCat?.models?.map((m) => (
+                      <ModelGridItem
+                        key={m.label}
+                        modelLabel={m.label}
+                        modelImage={m.image ?? activeCat?.image}
+                        isSelected={selectedStyle === m.label}
+                        onPress={() => { onSelect(activeCat?.id || '', m.label); handleClose(); }}
+                      />
+                    ))}
+                  </View>
+                )}
+              </ScrollView>
+            </View>
+          </ThemedNeonBorder>
         </BlurView>
       </View>
     </Modal>
@@ -404,7 +399,7 @@ function AllModelsModal({
 }
 
 const modalStyles = StyleSheet.create({
-  container: { flex: 1, paddingTop: Platform.OS === 'ios' ? 60 : 40, paddingHorizontal: 20 },
+  container: { flex: 1, paddingTop: Platform.OS === 'ios' ? 60 : 40, paddingHorizontal: 20, zIndex: 3 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 },
   title: { fontSize: 24, fontWeight: '800', color: 'white', letterSpacing: -0.5 },
   subtitle: { fontSize: 13, color: colors.primary.main, fontWeight: '600', marginTop: 2, textTransform: 'uppercase', letterSpacing: 0.4 },
@@ -517,6 +512,20 @@ export default function Step4PersonalizeScreen() {
       currentStep={1}
       totalSteps={selectedCategory === 'Social' ? 2 : 1}
       scrollViewRef={scrollRef}
+      footer={
+        selectedCategory === 'Social' && selectedStyle ? (
+          <Animated.View entering={SlideInDown.duration(300)} style={styles.footerButtonWrapper}>
+            <NeonActionButton
+              label="Continuer"
+              onPress={() => router.push({
+                pathname: '/(guided)/step4-content-customize',
+                params: { style: selectedStyle }
+              })}
+              disabled={!selectedStyle}
+            />
+          </Animated.View>
+        ) : null
+      }
     >
       <View style={styles.container}>
 
@@ -602,10 +611,6 @@ export default function Step4PersonalizeScreen() {
                         item={item}
                         isSelected={selectedStyle === item.label}
                         onPress={() => setStyle(item.label as any)}
-                        onNavigate={() => router.push({
-                          pathname: '/(guided)/step4-content-customize',
-                          params: { style: item.label }
-                        })}
                       />
                     ))}
                   </View>
@@ -741,15 +746,38 @@ const styles = StyleSheet.create({
     backgroundColor: '#030814',
     borderWidth: 0,
   },
-  styleCardImageContainer: {
-    height: 180,
+  imageContainer: {
+    height: 220,
     width: '100%',
     position: 'relative',
     overflow: 'hidden',
   },
-  styleCardImage: {
+  cardImage: {
     width: '100%',
     height: '100%',
+  },
+  selectedBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.4)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.5,
+    shadowRadius: 4,
+    elevation: 6,
+  },
+  selectedDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
+    backgroundColor: '#fff',
   },
   styleCardCheckBadge: {
     position: 'absolute',
@@ -771,18 +799,15 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
   },
-  styleCardFooter: {
+  textZone: {
     paddingHorizontal: 12,
     paddingVertical: 10,
     backgroundColor: 'rgba(10,12,18,0.85)',
     borderTopWidth: 1,
     borderTopColor: 'rgba(255,255,255,0.08)',
+    height: 70,
   },
-  styleCardFooterSelected: {
-    backgroundColor: colors.darkSlateBlue,
-    borderTopColor: colors.darkSlateBlue,
-  },
-  styleCardLabel: {
+  cardTitle: {
     fontFamily: fonts.arimo.bold,
     fontSize: 12,
     fontWeight: '700',
@@ -790,10 +815,10 @@ const styles = StyleSheet.create({
     marginBottom: 3,
     letterSpacing: 0.3,
   },
-  styleCardLabelSelected: {
+  cardTitleSelected: {
     color: '#ffffff',
   },
-  styleCardDesc: {
+  cardDescription: {
     fontFamily: fonts.arimo.regular,
     fontSize: 10,
     color: 'rgba(255,255,255,0.45)',
@@ -914,5 +939,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(255,255,255,0.05)',
+  },
+  footerButtonWrapper: {
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    paddingBottom: 32,
+    backgroundColor: 'transparent',
   },
 });

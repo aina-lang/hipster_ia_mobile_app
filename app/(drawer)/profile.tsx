@@ -17,7 +17,7 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 
 import { BackgroundGradientOnboarding } from '../../components/ui/BackgroundGradientOnboarding';
-import { GenericModal, ModalType } from '../../components/ui/GenericModal';
+import { GenericModal, ModalType, ThemedNeonBorder } from '../../components/ui/GenericModal';
 import { CountryPicker } from '../../components/ui/CountryPicker';
 import { colors } from '../../theme/colors';
 import { useAuthStore } from '../../store/authStore';
@@ -70,7 +70,6 @@ function AvatarNeonBorder({ children, size }: { children: React.ReactNode; size:
         </RNAnimated.View>
         <View style={{ position: 'absolute', top: BORDER, left: BORDER, right: BORDER, bottom: BORDER, borderRadius: (outer - BORDER * 2) / 2, backgroundColor: colors.background.tertiary }} />
       </View>
-      <View style={{ position: 'absolute', top: -6, left: -6, right: -6, bottom: -6, borderRadius: (outer + 12) / 2, backgroundColor: 'transparent', shadowColor: colors.neon.primary, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.5, shadowRadius: 16, elevation: 10 }} pointerEvents="none" />
       {children}
     </View>
   );
@@ -242,10 +241,17 @@ export default function ProfileScreen() {
   const [oldPassword, setOldPassword]                 = useState('');
   const [newPassword, setNewPassword]                 = useState('');
   const [confirmPassword, setConfirmPassword]         = useState('');
-  const [modal, setModal] = useState({ visible: false, type: 'info' as ModalType, title: '', message: '' });
+  const [modal, setModal] = useState<{
+    visible: boolean;
+    type: ModalType;
+    title: string;
+    message: string;
+    onConfirm?: () => void;
+    confirmText?: string;
+  }>({ visible: false, type: 'info', title: '', message: '' });
 
   const showModal = (type: ModalType, title: string, message = '') =>
-    setModal({ visible: true, type, title, message });
+    setModal({ visible: true, type, title, message, onConfirm: undefined, confirmText: undefined });
 
   const getLocalNumber = (phone: string, phoneCode?: string) => {
     if (!phone) return '';
@@ -523,7 +529,17 @@ export default function ProfileScreen() {
               </TouchableOpacity>
               <TouchableOpacity 
                 style={[s.logoutBtn, isLoggingOut && { opacity: 0.7 }]} 
-                onPress={handleLogout}
+                onPress={() => setModal({
+                  visible: true,
+                  type: 'confirmation',
+                  title: 'Déconnexion',
+                  message: 'Êtes-vous sûr de vouloir vous déconnecter de votre compte ?',
+                  onConfirm: () => {
+                    setModal(m => ({ ...m, visible: false }));
+                    handleLogout();
+                  },
+                  confirmText: 'Me déconnecter'
+                })}
                 disabled={isLoggingOut}
               >
                 {isLoggingOut ? (
@@ -542,7 +558,8 @@ export default function ProfileScreen() {
 
       <Modal visible={showJobPicker} transparent animationType="slide">
         <View style={[s.modalOverlay, { backgroundColor: 'rgba(0,0,0,0.7)' }]}> 
-          <View style={[s.modalContent, { maxHeight: '70%' }]}> 
+          <ThemedNeonBorder color={colors.neon.primary} style={{ width: '100%', maxHeight: '70%' }}>
+            <View style={s.modalContent}> 
             <View style={s.modalHeader}>
               <Text style={s.modalTitle}>Choisir un métier</Text>
               <TouchableOpacity onPress={() => setShowJobPicker(false)}>
@@ -565,12 +582,14 @@ export default function ProfileScreen() {
               ))}
             </ScrollView>
           </View>
+          </ThemedNeonBorder>
         </View>
       </Modal>
 
       <Modal visible={showPasswordModal} transparent animationType="fade">
         <View style={s.modalOverlay}>
-          <View style={s.modalContent}>
+          <ThemedNeonBorder color={colors.neon.primary} style={{ width: '100%' }}>
+            <View style={s.modalContent}>
             <View style={s.modalHeader}>
               <Text style={s.modalTitle}>Sécurité</Text>
               <TouchableOpacity onPress={() => setShowPasswordModal(false)}>
@@ -591,6 +610,7 @@ export default function ProfileScreen() {
               </View>
             </View>
           </View>
+          </ThemedNeonBorder>
         </View>
       </Modal>
 
@@ -607,6 +627,8 @@ export default function ProfileScreen() {
         title={modal.title}
         message={modal.message}
         onClose={() => setModal(m => ({ ...m, visible: false }))}
+        onConfirm={modal.onConfirm}
+        confirmText={modal.confirmText}
       />
     </BackgroundGradientOnboarding>
   );
@@ -625,7 +647,7 @@ const s = StyleSheet.create({
   headerCenter:    { flex: 1, alignItems: 'center', marginRight: 58 },
   titleSub:        { fontFamily: 'Arimo-Bold', fontSize: 16,  textTransform: 'uppercase', color: '#ffffff' },
 
-  heroCard:          { borderRadius: 24, borderWidth: 1, borderColor: colors.primary.main + '1f', alignItems: 'center', paddingVertical: 32, paddingHorizontal: 24, overflow: 'hidden', backgroundColor: colors.background.secondary + '99' },
+  heroCard:          { borderRadius: 24, borderWidth: 1, borderColor: colors.primary.main + '1f', alignItems: 'center', paddingVertical: 32, paddingHorizontal: 24, overflow: 'hidden', backgroundColor: colors.background.secondary + '99', marginBottom: 20 },
   heroAvatarWrapper: { position: 'relative', marginBottom: 16 },
   heroAvatar:        { width: AVATAR_SIZE, height: AVATAR_SIZE, borderRadius: AVATAR_SIZE / 2, backgroundColor: colors.background.tertiary },
   heroCameraBtn:     { position: 'absolute', bottom: 0, right: 0, width: 32, height: 32, borderRadius: 16, backgroundColor: colors.neon.primary, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: colors.background.primary },
@@ -677,7 +699,7 @@ const s = StyleSheet.create({
   logoutText:   { fontFamily: 'Arimo-Bold', color: colors.status.error, fontSize: 15 },
 
   modalOverlay:  { flex: 1, backgroundColor: 'rgba(0,0,0,0.92)', justifyContent: 'center', alignItems: 'center', padding: 24 },
-  modalContent:  { width: '100%', backgroundColor: '#0d0d0d', borderRadius: 20, padding: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', gap: 20 },
+  modalContent:  { width: '100%', backgroundColor: 'transparent', borderRadius: 20, padding: 24, gap: 20, zIndex: 3 },
   modalHeader:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   modalTitle:    { fontFamily: 'Arimo-Bold', fontSize: 18, color: '#fff' },
   modalBody:     { gap: 14 },

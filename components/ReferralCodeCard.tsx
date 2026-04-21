@@ -51,9 +51,7 @@ export const ReferralCodeCard: React.FC<ReferralCodeCardProps> = ({ code }) => {
   return (
     <>
       <View style={s.outerWrapper}>
-        <View style={s.bloomFar}  pointerEvents="none" />
-        <View style={s.bloomMid}  pointerEvents="none" />
-        <View style={s.floorGlow} pointerEvents="none" />
+
 
         <View style={s.neonClip} pointerEvents="none">
           <RNAnimated.View style={[s.neonTrack, { transform: [{ translateX }] }]}>
@@ -100,9 +98,6 @@ const s = StyleSheet.create({
   neonClip:     { position: 'absolute', top: -1, left: -1, right: -1, bottom: -0.5, borderRadius: 21, overflow: 'hidden', zIndex: 2, pointerEvents: 'none' },
   neonTrack:    { position: 'absolute', top: 0, bottom: 0, left: 0 },
   neonMask:     { position: 'absolute', top: 1, left: 1, right: 1, bottom: 0.5, borderRadius: 20, backgroundColor: colors.background.dark, zIndex: 1 },
-  bloomMid:     { position: 'absolute', top: -4, left: -4, right: -4, bottom: -4, borderRadius: 24, backgroundColor: 'transparent', shadowColor: colors.neon.primary, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.45, shadowRadius: 18, elevation: 8 },
-  bloomFar:     { position: 'absolute', top: -8, left: -8, right: -8, bottom: -8, borderRadius: 28, backgroundColor: 'transparent', shadowColor: colors.primary.light, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.25, shadowRadius: 28, elevation: 4 },
-  floorGlow:    { position: 'absolute', bottom: -16, alignSelf: 'center', width: '80%', height: 24, borderRadius: 50, backgroundColor: 'transparent', shadowColor: colors.neon.primary, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.5, shadowRadius: 16, elevation: 12 },
   card:         { backgroundColor: colors.background.dark, borderRadius: 20, padding: 20, alignItems: 'center', overflow: 'hidden', zIndex: 3 },
   label:        { fontFamily: 'Arimo-Bold', fontSize: 11, color: 'rgba(255,255,255,0.28)', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 18 },
   codeContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 14, paddingLeft: 20, paddingRight: 8, paddingVertical: 8, borderWidth: 1, borderColor: colors.primary.main + '26', width: '100%', justifyContent: 'space-between' },

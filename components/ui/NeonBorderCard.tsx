@@ -58,9 +58,6 @@ export function NeonBorderCard({ children, isSelected, cardBg = '#030814' }: Neo
       )}
       {isSelected && (
         <>
-          <View style={s.bloomFar} pointerEvents="none" />
-          <View style={s.bloomMid} pointerEvents="none" />
-          <View style={s.floorGlow} pointerEvents="none" />
         </>
       )}
       {children}
@@ -89,47 +86,5 @@ const s = StyleSheet.create({
     bottom: 0.5,
     borderRadius: 20,
     zIndex: 1,
-  },
-  bloomMid: {
-    position: 'absolute',
-    top: -4,
-    left: -4,
-    right: -4,
-    bottom: -4,
-    borderRadius: 24,
-    backgroundColor: 'transparent',
-    shadowColor: NEON_BLUE,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.45,
-    shadowRadius: 18,
-    elevation: 8,
-  },
-  bloomFar: {
-    position: 'absolute',
-    top: -8,
-    left: -8,
-    right: -8,
-    bottom: -8,
-    borderRadius: 28,
-    backgroundColor: 'transparent',
-    shadowColor: NEON_LIGHT,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.25,
-    shadowRadius: 28,
-    elevation: 4,
-  },
-  floorGlow: {
-    position: 'absolute',
-    bottom: -16,
-    alignSelf: 'center',
-    width: '80%',
-    height: 24,
-    borderRadius: 50,
-    backgroundColor: 'transparent',
-    shadowColor: NEON_BLUE,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.6,
-    shadowRadius: 16,
-    elevation: 12,
   },
 });

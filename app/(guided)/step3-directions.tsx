@@ -145,10 +145,6 @@ export default function Step3DirectionsScreen() {
 
   const handleArchitectureSelect = (architectureId: string) => {
     setArchitecture(architectureId);
-    // Navigate automatically after selection
-    setTimeout(() => {
-      router.push('/(guided)/step3-personalize');
-    }, 300);
   };
 
   const handleContinue = () => {

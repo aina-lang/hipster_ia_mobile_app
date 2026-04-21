@@ -23,7 +23,7 @@ export default function PrivacyPolicyScreen() {
       />
 
       <Animated.ScrollView 
-        contentContainerStyle={[s.scrollContent, { paddingTop: 140 }]} 
+        contentContainerStyle={[s.scrollContent, { paddingTop: 180 }]} 
         showsVerticalScrollIndicator={false}
         onScroll={(e) => {
           scrollY.value = e.nativeEvent.contentOffset.y;
