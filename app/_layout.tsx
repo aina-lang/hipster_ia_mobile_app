@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Stack, useRouter, useSegments, usePathname } from 'expo-router';
+import { Stack, useRouter, useSegments, usePathname, SplashScreen } from 'expo-router';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
@@ -11,7 +11,6 @@ import WelcomeScreen from './welcome';
 import { StyledStatusBar } from '../components/ui/StyledStatusBar';
 import { TimeDynamicMessageModal } from '../components/TimeDynamicMessageModal';
 import * as Notifications from 'expo-notifications';
-import * as SplashScreen from 'expo-splash-screen';
 import { View, Platform, StyleSheet } from 'react-native';
 import * as Sharing from 'expo-sharing';
 import { useAppInitialization } from '../hooks/useAppInitialization';
@@ -198,6 +197,10 @@ export default function RootLayout() {
     setVideoCompleted(true);
   }, [setVideoCompleted]);
 
+  if (!isReady) {
+    return null;
+  }
+
   return (
     <SafeAreaProvider>
       <GestureHandlerRootView style={{ flex: 1 }}>
@@ -205,33 +208,33 @@ export default function RootLayout() {
           <StripeProvider
             publishableKey="pk_test_51R15MnK5fB5lGbp8C5QAYcALGWTBBmTmYxsnMnigeUNUg2DvsR9u4xbsF1GNzDIqiQxFqz9Dg10kEttfcpbr5DVX00yGKXocyS"
             merchantIdentifier="merchant.com.hipster">
-          {isInitialized && (isAuthenticated || inUnauthPublicFlow) ? (
-            <Stack
-              screenOptions={{
-                headerShown: false,
-                contentStyle: { backgroundColor: '#11111a' },
-              }}>
-              <Stack.Screen name="welcome" />
-              <Stack.Screen name="(auth)" />
-              <Stack.Screen name="(onboarding)" />
-              <Stack.Screen name="(drawer)" />
-              <Stack.Screen name="(guided)" />
-            </Stack>
-          ) : <View style={{ flex: 1, backgroundColor: '#000000' }} />}
+            <>
+              {(isAuthenticated || inUnauthPublicFlow) ? (
+                <Stack
+                  screenOptions={{
+                    headerShown: false,
+                    contentStyle: { backgroundColor: '#11111a' },
+                  }}>
+                  <Stack.Screen name="welcome" />
+                  <Stack.Screen name="(auth)" />
+                  <Stack.Screen name="(onboarding)" />
+                  <Stack.Screen name="(drawer)" />
+                  <Stack.Screen name="(guided)" />
+                </Stack>
+              ) : <View style={{ flex: 1, backgroundColor: '#000000' }} />}
 
-          <StyledStatusBar theme="dark" translucent={true} />
+              <StyledStatusBar theme="dark" translucent={true} />
 
-          {/* 🎯 Time-based dynamic pop-up messages */}
-          <TimeDynamicMessageModal />
+              {/* 🎯 Time-based dynamic pop-up messages */}
+              <TimeDynamicMessageModal />
 
-          <>
-            {!isAuthenticated &&
-              !inUnauthPublicFlow &&
-              (!isReady || !videoCompleted) && (
-                <WelcomeScreen onVideoFinish={handleVideoFinish} />
-              )}
-          </>
-        </StripeProvider>
+              {!isAuthenticated &&
+                !inUnauthPublicFlow &&
+                !videoCompleted && (
+                  <WelcomeScreen onVideoFinish={handleVideoFinish} />
+                )}
+            </>
+          </StripeProvider>
         </KeyboardProvider>
       </GestureHandlerRootView>
     </SafeAreaProvider>
