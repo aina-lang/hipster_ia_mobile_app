@@ -10,10 +10,13 @@ import { StripeProvider } from '@stripe/stripe-react-native';
 import WelcomeScreen from './welcome';
 import { StyledStatusBar } from '../components/ui/StyledStatusBar';
 import { TimeDynamicMessageModal } from '../components/TimeDynamicMessageModal';
+import { GenericModal } from '../components/ui/GenericModal';
 import * as Notifications from 'expo-notifications';
+import * as Network from 'expo-network';
 import { View, Platform, StyleSheet } from 'react-native';
 import * as Sharing from 'expo-sharing';
 import { useAppInitialization } from '../hooks/useAppInitialization';
+import { useNetworkStore } from '../store/networkStore';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -52,7 +55,9 @@ export default function RootLayout() {
   const pathname = usePathname();
   const router = useRouter();
   const { videoCompleted, setVideoCompleted } = useWelcomeVideoStore();
-  
+  const { isConnected, setConnected } = useNetworkStore();
+  const [showOfflineModal, setShowOfflineModal] = React.useState(false);
+
   const { isReady, isInitialized, fontsLoaded } = useAppInitialization();
 
   useEffect(() => {
@@ -61,7 +66,26 @@ export default function RootLayout() {
     }
   }, [isReady]);
 
-
+  // Poll network connectivity every 5 seconds
+  useEffect(() => {
+    const checkAndUpdate = async () => {
+      const state = await Network.getNetworkStateAsync();
+      const connected = !!(state.isConnected && state.isInternetReachable);
+      const wasConnected = useNetworkStore.getState().isConnected;
+      setConnected(connected);
+      // Show modal when connection is lost
+      if (!connected && wasConnected) {
+        setShowOfflineModal(true);
+      }
+      // Auto-dismiss when connection is restored
+      if (connected && !wasConnected) {
+        setShowOfflineModal(false);
+      }
+    };
+    checkAndUpdate();
+    const interval = setInterval(checkAndUpdate, 5000);
+    return () => clearInterval(interval);
+  }, [setConnected]);
 
   // On app startup, auth logic and permissions are now handled inside useAppInitialization.
 
@@ -233,6 +257,20 @@ export default function RootLayout() {
                 !videoCompleted && (
                   <WelcomeScreen onVideoFinish={handleVideoFinish} />
                 )}
+
+              {/* 🌐 Global no-connection modal */}
+              <GenericModal
+                visible={showOfflineModal}
+                type="warning"
+                title="Pas de connexion"
+                message="Vérifiez votre connexion internet et réessayez."
+                confirmText="Réessayer"
+                onConfirm={async () => {
+                  const connected = await useNetworkStore.getState().checkConnectivity();
+                  if (connected) setShowOfflineModal(false);
+                }}
+                onClose={() => setShowOfflineModal(false)}
+              />
             </>
           </StripeProvider>
         </KeyboardProvider>

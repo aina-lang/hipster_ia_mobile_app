@@ -7,6 +7,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { Audio } from 'expo-av';
 import * as SystemUI from 'expo-system-ui';
 import { useAuthStore } from '../store/authStore';
+import { useNetworkStore } from '../store/networkStore';
 
 const AUTH_INIT_TIMEOUT_MS = 5_000;
 
@@ -60,16 +61,23 @@ export function useAppInitialization() {
         // Run permission requests without blocking auth init
         requestPermissions();
 
-        // 2. Initialize and verify authentication
-        await Promise.race([
-          initializeAuth(),
-          new Promise<void>((_, reject) =>
-            setTimeout(
-              () => reject(new Error('[useAppInitialization] initializeAuth timed out')),
-              AUTH_INIT_TIMEOUT_MS
-            )
-          ),
-        ]);
+        // 2. Check internet connectivity first
+        const isConnected = await useNetworkStore.getState().checkConnectivity();
+
+        // 3. Only try to verify session if we actually have internet
+        if (isConnected) {
+          await Promise.race([
+            initializeAuth(),
+            new Promise<void>((_, reject) =>
+              setTimeout(
+                () => reject(new Error('[useAppInitialization] initializeAuth timed out')),
+                AUTH_INIT_TIMEOUT_MS
+              )
+            ),
+          ]);
+        } else {
+          console.warn('[useAppInitialization] No internet connection — skipping auth init.');
+        }
 
       } catch (error: any) {
         if (error?.message?.includes('timed out')) {

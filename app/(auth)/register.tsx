@@ -19,6 +19,7 @@ import { fonts } from '../../theme/typography';
 import { useAuthStore } from '../../store/authStore';
 import { useOnboardingStore } from '../../store/onboardingStore';
 import { useWelcomeVideoStore } from '../../store/welcomeVideoStore';
+import { useNetworkStore } from '../../store/networkStore';
 
 export default function RegisterScreen() {
   const { selectedPlan } = useOnboardingStore();
@@ -62,6 +63,12 @@ export default function RegisterScreen() {
     }
     if (password !== confirmPassword) {
       showModal('error', 'Erreur de mot de passe', 'Les mots de passe ne correspondent pas.');
+      return;
+    }
+    // Check connectivity before attempting registration
+    const isConnected = await useNetworkStore.getState().checkConnectivity();
+    if (!isConnected) {
+      showModal('warning', 'Pas de connexion', 'Vérifiez votre connexion internet et réessayez.');
       return;
     }
     setLoading(true);

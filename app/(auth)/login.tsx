@@ -17,6 +17,7 @@ import { colors } from '../../theme/colors';
 import { fonts } from '../../theme/typography';
 import { useAuthStore } from '../../store/authStore';
 import { useWelcomeVideoStore } from '../../store/welcomeVideoStore';
+import { useNetworkStore } from '../../store/networkStore';
 import { neonTextGlow } from '../../theme/commonStyles';
 import { loginSchema } from '../../validation/authSchemas';
 
@@ -40,6 +41,12 @@ export default function LoginScreen() {
     if (!result.success) {
       const first = result.error.issues[0];
       showModal('warning', 'Champs invalides', first.message);
+      return;
+    }
+    // Check connectivity before attempting login
+    const isConnected = await useNetworkStore.getState().checkConnectivity();
+    if (!isConnected) {
+      showModal('warning', 'Pas de connexion', 'Vérifiez votre connexion internet et réessayez.');
       return;
     }
     showModal('loading', 'Connexion en cours...', 'Veuillez patienter');
