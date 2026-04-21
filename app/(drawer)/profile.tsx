@@ -214,33 +214,34 @@ export default function ProfileScreen() {
   const router = useRouter();
   const navigation = useNavigation();
   const { user, updateAiProfile, changePassword, logout, isLoading } = useAuthStore();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  // Protect against null user during logout
-  if (!user) {
+  // Protect against null user (except during logout)
+  if (!user && !isLoggingOut) {
     return null;
   }
 
-  const [isEditing, setIsEditing]                     = useState(false);
-  const [name, setName]                               = useState(user?.name || '');
-  const [professionalEmail, setProfessionalEmail]     = useState(user?.professionalEmail || '');
+  const [isEditing, setIsEditing] = useState(false);
+  const [name, setName] = useState(user?.name || '');
+  const [professionalEmail, setProfessionalEmail] = useState(user?.professionalEmail || '');
   const [professionalAddress, setProfessionalAddress] = useState(user?.professionalAddress || '');
-  const [city, setCity]                               = useState(user?.city || '');
-  const [postalCode, setPostalCode]                   = useState(user?.postalCode || '');
-  const [country, setCountry]                         = useState(user?.country || 'France');
-  const [professionalPhone, setProfessionalPhone]     = useState('');
-  const [professionalPhone2, setProfessionalPhone2]   = useState('');
-  const [siret, setSiret]                             = useState(user?.siret || '');
-  const [vatNumber, setVatNumber]                     = useState(user?.vatNumber || '');
-  const [websiteUrl, setWebsiteUrl]                   = useState(user?.websiteUrl || '');
-  const [job, setJob]                                 = useState(user?.job || '');
-  const [customJob, setCustomJob]                     = useState('');
-  const [showJobPicker, setShowJobPicker]             = useState(false);
-  const [selectedCountry, setSelectedCountry]         = useState<any>(null);
-  const [showCountryPicker, setShowCountryPicker]     = useState(false);
-  const [showPasswordModal, setShowPasswordModal]     = useState(false);
-  const [oldPassword, setOldPassword]                 = useState('');
-  const [newPassword, setNewPassword]                 = useState('');
-  const [confirmPassword, setConfirmPassword]         = useState('');
+  const [city, setCity] = useState(user?.city || '');
+  const [postalCode, setPostalCode] = useState(user?.postalCode || '');
+  const [country, setCountry] = useState(user?.country || 'France');
+  const [professionalPhone, setProfessionalPhone] = useState('');
+  const [professionalPhone2, setProfessionalPhone2] = useState('');
+  const [siret, setSiret] = useState(user?.siret || '');
+  const [vatNumber, setVatNumber] = useState(user?.vatNumber || '');
+  const [websiteUrl, setWebsiteUrl] = useState(user?.websiteUrl || '');
+  const [job, setJob] = useState(user?.job || '');
+  const [customJob, setCustomJob] = useState('');
+  const [showJobPicker, setShowJobPicker] = useState(false);
+  const [selectedCountry, setSelectedCountry] = useState<any>(null);
+  const [showCountryPicker, setShowCountryPicker] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [oldPassword, setOldPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [modal, setModal] = useState<{
     visible: boolean;
     type: ModalType;
@@ -360,13 +361,12 @@ export default function ProfileScreen() {
     ? `https://hipster-api.fr${user?.avatarUrl || user?.logoUrl}`
     : `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'U')}&background=random`;
 
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleLogout = async () => {
     try {
       setIsLoggingOut(true);
       useWelcomeVideoStore.getState().setIsReturningFromBack(true);
-      await logout(); 
+      await logout();
       router.replace('/welcome');
     } catch {
       setIsLoggingOut(false);
@@ -380,16 +380,16 @@ export default function ProfileScreen() {
     <BackgroundGradientOnboarding darkOverlay>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <ScreenHeader
-          titleSub="Mon" 
-          titleScript="Profil" 
-          onBack={() => navigation.dispatch(DrawerActions.openDrawer())} 
+          titleSub="Mon"
+          titleScript="Profil"
+          onBack={() => navigation.dispatch(DrawerActions.openDrawer())}
           scrollY={scrollY}
         />
 
-        <Animated.ScrollView 
-          contentContainerStyle={[s.scrollContent, { paddingTop: 200 }]} 
-          showsVerticalScrollIndicator={false} 
-          bounces={false} 
+        <Animated.ScrollView
+          contentContainerStyle={[s.scrollContent, { paddingTop: 200 }]}
+          showsVerticalScrollIndicator={false}
+          bounces={false}
           keyboardShouldPersistTaps="handled"
           onScroll={(e) => {
             scrollY.value = e.nativeEvent.contentOffset.y;
@@ -397,25 +397,25 @@ export default function ProfileScreen() {
           scrollEventThrottle={16}
         >
 
-            <View style={s.heroCard}>
-              <LinearGradient colors={['rgba(0,212,255,0.06)', 'transparent']} style={StyleSheet.absoluteFill} />
-              <View style={s.heroAvatarWrapper}>
-                <AvatarNeonBorder size={AVATAR_SIZE}>
-                  <Image source={{ uri: userAvatar }} style={s.heroAvatar} />
-                </AvatarNeonBorder>
-                {isEditing && (
-                  <TouchableOpacity style={s.heroCameraBtn} onPress={pickImage}>
-                    <Camera size={14} color="#000" />
-                  </TouchableOpacity>
-                )}
-              </View>
-              <Text style={s.heroName}>{user?.name || 'Utilisateur'}</Text>
-              <Text style={s.heroEmail}>{user?.email}</Text>
-              <View style={s.heroBadge}>
-                <Text style={s.heroBadgeStar}>★</Text>
-                <Text style={s.heroBadgeText}>{isPremium ? 'Hipster•IA Premium' : 'Hipster Gratuit'}</Text>
-              </View>
-              {/* 
+          <View style={s.heroCard}>
+            <LinearGradient colors={['rgba(0,212,255,0.06)', 'transparent']} style={StyleSheet.absoluteFill} />
+            <View style={s.heroAvatarWrapper}>
+              <AvatarNeonBorder size={AVATAR_SIZE}>
+                <Image source={{ uri: userAvatar }} style={s.heroAvatar} />
+              </AvatarNeonBorder>
+              {isEditing && (
+                <TouchableOpacity style={s.heroCameraBtn} onPress={pickImage}>
+                  <Camera size={14} color="#000" />
+                </TouchableOpacity>
+              )}
+            </View>
+            <Text style={s.heroName}>{user?.name || 'Utilisateur'}</Text>
+            <Text style={s.heroEmail}>{user?.email}</Text>
+            <View style={s.heroBadge}>
+              <Text style={s.heroBadgeStar}>★</Text>
+              <Text style={s.heroBadgeText}>{isPremium ? 'Hipster•IA Premium' : 'Hipster Gratuit'}</Text>
+            </View>
+            {/* 
               <View style={s.progressSection}>
                 <Text style={s.progressLabel}>Profil complété à {completion}%</Text>
                 <View style={s.progressBar}>
@@ -423,25 +423,25 @@ export default function ProfileScreen() {
                 </View>
               </View>
               */}
-            </View>
+          </View>
 
 
 
-            <View style={s.card}>
-              <SectionTitle title="Informations générales" />
-              <InputField label="Nom / Nom d'entreprise" icon={<Briefcase size={16} color={colors.text.muted} />} value={name} onChangeText={setName} placeholder="Jean Dupont ou Ma Société" editable={isEditing} />
-              <JobSelector
-                job={job}
-                customJob={customJob}
-                onJobChange={setJob}
-                onCustomJobChange={setCustomJob}
-                isEditing={isEditing}
-                onShowPicker={() => setShowJobPicker(true)}
-              />
-              <InputField label="Email de connexion" icon={<Lock size={16} color={colors.text.muted} />} value={user?.email || ''} editable={false} dimmed />
-              <InputField label="Email professionnel" icon={<Mail size={16} color={colors.text.muted} />} value={professionalEmail} onChangeText={setProfessionalEmail} placeholder="email@contact.com" editable={isEditing} keyboardType="email-address" />
+          <View style={s.card}>
+            <SectionTitle title="Informations générales" />
+            <InputField label="Nom / Nom d'entreprise" icon={<Briefcase size={16} color={colors.text.muted} />} value={name} onChangeText={setName} placeholder="Jean Dupont ou Ma Société" editable={isEditing} />
+            <JobSelector
+              job={job}
+              customJob={customJob}
+              onJobChange={setJob}
+              onCustomJobChange={setCustomJob}
+              isEditing={isEditing}
+              onShowPicker={() => setShowJobPicker(true)}
+            />
+            <InputField label="Email de connexion" icon={<Lock size={16} color={colors.text.muted} />} value={user?.email || ''} editable={false} dimmed />
+            <InputField label="Email professionnel" icon={<Mail size={16} color={colors.text.muted} />} value={professionalEmail} onChangeText={setProfessionalEmail} placeholder="email@contact.com" editable={isEditing} keyboardType="email-address" />
 
-{/* 
+            {/* 
               <SectionTitle title="Adresse" />
               <InputField label="Adresse" icon={<MapPin size={16} color={colors.text.muted} />} value={professionalAddress} onChangeText={setProfessionalAddress} placeholder="Votre adresse" editable={isEditing} multiline />
               <View style={s.inputRow}>
@@ -478,110 +478,110 @@ export default function ProfileScreen() {
               */}
 
 
-              <View style={{ marginTop: 20 }}>
-                {isEditing ? (
-                  <View style={s.actionsRow}>
-                    <TouchableOpacity style={s.cancelBtn} onPress={handleCancel}>
-                      <Text style={s.cancelBtnText}>Annuler</Text>
-                    </TouchableOpacity>
-                    <NeonActionButton onPress={handleSave} loading={isLoading} disabled={isLoading} label="Enregistrer" />
-                  </View>
-                ) : (
-                  <View style={s.actionsCenter}>
-                    <NeonActionButton onPress={() => setIsEditing(true)} loading={false} disabled={false} label="Modifier le profil" />
-                  </View>
-                )}
-              </View>
-            </View>
-
-            <View style={s.card}>
-              <View style={s.planRow}>
-                <View>
-                  <Text style={s.planName}>
-                    {user?.planType ? `Hipster ${user.planType.charAt(0).toUpperCase() + user.planType.slice(1)}` : 'Hipster Gratuit'}
-                  </Text>
-                  <Text style={s.planDesc}>{isPremium ? 'Accès illimité' : 'Pack de base'}</Text>
+            <View style={{ marginTop: 20 }}>
+              {isEditing ? (
+                <View style={s.actionsRow}>
+                  <TouchableOpacity style={s.cancelBtn} onPress={handleCancel}>
+                    <Text style={s.cancelBtnText}>Annuler</Text>
+                  </TouchableOpacity>
+                  <NeonActionButton onPress={handleSave} loading={isLoading} disabled={isLoading} label="Enregistrer" />
                 </View>
-                <View style={[s.planBadge, user?.subscriptionStatus === 'active' && s.planBadgeActive]}>
-                  <Text style={s.planBadgeText}>{user?.subscriptionStatus === 'active' ? 'Actif' : 'Gratuit'}</Text>
+              ) : (
+                <View style={s.actionsCenter}>
+                  <NeonActionButton onPress={() => setIsEditing(true)} loading={false} disabled={false} label="Modifier le profil" />
                 </View>
-              </View>
-              <NeonActionButton
-                onPress={() => router.push('/(drawer)/subscription')}
-                loading={false} disabled={false}
-                label="Gérer l'abonnement"
-                icon={<Sparkles size={16} color="#ffffff" />}
-                small align="center"
-              />
+              )}
             </View>
+          </View>
 
-            <View style={s.card}>
-              <SectionTitle title="Compte" />
-              <TouchableOpacity style={s.menuItem} onPress={() => router.push('/(drawer)/referral')}>
-                <Users size={20} color={colors.text.muted} />
-                <Text style={s.menuItemText}>Parrainage & Récompenses</Text>
-                <ChevronRight size={20} color={colors.text.muted} />
-              </TouchableOpacity>
-              <TouchableOpacity style={s.menuItem} onPress={() => setShowPasswordModal(true)}>
-                <Lock size={20} color={colors.text.muted} />
-                <Text style={s.menuItemText}>Modifier le mot de passe</Text>
-                <ChevronRight size={20} color={colors.text.muted} />
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={[s.logoutBtn, isLoggingOut && { opacity: 0.7 }]} 
-                onPress={() => setModal({
-                  visible: true,
-                  type: 'confirmation',
-                  title: 'Déconnexion',
-                  message: 'Êtes-vous sûr de vouloir vous déconnecter de votre compte ?',
-                  onConfirm: () => {
-                    setModal(m => ({ ...m, visible: false }));
-                    handleLogout();
-                  },
-                  confirmText: 'Me déconnecter'
-                })}
-                disabled={isLoggingOut}
-              >
-                {isLoggingOut ? (
-                  <ActivityIndicator size="small" color={colors.status.error} />
-                ) : (
-                  <LogOut size={20} color={colors.status.error} />
-                )}
-                <Text style={s.logoutText}>
-                  {isLoggingOut ? 'Déconnexion...' : 'Se déconnecter'}
+          <View style={s.card}>
+            <View style={s.planRow}>
+              <View>
+                <Text style={s.planName}>
+                  {user?.planType ? `Hipster ${user.planType.charAt(0).toUpperCase() + user.planType.slice(1)}` : 'Hipster Gratuit'}
                 </Text>
-              </TouchableOpacity>
+                <Text style={s.planDesc}>{isPremium ? 'Accès illimité' : 'Pack de base'}</Text>
+              </View>
+              <View style={[s.planBadge, user?.subscriptionStatus === 'active' && s.planBadgeActive]}>
+                <Text style={s.planBadgeText}>{user?.subscriptionStatus === 'active' ? 'Actif' : 'Gratuit'}</Text>
+              </View>
             </View>
+            <NeonActionButton
+              onPress={() => router.push('/(drawer)/subscription')}
+              loading={false} disabled={false}
+              label="Gérer l'abonnement"
+              icon={<Sparkles size={16} color="#ffffff" />}
+              small align="center"
+            />
+          </View>
 
-          </Animated.ScrollView>
+          <View style={s.card}>
+            <SectionTitle title="Compte" />
+            <TouchableOpacity style={s.menuItem} onPress={() => router.push('/(drawer)/referral')}>
+              <Users size={20} color={colors.text.muted} />
+              <Text style={s.menuItemText}>Parrainage & Récompenses</Text>
+              <ChevronRight size={20} color={colors.text.muted} />
+            </TouchableOpacity>
+            <TouchableOpacity style={s.menuItem} onPress={() => setShowPasswordModal(true)}>
+              <Lock size={20} color={colors.text.muted} />
+              <Text style={s.menuItemText}>Modifier le mot de passe</Text>
+              <ChevronRight size={20} color={colors.text.muted} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[s.logoutBtn, isLoggingOut && { opacity: 0.7 }]}
+              onPress={() => setModal({
+                visible: true,
+                type: 'confirmation',
+                title: 'Déconnexion',
+                message: 'Êtes-vous sûr de vouloir vous déconnecter de votre compte ?',
+                onConfirm: () => {
+                  setModal(m => ({ ...m, visible: false }));
+                  handleLogout();
+                },
+                confirmText: 'Me déconnecter'
+              })}
+              disabled={isLoggingOut}
+            >
+              {isLoggingOut ? (
+                <ActivityIndicator size="small" color={colors.status.error} />
+              ) : (
+                <LogOut size={20} color={colors.status.error} />
+              )}
+              <Text style={s.logoutText}>
+                {isLoggingOut ? 'Déconnexion...' : 'Se déconnecter'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+        </Animated.ScrollView>
       </KeyboardAvoidingView>
 
       <Modal visible={showJobPicker} transparent animationType="slide">
-        <View style={[s.modalOverlay, { backgroundColor: 'rgba(0,0,0,0.7)' }]}> 
+        <View style={[s.modalOverlay, { backgroundColor: 'rgba(0,0,0,0.7)' }]}>
           <ThemedNeonBorder color={colors.neon.primary} style={{ width: '100%', maxHeight: '70%' }}>
-            <View style={s.modalContent}> 
-            <View style={s.modalHeader}>
-              <Text style={s.modalTitle}>Choisir un métier</Text>
-              <TouchableOpacity onPress={() => setShowJobPicker(false)}>
-                <X size={22} color={colors.text.secondary} />
-              </TouchableOpacity>
+            <View style={s.modalContent}>
+              <View style={s.modalHeader}>
+                <Text style={s.modalTitle}>Choisir un métier</Text>
+                <TouchableOpacity onPress={() => setShowJobPicker(false)}>
+                  <X size={22} color={colors.text.secondary} />
+                </TouchableOpacity>
+              </View>
+              <ScrollView style={{ marginTop: 12 }} contentContainerStyle={{ gap: 8 }}>
+                {JOB_OPTIONS.map((opt) => (
+                  <Pressable key={opt} style={[s.inputContainer, { justifyContent: 'flex-start' }]} onPress={() => {
+                    if (opt === 'Autre') {
+                      setJob('Autre');
+                    } else {
+                      setJob(opt);
+                      setCustomJob('');
+                    }
+                    setShowJobPicker(false);
+                  }}>
+                    <Text style={[s.input, { color: colors.text.primary }]}>{opt}</Text>
+                  </Pressable>
+                ))}
+              </ScrollView>
             </View>
-            <ScrollView style={{ marginTop: 12 }} contentContainerStyle={{ gap: 8 }}>
-              {JOB_OPTIONS.map((opt) => (
-                <Pressable key={opt} style={[s.inputContainer, { justifyContent: 'flex-start' }]} onPress={() => {
-                  if (opt === 'Autre') {
-                    setJob('Autre');
-                  } else {
-                    setJob(opt);
-                    setCustomJob('');
-                  }
-                  setShowJobPicker(false);
-                }}>
-                  <Text style={[s.input, { color: colors.text.primary }]}>{opt}</Text>
-                </Pressable>
-              ))}
-            </ScrollView>
-          </View>
           </ThemedNeonBorder>
         </View>
       </Modal>
@@ -590,26 +590,26 @@ export default function ProfileScreen() {
         <View style={s.modalOverlay}>
           <ThemedNeonBorder color={colors.neon.primary} style={{ width: '100%' }}>
             <View style={s.modalContent}>
-            <View style={s.modalHeader}>
-              <Text style={s.modalTitle}>Sécurité</Text>
-              <TouchableOpacity onPress={() => setShowPasswordModal(false)}>
-                <X size={22} color={colors.text.secondary} />
-              </TouchableOpacity>
-            </View>
-            <View style={s.modalBody}>
-              <InputField label="Mot de passe actuel" icon={<Lock size={16} color={colors.text.muted} />} value={oldPassword} onChangeText={setOldPassword} placeholder="••••••••" secureTextEntry editable />
-              <InputField label="Nouveau mot de passe" icon={<Lock size={16} color={colors.text.muted} />} value={newPassword} onChangeText={setNewPassword} placeholder="••••••••" secureTextEntry editable />
-              <InputField label="Confirmer" icon={<Lock size={16} color={colors.text.muted} />} value={confirmPassword} onChangeText={setConfirmPassword} placeholder="••••••••" secureTextEntry editable />
-            </View>
-            <View style={s.modalActions}>
-              <TouchableOpacity style={s.cancelBtn} onPress={() => setShowPasswordModal(false)}>
-                <Text style={s.cancelBtnText}>Annuler</Text>
-              </TouchableOpacity>
-              <View style={{ flex: 1 }}>
-                <NeonActionButton onPress={handleChangePassword} loading={isLoading} disabled={isLoading} label="Modifier" />
+              <View style={s.modalHeader}>
+                <Text style={s.modalTitle}>Sécurité</Text>
+                <TouchableOpacity onPress={() => setShowPasswordModal(false)}>
+                  <X size={22} color={colors.text.secondary} />
+                </TouchableOpacity>
+              </View>
+              <View style={s.modalBody}>
+                <InputField label="Mot de passe actuel" icon={<Lock size={16} color={colors.text.muted} />} value={oldPassword} onChangeText={setOldPassword} placeholder="••••••••" secureTextEntry editable />
+                <InputField label="Nouveau mot de passe" icon={<Lock size={16} color={colors.text.muted} />} value={newPassword} onChangeText={setNewPassword} placeholder="••••••••" secureTextEntry editable />
+                <InputField label="Confirmer" icon={<Lock size={16} color={colors.text.muted} />} value={confirmPassword} onChangeText={setConfirmPassword} placeholder="••••••••" secureTextEntry editable />
+              </View>
+              <View style={s.modalActions}>
+                <TouchableOpacity style={s.cancelBtn} onPress={() => setShowPasswordModal(false)}>
+                  <Text style={s.cancelBtnText}>Annuler</Text>
+                </TouchableOpacity>
+                <View style={{ flex: 1 }}>
+                  <NeonActionButton onPress={handleChangePassword} loading={isLoading} disabled={isLoading} label="Modifier" />
+                </View>
               </View>
             </View>
-          </View>
           </ThemedNeonBorder>
         </View>
       </Modal>
@@ -630,78 +630,85 @@ export default function ProfileScreen() {
         onConfirm={modal.onConfirm}
         confirmText={modal.confirmText}
       />
+
+      <GenericModal
+        visible={isLoggingOut}
+        type="loading"
+        title="Déconnexion..."
+        message="Veuillez patienter pendant que nous vous déconnectons."
+      />
     </BackgroundGradientOnboarding>
   );
 }
 
 const s = StyleSheet.create({
-  fixedHeader:     { 
+  fixedHeader: {
     position: 'absolute', top: 0, left: 0, right: 0, zIndex: 100,
-    flexDirection: 'row', alignItems: 'center', 
+    flexDirection: 'row', alignItems: 'center',
     paddingHorizontal: 28, paddingTop: 48, paddingBottom: 16,
     borderBottomWidth: 1,
   },
-  scrollContent:   { paddingHorizontal: 28, paddingTop: 100, paddingBottom: 40 },
-  header:          { flexDirection: 'row', alignItems: 'center', marginBottom: 28, paddingTop: 8 },
-  backButton:      { width: 42, height: 42, borderRadius: 21, backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center', marginRight: 16 },
-  headerCenter:    { flex: 1, alignItems: 'center', marginRight: 58 },
-  titleSub:        { fontFamily: 'Arimo-Bold', fontSize: 16,  textTransform: 'uppercase', color: '#ffffff' },
+  scrollContent: { paddingHorizontal: 28, paddingTop: 100, paddingBottom: 40 },
+  header: { flexDirection: 'row', alignItems: 'center', marginBottom: 28, paddingTop: 8 },
+  backButton: { width: 42, height: 42, borderRadius: 21, backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center', marginRight: 16 },
+  headerCenter: { flex: 1, alignItems: 'center', marginRight: 58 },
+  titleSub: { fontFamily: 'Arimo-Bold', fontSize: 16, textTransform: 'uppercase', color: '#ffffff' },
 
-  heroCard:          { borderRadius: 24, borderWidth: 1, borderColor: colors.primary.main + '1f', alignItems: 'center', paddingVertical: 32, paddingHorizontal: 24, overflow: 'hidden', backgroundColor: colors.background.secondary + '99', marginBottom: 20 },
+  heroCard: { borderRadius: 24, borderWidth: 1, borderColor: colors.primary.main + '1f', alignItems: 'center', paddingVertical: 32, paddingHorizontal: 24, overflow: 'hidden', backgroundColor: colors.background.secondary + '99', marginBottom: 20 },
   heroAvatarWrapper: { position: 'relative', marginBottom: 16 },
-  heroAvatar:        { width: AVATAR_SIZE, height: AVATAR_SIZE, borderRadius: AVATAR_SIZE / 2, backgroundColor: colors.background.tertiary },
-  heroCameraBtn:     { position: 'absolute', bottom: 0, right: 0, width: 32, height: 32, borderRadius: 16, backgroundColor: colors.neon.primary, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: colors.background.primary },
-  heroName:          { fontFamily: 'Brittany-Signature', fontSize: 26, color: '#fff', textShadowColor: colors.neon.primary, textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 12, lineHeight: 36, marginBottom: 4, paddingLeft: 6 },
-  heroEmail:         { fontFamily: 'Arimo-Regular', fontSize: 13, color: colors.text.muted, marginBottom: 16 },
-  heroBadge:         { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 16, paddingVertical: 8, backgroundColor: colors.primary.main + '14', borderRadius: 20, borderWidth: 1, borderColor: colors.primary.main + '33', marginBottom: 20 },
-  heroBadgeStar:     { fontSize: 13, color: colors.neon.primary, fontWeight: '800' },
-  heroBadgeText:     { fontFamily: 'Arimo-Bold', fontSize: 12, color: colors.neon.primary, letterSpacing: 0.3 },
-  progressSection:   { width: '100%', gap: 8 },
-  progressLabel:     { fontFamily: 'Arimo-Regular', fontSize: 11, color: colors.text.muted, textAlign: 'center', letterSpacing: 0.4, textTransform: 'uppercase' },
-  progressBar:       { width: '100%', height: 4, backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 2, overflow: 'hidden' },
-  progressFill:      { height: '100%', borderRadius: 2 },
+  heroAvatar: { width: AVATAR_SIZE, height: AVATAR_SIZE, borderRadius: AVATAR_SIZE / 2, backgroundColor: colors.background.tertiary },
+  heroCameraBtn: { position: 'absolute', bottom: 0, right: 0, width: 32, height: 32, borderRadius: 16, backgroundColor: colors.neon.primary, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: colors.background.primary },
+  heroName: { fontFamily: 'Brittany-Signature', fontSize: 26, color: '#fff', textShadowColor: colors.neon.primary, textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 12, lineHeight: 36, marginBottom: 4, paddingLeft: 6 },
+  heroEmail: { fontFamily: 'Arimo-Regular', fontSize: 13, color: colors.text.muted, marginBottom: 16 },
+  heroBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 16, paddingVertical: 8, backgroundColor: colors.primary.main + '14', borderRadius: 20, borderWidth: 1, borderColor: colors.primary.main + '33', marginBottom: 20 },
+  heroBadgeStar: { fontSize: 13, color: colors.neon.primary, fontWeight: '800' },
+  heroBadgeText: { fontFamily: 'Arimo-Bold', fontSize: 12, color: colors.neon.primary, letterSpacing: 0.3 },
+  progressSection: { width: '100%', gap: 8 },
+  progressLabel: { fontFamily: 'Arimo-Regular', fontSize: 11, color: colors.text.muted, textAlign: 'center', letterSpacing: 0.4, textTransform: 'uppercase' },
+  progressBar: { width: '100%', height: 4, backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 2, overflow: 'hidden' },
+  progressFill: { height: '100%', borderRadius: 2 },
 
-  card:        { backgroundColor: colors.background.secondary + '99', borderRadius: 20, borderWidth: 1, borderColor: colors.white + '12', padding: 20, gap: 16, marginBottom: 20 },
-  sectionRow:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, marginTop: 20, marginBottom: 12 },
+  card: { backgroundColor: colors.background.secondary + '99', borderRadius: 20, borderWidth: 1, borderColor: colors.white + '12', padding: 20, gap: 16, marginBottom: 20 },
+  sectionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, marginTop: 20, marginBottom: 12 },
   sectionText: { fontFamily: 'Arimo-Bold', fontSize: 12, letterSpacing: 2, textTransform: 'uppercase', color: 'rgba(255,255,255,0.28)' },
 
-  inputGroup:     { gap: 8 },
-  inputRow:       { flexDirection: 'row', gap: 12 },
-  label:          { fontFamily: 'Arimo-Bold', fontSize: 12, color: colors.text.secondary, letterSpacing: 0.3 },
+  inputGroup: { gap: 8 },
+  inputRow: { flexDirection: 'row', gap: 12 },
+  label: { fontFamily: 'Arimo-Bold', fontSize: 12, color: colors.text.secondary, letterSpacing: 0.3 },
   inputContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.background.secondary + 'e6', borderRadius: 12, padding: 14, borderWidth: 1, borderColor: colors.white + '14', zIndex: 3 },
-  inputActive:    { borderColor: 'transparent', backgroundColor: '#030814' },
+  inputActive: { borderColor: 'transparent', backgroundColor: '#030814' },
   inputDimmed: { opacity: 0.5 },
   customJobInput: {
     fontFamily: 'Arimo-Regular',
     fontSize: 14,
   },
-  input:          { flex: 1, fontFamily: 'Arimo-Regular', fontSize: 14, color: colors.text.primary },
+  input: { flex: 1, fontFamily: 'Arimo-Regular', fontSize: 14, color: colors.text.primary },
 
   phonePrefix: { flexDirection: 'row', alignItems: 'center', paddingRight: 10, borderRightWidth: 1, borderRightColor: 'rgba(255,255,255,0.1)', marginRight: 10, gap: 4 },
-  prefixFlag:  { fontSize: 16 },
-  prefixCode:  { fontFamily: 'Arimo-Bold', fontSize: 12, color: colors.text.secondary },
+  prefixFlag: { fontSize: 16 },
+  prefixCode: { fontFamily: 'Arimo-Bold', fontSize: 12, color: colors.text.secondary },
 
-  actionsRow:    { flexDirection: 'row', gap: 12, marginVertical : 20, alignItems: 'center' },
-  actionsCenter: { alignItems: 'center', marginVertical : 20 },
-  cancelBtn:    { paddingVertical: 15, paddingHorizontal: 16, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.05)', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', minWidth: 90 },
+  actionsRow: { flexDirection: 'row', gap: 12, marginVertical: 20, alignItems: 'center' },
+  actionsCenter: { alignItems: 'center', marginVertical: 20 },
+  cancelBtn: { paddingVertical: 15, paddingHorizontal: 16, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.05)', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', minWidth: 90 },
   cancelBtnText: { fontFamily: 'Arimo-Bold', color: colors.text.secondary, fontSize: 14 },
 
-  planRow:       { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  planName:      { fontFamily: 'Brittany-Signature', fontSize: 24, color: '#fff', textShadowColor: colors.neon.primary, textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 8, paddingLeft: 4, paddingVertical: 10 },
-  planDesc:      { fontFamily: 'Arimo-Regular', fontSize: 13, color: colors.text.secondary, marginTop: 2 },
-  planBadge:     { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.08)' },
+  planRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+  planName: { fontFamily: 'Brittany-Signature', fontSize: 24, color: '#fff', textShadowColor: colors.neon.primary, textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 8, paddingLeft: 4, paddingVertical: 10 },
+  planDesc: { fontFamily: 'Arimo-Regular', fontSize: 13, color: colors.text.secondary, marginTop: 2 },
+  planBadge: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.08)' },
   planBadgeActive: { backgroundColor: colors.primary.main + '1f', borderWidth: 1, borderColor: colors.primary.main + '40' },
   planBadgeText: { fontFamily: 'Arimo-Bold', fontSize: 12, color: colors.neon.primary, letterSpacing: 0.3 },
 
-  menuItem:     { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)' },
+  menuItem: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)' },
   menuItemText: { flex: 1, fontFamily: 'Arimo-Regular', fontSize: 15, color: colors.text.primary },
-  logoutBtn:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, paddingVertical: 14, backgroundColor: 'rgba(239,68,68,0.05)', borderRadius: 12, borderWidth: 1, borderColor: 'rgba(239,68,68,0.12)', marginTop: 12 },
-  logoutText:   { fontFamily: 'Arimo-Bold', color: colors.status.error, fontSize: 15 },
+  logoutBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, paddingVertical: 14, backgroundColor: 'rgba(239,68,68,0.05)', borderRadius: 12, borderWidth: 1, borderColor: 'rgba(239,68,68,0.12)', marginTop: 12 },
+  logoutText: { fontFamily: 'Arimo-Bold', color: colors.status.error, fontSize: 15 },
 
-  modalOverlay:  { flex: 1, backgroundColor: 'rgba(0,0,0,0.92)', justifyContent: 'center', alignItems: 'center', padding: 24 },
-  modalContent:  { width: '100%', backgroundColor: 'transparent', borderRadius: 20, padding: 24, gap: 20, zIndex: 3 },
-  modalHeader:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  modalTitle:    { fontFamily: 'Arimo-Bold', fontSize: 18, color: '#fff' },
-  modalBody:     { gap: 14 },
-  modalActions:  { flexDirection: 'row', gap: 12 },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.92)', justifyContent: 'center', alignItems: 'center', padding: 24 },
+  modalContent: { width: '100%', backgroundColor: 'transparent', borderRadius: 20, padding: 24, gap: 20, zIndex: 3 },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  modalTitle: { fontFamily: 'Arimo-Bold', fontSize: 18, color: '#fff' },
+  modalBody: { gap: 14 },
+  modalActions: { flexDirection: 'row', gap: 12 },
 });

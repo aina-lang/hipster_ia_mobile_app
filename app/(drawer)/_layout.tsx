@@ -62,11 +62,10 @@ function AvatarNeonBorder({ children, size }: { children: React.ReactNode; size:
   );
 }
 
-function CustomDrawerContent(props: any) {
+function CustomDrawerContent({ isLoggingOut, setIsLoggingOut, ...props }: any) {
   const { user, logout } = useAuthStore();
   const router = useRouter();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   // Protect against null user during logout
   if (!user && !isLoggingOut) {
@@ -147,6 +146,7 @@ export default function DrawerLayout() {
   const { user } = useAuthStore();
   const router = useRouter();
   const pathname = usePathname();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -174,11 +174,17 @@ export default function DrawerLayout() {
     if ((isCritical || isBlockedHome) && !onSubPage && planType !== 'curieux') router.replace('/subscription');
   }, [user, pathname]);
 
-  if (!user) return null;
+  if (!user && !isLoggingOut) return null;
 
   return (
     <Drawer
-      drawerContent={(props) => <CustomDrawerContent {...props} />}
+      drawerContent={(props) => (
+        <CustomDrawerContent 
+          {...props} 
+          isLoggingOut={isLoggingOut} 
+          setIsLoggingOut={setIsLoggingOut} 
+        />
+      )}
       screenOptions={{
         headerShown: false,
         drawerStyle: {
