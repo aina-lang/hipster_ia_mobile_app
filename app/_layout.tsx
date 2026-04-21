@@ -4,24 +4,19 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { useAuthStore } from '../store/authStore';
-import { useWelcomeVideoStore } from '../store/welcomeVideoStore';
 import '../global.css';
 import { StripeProvider } from '@stripe/stripe-react-native';
-import WelcomeScreen from './welcome';
 import { StyledStatusBar } from '../components/ui/StyledStatusBar';
 import { TimeDynamicMessageModal } from '../components/TimeDynamicMessageModal';
 import { GenericModal } from '../components/ui/GenericModal';
 import * as Notifications from 'expo-notifications';
 import * as Network from 'expo-network';
-import { View, Platform, StyleSheet } from 'react-native';
+import { Platform } from 'react-native';
 import * as Sharing from 'expo-sharing';
 import { useAppInitialization } from '../hooks/useAppInitialization';
 import { useNetworkStore } from '../store/networkStore';
 
 SplashScreen.preventAutoHideAsync();
-
-/** Failsafe so a hung session check cannot block the app forever (splash / Stack). */
-const AUTH_INIT_TIMEOUT_MS = 5_000;
 
 /** Last path segment — works for `/login`, `/(auth)/login`, localized stacks, etc. */
 const AUTH_LAST_SEGMENTS = new Set([
@@ -50,12 +45,11 @@ function pathLooksLikePublicUnauthFlow(pathname: string | undefined): boolean {
 }
 
 export default function RootLayout() {
-  const { user, isAuthenticated, hasFinishedOnboarding, isHydrated } = useAuthStore();
+  const { user, isAuthenticated, hasFinishedOnboarding } = useAuthStore();
   const segments = useSegments();
   const pathname = usePathname();
   const router = useRouter();
-  const { videoCompleted, setVideoCompleted } = useWelcomeVideoStore();
-  const { isConnected, setConnected } = useNetworkStore();
+  const { setConnected } = useNetworkStore();
   const [showOfflineModal, setShowOfflineModal] = React.useState(false);
 
   const { isReady, isInitialized, fontsLoaded } = useAppInitialization();
@@ -103,20 +97,7 @@ export default function RootLayout() {
     return () => subscription.remove();
   }, []);
 
-  useEffect(() => {
-    const printDebug = () => {
-      console.log('[RootLayout] Current state:', {
-        pathname,
-        segments,
-        isAuthenticated,
-        isHydrated,
-        isInitialized,
-        hasFinishedOnboarding,
-      });
-    };
-    const timer = setInterval(printDebug, 2000);
-    return () => clearInterval(timer);
-  }, [pathname, segments, isAuthenticated, isHydrated, isInitialized, hasFinishedOnboarding]);
+
 
   // Check if we are in specific groups/pages
   const inAuthGroup = segments.some(s => s.includes('(auth)')) || segments.includes('login') || segments.includes('register') || segments.includes('verify-email');
@@ -216,11 +197,6 @@ export default function RootLayout() {
     }
   }, [isAuthenticated, hasFinishedOnboarding, isReady, segments, pathname, inUnauthPublicFlow, user, inDrawerGroup, inGuidedGroup, inTabsGroup]);
 
-  const handleVideoFinish = React.useCallback(() => {
-    console.log('[RootLayout] handleVideoFinish called. Setting videoCompleted=true');
-    setVideoCompleted(true);
-  }, [setVideoCompleted]);
-
   if (!isReady) {
     return null;
   }
@@ -233,30 +209,23 @@ export default function RootLayout() {
             publishableKey="pk_test_51R15MnK5fB5lGbp8C5QAYcALGWTBBmTmYxsnMnigeUNUg2DvsR9u4xbsF1GNzDIqiQxFqz9Dg10kEttfcpbr5DVX00yGKXocyS"
             merchantIdentifier="merchant.com.hipster">
             <>
-              {(isAuthenticated || inUnauthPublicFlow) ? (
-                <Stack
-                  screenOptions={{
-                    headerShown: false,
-                    contentStyle: { backgroundColor: '#11111a' },
-                  }}>
-                  <Stack.Screen name="welcome" />
-                  <Stack.Screen name="(auth)" />
-                  <Stack.Screen name="(onboarding)" />
-                  <Stack.Screen name="(drawer)" />
-                  <Stack.Screen name="(guided)" />
-                </Stack>
-              ) : <View style={{ flex: 1, backgroundColor: '#000000' }} />}
+              {/* Always mount the Stack — router handles all navigation */}
+              <Stack
+                screenOptions={{
+                  headerShown: false,
+                  contentStyle: { backgroundColor: '#11111a' },
+                }}>
+                <Stack.Screen name="welcome" />
+                <Stack.Screen name="(auth)" />
+                <Stack.Screen name="(onboarding)" />
+                <Stack.Screen name="(drawer)" />
+                <Stack.Screen name="(guided)" />
+              </Stack>
 
               <StyledStatusBar theme="dark" translucent={true} />
 
               {/* 🎯 Time-based dynamic pop-up messages */}
               <TimeDynamicMessageModal />
-
-              {!isAuthenticated &&
-                !inUnauthPublicFlow &&
-                !videoCompleted && (
-                  <WelcomeScreen onVideoFinish={handleVideoFinish} />
-                )}
 
               {/* 🌐 Global no-connection modal */}
               <GenericModal
