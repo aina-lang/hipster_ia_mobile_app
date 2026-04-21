@@ -10,18 +10,13 @@ import { StripeProvider } from '@stripe/stripe-react-native';
 import WelcomeScreen from './welcome';
 import { StyledStatusBar } from '../components/ui/StyledStatusBar';
 import { TimeDynamicMessageModal } from '../components/TimeDynamicMessageModal';
-import * as MediaLibrary from 'expo-media-library';
 import * as Notifications from 'expo-notifications';
 import * as SplashScreen from 'expo-splash-screen';
-import { useFonts } from 'expo-font';
+import { View, Platform, StyleSheet } from 'react-native';
+import * as Sharing from 'expo-sharing';
+import { useAppInitialization } from '../hooks/useAppInitialization';
 
 SplashScreen.preventAutoHideAsync();
-import * as ImagePicker from 'expo-image-picker';
-import { Audio } from 'expo-av';
-import { View, Platform, Linking, StyleSheet } from 'react-native';
-import * as Sharing from 'expo-sharing';
-
-import * as SystemUI from 'expo-system-ui';
 
 /** Failsafe so a hung session check cannot block the app forever (splash / Stack). */
 const AUTH_INIT_TIMEOUT_MS = 5_000;
@@ -53,94 +48,23 @@ function pathLooksLikePublicUnauthFlow(pathname: string | undefined): boolean {
 }
 
 export default function RootLayout() {
-  const { user, isAuthenticated, hasFinishedOnboarding, isHydrated, initializeAuth } = useAuthStore();
+  const { user, isAuthenticated, hasFinishedOnboarding, isHydrated } = useAuthStore();
   const segments = useSegments();
   const pathname = usePathname();
   const router = useRouter();
-  const [isInitialized, setIsInitialized] = React.useState(false);
   const { videoCompleted, setVideoCompleted } = useWelcomeVideoStore();
-
-  const [fontsLoaded, fontError] = useFonts({
-    'Arimo-Regular': require('../assets/fonts/Arimo/Arimo-Regular.ttf'),
-    'Arimo-Bold': require('../assets/fonts/Arimo/Arimo-Bold.ttf'),
-    'Brittany-Signature': require('../assets/fonts/Brittany/BrittanySignature.ttf')
-  });
+  
+  const { isReady, isInitialized, fontsLoaded } = useAppInitialization();
 
   useEffect(() => {
-    if (fontsLoaded && isHydrated && isInitialized) {
+    if (isReady) {
       SplashScreen.hideAsync();
     }
-  }, [fontsLoaded, isHydrated, isInitialized]);
+  }, [isReady]);
 
 
 
-  // On app startup, verify that stored session is still valid.
-  useEffect(() => {
-    // Set root background to black to prevent white flash
-    SystemUI.setBackgroundColorAsync('#000000').catch(() => { });
-
-    if (!isHydrated) {
-      return;
-    }
-
-    let cancelled = false;
-
-    const initApp = async () => {
-      const auth = useAuthStore.getState();
-      try {
-        await Promise.race([
-          auth.initializeAuth(),
-          new Promise<void>((_, reject) =>
-            setTimeout(
-              () => reject(new Error('[RootLayout] initializeAuth timed out')),
-              AUTH_INIT_TIMEOUT_MS
-            )
-          ),
-        ]);
-      } catch (error: any) {
-        if (error?.message?.includes('timed out')) {
-          console.warn('[RootLayout] Auth init timed out; unlocking UI anyway.');
-        } else {
-          console.error('[RootLayout] Initialization error:', error);
-        }
-      } finally {
-        if (!cancelled) {
-          setIsInitialized(true);
-        }
-      }
-    };
-
-    initApp();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [isHydrated]);
-
-  useEffect(() => {
-    // Request all necessary permissions upfront
-    const requestPermissions = async () => {
-      try {
-        await MediaLibrary.requestPermissionsAsync();
-        await Notifications.requestPermissionsAsync();
-        await Audio.requestPermissionsAsync();
-        await ImagePicker.requestMediaLibraryPermissionsAsync();
-        await ImagePicker.requestCameraPermissionsAsync();
-
-        if (Platform.OS === 'android') {
-          await Notifications.setNotificationChannelAsync('default', {
-            name: 'default',
-            importance: Notifications.AndroidImportance.MAX,
-            vibrationPattern: [0, 250, 250, 250],
-            lightColor: '#FF231F7C',
-          });
-        }
-      } catch (e) {
-        console.warn('Initial permission request failed:', e);
-      }
-    };
-    requestPermissions();
-  }, []);
+  // On app startup, auth logic and permissions are now handled inside useAppInitialization.
 
   useEffect(() => {
     const subscription = Notifications.addNotificationResponseReceivedListener(response => {
@@ -181,7 +105,7 @@ export default function RootLayout() {
   const inUnauthPublicFlow = inAuthGroup || inOnboardingGroup || pathInPublicUnauthFlow;
 
   useEffect(() => {
-    if (!isHydrated || !isInitialized) {
+    if (!isReady) {
       return;
     }
 
@@ -267,7 +191,7 @@ export default function RootLayout() {
         console.error('[RootLayout] ERROR during router.replace:', error);
       }
     }
-  }, [isAuthenticated, hasFinishedOnboarding, isHydrated, isInitialized, segments, pathname, inUnauthPublicFlow, user, inDrawerGroup, inGuidedGroup, inTabsGroup]);
+  }, [isAuthenticated, hasFinishedOnboarding, isReady, segments, pathname, inUnauthPublicFlow, user, inDrawerGroup, inGuidedGroup, inTabsGroup]);
 
   const handleVideoFinish = React.useCallback(() => {
     console.log('[RootLayout] handleVideoFinish called. Setting videoCompleted=true');
@@ -303,7 +227,7 @@ export default function RootLayout() {
           <>
             {!isAuthenticated &&
               !inUnauthPublicFlow &&
-              (!isHydrated || !isInitialized || !videoCompleted) && (
+              (!isReady || !videoCompleted) && (
                 <WelcomeScreen onVideoFinish={handleVideoFinish} />
               )}
           </>
