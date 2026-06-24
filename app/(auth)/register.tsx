@@ -32,7 +32,6 @@ export default function RegisterScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [referralCode, setReferralCode] = useState('');
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [focused, setFocused] = useState<string | null>(null);
@@ -42,7 +41,6 @@ export default function RegisterScreen() {
   const emailRef = useRef<RNTextInput>(null);
   const passwordRef = useRef<RNTextInput>(null);
   const confirmRef = useRef<RNTextInput>(null);
-  const referralRef = useRef<RNTextInput>(null);
 
   const showModal = (type: any, title: string, message = '') =>
     setModal({ visible: true, type, title, message });
@@ -83,7 +81,6 @@ export default function RegisterScreen() {
         name: fullName, email, password,
         // ✅ Ne pas envoyer planId ici - le paiement sera géré dans packs.tsx après vérification email
         brandingColor, job,
-        referralCode: referralCode.trim() || undefined,
       });
       const res = response?.data ?? response;
       const userId = res?.userId || res?.data?.userId;
@@ -158,7 +155,7 @@ export default function RegisterScreen() {
               <Text style={s.label}>Confirmer le mot de passe</Text>
               <NeonBorderInput isActive={focused === 'confirm'}>
                 <View style={s.passwordWrapper}>
-                  <TextInput ref={confirmRef} style={[s.input, s.passwordInput, focused === 'confirm' && s.inputActive]} placeholder="••••••••" placeholderTextColor="#6b7280" value={confirmPassword} onChangeText={t => { setConfirmPassword(t); if (error) clearError(); }} secureTextEntry={!showConfirm} {...f('confirm')} returnKeyType="next" onSubmitEditing={() => referralRef.current?.focus()} blurOnSubmit={false} />
+                  <TextInput ref={confirmRef} style={[s.input, s.passwordInput, focused === 'confirm' && s.inputActive]} placeholder="••••••••" placeholderTextColor="#6b7280" value={confirmPassword} onChangeText={t => { setConfirmPassword(t); if (error) clearError(); }} secureTextEntry={!showConfirm} {...f('confirm')} returnKeyType="done" onSubmitEditing={handleRegister} blurOnSubmit={false} />
                   <TouchableOpacity style={s.eyeIcon} onPress={() => setShowConfirm(v => !v)}>
                     {showConfirm ? <EyeOff size={20} color="#6b7280" /> : <Eye size={20} color="#6b7280" />}
                   </TouchableOpacity>
@@ -166,17 +163,7 @@ export default function RegisterScreen() {
               </NeonBorderInput>
             </View>
 
-            <View style={s.inputContainer}>
-              <Text style={s.label}>Code de parrainage <Text style={s.optional}>(optionnel)</Text></Text>
-              <NeonBorderInput isActive={focused === 'referral'}>
-                <View style={s.passwordWrapper}>
-                  <TextInput ref={referralRef} style={[s.input, s.passwordInput, focused === 'referral' && s.inputActive]} placeholder="Ex : REF-USR-ABCD" placeholderTextColor="#6b7280" value={referralCode} onChangeText={t => setReferralCode(t.toUpperCase())} autoCapitalize="characters" autoCorrect={false} {...f('referral')} returnKeyType="done" onSubmitEditing={handleRegister} />
-                  <View style={s.eyeIcon} pointerEvents="none">
-                    <Gift size={18} color="#6b7280" />
-                  </View>
-                </View>
-              </NeonBorderInput>
-            </View>
+
 
             <View style={s.termsContainer}>
               <TouchableOpacity style={s.checkboxWrapper} onPress={() => setAcceptedTerms(v => !v)} activeOpacity={0.8}>

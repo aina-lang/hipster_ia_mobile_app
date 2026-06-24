@@ -517,11 +517,7 @@ export default function ProfileScreen() {
 
           <View style={s.card}>
             <SectionTitle title="Compte" />
-            <TouchableOpacity style={s.menuItem} onPress={() => router.push('/(drawer)/referral')}>
-              <Users size={20} color={colors.text.muted} />
-              <Text style={s.menuItemText}>Parrainage & Récompenses</Text>
-              <ChevronRight size={20} color={colors.text.muted} />
-            </TouchableOpacity>
+
             <TouchableOpacity style={s.menuItem} onPress={() => setShowPasswordModal(true)}>
               <Lock size={20} color={colors.text.muted} />
               <Text style={s.menuItemText}>Modifier le mot de passe</Text>

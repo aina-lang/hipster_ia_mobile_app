@@ -261,19 +261,7 @@ export default function DrawerLayout() {
           ),
         }}
       />
-      <Drawer.Screen
-        name="referral"
-        options={{
-          drawerIcon: ({ color, focused }) => (
-            <Users size={20} color={focused ? '#ffffff' : color} />
-          ),
-          drawerLabel: ({ focused, color }) => (
-            <Text style={{ fontFamily: 'Arimo-Bold', fontSize: 15, letterSpacing: 0.3, color: focused ? '#ffffff' : color }}>
-              Parrainage
-            </Text>
-          ),
-        }}
-      />
+
       <Drawer.Screen
         name="freetext"
         options={{

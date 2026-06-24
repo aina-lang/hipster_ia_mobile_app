@@ -71,10 +71,7 @@ interface User {
   siret?: string;
   vatNumber?: string;
   websiteUrl?: string;
-  referralCode?: string;
-  referredBy?: string;
-  isAmbassador?: boolean;
-  freeMonthsPending?: number;
+
   isFirstTime?: boolean; // Track if this is user's first time using the app
   isStripeVerified?: boolean; 
 }
